@@ -127,6 +127,11 @@ Operation Fixtures execute through SheetOM and native browser adapters;
 applicable WPT subtests retain their pinned source path, title, and blob SHA.
 Every release ships its machine-readable Compatibility Report.
 
+Modern or implementation-dependent value grammar is bounded by the checked-in
+[`Value Capability Corpus`](./compatibility/value-capabilities.json). Each
+measured family includes accepted and rejected neighboring cases; browser
+probing occurs only during conformance work and never at runtime.
+
 See [the behavioral API reference](./docs/api.md) for return, exception,
 identity, and detachment contracts. Maintainers use the separately reviewed
 [release procedure](./docs/releasing.md); Changesets never publishes by itself.

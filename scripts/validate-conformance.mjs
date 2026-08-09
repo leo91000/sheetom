@@ -40,10 +40,19 @@ const operationSchema = await readJson(path.join(compatibilityRoot, "schemas/ope
 const mappingsSchema = await readJson(path.join(compatibilityRoot, "schemas/wpt-mappings.schema.json"));
 const reportSchema = await readJson(path.join(compatibilityRoot, "schemas/compatibility-report.schema.json"));
 const resolutionsSchema = await readJson(path.join(compatibilityRoot, "schemas/compatibility-resolutions.schema.json"));
+const valueCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "schemas/value-capability-corpus.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
 const validateResolutions = ajv.compile(resolutionsSchema);
+const validateValueCapabilities = ajv.compile(valueCapabilitiesSchema);
+
+const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");
+validateOrThrow(
+  validateValueCapabilities,
+  await readJson(valueCapabilitiesFile),
+  valueCapabilitiesFile,
+);
 
 const mappingsFile = path.join(compatibilityRoot, "wpt-mappings.json");
 const mappings = await readJson(mappingsFile);

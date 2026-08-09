@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import { chromiumShorthandLonghands } from "../src/chromium-properties.js";
 import { createStyleRule } from "./support/create-style-rule.js";
 
 test("padding expands into indexed longhands and serializes opportunistically", () => {
@@ -134,6 +135,22 @@ test("animation shorthand getters include Chromium's observable default fields",
     rule.style.cssText,
     "animation: 1s linear 0s 1 normal none running foo;",
   );
+});
+
+test("every manifested multi-longhand shorthand expands atomically", () => {
+  for (const [shorthand, longhands] of Object.entries(chromiumShorthandLonghands)) {
+    if (longhands.length < 2) continue;
+    const rule = createStyleRule(".x");
+    rule.style.setProperty(shorthand, "initial");
+
+    assert.equal(rule.style.length, longhands.length, shorthand);
+    assert.deepEqual(
+      Array.from({ length: rule.style.length }, (_, index) => rule.style.item(index)),
+      longhands,
+      shorthand,
+    );
+    assert.equal(rule.style.getPropertyValue(shorthand), "initial", shorthand);
+  }
 });
 
 test("static shorthand mutations preserve order and mixed priorities", () => {
