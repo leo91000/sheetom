@@ -5,7 +5,14 @@
     "sheetom": "0.0.0"
   },
   "changesets": [
+    "add-browser-differential-fuzz",
+    "add-publisher-benchmark",
     "bright-rules-bloom",
-    "calm-values-recover"
+    "calm-values-recover",
+    "pin-syntax-engine-set",
+    "preserve-container-preludes",
+    "recover-eof-observable-values",
+    "type-diagnostic-codes",
+    "verify-native-reparsing"
   ]
 }
