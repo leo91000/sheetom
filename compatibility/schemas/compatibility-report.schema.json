@@ -43,7 +43,23 @@
           "required": ["passed", "total"],
           "properties": {
             "passed": { "type": "integer", "minimum": 0 },
-            "total": { "type": "integer", "minimum": 0 }
+            "total": { "type": "integer", "minimum": 0 },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "adapters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["adapter", "passed", "total"],
+                "properties": {
+                  "adapter": {
+                    "enum": ["sheetom", "chromium", "firefox", "webkit"]
+                  },
+                  "passed": { "type": "integer", "minimum": 0 },
+                  "total": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
           }
         },
         "nativeWpt": {

@@ -108,6 +108,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install differential browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
       - name: Download stable Chrome evidence
         uses: actions/download-artifact@v8
         with:
@@ -124,8 +127,11 @@ jobs:
         shell: bash
         run: |
           version=$(node -p "require('./package.json').version")
+          SHEETOM_RECORD_BASELINE=1 node scripts/record-operation-fixtures.mjs \
+            --output "$RUNNER_TEMP/operation-fixtures.json"
           SHEETOM_RECORD_BASELINE=1 npm run conformance:record -- \
             --output "$RUNNER_TEMP/$version.json" \
+            --operation-report="$RUNNER_TEMP/operation-fixtures.json" \
             --wpt-report=chrome=reports/chrome/wpt-chrome.json \
             --wpt-report=firefox=reports/firefox/wpt-firefox.json
           cp "$RUNNER_TEMP/$version.json" "compatibility/baselines/$version.json"

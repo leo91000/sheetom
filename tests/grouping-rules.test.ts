@@ -47,6 +47,22 @@ test("media rules expose a live nested rule tree", () => {
   );
 });
 
+test("media serialization canonicalizes without modernizing feature syntax", () => {
+  const sheet = parseStyleSheet(
+    "@media screen and (max-width: 767px) { .x { color: red; } }",
+  );
+  const media = sheet.cssRules[0];
+
+  assert.ok(media instanceof CSSMediaRule);
+  assert.equal(media.conditionText, "screen and (max-width: 767px)");
+  assert.equal(
+    media.cssText,
+    "@media screen and (max-width: 767px) {\n  .x { color: red; }\n}",
+  );
+  assert.match(sheet.serialize(), /@media screen and \(max-width: 767px\)/);
+  assert.doesNotMatch(sheet.serialize(), /width <= 767px/);
+});
+
 test("condition and structural grouping rules expose specialized interfaces", () => {
   const sheet = parseStyleSheet(`
     @supports (display: grid) { .supports { display: grid; } }

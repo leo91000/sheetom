@@ -1,57 +1,55 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { test } from "vitest";
 
-import { runOperationFixture } from "./support/operation-fixture.js";
+import {
+  runOperationFixture,
+  type OperationFixture,
+} from "./support/operation-fixture.js";
 import { createSheetOMFixtureAdapter } from "./support/sheetom-fixture-adapter.js";
 
-async function expectedResolution(fixtureId: string): Promise<unknown[]> {
-  const file = path.resolve("compatibility/resolutions/declarations.json");
-  const document = JSON.parse(await readFile(file, "utf8"));
-  const resolution = document.resolutions.find(
-    (candidate: { fixtureId: string }) => candidate.fixtureId === fixtureId,
-  );
-  assert.ok(resolution, `Missing Compatibility Resolution for ${fixtureId}`);
-  return resolution.expected;
+interface Resolution {
+  fixtureId: string;
+  expected: unknown[];
 }
 
-test("an Operation Fixture observes malformed declaration behavior through the public interface", async () => {
-  const fixturePath = path.resolve(
-    "compatibility/fixtures/declarations/malformed-padding.json",
-  );
-  const fixture = JSON.parse(await readFile(fixturePath, "utf8"));
+function fixtureFiles(directory: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...fixtureFiles(entryPath));
+      continue;
+    }
+    if (entry.name.endsWith(".json")) files.push(entryPath);
+  }
+  return files;
+}
 
-  const observations = await runOperationFixture(
-    fixture,
-    createSheetOMFixtureAdapter(),
-  );
+const fixtureDirectory = path.resolve("compatibility/fixtures");
+const fixtures = fixtureFiles(fixtureDirectory)
+  .sort()
+  .map(file => JSON.parse(
+    readFileSync(file, "utf8"),
+  ) as OperationFixture);
+const resolutionDocument = JSON.parse(readFileSync(
+  path.resolve("compatibility/resolutions/declarations.json"),
+  "utf8",
+)) as { resolutions: Resolution[] };
 
-  assert.deepEqual(observations, await expectedResolution(fixture.id));
-});
+for (const fixture of fixtures) {
+  test(`SheetOM matches the Compatibility Resolution for ${fixture.id}`, async () => {
+    const resolution = resolutionDocument.resolutions.find(
+      candidate => candidate.fixtureId === fixture.id,
+    );
+    assert.ok(resolution, `Missing Compatibility Resolution for ${fixture.id}`);
 
-test("adapted WPT null and undefined operations preserve WebIDL argument boundaries", async () => {
-  const fixturePath = path.resolve(
-    "compatibility/fixtures/declarations/setproperty-null-undefined.json",
-  );
-  const fixture = JSON.parse(await readFile(fixturePath, "utf8"));
+    const observations = await runOperationFixture(
+      fixture,
+      createSheetOMFixtureAdapter(),
+    );
 
-  const observations = await runOperationFixture(
-    fixture,
-    createSheetOMFixtureAdapter(),
-  );
-
-  assert.deepEqual(observations, await expectedResolution(fixture.id));
-});
-
-test("Operation Fixtures preserve required WebIDL argument arity", async () => {
-  const fixturePath = path.resolve(
-    "compatibility/fixtures/declarations/required-arguments.json",
-  );
-  const fixture = JSON.parse(await readFile(fixturePath, "utf8"));
-  const observations = await runOperationFixture(
-    fixture,
-    createSheetOMFixtureAdapter(),
-  );
-  assert.deepEqual(observations, await expectedResolution(fixture.id));
-});
+    assert.deepEqual(observations, resolution.expected);
+  });
+}

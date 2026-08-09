@@ -28,6 +28,21 @@ for (const evidence of report.evidence.nativeWpt) {
 if (report.evidence.operationFixtures.passed !== report.evidence.operationFixtures.total) {
   throw new Error("Operation Fixture evidence is not fully passing");
 }
+if (!/^[0-9a-f]{64}$/.test(report.evidence.operationFixtures.sha256 ?? "")) {
+  throw new Error("Operation Fixture evidence does not identify its executed report");
+}
+const operationAdapters = new Map(
+  report.evidence.operationFixtures.adapters?.map(evidence => [evidence.adapter, evidence]) ?? [],
+);
+for (const adapter of ["sheetom", "chromium", "firefox", "webkit"]) {
+  const evidence = operationAdapters.get(adapter);
+  if (!evidence) {
+    throw new Error(`The release Compatibility Report lacks ${adapter} Operation Fixture evidence`);
+  }
+  if (evidence.passed !== evidence.total || evidence.total !== report.evidence.operationFixtures.total) {
+    throw new Error(`${adapter} Operation Fixture evidence is incomplete`);
+  }
+}
 
 const status = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" });
 if (status !== "") {

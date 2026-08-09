@@ -28,6 +28,7 @@ import {
 } from "./internal/webidl-construction.js";
 
 import {
+  chromiumPropertyAliases,
   chromiumSupportedProperties,
 } from "./chromium-properties.js";
 
@@ -108,6 +109,12 @@ function parseDeclarationValue(
     : null;
   if (atrule) return parseAtruleDescriptorValue(atrule, name, observableValue);
   return parsePropertyValue(name, observableValue);
+}
+
+function normalizeDeclarationName(name: string): string {
+  if (name.startsWith("--")) return name;
+  const lowerName = name.toLowerCase();
+  return chromiumPropertyAliases[lowerName] ?? lowerName;
 }
 
 function namedPropertyToCSS(property: string): string {
@@ -290,14 +297,12 @@ export class CSSRuleList {
 
 function normalizeMediaText(value: string): string | null {
   try {
-    const result = transform({
-      filename: "sheetom-media.css",
-      code: encoder.encode(`@media ${value} { .sheetom-probe { --sheetom: 0; } }`),
-    });
-    const serialized = decoder.decode(result.code);
-    const blockIndex = serialized.indexOf("{");
-    if (!serialized.startsWith("@media ") || blockIndex === -1) return null;
-    return serialized.slice("@media ".length, blockIndex).trim();
+    const parsed = csstree.parse(value, { context: "mediaQueryList" });
+    if (parsed.type !== "MediaQueryList") return null;
+    return csstree.generate(parsed)
+      .replace(/,\s*/g, ", ")
+      .replace(/:\s*/g, ": ")
+      .replace(/\s*(<=|>=|=|<|>)\s*/g, " $1 ");
   } catch {
     return null;
   }
@@ -680,6 +685,7 @@ export class CSSStyleDeclaration {
     lockOwnProperties(this, "parentRule");
     this.#block = new DeclarationBlock(
       {
+        normalizeName: normalizeDeclarationName,
         parseValue: (name, value) => parseDeclarationValue(this, name, value),
         shorthandLonghands: getShorthandLonghands,
         expandFourSide: expandStaticFourSide,
@@ -750,7 +756,7 @@ export class CSSStyleDeclaration {
     for (const child of parsed.children) {
       if (child.type !== "Declaration") continue;
       declarations.push({
-        name: child.property,
+        name: csstree.ident.decode(child.property),
         value: csstree.generate(child.value),
         important: child.important === true || child.important === "important",
       });
@@ -1622,9 +1628,26 @@ function createRuleFromNodeInternal(
       rule = new CSSContainerRule(prelude);
       break;
     case "layer":
-      if (!node.block) return new CSSGenericRule(0, csstree.generate(node));
+      if (!node.block) {
+        const names = prelude.split(",").map(part => part.trim()).join(", ");
+        return new CSSGenericRule(0, `@layer ${names};`);
+      }
       rule = new CSSLayerBlockRule(prelude);
       break;
+    case "property": {
+      if (!node.block || !prelude.startsWith("--")) return null;
+      const descriptors: string[] = [];
+      for (const child of node.block.children) {
+        if (child.type !== "Declaration") continue;
+        descriptors.push(
+          `${child.property}: ${generateDescriptorInput(child.value)}${child.important ? " !important" : ""};`,
+        );
+      }
+      return new CSSGenericRule(
+        genericRuleType(name),
+        `@property ${prelude} {${descriptors.length === 0 ? "" : ` ${descriptors.join(" ")}`} }`,
+      );
+    }
     case "scope": {
       const [start, end] = parseScopePrelude(prelude);
       rule = new CSSScopeRule(start, end);

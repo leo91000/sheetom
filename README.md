@@ -9,9 +9,7 @@ not implement the DOM, cascade, selector matching, layout, or computed styles.
 
 ## Install
 
-SheetOM is not published yet. The first registry release will be
-`0.1.0-rc.0` under the `next` dist-tag after the complete conformance gate
-passes. Once published:
+Install the current release candidate from the `next` dist-tag:
 
 ```sh
 npm install sheetom@next
@@ -59,9 +57,10 @@ Constructed sheets follow browser replacement behavior and strip `@import`.
 `parseStyleSheet` creates a regular authoring sheet and preserves valid imports
 without loading them.
 
-## Recovered values and safe serialization
+## Recovered values and reparsable serialization
 
-SheetOM distinguishes the browser-facing CSSOM text from safe output. Chromium
+SheetOM distinguishes browser-facing CSSOM text from reparsable stylesheet
+output. Chromium
 accepts some values using CSS Syntax end-of-input recovery while preserving the
 unclosed input in `getPropertyValue()` and `cssText`:
 
@@ -81,6 +80,19 @@ rule.style.cssText;
 sheet.serialize();
 // reparsable CSS with the missing syntax repaired
 ```
+
+The three text surfaces have distinct contracts:
+
+| Surface | Contract |
+| --- | --- |
+| `rule.style.cssText` | Browser-compatible observable declaration text, including accepted recovery quirks. |
+| `rule.cssText` | Browser-compatible observable text for one rule and its current descendants. |
+| `sheet.serialize()` | Deterministic, reparsable stylesheet output with recoverable syntax confined to its declaration or rule. |
+
+Reparsable serialization means that the output can be parsed again without one
+declaration leaking into the next declaration or rule, while preserving the
+valid semantic state owned by SheetOM. It does not sanitize URLs, enforce CSP,
+block remote resources, or make valid hostile CSS safe to render.
 
 Invalid `setProperty` values and priorities are atomic no-ops, matching browser
 behavior. Opt into mutation diagnostics with `{ diagnostics: true }` and drain

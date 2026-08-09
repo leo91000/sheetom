@@ -12,9 +12,9 @@ _Avoid_: Full CSSOM, virtual DOM, CSS compiler
 The browser-compatible text exposed by declaration and rule getters such as `cssText`. It may retain browser quirks and is not guaranteed to be safe stylesheet input.
 _Avoid_: Final output, source text
 
-**Safe Stylesheet Serialization**:
+**Reparsable Stylesheet Serialization**:
 Serialization of the observable Authoring CSSOM state into reparsable stylesheet output, including repair of recoverable syntax. It does not preserve source comments, whitespace, quoting choices, or original bytes.
-_Avoid_: CSSOM getter text, source-preserving serialization, round-trip formatting
+_Avoid_: Safe serialization, CSSOM getter text, source-preserving serialization, round-trip formatting
 
 **Rendering Boundary**:
 The caller-owned point where authored CSS is attached to a document or another environment that can fetch resources or apply browser behavior; SheetOM does not cross or sanitize this boundary.

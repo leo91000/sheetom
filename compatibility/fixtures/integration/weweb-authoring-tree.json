@@ -1,0 +1,109 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "integration.weweb-authoring-tree",
+  "provenanceIds": [],
+  "operations": [
+    {
+      "op": "constructStyleSheet",
+      "target": "$root",
+      "handle": "sheet",
+      "args": []
+    },
+    {
+      "op": "replaceSync",
+      "target": "sheet",
+      "args": ["@layer ww-style-reset, ww-style-library, ww-style-section, ww-style-element; @property --dynamic-width { syntax: \"<length>\"; inherits: false; initial-value: 0px; } @layer ww-style-element { .ww-element-a { color: red; } @media (max-width: 767px) { .ww-element-a:hover { width: 100px; } } } @keyframes animation-a { from { opacity: 0; } to { opacity: 1; } }"]
+    },
+    {
+      "op": "getRule",
+      "target": "sheet",
+      "handle": "layer",
+      "args": [2]
+    },
+    {
+      "op": "getRule",
+      "target": "layer",
+      "handle": "styleRule",
+      "args": [0]
+    },
+    {
+      "op": "getStyle",
+      "target": "styleRule",
+      "handle": "style",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["padding", "72px var(--space, var(--space,"],
+      "observe": ["return", "exception", "cssText", "length", "items"]
+    },
+    {
+      "op": "getRule",
+      "target": "layer",
+      "handle": "media",
+      "args": [1]
+    },
+    {
+      "op": "getRule",
+      "target": "media",
+      "handle": "hoverRule",
+      "args": [0]
+    },
+    {
+      "op": "insertRule",
+      "target": "layer",
+      "args": [".inserted {}", 1],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "getRule",
+      "target": "layer",
+      "handle": "insertedRule",
+      "args": [1]
+    },
+    {
+      "op": "deleteRule",
+      "target": "layer",
+      "args": [1],
+      "observe": ["exception"]
+    },
+    {
+      "op": "identity",
+      "target": "insertedRule",
+      "args": [],
+      "observe": ["parentRule", "parentStyleSheet"]
+    },
+    {
+      "op": "deleteRule",
+      "target": "sheet",
+      "args": [2],
+      "observe": ["exception"]
+    },
+    {
+      "op": "identity",
+      "target": "layer",
+      "args": [],
+      "observe": ["parentRule", "parentStyleSheet"]
+    },
+    {
+      "op": "identity",
+      "target": "styleRule",
+      "args": [],
+      "observe": ["parentRule", "parentStyleSheet"]
+    },
+    {
+      "op": "identity",
+      "target": "media",
+      "args": [],
+      "observe": ["parentRule", "parentStyleSheet"]
+    },
+    {
+      "op": "identity",
+      "target": "hoverRule",
+      "args": [],
+      "observe": ["parentRule", "parentStyleSheet"]
+    }
+  ]
+}
