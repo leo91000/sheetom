@@ -1,0 +1,209 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  changesets:
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      has-changesets: ${{ steps.changesets.outputs.hasChangesets }}
+      pull-request: ${{ steps.changesets.outputs.pullRequestNumber }}
+      head-ref: ${{ steps.release-pr.outputs.head_ref }}
+      head-sha: ${{ steps.release-pr.outputs.head_sha }}
+
+    steps:
+      - name: Check out the successful main commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create or update the release pull request
+        id: changesets
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
+        with:
+          version: node scripts/version-release.mjs
+          commit: "chore: version packages"
+          title: "chore: release packages"
+          commitMode: github-api
+          createGithubReleases: false
+          prDraft: create
+          branch: main
+
+      - name: Normalize the release pull request
+        id: release-pr
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
+        run: |
+          gh pr edit "$RELEASE_PR" --body ""
+          echo "head_ref=$(gh pr view "$RELEASE_PR" --json headRefName --jq .headRefName)" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(gh pr view "$RELEASE_PR" --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+
+  native-oracles:
+    needs: changesets
+    if: needs.changesets.outputs.pull-request != ''
+    uses: ./.github/workflows/native-oracles.yml
+    with:
+      ref: ${{ needs.changesets.outputs.head-sha }}
+
+  record-evidence:
+    needs: [changesets, native-oracles]
+    if: needs.changesets.outputs.pull-request != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out the release pull request
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.changesets.outputs.head-ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download stable Chrome evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: wpt-chrome-stable
+          path: reports/chrome
+
+      - name: Download stable Firefox evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: wpt-firefox-stable
+          path: reports/firefox
+
+      - name: Record the release Compatibility Report
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          SHEETOM_RECORD_BASELINE=1 npm run conformance:record -- \
+            --output "$RUNNER_TEMP/$version.json" \
+            --wpt-report=chrome=reports/chrome/wpt-chrome.json \
+            --wpt-report=firefox=reports/firefox/wpt-firefox.json
+          cp "$RUNNER_TEMP/$version.json" "compatibility/baselines/$version.json"
+          npm run conformance:validate
+
+      - name: Commit immutable release evidence
+        env:
+          HEAD_REF: ${{ needs.changesets.outputs.head-ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add compatibility/baselines
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update release evidence"
+            git push origin "HEAD:$HEAD_REF"
+          fi
+
+      - name: Start release pull request validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ needs.changesets.outputs.head-ref }}
+          RELEASE_PR: ${{ needs.changesets.outputs.pull-request }}
+        run: |
+          gh pr edit "$RELEASE_PR" --body ""
+          if [ "$(gh pr view "$RELEASE_PR" --json isDraft --jq .isDraft)" = "true" ]; then
+            gh pr ready "$RELEASE_PR"
+          fi
+          base_sha=$(gh pr view "$RELEASE_PR" --json baseRefOid --jq .baseRefOid)
+          gh workflow run ci.yml --ref "$HEAD_REF" -f "base_sha=$base_sha"
+
+  publish:
+    needs: changesets
+    if: needs.changesets.outputs.has-changesets == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Check out the successful main commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Pin npm
+        run: npm install --global npm@11.16.0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the package
+        run: npm run build
+
+      - name: Verify release inputs
+        run: npm run release:verify
+
+      - name: Verify and publish the exact release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHEETOM_RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          SHEETOM_RELEASE_RUNTIMES: node,bun,deno
+        run: node scripts/publish-release.mjs

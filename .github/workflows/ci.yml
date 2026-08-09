@@ -1,6 +1,12 @@
 name: CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Base commit for release pull request validation
+        required: false
+        type: string
   push:
     branches: [main]
   pull_request:
@@ -13,7 +19,7 @@ permissions:
 
 jobs:
   changeset-policy:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || inputs.base_sha != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -26,7 +32,7 @@ jobs:
       - name: Require a Changeset or explicit classification
         run: npm run changeset:check
         env:
-          SHEETOM_CHANGESET_BASE: ${{ github.event.pull_request.base.sha }}
+          SHEETOM_CHANGESET_BASE: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
           SHEETOM_NO_CHANGESET: ${{ contains(github.event.pull_request.labels.*.name, 'no-changeset') && '1' || '0' }}
 
   quality:
@@ -195,7 +201,7 @@ jobs:
       - run: npm run test:unit
 
   performance:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || inputs.base_sha != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -211,7 +217,9 @@ jobs:
       - run: npm run build
       - run: node scripts/benchmark.mjs --output candidate-benchmark.json
       - name: Check out base commit as a detached worktree
-        run: git worktree add --detach ../sheetom-baseline ${{ github.event.pull_request.base.sha }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
+        run: git worktree add --detach ../sheetom-baseline "$BASE_SHA"
       - run: npm ci
         working-directory: ../sheetom-baseline
       - run: npm run build
