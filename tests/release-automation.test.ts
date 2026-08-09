@@ -6,8 +6,20 @@ import {
   parsePackResult,
   waitForDistTag,
 } from "../scripts/publish-release.mjs";
+import { hasReleaseVersionChange } from "../scripts/detect-release-version-change.mjs";
 
 describe("release automation", () => {
+  it("publishes only when the package version changed", () => {
+    expect(hasReleaseVersionChange(
+      { version: "0.1.0-rc.6" },
+      { version: "0.1.0-rc.5" },
+    )).toBe(true);
+    expect(hasReleaseVersionChange(
+      { version: "0.1.0-rc.5", description: "Updated README" },
+      { version: "0.1.0-rc.5" },
+    )).toBe(false);
+  });
+
   it("requires latest and next to identify the active prerelease before stable", () => {
     expect(assessReleaseChannels({
       "dist-tags": {
