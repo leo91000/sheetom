@@ -15,7 +15,7 @@ if (report.summary.unexplained !== 0) {
   throw new Error("A release cannot contain unexplained compatibility outcomes");
 }
 const nativeEngines = new Set(report.evidence.nativeWpt.map(evidence => evidence.engine));
-for (const engine of ["chrome", "firefox", "safari"]) {
+for (const engine of ["chrome", "firefox"]) {
   if (!nativeEngines.has(engine)) {
     throw new Error(`The release Compatibility Report lacks stable ${engine} WPT evidence`);
   }

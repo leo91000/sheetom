@@ -1,6 +1,6 @@
 {
   "name": "sheetom",
-  "version": "0.0.0",
+  "version": "0.1.0-rc.0",
   "description": "A browser-compatible authoring CSSOM for server-side JavaScript runtimes",
   "keywords": [
     "css",
