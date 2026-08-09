@@ -69,6 +69,23 @@
       ]
     },
     {
+      "fixtureId": "declarations.quoted-font-family",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and WebKit remove unnecessary quotes around a simple font-family while Firefox retains them; SheetOM follows the measured Chromium fallback.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "font-family: Gotham;",
+          "length": 1,
+          "items": ["font-family"]
+        },
+        { "return": "Gotham", "exception": null }
+      ]
+    },
+    {
       "fixtureId": "declarations.custom-property-eof-recovery",
       "decision": "chromium-fallback",
       "rationale": "Chromium retains unclosed custom-property token structures, removes EOF comments, and replaces an escaped EOF with U+FFFD.",

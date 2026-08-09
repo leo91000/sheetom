@@ -46,7 +46,7 @@ const mutation = fc.oneof(
     "var(--token, rgb(1 2 3))",
     "red !important",
   ]),
-  setMutation("font-family", ["serif", '"Gotham"']),
+  setMutation("font-family", ["serif"]),
   setMutation("background-image", [
     "none",
     'url("https://example.com/a:b")',
