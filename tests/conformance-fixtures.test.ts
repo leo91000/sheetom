@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { test } from "vitest";
+import { afterAll, test } from "vitest";
 
 import {
   runOperationFixture,
@@ -37,6 +37,13 @@ const resolutionDocument = JSON.parse(readFileSync(
   path.resolve("compatibility/resolutions/declarations.json"),
   "utf8",
 )) as { resolutions: Resolution[] };
+const recordedObservations: Array<{ fixtureId: string; operations: unknown[] }> = [];
+
+afterAll(() => {
+  const output = process.env.SHEETOM_OPERATION_OBSERVATIONS_PATH;
+  if (!output) return;
+  writeFileSync(output, `${JSON.stringify(recordedObservations, null, 2)}\n`);
+});
 
 for (const fixture of fixtures) {
   test(`SheetOM matches the Compatibility Resolution for ${fixture.id}`, async () => {
@@ -49,6 +56,7 @@ for (const fixture of fixtures) {
       fixture,
       createSheetOMFixtureAdapter(),
     );
+    recordedObservations.push({ fixtureId: fixture.id, operations: observations });
 
     assert.deepEqual(observations, resolution.expected);
   });

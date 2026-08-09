@@ -1,0 +1,17 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.modern-value-capabilities",
+  "operations": [
+    { "op": "constructStyleRule", "target": "$root", "handle": "rule", "args": [".x"] },
+    { "op": "getStyle", "target": "rule", "handle": "style", "args": [] },
+    { "op": "setProperty", "target": "style", "args": ["grid-template-columns", "subgrid"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["grid-template-columns"], "observe": ["return", "exception"] },
+    { "op": "setProperty", "target": "style", "args": ["width", "anchor-size(width)"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["width"], "observe": ["return", "exception"] },
+    { "op": "setProperty", "target": "style", "args": ["color", "contrast-color(red)"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["color"], "observe": ["return", "exception"] },
+    { "op": "setProperty", "target": "style", "args": ["z-index", "calc(1 + 1)"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["z-index"], "observe": ["return", "exception"] }
+  ]
+}

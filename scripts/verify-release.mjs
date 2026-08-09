@@ -42,6 +42,12 @@ for (const adapter of ["sheetom", "chromium", "firefox", "webkit"]) {
   if (evidence.passed !== evidence.total || evidence.total !== report.evidence.operationFixtures.total) {
     throw new Error(`${adapter} Operation Fixture evidence is incomplete`);
   }
+  if (
+    !Array.isArray(evidence.observations) ||
+    evidence.observations.length !== evidence.total
+  ) {
+    throw new Error(`${adapter} Operation Fixture observations are incomplete`);
+  }
 }
 
 const status = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" });

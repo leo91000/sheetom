@@ -1,0 +1,17 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.shorthand-state-sequences",
+  "operations": [
+    { "op": "constructStyleRule", "target": "$root", "handle": "rule", "args": [".x"] },
+    { "op": "getStyle", "target": "rule", "handle": "style", "args": [] },
+    { "op": "setProperty", "target": "style", "args": ["background", "red"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "setProperty", "target": "style", "args": ["background-color", "blue"] },
+    { "op": "removeProperty", "target": "style", "args": ["background-color"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["background"], "observe": ["return", "exception"] },
+    { "op": "setCssText", "target": "style", "args": ["overflow: hidden"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "setProperty", "target": "style", "args": ["overflow-x", "scroll", "important"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyPriority", "target": "style", "args": ["overflow"], "observe": ["return", "exception"] },
+    { "op": "removeProperty", "target": "style", "args": ["overflow-x"], "observe": ["return", "exception", "cssText", "length", "items"] }
+  ]
+}

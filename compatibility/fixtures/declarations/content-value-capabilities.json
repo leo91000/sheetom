@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.content-value-capabilities",
+  "operations": [
+    { "op": "constructStyleRule", "target": "$root", "handle": "rule", "args": [".x"] },
+    { "op": "getStyle", "target": "rule", "handle": "style", "args": [] },
+    { "op": "setProperty", "target": "style", "args": ["content", "var(--x"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["content"], "observe": ["return", "exception"] },
+    { "op": "setProperty", "target": "style", "args": ["content", "\"safe\""] },
+    { "op": "setProperty", "target": "style", "args": ["content", "leader(.)"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "setProperty", "target": "style", "args": ["content", "target-text(url(#x))"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "setProperty", "target": "style", "args": ["content", "target-text(attr(href url))"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "getPropertyValue", "target": "style", "args": ["content"], "observe": ["return", "exception"] }
+  ]
+}
