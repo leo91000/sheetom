@@ -108,11 +108,22 @@ test("typed EOF recovery matches Chromium CSSOM serialization", () => {
 });
 
 test("typed font-family serialization follows the Chromium fallback", () => {
-  const rule = createStyleRule(".x");
-  rule.style.setProperty("font-family", '"Gotham"');
+  const cases = [
+    ['"Gotham"', "Gotham"],
+    ['"A;B', '"A;B"'],
+    ['"Gotham Next', '"Gotham Next"'],
+    ['"A,B', '"A,B"'],
+    ['"A:B', '"A:B"'],
+    ['"A!B', '"A!B"'],
+    ['"A/B', '"A/B"'],
+  ] as const;
 
-  assert.equal(rule.style.getPropertyValue("font-family"), "Gotham");
-  assert.equal(rule.style.cssText, "font-family: Gotham;");
+  for (const [input, expected] of cases) {
+    const rule = createStyleRule(".x");
+    rule.style.setProperty("font-family", input);
+    assert.equal(rule.style.getPropertyValue("font-family"), expected, input);
+    assert.equal(rule.style.cssText, `font-family: ${expected};`, input);
+  }
 });
 
 test("typed values use browser-facing canonical serialization", () => {

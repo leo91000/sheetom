@@ -66,6 +66,7 @@ function recoverTokenText(input: string): {
   closed: string;
   recovered: boolean;
   retained: string;
+  stringValue: string | null;
 } {
   let parseError = false;
   const tokens = tokenize(
@@ -78,12 +79,22 @@ function recoverTokenText(input: string): {
   let retained = "";
   let closed = "";
   let removedComment = false;
+  let stringValue: string | null = null;
+  let significantTokenCount = 0;
 
   for (const token of tokens) {
     if (token[0] === TokenType.EOF) continue;
     if (token[0] === TokenType.Comment) {
       removedComment = true;
       continue;
+    }
+
+    if (token[0] !== TokenType.Whitespace) {
+      significantTokenCount += 1;
+      const details = token[4];
+      if (token[0] === TokenType.String && details && "value" in details) {
+        stringValue = `${details.value}`;
+      }
     }
 
     const text = retainedToken(token);
@@ -110,7 +121,32 @@ function recoverTokenText(input: string): {
     closed: closed.trim(),
     recovered: parseError || removedComment || stack.length > 0,
     retained: retained.trim(),
+    stringValue: significantTokenCount === 1 ? stringValue : null,
   };
+}
+
+const genericFontFamilies = new Set([
+  "serif",
+  "sans-serif",
+  "monospace",
+  "cursive",
+  "fantasy",
+  "system-ui",
+  "ui-serif",
+  "ui-sans-serif",
+  "ui-monospace",
+  "ui-rounded",
+  "math",
+  "fangsong",
+  "emoji",
+]);
+
+function serializeRecoveredFontFamily(value: string): string {
+  const identifier = /^-?(?:[_a-zA-Z\u0080-\u{10ffff}])(?:[-_a-zA-Z0-9\u0080-\u{10ffff}])*$/u;
+  if (identifier.test(value) && !genericFontFamilies.has(value.toLowerCase())) {
+    return value;
+  }
+  return `"${escapedString(value, '"')}"`;
 }
 
 /** Produces browser-facing text without changing acceptance or reparsable output. */
@@ -122,6 +158,9 @@ export function serializeObservableValue({
 }: ObservableValueInput): string {
   const recovered = recoverTokenText(input.trim());
   if (category !== "typed") return recovered.retained;
+  if (name === "font-family" && recovered.stringValue !== null) {
+    return serializeRecoveredFontFamily(recovered.stringValue);
+  }
   if (name === "font-family") return safeValue;
 
   const oracle = new CSSStyleDeclarationOracle();
