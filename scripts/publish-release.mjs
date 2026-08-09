@@ -81,6 +81,30 @@ async function readDistTags(name) {
   return document["dist-tags"] ?? {};
 }
 
+export async function waitForDistTag(
+  name,
+  tag,
+  version,
+  {
+    attempts = 10,
+    intervalMs = 2_000,
+    readTags = readDistTags,
+    wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)),
+  } = {},
+) {
+  let observedVersion;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const distTags = await readTags(name);
+    observedVersion = distTags[tag];
+    if (observedVersion === version) return distTags;
+    if (attempt < attempts - 1) await wait(intervalMs);
+  }
+  throw new Error(
+    `npm dist-tag ${tag} did not point to ${version} after ${attempts} attempts; ` +
+      `last observed ${observedVersion ?? "missing"}`,
+  );
+}
+
 async function waitForPublishedVersion(name, version, integrity) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const published = await readPublishedVersion(name, version);
@@ -216,10 +240,7 @@ async function main() {
     if (published.dist?.integrity !== pack.integrity) {
       throw new Error(`Published integrity mismatch for ${manifest.name}@${version}`);
     }
-    const distTags = await readDistTags(manifest.name);
-    if (distTags[npmTag] !== version) {
-      throw new Error(`npm dist-tag ${npmTag} does not point to ${version}`);
-    }
+    await waitForDistTag(manifest.name, npmTag, version);
     if (release?.isDraft && !dryRun) {
       runInherited("gh", [
         "release",
