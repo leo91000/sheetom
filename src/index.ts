@@ -308,7 +308,7 @@ function normalizeMediaText(value: string): string | null {
   }
 }
 
-function normalizeConditionalPrelude(name: "supports" | "container", value: string): string {
+function normalizeConditionalPrelude(name: "supports", value: string): string {
   try {
     const result = transform({
       filename: `sheetom-${name}.css`,
@@ -321,6 +321,40 @@ function normalizeConditionalPrelude(name: "supports" | "container", value: stri
     return serialized.slice(prefix.length, blockIndex).trim();
   } catch {
     return value;
+  }
+}
+
+interface ContainerPrelude {
+  conditionText: string;
+  name: string;
+  query: string;
+}
+
+function parseContainerPrelude(value: string): ContainerPrelude | null {
+  try {
+    const parsed = csstree.parse(`@container ${value} {}`);
+    const rule = parsed.type === "StyleSheet" ? parsed.children.first : null;
+    if (rule?.type !== "Atrule" || rule.name.toLowerCase() !== "container") return null;
+    if (rule.prelude?.type !== "AtrulePrelude") return null;
+
+    const children = rule.prelude.children.toArray();
+    const first = children[0];
+    const name = first?.type === "Identifier" ? first.name : "";
+    const queryNodes = name === "" ? children : children.slice(1);
+    if (queryNodes.length === 0) return null;
+    const query = queryNodes
+      .map(node => csstree.generate(node))
+      .join(" ")
+      .replace(/:\s*/g, ": ")
+      .replace(/\s*(<=|>=|=|<|>)\s*/g, " $1 ");
+    if (query === "") return null;
+    return {
+      conditionText: name === "" ? query : `${name} ${query}`,
+      name,
+      query,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -536,15 +570,11 @@ export class CSSContainerRule extends CSSConditionRule {
   readonly containerQuery: string;
 
   constructor(conditionText: string) {
-    const normalizedCondition = normalizeConditionalPrelude("container", conditionText);
+    const parsed = parseContainerPrelude(conditionText);
+    const normalizedCondition = parsed?.conditionText ?? conditionText.trim();
     super(0, normalizedCondition);
-    const openingParenthesis = normalizedCondition.indexOf("(");
-    this.containerName = openingParenthesis === -1
-      ? ""
-      : normalizedCondition.slice(0, openingParenthesis).trim();
-    this.containerQuery = openingParenthesis === -1
-      ? normalizedCondition
-      : normalizedCondition.slice(openingParenthesis).trim();
+    this.containerName = parsed?.name ?? "";
+    this.containerQuery = parsed?.query ?? normalizedCondition;
     lockOwnProperties(this, "containerName", "containerQuery");
   }
 

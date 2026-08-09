@@ -93,6 +93,38 @@ test("condition and structural grouping rules expose specialized interfaces", ()
   assert.ok(sheet.cssRules[4] instanceof CSSStartingStyleRule);
 });
 
+test("container rules preserve legacy and functional query syntax", () => {
+  const cases = [
+    {
+      source: "@container card (max-width: 767px) {}",
+      name: "card",
+      query: "(max-width: 767px)",
+    },
+    {
+      source: "@container card style(--theme: dark) {}",
+      name: "card",
+      query: "style(--theme: dark)",
+    },
+    {
+      source: "@container scroll-state(stuck: top) {}",
+      name: "",
+      query: "scroll-state(stuck: top)",
+    },
+  ];
+
+  for (const candidate of cases) {
+    const sheet = parseStyleSheet(candidate.source);
+    const container = sheet.cssRules[0];
+    assert.ok(container instanceof CSSContainerRule);
+    const condition = [candidate.name, candidate.query].filter(Boolean).join(" ");
+    assert.equal(container.conditionText, condition);
+    assert.equal(container.containerName, candidate.name);
+    assert.equal(container.containerQuery, candidate.query);
+    assert.equal(container.cssText, `@container ${condition} { }`);
+    assert.match(sheet.serialize(), new RegExp(candidate.query.replace(/[()]/g, "\\$&")));
+  }
+});
+
 test("style rules expose live nested rules with Chromium insertion behavior", () => {
   const sheet = parseStyleSheet(
     ".outer { color: red; & .inner { color: blue; } }",
