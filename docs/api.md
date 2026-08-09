@@ -83,7 +83,10 @@ read-only until a standards-defined mutable interface is implemented.
 Required WebIDL arguments throw `TypeError`. Parse and hierarchy failures use
 `DOMException` names matching browser APIs. `takeDiagnostics()` drains
 SheetOM-only warnings when diagnostics were enabled; otherwise it returns an
-empty array.
+empty array. `SheetOMDiagnostic.code` is the exported
+`SheetOMDiagnosticCode` string union. The optional queue retains each complete
+input string until it is drained; callers handling untrusted or unusually large
+inputs should disable diagnostics or drain the queue promptly.
 
 SheetOM does not implement DOM association, style-sheet collections, cascade,
 selector matching, resolved/computed values, layout, fetching, or sanitizing.

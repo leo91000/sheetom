@@ -1,3 +1,5 @@
+import type { SheetOMDiagnosticCode } from "../diagnostics.js";
+
 export interface ParsedPropertyValue {
   observableValue: string;
   safeValue: string;
@@ -41,12 +43,8 @@ export interface DeclarationBlockCodec {
   isFourSideShorthand(name: string): boolean;
 }
 
-export type DeclarationDiagnosticCode =
-  | "INVALID_PRIORITY"
-  | "INVALID_PROPERTY_VALUE";
-
 export type ReportDeclarationDiagnostic = (
-  code: DeclarationDiagnosticCode,
+  code: SheetOMDiagnosticCode,
   property: string,
   input: string,
 ) => void;

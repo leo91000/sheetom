@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import {
+  CSSStyleRule,
+  CSSStyleSheet,
+  type SheetOMDiagnosticCode,
+} from "../src/index.js";
 import { createStyleRule } from "./support/create-style-rule.js";
 
 test("an invalid value leaves the declaration unchanged and reports a diagnostic", () => {
@@ -41,6 +45,15 @@ test("an invalid value leaves the declaration unchanged and reports a diagnostic
     },
   );
   assert.deepEqual(sheet.takeDiagnostics(), []);
+});
+
+test("diagnostic codes expose a stable public string union", () => {
+  const codes: SheetOMDiagnosticCode[] = [
+    "INVALID_PRIORITY",
+    "INVALID_PROPERTY_VALUE",
+  ];
+
+  assert.deepEqual(codes, ["INVALID_PRIORITY", "INVALID_PROPERTY_VALUE"]);
 });
 
 test("setProperty rejects embedded priority tokens without rejecting data", () => {
