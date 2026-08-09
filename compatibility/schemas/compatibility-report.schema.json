@@ -7,16 +7,27 @@
   "required": ["schemaVersion", "packageVersion", "baseline", "summary", "evidence", "resolutions"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "enum": [1, 2] },
     "packageVersion": { "type": "string" },
     "baseline": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["wptCommit", "lightningcss", "cssTree", "runtimes", "browsers"],
+      "required": ["wptCommit", "runtimes", "browsers"],
       "properties": {
         "wptCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
         "lightningcss": { "type": "string" },
         "cssTree": { "type": "string" },
+        "syntaxEngineSet": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lightningcss", "cssTree", "cssstyle", "cssTokenizer"],
+          "properties": {
+            "lightningcss": { "type": "string" },
+            "cssTree": { "type": "string" },
+            "cssstyle": { "type": "string" },
+            "cssTokenizer": { "type": "string" }
+          }
+        },
         "runtimes": { "type": "object" },
         "browsers": { "type": "object" }
       }
@@ -80,5 +91,36 @@
       }
     },
     "resolutions": { "type": "array" }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "schemaVersion": { "const": 1 } } },
+      "then": {
+        "properties": {
+          "baseline": {
+            "type": "object",
+            "required": ["lightningcss", "cssTree"],
+            "properties": {
+              "lightningcss": { "type": "string" },
+              "cssTree": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "schemaVersion": { "const": 2 } } },
+      "then": {
+        "properties": {
+          "baseline": {
+            "type": "object",
+            "required": ["syntaxEngineSet"],
+            "properties": {
+              "syntaxEngineSet": { "type": "object" }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

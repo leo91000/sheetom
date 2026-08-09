@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assessReleaseChannels,
   extractReleaseNotes,
   npmTagForVersion,
   parsePackResult,
@@ -7,6 +8,55 @@ import {
 } from "../scripts/publish-release.mjs";
 
 describe("release automation", () => {
+  it("requires latest and next to identify the active prerelease before stable", () => {
+    expect(assessReleaseChannels({
+      "dist-tags": {
+        latest: "0.1.0-rc.0",
+        next: "0.1.0-rc.1",
+      },
+      versions: {
+        "0.1.0-rc.0": {},
+        "0.1.0-rc.1": {},
+      },
+    }, "0.1.0-rc.1")).toEqual({
+      ready: false,
+      reasons: [
+        "latest must point to 0.1.0-rc.1 before the first stable release",
+        "superseded prerelease 0.1.0-rc.0 must be deprecated",
+      ],
+    });
+  });
+
+  it("keeps latest stable while next identifies an active prerelease", () => {
+    expect(assessReleaseChannels({
+      "dist-tags": {
+        latest: "0.1.0",
+        next: "0.2.0-rc.1",
+      },
+      versions: {
+        "0.1.0-rc.1": { deprecated: "Upgrade." },
+        "0.1.0": {},
+        "0.2.0-rc.1": {},
+      },
+    }, "0.2.0-rc.1")).toEqual({ ready: true, reasons: [] });
+  });
+
+  it("requires stable releases to own latest and clear next", () => {
+    expect(assessReleaseChannels({
+      "dist-tags": {
+        latest: "0.1.0",
+        next: "0.1.0-rc.1",
+      },
+      versions: {
+        "0.1.0-rc.1": { deprecated: "Stable is available." },
+        "0.1.0": {},
+      },
+    }, "0.1.0")).toEqual({
+      ready: false,
+      reasons: ["next must be removed when publishing a stable release"],
+    });
+  });
+
   it("routes prereleases to next and stable releases to latest", () => {
     expect(npmTagForVersion("0.1.0-rc.1")).toBe("next");
     expect(npmTagForVersion("0.1.0")).toBe("latest");

@@ -16,6 +16,10 @@ _Avoid_: Final output, source text
 Serialization of the observable Authoring CSSOM state into reparsable stylesheet output, including repair of recoverable syntax. It does not preserve source comments, whitespace, quoting choices, or original bytes.
 _Avoid_: Safe serialization, CSSOM getter text, source-preserving serialization, round-trip formatting
 
+**Measured Substitution Equivalence**:
+The release-baseline evidence that a recovered custom property produces equivalent browser behavior when substituted into named consuming properties, without promising identical computed custom-property text.
+_Avoid_: Computed-value identity, universal semantic equivalence, SheetOM computed style
+
 **Rendering Boundary**:
 The caller-owned point where authored CSS is attached to a document or another environment that can fetch resources or apply browser behavior; SheetOM does not cross or sanitize this boundary.
 _Avoid_: Serialization, stylesheet parsing, import loading
@@ -40,6 +44,10 @@ _Avoid_: Error message, exception name
 One ordered, unique expanded-longhand or exact-case custom-property entry containing its browser-facing text and recovered semantic representation together with its priority and shorthand provenance.
 _Avoid_: Raw declaration, parallel stylesheet entry
 
+**Recovered Token Text**:
+Browser-facing value text produced by CSS token recovery while preserving category-specific omitted EOF structures after lexical effects such as comment removal and escaped-code-point replacement.
+_Avoid_: Raw input, repaired stylesheet value, universal canonical form
+
 **Shorthand Group**:
 Provenance connecting expanded Declaration Records to the accepted shorthand mutation from which they came, allowing getters and serialization to reconstruct a shorthand only while current values and priorities permit it.
 _Avoid_: Shorthand declaration, serialized shorthand
@@ -51,6 +59,10 @@ _Avoid_: Specification property list, Lightning CSS property list
 **Value Gate**:
 The layered decision that accepts or rejects one independently parsed property value using typed parsing, validated substitutions, grammar matching, and recorded browser quirks.
 _Avoid_: Lightning CSS parse result, text heuristic
+
+**Syntax Engine Set**:
+The exact, release-versioned combination of parser and tokenizer dependencies whose joint behavior underpins a Compatibility Baseline.
+_Avoid_: Compatible dependency range, lockfile snapshot, Lightning CSS version
 
 **Live CSSOM Object**:
 A stable JavaScript object whose reads and writes reflect the current shared stylesheet state, including after related objects mutate that state.
@@ -112,6 +124,10 @@ _Avoid_: Updated snapshot, CI artifact, current baseline
 The latest published SheetOM `0.x` minor and its active prereleases, which alone receive fixes before version 1.0.
 _Avoid_: Every published version, maintenance branch, latest commit
 
+**Release Channel**:
+An npm installation track: before the first stable release, `latest` and `next` both identify the active prerelease; afterward, `latest` identifies the active stable release and `next` exists only while an active prerelease exists.
+_Avoid_: Support branch, version range, every dist-tag
+
 **Applicable Conformance Test**:
 A specification or Web Platform Test scenario that exercises Authoring CSSOM without requiring the excluded DOM, cascade, layout, or computed-style capabilities.
 _Avoid_: Every WPT, browser test
@@ -157,5 +173,5 @@ A pinned browser build that executes an Authoring CSSOM scenario to provide empi
 _Avoid_: Source of truth, browser profile
 
 **Reference Workload**:
-The server and build-time authoring scale used to evaluate SheetOM performance: stylesheets up to roughly one megabyte or ten thousand rules and mutation bursts around ten thousand operations.
+The server and build-time authoring scales used to evaluate SheetOM performance: both a large single sheet with concentrated mutations and a publisher-shaped set of shared and page sheets with distributed rules, declarations, grouping, mutations, and final serialization.
 _Avoid_: Animation workload, stress maximum

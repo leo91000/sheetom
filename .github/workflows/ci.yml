@@ -109,13 +109,11 @@ jobs:
       - run: npm ci
       - run: npm run test:unit
 
-  lightningcss-range:
+  syntax-engine-future-signal:
+    if: github.event_name == 'schedule'
+    continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        lightningcss: ["1.33.0", "^1.33.0"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -124,7 +122,7 @@ jobs:
           cache: npm
       - run: npm install --global npm@11.16.0
       - run: npm ci
-      - run: npm install --no-save lightningcss@${{ matrix.lightningcss }}
+      - run: npm install --no-save lightningcss@latest css-tree@latest cssstyle@latest @csstools/css-tokenizer@latest
       - run: npm run test:unit
       - run: npm run build
 

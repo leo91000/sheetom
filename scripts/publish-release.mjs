@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
+import { appendFile, mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,6 +28,51 @@ export function parsePackResult(output) {
     throw new Error("npm pack did not produce exactly one package artifact");
   }
   return result[0];
+}
+
+export function assessReleaseChannels(packageMetadata, version) {
+  const distTags = packageMetadata["dist-tags"] ?? {};
+  const versions = packageMetadata.versions ?? {};
+  const prerelease = version.includes("-");
+  const stableVersions = Object.keys(versions).filter(candidate => !candidate.includes("-"));
+  const reasons = [];
+
+  if (prerelease) {
+    if (distTags.next !== version) {
+      reasons.push(`next must point to active prerelease ${version}`);
+    }
+    if (stableVersions.length === 0) {
+      if (distTags.latest !== version) {
+        reasons.push(`latest must point to ${version} before the first stable release`);
+      }
+    } else {
+      const latest = distTags.latest;
+      if (
+        typeof latest !== "string" ||
+        latest.includes("-") ||
+        !Object.hasOwn(versions, latest) ||
+        versions[latest]?.deprecated
+      ) {
+        reasons.push("latest must point to a non-deprecated stable release");
+      }
+    }
+  } else {
+    if (distTags.latest !== version) {
+      reasons.push(`latest must point to active stable release ${version}`);
+    }
+    if (distTags.next !== undefined) {
+      reasons.push("next must be removed when publishing a stable release");
+    }
+  }
+
+  for (const [candidate, metadata] of Object.entries(versions)) {
+    if (!candidate.includes("-") || candidate === version) continue;
+    if (!metadata?.deprecated) {
+      reasons.push(`superseded prerelease ${candidate} must be deprecated`);
+    }
+  }
+
+  return { ready: reasons.length === 0, reasons };
 }
 
 function run(command, arguments_, options = {}) {
@@ -71,14 +116,34 @@ async function readPublishedVersion(name, version) {
   return response.json();
 }
 
-async function readDistTags(name) {
+async function readPackageMetadata(name) {
   const encodedName = encodeURIComponent(name);
   const response = await fetch(`${registryOrigin}/${encodedName}`);
   if (!response.ok) {
-    throw new Error(`npm registry returned ${response.status} while reading dist-tags`);
+    throw new Error(`npm registry returned ${response.status} while reading package metadata`);
   }
-  const document = await response.json();
+  return response.json();
+}
+
+async function readDistTags(name) {
+  const document = await readPackageMetadata(name);
   return document["dist-tags"] ?? {};
+}
+
+async function reportPendingChannelReconciliation(name, version, reasons) {
+  const lines = [
+    `Release ${name}@${version} is published, but npm channel reconciliation is pending:`,
+    ...reasons.map(reason => `- ${reason}`),
+    "Authenticate with npm on the web, reconcile the channels and deprecations, then rerun the Release workflow.",
+  ];
+  const message = lines.join("\n");
+  console.log(message);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    await appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
+      `## npm channel reconciliation required\n\n${message}\n`,
+    );
+  }
 }
 
 export async function waitForDistTag(
@@ -241,6 +306,22 @@ async function main() {
       throw new Error(`Published integrity mismatch for ${manifest.name}@${version}`);
     }
     await waitForDistTag(manifest.name, npmTag, version);
+    const packageMetadata = await readPackageMetadata(manifest.name);
+    const channelAssessment = assessReleaseChannels(packageMetadata, version);
+    if (!channelAssessment.ready) {
+      if (!release?.isDraft) {
+        throw new Error(
+          `Published GitHub Release ${tag} has invalid npm channels: ` +
+            channelAssessment.reasons.join("; "),
+        );
+      }
+      await reportPendingChannelReconciliation(
+        manifest.name,
+        version,
+        channelAssessment.reasons,
+      );
+      return;
+    }
     if (release?.isDraft && !dryRun) {
       runInherited("gh", [
         "release",
