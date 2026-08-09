@@ -50,7 +50,7 @@ jobs:
       - name: Run selected native WPT
         shell: bash
         run: |
-          npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --log-wptreport="wpt-${{ matrix.browser }}.json" "${{ matrix.browser }}"
+          npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --test-types testharness --log-wptreport="wpt-${{ matrix.browser }}.json" "${{ matrix.browser }}"
 
       - name: Upload native oracle report
         if: always()
@@ -92,7 +92,7 @@ jobs:
       - name: Run selected WPT in stable Safari
         shell: bash
         run: |
-          npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --log-wptreport=wpt-safari.json safari
+          npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --test-types testharness --log-wptreport=wpt-safari.json safari
 
       - name: Upload native Safari report
         if: always()
