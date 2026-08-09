@@ -1,4 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,11 +42,13 @@ const mappingsSchema = await readJson(path.join(compatibilityRoot, "schemas/wpt-
 const reportSchema = await readJson(path.join(compatibilityRoot, "schemas/compatibility-report.schema.json"));
 const resolutionsSchema = await readJson(path.join(compatibilityRoot, "schemas/compatibility-resolutions.schema.json"));
 const valueCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "schemas/value-capability-corpus.schema.json"));
+const shorthandCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-capability-corpus.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
 const validateResolutions = ajv.compile(resolutionsSchema);
 const validateValueCapabilities = ajv.compile(valueCapabilitiesSchema);
+const validateShorthandCapabilities = ajv.compile(shorthandCapabilitiesSchema);
 
 const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");
 validateOrThrow(
@@ -53,6 +56,21 @@ validateOrThrow(
   await readJson(valueCapabilitiesFile),
   valueCapabilitiesFile,
 );
+
+const shorthandCapabilitiesFile = path.join(compatibilityRoot, "shorthand-capabilities.json");
+const shorthandCapabilities = await readJson(shorthandCapabilitiesFile);
+validateOrThrow(
+  validateShorthandCapabilities,
+  shorthandCapabilities,
+  shorthandCapabilitiesFile,
+);
+const propertyManifestFile = path.join(repositoryRoot, "src/chromium-properties.ts");
+const propertyManifestSha256 = createHash("sha256")
+  .update(await readFile(propertyManifestFile))
+  .digest("hex");
+if (shorthandCapabilities.baseline.propertyManifestSha256 !== propertyManifestSha256) {
+  throw new Error("Shorthand Capability Corpus is stale for chromium-properties.ts");
+}
 
 const mappingsFile = path.join(compatibilityRoot, "wpt-mappings.json");
 const mappings = await readJson(mappingsFile);
