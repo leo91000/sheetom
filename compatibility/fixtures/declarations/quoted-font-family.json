@@ -1,0 +1,32 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.quoted-font-family",
+  "provenanceIds": [],
+  "operations": [
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "rule",
+      "args": [".x"]
+    },
+    {
+      "op": "getStyle",
+      "target": "rule",
+      "handle": "style",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["font-family", "\"Gotham\""],
+      "observe": ["return", "exception", "cssText", "length", "items"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["font-family"],
+      "observe": ["return", "exception"]
+    }
+  ]
+}

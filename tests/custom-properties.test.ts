@@ -76,3 +76,15 @@ test("custom-property delimiters survive reparsable serialization", () => {
   assert.equal(reparsedRule.style.getPropertyValue("--foo\\:bar"), "blue");
   assert.equal(reparsed.serialize(), serialized);
 });
+
+test("reassigning a custom property replaces its priority", () => {
+  const rule = createStyleRule(".x");
+  rule.style.setProperty("--token", "red", "important");
+
+  assert.equal(rule.style.getPropertyPriority("--token"), "important");
+
+  rule.style.setProperty("--token", "red");
+
+  assert.equal(rule.style.getPropertyPriority("--token"), "");
+  assert.equal(rule.style.cssText, "--token: red;");
+});

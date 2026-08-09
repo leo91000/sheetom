@@ -35,6 +35,23 @@
       ]
     },
     {
+      "fixtureId": "declarations.modern-color-canonicalization",
+      "decision": "shared",
+      "rationale": "The pinned browser engines expose modern rgb syntax through the shared legacy rgba serialization in CSSStyleDeclaration.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "color: rgba(1, 2, 3, 0.5);",
+          "length": 1,
+          "items": ["color"]
+        },
+        { "return": "rgba(1, 2, 3, 0.5)", "exception": null }
+      ]
+    },
+    {
       "fixtureId": "declarations.typed-eof-recovery",
       "decision": "chromium-fallback",
       "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string.",
@@ -69,6 +86,23 @@
       ]
     },
     {
+      "fixtureId": "declarations.quoted-font-family",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and WebKit remove unnecessary quotes around a simple font-family while Firefox retains them; SheetOM follows the measured Chromium fallback.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "font-family: Gotham;",
+          "length": 1,
+          "items": ["font-family"]
+        },
+        { "return": "Gotham", "exception": null }
+      ]
+    },
+    {
       "fixtureId": "declarations.custom-property-eof-recovery",
       "decision": "chromium-fallback",
       "rationale": "Chromium retains unclosed custom-property token structures, removes EOF comments, and replaces an escaped EOF with U+FFFD.",
@@ -81,6 +115,29 @@
         { "return": "red", "exception": null },
         { "return": { "$type": "undefined" }, "exception": null },
         { "return": "foo�", "exception": null }
+      ]
+    },
+    {
+      "fixtureId": "declarations.custom-property-priority-replacement",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and Firefox replace the existing custom-property priority when setProperty is called without a priority, while WebKit retains !important; SheetOM follows the measured Chromium fallback.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "--token: red !important;",
+          "length": 1,
+          "items": ["--token"]
+        },
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "--token: red;",
+          "length": 1,
+          "items": ["--token"]
+        }
       ]
     },
     {

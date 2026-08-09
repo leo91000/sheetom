@@ -61,6 +61,7 @@
     "test:unit": "vitest run --project unit",
     "test:browser": "vitest run --project browser",
     "test:browser:matrix": "SHEETOM_BROWSER_MATRIX=1 vitest run --project browser",
+    "test:differential": "npm run build && node scripts/browser-differential.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

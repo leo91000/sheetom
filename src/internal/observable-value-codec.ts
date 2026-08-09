@@ -122,10 +122,11 @@ export function serializeObservableValue({
 }: ObservableValueInput): string {
   const recovered = recoverTokenText(input.trim());
   if (category !== "typed") return recovered.retained;
-  if (!recovered.recovered) return input.trim();
   if (name === "font-family") return safeValue;
 
   const oracle = new CSSStyleDeclarationOracle();
   oracle.setProperty(name, recovered.closed);
-  return oracle.getPropertyValue(name) || recovered.closed;
+  const canonicalValue = oracle.getPropertyValue(name);
+  if (canonicalValue !== "") return canonicalValue;
+  return recovered.recovered ? recovered.closed : input.trim();
 }
