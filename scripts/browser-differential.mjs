@@ -133,8 +133,8 @@ async function nativeObservations(page, mutations) {
 
 async function verifyNativeReparsing(pages) {
   const sheet = new CSSStyleSheet();
-  sheet.insertRule(".recovered { color: green; }");
-  sheet.insertRule(".following { color: blue; }");
+  sheet.insertRule(".recovered { color: green; }", 0);
+  sheet.insertRule(".following { color: blue; }", 1);
   const recovered = sheet.cssRules[0];
   if (!(recovered instanceof CSSStyleRule)) throw new TypeError("Expected style rule");
   recovered.style.setProperty("padding", "72px var(--space, var(--space,");
@@ -198,7 +198,11 @@ async function verifyNativeReparsing(pages) {
     assert.equal(result.reparsed.ruleCount, 2, `${engine}: native rule count`);
     assert.equal(result.reparsed.color, "green", `${engine}: recovered color`);
     assert.notEqual(result.reparsed.padding, "", `${engine}: recovered padding`);
-    assert.equal(result.reparsed.followingColor, "blue", `${engine}: following rule`);
+    assert.equal(
+      result.reparsed.followingColor,
+      "rgb(0, 0, 255)",
+      `${engine}: following rule`,
+    );
     for (const substitution of result.substitutions) {
       assert.equal(
         substitution.serialized,
