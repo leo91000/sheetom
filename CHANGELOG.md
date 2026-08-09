@@ -1,5 +1,13 @@
 # sheetom
 
+## 0.1.0-rc.3
+
+### Patch Changes
+
+- 5f7ac68: Accept measured modern value families and classify deferred substitutions from original tokens while rejecting neighboring Chromium-incompatible values atomically.
+- 80cfefb: Expand static shorthands into canonical longhand state so later longhand mutations cannot reactivate historical shorthand values.
+- 491b361: Retain concrete per-engine operation-fixture observations and add shorthand rendering witnesses to the Chromium differential suite.
+
 ## 0.1.0-rc.2
 
 ### Patch Changes

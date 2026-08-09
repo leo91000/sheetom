@@ -9,9 +9,12 @@
     "add-publisher-benchmark",
     "bright-rules-bloom",
     "calm-values-recover",
+    "measure-modern-value-capabilities",
+    "own-static-shorthand-state",
     "pin-syntax-engine-set",
     "preserve-container-preludes",
     "recover-eof-observable-values",
+    "retain-engine-observations",
     "type-diagnostic-codes",
     "verify-native-reparsing"
   ]
