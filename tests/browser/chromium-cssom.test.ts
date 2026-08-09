@@ -136,3 +136,20 @@ chromiumTest("Chromium rule WebIDL constructors and cssText setters are inert", 
   expect(Reflect.set(media, "cssText", "garbage")).toBe(true);
   expect(media.cssText).toBe(before);
 });
+
+chromiumTest("Chromium preserves container feature syntax and structured getters", () => {
+  const cases = [
+    ["card (max-width: 767px)", "card", "(max-width: 767px)"],
+    ["card style(--theme: dark)", "card", "style(--theme: dark)"],
+    ["scroll-state(stuck: top)", "", "scroll-state(stuck: top)"],
+  ] as const;
+
+  for (const [condition, name, query] of cases) {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(`@container ${condition} {}`);
+    const rule = sheet.cssRules[0] as CSSContainerRule;
+    expect(rule.conditionText).toBe(condition);
+    expect(rule.containerName).toBe(name);
+    expect(rule.containerQuery).toBe(query);
+  }
+});
