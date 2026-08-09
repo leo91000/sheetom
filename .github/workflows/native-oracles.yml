@@ -62,7 +62,7 @@ jobs:
 
   stable-safari-release-oracle:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 45
 
     steps:
@@ -90,6 +90,7 @@ jobs:
           sudo safaridriver --enable
 
       - name: Run selected WPT in stable Safari
+        timeout-minutes: 10
         shell: bash
         run: |
           npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --test-types testharness --log-wptreport=wpt-safari.json safari
