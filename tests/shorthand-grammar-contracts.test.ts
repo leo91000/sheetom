@@ -18,9 +18,8 @@ test("every runtime codec has four to eight reviewed grammar branches", () => {
   const runtimeCodecs = new Set(
     getStaticShorthandDefinitions()
       .map(definition => definition.codec)
-      .filter(codec => codec !== "legacy-cssstyle"),
   );
-  assert.equal(runtimeCodecs.size, 23);
+  assert.equal(runtimeCodecs.size, 24);
   assert.deepEqual(
     new Set(contracts.profiles.map(profile => profile.codec)),
     runtimeCodecs,

@@ -95,7 +95,7 @@ validateOrThrow(
   shorthandGrammarObservationsFile,
 );
 const grammarCases = shorthandGrammarContracts.profiles.flatMap(profile => profile.cases);
-assert.equal(new Set(shorthandGrammarContracts.profiles.map(profile => profile.codec)).size, 23);
+assert.equal(new Set(shorthandGrammarContracts.profiles.map(profile => profile.codec)).size, 24);
 assert.equal(new Set(grammarCases.map(grammarCase => grammarCase.id)).size, grammarCases.length);
 assert.deepEqual(
   shorthandGrammarObservations.cases.map(observation => observation.id),

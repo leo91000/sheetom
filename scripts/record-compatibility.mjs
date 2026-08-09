@@ -26,8 +26,8 @@ const shorthandGrammarCases = shorthandGrammarContracts.profiles.flatMap(
   profile => profile.cases,
 );
 if (
-  shorthandGrammarContracts.profiles.length !== 23 ||
-  shorthandGrammarCases.length !== 92 ||
+  shorthandGrammarContracts.profiles.length !== 24 ||
+  shorthandGrammarCases.length !== 96 ||
   shorthandGrammarObservations.cases.length !== shorthandGrammarCases.length
 ) {
   throw new Error("Shorthand Grammar Branch evidence is incomplete");
@@ -163,7 +163,6 @@ const report = {
     syntaxEngineSet: {
       lightningcss: packageLock.packages["node_modules/lightningcss"].version,
       cssTree: packageLock.packages["node_modules/css-tree"].version,
-      cssstyle: packageLock.packages["node_modules/cssstyle"].version,
       cssTokenizer: packageLock.packages["node_modules/@csstools/css-tokenizer"].version,
     },
     runtimes: {

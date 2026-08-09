@@ -11,7 +11,7 @@
     "userAgent": { "type": "string", "minLength": 1 },
     "cases": {
       "type": "array",
-      "minItems": 92,
+      "minItems": 96,
       "items": {
         "type": "object",
         "additionalProperties": false,

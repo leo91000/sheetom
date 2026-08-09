@@ -20,7 +20,7 @@
         "syntaxEngineSet": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["lightningcss", "cssTree", "cssstyle", "cssTokenizer"],
+          "required": ["lightningcss", "cssTree", "cssTokenizer"],
           "properties": {
             "lightningcss": { "type": "string" },
             "cssTree": { "type": "string" },
@@ -94,9 +94,9 @@
           "additionalProperties": false,
           "required": ["profiles", "passed", "total", "contractsSha256", "observationsSha256"],
           "properties": {
-            "profiles": { "const": 23 },
-            "passed": { "const": 92 },
-            "total": { "const": 92 },
+            "profiles": { "enum": [23, 24] },
+            "passed": { "enum": [92, 96] },
+            "total": { "enum": [92, 96] },
             "contractsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
             "observationsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
           }

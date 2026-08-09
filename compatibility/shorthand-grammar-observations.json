@@ -1438,6 +1438,102 @@
       "cssText": ""
     },
     {
+      "id": "grammar.flex.grow",
+      "accepted": true,
+      "items": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ],
+      "longhands": [
+        {
+          "name": "flex-grow",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "flex-shrink",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "flex-basis",
+          "value": "0%",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2 1 0%",
+      "priority": "",
+      "cssText": "flex: 2 1 0%;"
+    },
+    {
+      "id": "grammar.flex.basis",
+      "accepted": true,
+      "items": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ],
+      "longhands": [
+        {
+          "name": "flex-grow",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "flex-shrink",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "flex-basis",
+          "value": "10px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1 1 10px",
+      "priority": "",
+      "cssText": "flex: 1 1 10px;"
+    },
+    {
+      "id": "grammar.flex.full",
+      "accepted": true,
+      "items": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ],
+      "longhands": [
+        {
+          "name": "flex-grow",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "flex-shrink",
+          "value": "3",
+          "priority": ""
+        },
+        {
+          "name": "flex-basis",
+          "value": "10px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2 3 10px",
+      "priority": "",
+      "cssText": "flex: 2 3 10px;"
+    },
+    {
+      "id": "grammar.flex.extra-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
       "id": "grammar.flex-flow.direction",
       "accepted": true,
       "items": [

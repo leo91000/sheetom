@@ -64,7 +64,6 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     assert.deepEqual(report.baseline.syntaxEngineSet, {
       lightningcss: "1.33.0",
       cssTree: "3.2.1",
-      cssstyle: "6.2.0",
       cssTokenizer: "4.0.0",
     });
     assert.deepEqual(
@@ -89,7 +88,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         passed: report.evidence.shorthandGrammar.passed,
         total: report.evidence.shorthandGrammar.total,
       },
-      { profiles: 23, passed: 92, total: 92 },
+      { profiles: 24, passed: 96, total: 96 },
     );
     assert.match(report.evidence.shorthandGrammar.contractsSha256, /^[0-9a-f]{64}$/);
     assert.match(report.evidence.shorthandGrammar.observationsSha256, /^[0-9a-f]{64}$/);

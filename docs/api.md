@@ -68,8 +68,8 @@ pending-substitution provenance so recovered values such as
 them. Mutating one longhand breaks shorthand reconstruction.
 
 The supported-property manifest contains 129 multi-longhand shorthands. Every
-one has a concrete Chromium breadth seed and mutation probe; the 23 private
-codec profiles additionally have 92 reviewed grammar-branch cases. This is an
+one has a concrete Chromium breadth seed and mutation probe; the 24 private
+codec profiles additionally have 96 reviewed grammar-branch cases. This is an
 exact, release-gated compatibility baseline for the named cases, not a universal
 promise that unmeasured future shorthand grammar is already supported. A value
 accepted by the value gate but not expandable by its codec is an atomic no-op

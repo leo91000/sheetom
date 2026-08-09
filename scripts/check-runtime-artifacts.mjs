@@ -4,11 +4,19 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoot = path.join(repositoryRoot, "src");
+const packageManifest = JSON.parse(await readFile(
+  path.join(repositoryRoot, "package.json"),
+  "utf8",
+));
 const maximumBundleBytes = 225_000;
 const bundlePaths = [
   path.join(repositoryRoot, "dist/index.js"),
   path.join(repositoryRoot, "dist/index.cjs"),
 ];
+
+if (Object.hasOwn(packageManifest.dependencies ?? {}, "cssstyle")) {
+  throw new Error("cssstyle must not be a SheetOM runtime dependency");
+}
 
 async function sourceFiles(directory) {
   const files = [];

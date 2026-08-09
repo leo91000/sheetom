@@ -20,11 +20,10 @@ After the first stable release, use `npm install sheetom@next` to opt into an
 active prerelease. Until then, the `latest` and `next` dist-tags both identify
 the active release candidate.
 
-`lightningcss`, `css-tree`, `cssstyle`, and `@csstools/css-tokenizer` are pinned
-regular dependencies; consumers do not need to install peer dependencies or
-globals. SheetOM validates values before using `cssstyle` as a tested helper
-inside observable-value and shorthand codecs. It never treats `cssstyle` as
-the authority that makes a value valid.
+`lightningcss`, `css-tree`, and `@csstools/css-tokenizer` are pinned regular
+dependencies; consumers do not need to install peer dependencies or globals.
+SheetOM owns observable-value serialization and shorthand expansion rather
+than delegating CSSOM state to a browser-DOM emulation package.
 
 Node.js 22 and 24 are tested on Linux x64, Windows x64, and macOS arm64. Bun
 1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
@@ -123,12 +122,12 @@ retain separate provenance until a longhand mutation breaks their group.
 
 The Chromium 151 compatibility baseline covers all 129 manifested
 multi-longhand shorthands. Grammar depth is a finite reviewed contract rather
-than a claim to implement every future CSS production: 23 codec profiles
-currently carry 92 positive and neighboring-negative branch cases, including
+than a claim to implement every future CSS production: 24 codec profiles
+currently carry 96 positive and neighboring-negative branch cases, including
 cardinality, slash and comma lists, compound optional keywords, mutation
 atomicity, and reparsable round-trips. CI reprobes those cases against the
 pinned Chromium engine, and a release is blocked unless all 129 breadth seeds
-and all 92 reviewed branches pass exactly. The contracts and browser
+and all 96 reviewed branches pass exactly. The contracts and browser
 observations ship as audit evidence but are never imported as runtime value
 authority.
 
