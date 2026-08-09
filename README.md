@@ -1,24 +1,30 @@
 # SheetOM
 
 SheetOM is a mutable, browser-shaped CSS authoring object model for Node.js,
-Bun, and Deno. It uses Lightning CSS for property parsing and canonicalization
-while keeping declaration state and CSSOM serialization under its own control.
+Bun, and Deno. It uses a pinned set of CSS syntax engines, including Lightning
+CSS, for property parsing and canonicalization while keeping declaration state
+and CSSOM serialization under its own control.
 
 It is intended for server-side stylesheet editing and serialization. It does
 not implement the DOM, cascade, selector matching, layout, or computed styles.
 
 ## Install
 
-Install the current release candidate from the `next` dist-tag:
+Install the active release:
 
 ```sh
-npm install sheetom@next
+npm install sheetom
 ```
 
-`lightningcss`, `css-tree`, `cssstyle`, and the CSS Tools tokenizer are regular
-dependencies; consumers do not need to install peer dependencies or globals.
-SheetOM validates values before using `cssstyle` only as a static shorthand
-expander, and uses the tokenizer for lossless recovered-rule spans.
+After the first stable release, use `npm install sheetom@next` to opt into an
+active prerelease. Until then, the `latest` and `next` dist-tags both identify
+the active release candidate.
+
+`lightningcss`, `css-tree`, `cssstyle`, and `@csstools/css-tokenizer` are pinned
+regular dependencies; consumers do not need to install peer dependencies or
+globals. SheetOM validates values before using `cssstyle` as a tested helper
+inside observable-value and shorthand codecs. It never treats `cssstyle` as
+the authority that makes a value valid.
 
 Node.js 22 and 24 are tested on Linux x64, Windows x64, and macOS arm64. Bun
 1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
@@ -42,7 +48,7 @@ sheet.replaceSync(".card { width: 12px; }");
 const rule = sheet.cssRules[0];
 if (rule instanceof CSSStyleRule) {
   rule.style.setProperty("padding", "8px 16px");
-  Reflect.set(rule.style, "backgroundColor", "rebeccapurple");
+  rule.style.setProperty("background-color", "rebeccapurple");
 }
 
 console.log(sheet.serialize());
@@ -53,6 +59,11 @@ const existing = parseStyleSheet('@import "theme.css"; .card { color: red; }', {
 console.log(existing.cssRules.length); // 2
 ```
 
+`setProperty()` is the standard, fully typed way to set a declaration,
+especially when its name is dynamic. Browser-style camelCase assignments such
+as `rule.style.backgroundColor = "rebeccapurple"` work at runtime, but the
+current TypeScript declarations do not enumerate every named CSS property.
+
 Constructed sheets follow browser replacement behavior and strip `@import`.
 `parseStyleSheet` creates a regular authoring sheet and preserves valid imports
 without loading them.
@@ -60,15 +71,18 @@ without loading them.
 ## Recovered values and reparsable serialization
 
 SheetOM distinguishes browser-facing CSSOM text from reparsable stylesheet
-output. Chromium
-accepts some values using CSS Syntax end-of-input recovery while preserving the
-unclosed input in `getPropertyValue()` and `cssText`:
+output. Chromium accepts some values using CSS Syntax end-of-input recovery
+while preserving the unclosed input in `getPropertyValue()` and `cssText`:
 
 ```ts
 const sheet = new CSSStyleSheet();
 sheet.insertRule(".card {}");
 
-const rule = sheet.cssRules[0] as CSSStyleRule;
+const rule = sheet.cssRules[0];
+if (!(rule instanceof CSSStyleRule)) {
+  throw new TypeError("Expected a style rule");
+}
+
 rule.style.setProperty("padding", "72px var(--space, var(--space,");
 
 rule.style.getPropertyValue("padding");
@@ -107,12 +121,12 @@ getters and `cssText` are synthesized only while the complete current longhand
 set has compatible values and priorities; genuinely deferred substitutions
 retain separate provenance until a longhand mutation breaks their group.
 
-The Chromium 151 compatibility baseline has exhaustive property breadth for all
-129 manifested multi-longhand shorthands. Grammar depth is a finite reviewed
-contract rather than a claim to implement every future CSS production: 23 codec
-profiles currently carry 92 positive and neighboring-negative branch cases,
-including cardinality, slash and comma lists, compound optional keywords,
-mutation atomicity, and safe round-trips. CI reprobes those cases against the
+The Chromium 151 compatibility baseline covers all 129 manifested
+multi-longhand shorthands. Grammar depth is a finite reviewed contract rather
+than a claim to implement every future CSS production: 23 codec profiles
+currently carry 92 positive and neighboring-negative branch cases, including
+cardinality, slash and comma lists, compound optional keywords, mutation
+atomicity, and reparsable round-trips. CI reprobes those cases against the
 pinned Chromium engine, and a release is blocked unless all 129 breadth seeds
 and all 92 reviewed branches pass exactly. The contracts and browser
 observations ship as audit evidence but are never imported as runtime value
@@ -160,8 +174,9 @@ advancing the Compatibility Baseline.
 
 SheetOM does not fetch `@import` targets or URLs and does not execute CSS. It is
 also not a sanitizer: valid authored URLs, imports, and browser features remain
-in serialized output. Callers must sanitize untrusted output before attaching
-it to a document or another rendering environment.
+in serialized output. Callers must apply their own content and resource policy
+before attaching untrusted output to a document or another rendering
+environment.
 
 The browser-shaped interface has no implicit input-size, nesting-depth, or
 mutation-count limits. Isolate or bound untrusted workloads according to your
@@ -171,25 +186,27 @@ vulnerability reporting and supported-release policy.
 ## Development
 
 ```sh
-npm test
-npm run typecheck
-npm run build
-npm run conformance:validate
+npm run check
+npm run test:browser:matrix
+npm run test:differential
 npm run conformance:drift
 npm run fuzz
 npm run benchmark
-npm run pack:test
 ```
 
-`npm test` runs unit, deterministic fuzz, and local Chromium projects. Use
-`npm run test:browser:matrix` on a machine with all Playwright dependencies to
-run Chromium, Firefox, and WebKit. The browser matrix also runs a deterministic,
-grammar-oriented declaration differential; any minimized mismatch must become
-an immutable Operation Fixture with an explicit Compatibility Resolution.
-`npm run docs:build` generates the TypeDoc reference under `site/api`. The benchmark gates both a 10,000-rule stress case
-and a publisher-shaped reference workload with one shared stylesheet, 20 page
-stylesheets, nested layers/media, distributed mutations, and two idempotent
-serialization passes.
+`npm run check` covers types, public unit behavior, conformance documents, API
+documentation, build output, runtime artifacts, and the packed-package smoke
+test. Use `npm run test:browser:matrix` on a machine with all Playwright
+dependencies to run Chromium, Firefox, and WebKit. CI separately runs
+`npm run test:differential`, a deterministic, grammar-oriented declaration
+differential with native-browser reparsing witnesses. Any minimized mismatch
+must become an immutable Operation Fixture with an explicit Compatibility
+Resolution.
+
+`npm run docs:build` generates the TypeDoc reference under `site/api`. The
+benchmark gates both a 10,000-rule stress case and a publisher-shaped reference
+workload with one shared stylesheet, 20 page stylesheets, nested layers/media,
+distributed mutations, and two idempotent serialization passes.
 
 Only the latest published `0.x` minor and its active prereleases receive fixes
 before 1.0. During `0.x`, observable compatibility corrections and interface
