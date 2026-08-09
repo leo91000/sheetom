@@ -1147,9 +1147,20 @@ function backgroundLayerPresence(value: string): BackgroundLayerPresence[] {
 function applyBackgroundOmissions(
   values: ReadonlyMap<string, string>,
   input: string,
+  concreteDefaults: boolean,
 ): ReadonlyMap<string, string> | null {
   const presence = backgroundLayerPresence(input);
   const result = new Map(values);
+  const initialValues: Readonly<Record<string, string>> = {
+    "background-image": "none",
+    "background-position-x": "0%",
+    "background-position-y": "0%",
+    "background-size": "auto",
+    "background-repeat": "repeat",
+    "background-attachment": "scroll",
+    "background-origin": "padding-box",
+    "background-clip": "border-box",
+  };
   const flags: Readonly<Record<string, (layer: BackgroundLayerPresence) => boolean>> = {
     "background-image": layer => layer.image,
     "background-position-x": layer => layer.position,
@@ -1168,17 +1179,25 @@ function applyBackgroundOmissions(
     result.set(
       property,
       components.map((component, index) =>
-        presence[index] && isPresent(presence[index]) ? component : "initial",
+        presence[index] && isPresent(presence[index])
+          ? component
+          : concreteDefaults ? initialValues[property] ?? component : "initial",
       ).join(", "),
     );
   }
-  if (!presence[presence.length - 1]?.color) result.set("background-color", "initial");
+  if (!presence[presence.length - 1]?.color) {
+    result.set(
+      "background-color",
+      concreteDefaults ? "rgba(0, 0, 0, 0)" : "initial",
+    );
+  }
   return result;
 }
 
 function expandLayeredTypedValue(
   name: string,
   parsed: AcceptedPropertyValue,
+  safe = false,
 ): ReadonlyMap<string, string> | null {
   if (name !== "background" && name !== "mask") return null;
   const value = acceptedTypedValue(parsed, [name]);
@@ -1228,7 +1247,8 @@ function expandLayeredTypedValue(
       ["background-clip", clip],
       ["background-color", lastLayer.color],
     ]);
-    return serialized ? applyBackgroundOmissions(serialized, parsed.observableValue) : null;
+    const source = safe ? parsed.safeValue : parsed.observableValue;
+    return serialized ? applyBackgroundOmissions(serialized, source, safe) : null;
   }
 
   const image = fields("image");
@@ -1307,10 +1327,11 @@ function typedRecords(
     expandBorderImageTypedValue(name, parsed) ??
     (name === "grid-template" ? expandGridTemplateTypedValue(parsed) : null);
   if (!values) return null;
+  const safeValues = expandLayeredTypedValue(name, parsed, true) ?? values;
   return [...values].map(([longhand, value]) => ({
     name: longhand,
     observableValue: value,
-    safeValue: value,
+    safeValue: safeValues.get(longhand) ?? value,
     pendingSubstitution: false,
     important,
     pendingGroup: null,

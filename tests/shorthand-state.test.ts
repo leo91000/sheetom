@@ -84,7 +84,7 @@ test("removing an overridden background longhand cannot reactivate the shorthand
 
   assert.equal(rule.style.length, 9);
   assert.equal(rule.style.getPropertyValue("background"), "red");
-  assert.equal(rule.style.getPropertyValue("background-image"), "initial");
+  assert.equal(rule.style.getPropertyValue("background-image"), "none");
   assert.equal(rule.style.cssText, "background: red;");
 
   rule.style.setProperty("background-color", "blue");
@@ -95,6 +95,27 @@ test("removing an overridden background longhand cannot reactivate the shorthand
   assert.equal(rule.style.getPropertyValue("background-color"), "");
   assert.equal(rule.style.length, 8);
   assert.equal(rule.style.cssText.includes("background: red"), false);
+});
+
+test("removed layered background longhands leave valid concrete defaults", () => {
+  const sheet = new CSSStyleSheet();
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty(
+    "background",
+    "linear-gradient(red, blue) center / cover no-repeat, green",
+  );
+  rule.style.setProperty("background-color", "blue");
+  rule.style.removeProperty("background-color");
+
+  assert.equal(
+    rule.style.getPropertyValue("background-image"),
+    "linear-gradient(red, #00f), none",
+  );
+  assert.equal(rule.style.getPropertyValue("background-position-x"), "center, 0%");
+  assert.doesNotMatch(sheet.serialize(), /, initial/);
 });
 
 test("static shorthand families own only their expanded longhand state", () => {
