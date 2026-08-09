@@ -1,0 +1,56 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.custom-property-eof-recovery",
+  "provenanceIds": [],
+  "operations": [
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "rule",
+      "args": [".x"]
+    },
+    {
+      "op": "getStyle",
+      "target": "rule",
+      "handle": "style",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["--x", "\"hello"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["--x"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["--x", "red/*comment"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["--x"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["--x", "foo\\"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["--x"],
+      "observe": ["return", "exception"]
+    }
+  ]
+}

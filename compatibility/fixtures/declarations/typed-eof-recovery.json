@@ -1,0 +1,62 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.typed-eof-recovery",
+  "provenanceIds": [],
+  "operations": [
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "fontRule",
+      "args": [".font"]
+    },
+    {
+      "op": "getStyle",
+      "target": "fontRule",
+      "handle": "fontStyle",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "fontStyle",
+      "args": ["font-family", "\"Gotham"],
+      "observe": ["return", "exception", "cssText", "length", "items"]
+    },
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "colorRule",
+      "args": [".color"]
+    },
+    {
+      "op": "getStyle",
+      "target": "colorRule",
+      "handle": "colorStyle",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "colorStyle",
+      "args": ["color", "red/*comment"],
+      "observe": ["return", "exception", "cssText", "length", "items"]
+    },
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "widthRule",
+      "args": [".width"]
+    },
+    {
+      "op": "getStyle",
+      "target": "widthRule",
+      "handle": "widthStyle",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "widthStyle",
+      "args": ["width", "calc(1px"],
+      "observe": ["return", "exception", "cssText", "length", "items"]
+    }
+  ]
+}
