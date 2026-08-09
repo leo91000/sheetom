@@ -60,7 +60,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
-    assert.equal(report.schemaVersion, 3);
+    assert.equal(report.schemaVersion, 4);
     assert.deepEqual(report.baseline.syntaxEngineSet, {
       lightningcss: "1.33.0",
       cssTree: "3.2.1",
@@ -83,6 +83,16 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       ["sheetom", "chromium", "firefox", "webkit"],
     );
     assert.match(report.evidence.operationFixtures.sha256, /^[0-9a-f]{64}$/);
+    assert.deepEqual(
+      {
+        profiles: report.evidence.shorthandGrammar.profiles,
+        passed: report.evidence.shorthandGrammar.passed,
+        total: report.evidence.shorthandGrammar.total,
+      },
+      { profiles: 23, passed: 92, total: 92 },
+    );
+    assert.match(report.evidence.shorthandGrammar.contractsSha256, /^[0-9a-f]{64}$/);
+    assert.match(report.evidence.shorthandGrammar.observationsSha256, /^[0-9a-f]{64}$/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

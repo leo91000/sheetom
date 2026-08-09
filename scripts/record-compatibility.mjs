@@ -12,6 +12,33 @@ const wptMappings = JSON.parse(await readFile(
   path.join(compatibilityRoot, "wpt-mappings.json"),
   "utf8",
 ));
+const shorthandGrammarContractsBytes = await readFile(
+  path.join(compatibilityRoot, "shorthand-grammar-contracts.json"),
+);
+const shorthandGrammarObservationsBytes = await readFile(
+  path.join(compatibilityRoot, "shorthand-grammar-observations.json"),
+);
+const shorthandGrammarContracts = JSON.parse(shorthandGrammarContractsBytes.toString("utf8"));
+const shorthandGrammarObservations = JSON.parse(
+  shorthandGrammarObservationsBytes.toString("utf8"),
+);
+const shorthandGrammarCases = shorthandGrammarContracts.profiles.flatMap(
+  profile => profile.cases,
+);
+if (
+  shorthandGrammarContracts.profiles.length !== 23 ||
+  shorthandGrammarCases.length !== 92 ||
+  shorthandGrammarObservations.cases.length !== shorthandGrammarCases.length
+) {
+  throw new Error("Shorthand Grammar Branch evidence is incomplete");
+}
+for (let index = 0; index < shorthandGrammarCases.length; index += 1) {
+  const grammarCase = shorthandGrammarCases[index];
+  const observation = shorthandGrammarObservations.cases[index];
+  if (observation?.id !== grammarCase?.id || observation.accepted !== grammarCase.accepted) {
+    throw new Error(`Shorthand Grammar Branch evidence drifted at ${grammarCase?.id}`);
+  }
+}
 const playwrightBrowsers = JSON.parse(await readFile(
   path.join(repositoryRoot, "node_modules/playwright-core/browsers.json"),
   "utf8",
@@ -129,7 +156,7 @@ for (const reportArgument of reportArguments) {
 }
 const report = {
   $schema: "../schemas/compatibility-report.schema.json",
-  schemaVersion: 3,
+  schemaVersion: 4,
   packageVersion: packageManifest.version,
   baseline: {
     wptCommit: wptLock.commit,
@@ -162,6 +189,17 @@ const report = {
       total: resolutions.length,
       sha256: createHash("sha256").update(operationReportBytes).digest("hex"),
       adapters: operationFixtureAdapters
+    },
+    shorthandGrammar: {
+      profiles: shorthandGrammarContracts.profiles.length,
+      passed: shorthandGrammarCases.length,
+      total: shorthandGrammarCases.length,
+      contractsSha256: createHash("sha256")
+        .update(shorthandGrammarContractsBytes)
+        .digest("hex"),
+      observationsSha256: createHash("sha256")
+        .update(shorthandGrammarObservationsBytes)
+        .digest("hex")
     },
     nativeWpt
   },

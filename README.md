@@ -107,6 +107,17 @@ getters and `cssText` are synthesized only while the complete current longhand
 set has compatible values and priorities; genuinely deferred substitutions
 retain separate provenance until a longhand mutation breaks their group.
 
+The Chromium 151 compatibility baseline has exhaustive property breadth for all
+129 manifested multi-longhand shorthands. Grammar depth is a finite reviewed
+contract rather than a claim to implement every future CSS production: 23 codec
+profiles currently carry 92 positive and neighboring-negative branch cases,
+including cardinality, slash and comma lists, compound optional keywords,
+mutation atomicity, and safe round-trips. CI reprobes those cases against the
+pinned Chromium engine, and a release is blocked unless all 129 breadth seeds
+and all 92 reviewed branches pass exactly. The contracts and browser
+observations ship as audit evidence but are never imported as runtime value
+authority.
+
 ## API scope
 
 - `CSSStyleSheet`, live `CSSRuleList`, `CSSRule`, and `MediaList`
@@ -131,6 +142,11 @@ Modern or implementation-dependent value grammar is bounded by the checked-in
 [`Value Capability Corpus`](./compatibility/value-capabilities.json). Each
 measured family includes accepted and rejected neighboring cases; browser
 probing occurs only during conformance work and never at runtime.
+
+The corresponding shorthand depth evidence is split between the reviewed
+[`Grammar Branch Contracts`](./compatibility/shorthand-grammar-contracts.json)
+and the generated
+[`Chromium observations`](./compatibility/shorthand-grammar-observations.json).
 
 See [the behavioral API reference](./docs/api.md) for return, exception,
 identity, and detachment contracts. Maintainers use the separately reviewed
