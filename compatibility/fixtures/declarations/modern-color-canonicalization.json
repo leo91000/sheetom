@@ -1,0 +1,32 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.modern-color-canonicalization",
+  "provenanceIds": [],
+  "operations": [
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "rule",
+      "args": [".x"]
+    },
+    {
+      "op": "getStyle",
+      "target": "rule",
+      "handle": "style",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", "rgb(1 2 3 / 50%)"],
+      "observe": ["return", "exception", "cssText", "length", "items"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["color"],
+      "observe": ["return", "exception"]
+    }
+  ]
+}

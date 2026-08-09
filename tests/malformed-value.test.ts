@@ -115,6 +115,14 @@ test("typed font-family serialization follows the Chromium fallback", () => {
   assert.equal(rule.style.cssText, "font-family: Gotham;");
 });
 
+test("typed values use browser-facing canonical serialization", () => {
+  const rule = createStyleRule(".x");
+  rule.style.setProperty("color", "rgb(1 2 3 / 50%)");
+
+  assert.equal(rule.style.getPropertyValue("color"), "rgba(1, 2, 3, 0.5)");
+  assert.equal(rule.style.cssText, "color: rgba(1, 2, 3, 0.5);");
+});
+
 test("retained EOF token text applies lexical recovery without closing blocks", () => {
   const cases = [
     ["--escaped", "foo\\", "foo�"],

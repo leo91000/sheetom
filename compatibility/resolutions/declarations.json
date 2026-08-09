@@ -35,6 +35,23 @@
       ]
     },
     {
+      "fixtureId": "declarations.modern-color-canonicalization",
+      "decision": "shared",
+      "rationale": "The pinned browser engines expose modern rgb syntax through the shared legacy rgba serialization in CSSStyleDeclaration.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "color: rgba(1, 2, 3, 0.5);",
+          "length": 1,
+          "items": ["color"]
+        },
+        { "return": "rgba(1, 2, 3, 0.5)", "exception": null }
+      ]
+    },
+    {
       "fixtureId": "declarations.typed-eof-recovery",
       "decision": "chromium-fallback",
       "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string.",
