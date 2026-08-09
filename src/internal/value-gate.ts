@@ -10,6 +10,7 @@ import type {
   ParsedPropertyValue,
 } from "./declaration-block.js";
 import { serializeObservableValue } from "./observable-value-codec.js";
+import { matchesShorthandCapability } from "./shorthand-capabilities.js";
 import {
   matchesMeasuredValueCapability,
   rejectsMeasuredValueCapability,
@@ -386,7 +387,8 @@ export function parsePropertyValue(
       !name.startsWith("--") &&
       !pendingSubstitution &&
       !typedOrdinaryValue &&
-      !matchesMeasuredValueCapability(name, observableValue)
+      !matchesMeasuredValueCapability(name, observableValue) &&
+      !matchesShorthandCapability(name, observableValue)
     ) {
       return null;
     }

@@ -10,6 +10,11 @@ import type {
   AcceptedPropertyValue,
   DeclarationRecord,
 } from "./declaration-block.js";
+import {
+  getShorthandCapabilityItems,
+  getMatchingShorthandCapabilityInput,
+  matchesShorthandCapability,
+} from "./shorthand-capabilities.js";
 
 const fourSideShorthandNames = new Set([
   "padding",
@@ -72,6 +77,98 @@ const borderLikeShorthandNames = new Set([
   "-webkit-border-start",
   "-webkit-column-rule",
 ]);
+const explicitNoneBorderStyleNames = new Set([
+  "-webkit-border-after",
+  "-webkit-border-before",
+  "-webkit-border-end",
+  "-webkit-border-start",
+  "border-block-end",
+  "border-block-start",
+  "border-inline-end",
+  "border-inline-start",
+]);
+const uniformValueShorthandNames = new Set([
+  "-webkit-border-radius",
+  "-webkit-columns",
+  "-webkit-mask-position",
+  "animation-range",
+  "background-position",
+  "border-block-color",
+  "border-block-style",
+  "border-block-width",
+  "border-color",
+  "border-inline-color",
+  "border-inline-style",
+  "border-inline-width",
+  "border-radius",
+  "border-spacing",
+  "border-style",
+  "border-width",
+  "column-rule-inset",
+  "column-rule-inset-cap",
+  "column-rule-inset-end",
+  "column-rule-inset-junction",
+  "column-rule-inset-start",
+  "columns",
+  "contain-intrinsic-size",
+  "corner-block-end-shape",
+  "corner-block-start-shape",
+  "corner-bottom-shape",
+  "corner-inline-end-shape",
+  "corner-inline-start-shape",
+  "corner-left-shape",
+  "corner-right-shape",
+  "corner-shape",
+  "corner-top-shape",
+  "font-synthesis",
+  "font-variant",
+  "gap",
+  "grid-area",
+  "grid-column",
+  "grid-gap",
+  "grid-row",
+  "grid-template",
+  "inset",
+  "inset-block",
+  "inset-inline",
+  "interest-delay",
+  "margin",
+  "margin-block",
+  "margin-inline",
+  "marker",
+  "mask-position",
+  "overflow",
+  "overscroll-behavior",
+  "padding",
+  "padding-block",
+  "padding-inline",
+  "place-content",
+  "place-items",
+  "place-self",
+  "row-rule-inset",
+  "row-rule-inset-cap",
+  "row-rule-inset-end",
+  "row-rule-inset-junction",
+  "row-rule-inset-start",
+  "rule-break",
+  "rule-color",
+  "rule-inset",
+  "rule-inset-cap",
+  "rule-inset-end",
+  "rule-inset-junction",
+  "rule-inset-start",
+  "rule-style",
+  "rule-visibility-items",
+  "rule-width",
+  "scroll-margin",
+  "scroll-margin-block",
+  "scroll-margin-inline",
+  "scroll-padding",
+  "scroll-padding-block",
+  "scroll-padding-inline",
+  "timeline-trigger-activation-range",
+  "timeline-trigger-active-range",
+]);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const cssWideKeywords = new Set(["initial", "inherit", "unset", "revert", "revert-layer"]);
@@ -132,6 +229,7 @@ export type StaticShorthandCodecId =
   | "text-wrap"
   | "transition"
   | "typed-object"
+  | "uniform"
   | "white-space"
   | "legacy-cssstyle";
 
@@ -160,6 +258,15 @@ const namedCodecIds: Readonly<Record<string, StaticShorthandCodecId>> = {
   "list-style": "typed-object",
   outline: "typed-object",
   "text-decoration": "typed-object",
+  "text-emphasis": "typed-object",
+  "-webkit-text-emphasis": "typed-object",
+  grid: "grid",
+  "font-synthesis": "typed-object",
+  "-webkit-text-stroke": "typed-object",
+  "text-box": "typed-object",
+  "timeline-trigger": "typed-object",
+  "view-timeline": "typed-object",
+  "position-try": "typed-object",
   "white-space": "white-space",
 };
 
@@ -174,7 +281,10 @@ function codecIdFor(name: string): StaticShorthandCodecId {
   if (name === "text-wrap") return "text-wrap";
   if (name === "scroll-timeline") return "scroll-timeline";
   if (name === "flex-flow") return "flex-flow";
-  return namedCodecIds[name] ?? "legacy-cssstyle";
+  const namedCodec = namedCodecIds[name];
+  if (namedCodec) return namedCodec;
+  if (uniformValueShorthandNames.has(name)) return "uniform";
+  return "legacy-cssstyle";
 }
 
 const staticShorthandDefinitions = staticShorthandNames.map(name => ({
@@ -316,7 +426,7 @@ function synthesizeBorderLike(
   const color = uniformSuffixValue(componentRecords, "-color", safe);
   if (width === null || style === null || color === null) return null;
   const components = [width];
-  if (style !== "none") components.push(style);
+  if (style !== "none" || explicitNoneBorderStyleNames.has(name)) components.push(style);
   if (color !== "currentcolor") components.push(color);
   return components.join(" ");
 }
@@ -526,6 +636,143 @@ function synthesizeStructuralShorthand(
     if (anchor !== "auto") components.push(`/ ${anchor}`);
     return components.length > 0 ? components.join(" ") : null;
   }
+  if (name === "font-synthesis") {
+    const values = [
+      ["font-synthesis-weight", "weight"],
+      ["font-synthesis-style", "style"],
+      ["font-synthesis-small-caps", "small-caps"],
+    ] as const;
+    const enabled: string[] = [];
+    for (const [longhand, keyword] of values) {
+      const current = value(longhand);
+      if (current === "auto") enabled.push(keyword);
+      else if (current !== "none") return null;
+    }
+    return enabled.length > 0 ? enabled.join(" ") : "none";
+  }
+  if (name === "-webkit-text-stroke") {
+    const width = value("-webkit-text-stroke-width");
+    const color = value("-webkit-text-stroke-color");
+    if (!width || !color) return null;
+    return `${width} ${color}`;
+  }
+  if (name === "text-box") {
+    const trim = value("text-box-trim");
+    const edge = value("text-box-edge");
+    if (!trim || !edge) return null;
+    if (trim === "none" && edge === "auto") return "normal";
+    return edge === "auto" ? trim : `${trim} ${edge}`;
+  }
+  if (name === "timeline-trigger") {
+    const values = [
+      value("timeline-trigger-name"),
+      value("timeline-trigger-source"),
+      value("timeline-trigger-activation-range-start"),
+      value("timeline-trigger-activation-range-end"),
+      value("timeline-trigger-active-range-start"),
+      value("timeline-trigger-active-range-end"),
+    ];
+    if (values.join("\0") === "none\0auto\0normal\0normal\0auto\0auto") return "none";
+    return null;
+  }
+  if (name === "view-timeline") {
+    const timelineName = value("view-timeline-name");
+    const axis = value("view-timeline-axis");
+    const inset = value("view-timeline-inset");
+    if (!timelineName || !axis || !inset) return null;
+    if (timelineName === "none" && axis === "block" && inset === "auto") return "none";
+    const components = [timelineName];
+    if (axis !== "block") components.push(axis);
+    if (inset !== "auto") components.push(inset);
+    return components.join(" ");
+  }
+  if (name === "position-try") {
+    const order = value("position-try-order");
+    const fallbacks = value("position-try-fallbacks");
+    if (!order || !fallbacks) return null;
+    if (order === "normal" && fallbacks === "none") return "none";
+    return order === "normal" ? fallbacks : `${order} ${fallbacks}`;
+  }
+  if (name === "grid") {
+    const rows = value("grid-template-rows");
+    const columns = value("grid-template-columns");
+    const areas = value("grid-template-areas");
+    const flow = value("grid-auto-flow");
+    const autoColumns = value("grid-auto-columns");
+    const autoRows = value("grid-auto-rows");
+    if (!rows || !columns || !areas || !flow || !autoColumns || !autoRows) return null;
+    if (
+      rows === "none" && columns === "none" && areas === "none" &&
+      flow === "row" && autoColumns === "auto" && autoRows === "auto"
+    ) return "none";
+    if (areas === "none" && flow === "row" && autoColumns === "auto" && autoRows === "auto") {
+      return `${rows} / ${columns}`;
+    }
+    return null;
+  }
+  if (name === "flex") {
+    const grow = value("flex-grow");
+    const shrink = value("flex-shrink");
+    const basis = value("flex-basis");
+    if (!grow || !shrink || !basis) return null;
+    return `${grow} ${shrink} ${basis}`;
+  }
+  if (name === "font") {
+    const defaults = shorthandResidualDefaults.font;
+    if (!defaults) return null;
+    for (const [longhand, expected] of Object.entries(defaults)) {
+      if (value(longhand) !== expected) return null;
+    }
+    const style = value("font-style");
+    const variantCaps = value("font-variant-caps");
+    const weight = value("font-weight");
+    const stretch = value("font-stretch");
+    const size = value("font-size");
+    const lineHeight = value("line-height");
+    const family = value("font-family");
+    if (!style || !variantCaps || !weight || !stretch || !size || !lineHeight || !family) {
+      return null;
+    }
+    const components: string[] = [];
+    if (style !== "normal") components.push(style);
+    if (variantCaps !== "normal") components.push(variantCaps);
+    if (weight !== "normal") components.push(weight);
+    if (stretch !== "normal") components.push(stretch);
+    components.push(lineHeight === "normal" ? size : `${size} / ${lineHeight}`);
+    components.push(family);
+    return components.join(" ");
+  }
+  if (name === "list-style") {
+    const position = value("list-style-position");
+    const image = value("list-style-image");
+    const type = value("list-style-type");
+    if (!position || !image || !type) return null;
+    return `${position} ${image} ${type}`;
+  }
+  if (name === "outline") {
+    const color = value("outline-color");
+    const style = value("outline-style");
+    const width = value("outline-width");
+    if (!color || !style || !width) return null;
+    return `${color} ${style} ${width}`;
+  }
+  if (name === "text-emphasis") {
+    const style = value("text-emphasis-style");
+    const color = value("text-emphasis-color");
+    if (!style || !color) return null;
+    return `${style} ${color}`;
+  }
+  if (name === "text-decoration") {
+    const values = [
+      value("text-decoration-line"),
+      value("text-decoration-thickness"),
+      value("text-decoration-style"),
+      value("text-decoration-color"),
+    ];
+    if (values.some(component => component === null)) return null;
+    const components = values.filter(component => component !== "initial");
+    return components.length > 0 ? components.join(" ") : null;
+  }
   if (name === "flex-flow") {
     const direction = value("flex-direction");
     const wrap = value("flex-wrap");
@@ -582,6 +829,13 @@ export function synthesizeStaticShorthand(
 
   const structural = synthesizeStructuralShorthand(serializationName, records, safe);
   if (structural !== null) return structural;
+
+  if (
+    uniformValueShorthandNames.has(serializationName) &&
+    recordValues.length > 0 && recordValues.every(value => value === recordValues[0])
+  ) {
+    return recordValues[0] ?? null;
+  }
 
   if (
     serializationName === "font-variant" &&
@@ -765,15 +1019,24 @@ function borderComponentValues(
   const components = splitTopLevelWhitespace(value);
   if (components.length === 0 || components.length > 3) return null;
   for (const component of components) {
-    if (matchesPropertyGrammar(widthProperty, component)) {
+    if (
+      matchesPropertyGrammar(widthProperty, component) ||
+      matchesPropertyGrammar("border-top-width", component)
+    ) {
       result.width = component;
       continue;
     }
-    if (matchesPropertyGrammar(styleProperty, component)) {
+    if (
+      matchesPropertyGrammar(styleProperty, component) ||
+      matchesPropertyGrammar("border-top-style", component)
+    ) {
       result.style = component;
       continue;
     }
-    if (matchesPropertyGrammar(colorProperty, component)) {
+    if (
+      matchesPropertyGrammar(colorProperty, component) ||
+      matchesPropertyGrammar("border-top-color", component)
+    ) {
       result.color = component;
       continue;
     }
@@ -782,7 +1045,9 @@ function borderComponentValues(
   return result;
 }
 
-function orderedBorderLonghands(longhands: readonly string[]): string[] {
+function orderedBorderLonghands(name: string, longhands: readonly string[]): string[] {
+  const measured = getShorthandCapabilityItems(name);
+  if (measured && measured.length === longhands.length) return [...measured];
   const ranked = longhands.map((longhand, index) => ({
     longhand,
     index,
@@ -808,7 +1073,7 @@ function expandBorderLikeValue(
   const components = borderComponentValues(value, longhands);
   if (!components) return null;
   const result = new Map<string, string>();
-  for (const longhand of orderedBorderLonghands(longhands)) {
+  for (const longhand of orderedBorderLonghands(name, longhands)) {
     if (longhand === "border-image-source") result.set(longhand, "none");
     else if (longhand === "border-image-slice") result.set(longhand, "100%");
     else if (longhand === "border-image-width") result.set(longhand, "1");
@@ -982,6 +1247,160 @@ function expandOffsetValue(value: string): ReadonlyMap<string, string> | null {
   ]);
 }
 
+function expandFontSynthesisValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length === 0) return null;
+  const supported = new Set(["weight", "style", "small-caps"]);
+  if (components.some(component => component !== "none" && !supported.has(component))) {
+    return null;
+  }
+  const none = components.includes("none");
+  if (none && components.length !== 1) return null;
+  return new Map([
+    ["font-synthesis-weight", !none && components.includes("weight") ? "auto" : "none"],
+    ["font-synthesis-style", !none && components.includes("style") ? "auto" : "none"],
+    [
+      "font-synthesis-small-caps",
+      !none && components.includes("small-caps") ? "auto" : "none",
+    ],
+  ]);
+}
+
+function expandTextStrokeValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2) return null;
+  let width = "0px";
+  let color = "currentcolor";
+  for (const component of components) {
+    if (matchesPropertyGrammar("border-top-width", component)) width = component;
+    else if (matchesPropertyGrammar("color", component)) color = component;
+    else return null;
+  }
+  return new Map([
+    ["-webkit-text-stroke-width", width],
+    ["-webkit-text-stroke-color", color],
+  ]);
+}
+
+function expandTextBoxValue(value: string): ReadonlyMap<string, string> | null {
+  if (value === "normal") {
+    return new Map([
+      ["text-box-trim", "none"],
+      ["text-box-edge", "auto"],
+    ]);
+  }
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2) return null;
+  return new Map([
+    ["text-box-trim", components[0] ?? "none"],
+    ["text-box-edge", components[1] ?? "auto"],
+  ]);
+}
+
+function expandTimelineTriggerValue(value: string): ReadonlyMap<string, string> | null {
+  if (value !== "none") return null;
+  return new Map([
+    ["timeline-trigger-name", "none"],
+    ["timeline-trigger-source", "auto"],
+    ["timeline-trigger-activation-range-start", "normal"],
+    ["timeline-trigger-activation-range-end", "normal"],
+    ["timeline-trigger-active-range-start", "auto"],
+    ["timeline-trigger-active-range-end", "auto"],
+  ]);
+}
+
+function expandViewTimelineValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 3 || !components[0]) return null;
+  if (components[0] === "none" && components.length === 1) {
+    return new Map([
+      ["view-timeline-name", "none"],
+      ["view-timeline-axis", "block"],
+      ["view-timeline-inset", "auto"],
+    ]);
+  }
+  const axes = new Set(["block", "inline", "x", "y"]);
+  const axis = components.find(component => axes.has(component)) ?? "block";
+  const name = components[0];
+  const inset = components.find(component => component !== name && !axes.has(component)) ?? "auto";
+  return new Map([
+    ["view-timeline-name", name],
+    ["view-timeline-axis", axis],
+    ["view-timeline-inset", inset],
+  ]);
+}
+
+function expandPositionTryValue(value: string): ReadonlyMap<string, string> | null {
+  if (value === "none") {
+    return new Map([
+      ["position-try-order", "normal"],
+      ["position-try-fallbacks", "none"],
+    ]);
+  }
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1) return null;
+  const orderKeywords = new Set(["normal", "most-width", "most-height", "most-block-size", "most-inline-size"]);
+  const order = components.find(component => orderKeywords.has(component)) ?? "normal";
+  const fallbacks = components.filter(component => component !== order).join(" ");
+  if (fallbacks === "") return null;
+  return new Map([
+    ["position-try-order", order],
+    ["position-try-fallbacks", fallbacks],
+  ]);
+}
+
+function expandTextEmphasisValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1) return null;
+  let color = "currentcolor";
+  const style: string[] = [];
+  for (const component of components) {
+    if (matchesPropertyGrammar("color", component)) color = component;
+    else style.push(component);
+  }
+  if (style.length === 0) style.push("none");
+  return new Map([
+    ["text-emphasis-style", style.join(" ")],
+    ["text-emphasis-color", color],
+  ]);
+}
+
+function expandOutlineValue(value: string): ReadonlyMap<string, string> | null {
+  const longhands = ["outline-width", "outline-style", "outline-color"];
+  const components = borderComponentValues(value, longhands);
+  if (!components) return null;
+  return new Map([
+    ["outline-color", components.color],
+    ["outline-style", components.style],
+    ["outline-width", components.width],
+  ]);
+}
+
+function expandTextDecorationValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1) return null;
+  const lineKeywords = new Set(["none", "underline", "overline", "line-through", "blink"]);
+  const styleKeywords = new Set(["solid", "double", "dotted", "dashed", "wavy"]);
+  const lines: string[] = [];
+  let thickness = "initial";
+  let style = "initial";
+  let color = "initial";
+  for (const component of components) {
+    if (lineKeywords.has(component)) lines.push(component);
+    else if (styleKeywords.has(component)) style = component;
+    else if (matchesPropertyGrammar("text-decoration-thickness", component)) {
+      thickness = component;
+    } else if (matchesPropertyGrammar("color", component)) color = component;
+    else return null;
+  }
+  return new Map([
+    ["text-decoration-line", lines.length > 0 ? lines.join(" ") : "initial"],
+    ["text-decoration-thickness", thickness],
+    ["text-decoration-style", style],
+    ["text-decoration-color", color],
+  ]);
+}
+
 function expandStructuralValue(name: string, value: string): ReadonlyMap<string, string> | null {
   const border = expandBorderLikeValue(name, value);
   if (border) return border;
@@ -994,7 +1413,25 @@ function expandStructuralValue(name: string, value: string): ReadonlyMap<string,
   if (name === "scroll-timeline") return expandScrollTimelineValue(value);
   if (name === "flex-flow") return expandFlexFlowValue(value);
   if (name === "offset") return expandOffsetValue(value);
+  if (name === "font-synthesis") return expandFontSynthesisValue(value);
+  if (name === "-webkit-text-stroke") return expandTextStrokeValue(value);
+  if (name === "text-box") return expandTextBoxValue(value);
+  if (name === "timeline-trigger") return expandTimelineTriggerValue(value);
+  if (name === "view-timeline") return expandViewTimelineValue(value);
+  if (name === "position-try") return expandPositionTryValue(value);
+  if (name === "text-emphasis") return expandTextEmphasisValue(value);
+  if (name === "outline") return expandOutlineValue(value);
+  if (name === "text-decoration") return expandTextDecorationValue(value);
   return null;
+}
+
+function expandUniformValue(name: string, value: string): ReadonlyMap<string, string> | null {
+  if (!uniformValueShorthandNames.has(name)) return null;
+  if (splitTopLevelWhitespace(value).length !== 1) return null;
+  const longhands = getShorthandLonghands(name);
+  if (!longhands) return null;
+  const ordered = getShorthandCapabilityItems(name) ?? longhands;
+  return new Map(ordered.map(longhand => [longhand, value]));
 }
 
 function expandMappedValues(
@@ -1003,21 +1440,34 @@ function expandMappedValues(
   important: boolean,
   expand: (name: string, value: string) => ReadonlyMap<string, string> | null,
 ): DeclarationRecord[] | null {
-  const observable = expand(name, parsed.observableValue);
+  const capabilityInput = getMatchingShorthandCapabilityInput(name, parsed.observableValue);
+  const observableInput = capabilityInput ?? parsed.observableValue;
+  const observable = expand(name, observableInput);
+  const safeInput = capabilityInput !== null
+    ? capabilityInput
+    : name === "offset"
+      ? parsed.observableValue
+      : parsed.safeValue;
   const safe = expand(
     name,
-    name === "offset" ? parsed.observableValue : parsed.safeValue,
+    safeInput,
   );
   if (!observable || !safe) return null;
   if ([...observable.keys()].join("\0") !== [...safe.keys()].join("\0")) return null;
-  return [...observable].map(([longhand, observableValue]) => ({
-    name: longhand,
-    observableValue,
-    safeValue: safe.get(longhand) ?? observableValue,
-    pendingSubstitution: false,
-    important,
-    pendingGroup: null,
-  }));
+  return [...observable].map(([longhand, observableValue]) => {
+    const serializedSafeValue = safe.get(longhand) ?? observableValue;
+    const safeValue = serializedSafeValue === "0" && /^0(?:\.0+)?[a-z%]+$/i.test(observableValue)
+      ? observableValue
+      : serializedSafeValue;
+    return {
+      name: longhand,
+      observableValue,
+      safeValue,
+      pendingSubstitution: false,
+      important,
+      pendingGroup: null,
+    };
+  });
 }
 
 function extractSerializedValue(serialized: string, property: string): string | null {
@@ -1107,6 +1557,7 @@ interface BackgroundLayerPresence {
   attachment: boolean;
   boxes: number;
   color: boolean;
+  colorValue: string | null;
 }
 
 function backgroundLayerPresence(value: string): BackgroundLayerPresence[] {
@@ -1125,6 +1576,9 @@ function backgroundLayerPresence(value: string): BackgroundLayerPresence[] {
     const attachmentKeywords = new Set(["scroll", "fixed", "local"]);
     const boxKeywords = new Set(["border-box", "padding-box", "content-box"]);
     const isLast = index === layers.length - 1;
+    const colorValue = isLast
+      ? allComponents.find(component => matchesPropertyGrammar("background-color", component)) ?? null
+      : null;
     return {
       image: components.some(component => matchesPropertyGrammar("background-image", component)) ||
         /(?:^|\s)(?:url|(?:repeating-)?(?:linear|radial|conic)-gradient|image-set|cross-fade)\(/i
@@ -1137,9 +1591,8 @@ function backgroundLayerPresence(value: string): BackgroundLayerPresence[] {
       repeat: allComponents.some(component => repeatKeywords.has(component)),
       attachment: allComponents.some(component => attachmentKeywords.has(component)),
       boxes: allComponents.filter(component => boxKeywords.has(component)).length,
-      color: isLast && allComponents.some(component =>
-        matchesPropertyGrammar("background-color", component),
-      ),
+      color: colorValue !== null,
+      colorValue,
     };
   });
 }
@@ -1185,12 +1638,14 @@ function applyBackgroundOmissions(
       ).join(", "),
     );
   }
-  if (!presence[presence.length - 1]?.color) {
+  const lastLayer = presence[presence.length - 1];
+  if (!lastLayer?.color) {
     result.set(
       "background-color",
       concreteDefaults ? "rgba(0, 0, 0, 0)" : "initial",
     );
   }
+  else if (lastLayer.colorValue !== null) result.set("background-color", lastLayer.colorValue);
   return result;
 }
 
@@ -1318,14 +1773,129 @@ function expandGridTemplateTypedValue(
   ]);
 }
 
+function expandGridTypedValue(
+  parsed: AcceptedPropertyValue,
+): ReadonlyMap<string, string> | null {
+  const value = acceptedTypedValue(parsed, ["grid"]);
+  if (Array.isArray(value) || value === null) return null;
+  for (const field of ["rows", "columns", "areas", "autoFlow", "autoRows", "autoColumns"]) {
+    if (!Object.hasOwn(value, field)) return null;
+  }
+  const autoRows = Array.isArray(value.autoRows) && value.autoRows.length === 0
+    ? null
+    : value.autoRows;
+  const autoColumns = Array.isArray(value.autoColumns) && value.autoColumns.length === 0
+    ? null
+    : value.autoColumns;
+  const fields = serializeTypedFields([
+    ["grid-template-rows", value.rows],
+    ["grid-template-columns", value.columns],
+    ["grid-template-areas", value.areas],
+    ["grid-auto-flow", value.autoFlow],
+  ]);
+  if (!fields) return null;
+  const result = new Map(fields);
+  result.set(
+    "grid-auto-columns",
+    autoColumns === null
+      ? "auto"
+      : serializeTypedLonghand("grid-auto-columns", autoColumns) ?? "",
+  );
+  result.set(
+    "grid-auto-rows",
+    autoRows === null
+      ? "auto"
+      : serializeTypedLonghand("grid-auto-rows", autoRows) ?? "",
+  );
+  if ([...result.values()].some(value => value === "")) return null;
+  return result;
+}
+
+function expandTextEmphasisTypedValue(
+  parsed: AcceptedPropertyValue,
+): ReadonlyMap<string, string> | null {
+  const value = acceptedTypedValue(parsed, ["text-emphasis"]);
+  if (Array.isArray(value) || value === null) return null;
+  if (!Object.hasOwn(value, "style") || !Object.hasOwn(value, "color")) return null;
+  return serializeTypedFields([
+    ["text-emphasis-style", value.style],
+    ["text-emphasis-color", value.color],
+  ]);
+}
+
+function expandFontTypedValue(
+  parsed: AcceptedPropertyValue,
+  source = parsed.observableValue,
+): ReadonlyMap<string, string> | null {
+  const value = acceptedTypedValue(parsed, ["font"]);
+  if (Array.isArray(value) || value === null) return null;
+  for (const field of [
+    "family", "size", "style", "weight", "stretch", "lineHeight", "variantCaps",
+  ]) {
+    if (!Object.hasOwn(value, field)) return null;
+  }
+  const serialized = serializeTypedFields([
+    ["font-style", value.style],
+    ["font-variant-caps", value.variantCaps],
+    ["font-weight", value.weight],
+    ["font-stretch", value.stretch],
+    ["font-size", value.size],
+    ["line-height", value.lineHeight],
+    ["font-family", value.family],
+  ]);
+  if (!serialized) return null;
+  const serializedValues = new Map(serialized);
+  const fontComponents = splitTopLevelWhitespace(source);
+  let familyIndex = -1;
+  for (let index = 0; index < fontComponents.length; index += 1) {
+    const component = fontComponents[index];
+    if (!component) continue;
+    const slash = splitTopLevelDelimiter(component, "/");
+    if (slash.length > 1 && slash[0] && matchesPropertyGrammar("font-size", slash[0])) {
+      familyIndex = index + 1;
+      break;
+    }
+    if (!matchesPropertyGrammar("font-size", component)) continue;
+    familyIndex = fontComponents[index + 1] === "/" ? index + 3 : index + 1;
+    break;
+  }
+  if (familyIndex < 0 || familyIndex >= fontComponents.length) return null;
+  serializedValues.set("font-family", fontComponents.slice(familyIndex).join(" "));
+  const result = new Map<string, string>();
+  const defaults: Readonly<Record<string, string>> = {
+    "font-variant-ligatures": "normal",
+    "font-variant-numeric": "normal",
+    "font-variant-east-asian": "normal",
+    "font-variant-alternates": "normal",
+    "font-size-adjust": "none",
+    "font-language-override": "normal",
+    "font-kerning": "auto",
+    "font-optical-sizing": "auto",
+    "font-feature-settings": "normal",
+    "font-variation-settings": "normal",
+    "font-variant-position": "normal",
+    "font-variant-emoji": "normal",
+  };
+  const order = getShorthandCapabilityItems("font") ?? getShorthandLonghands("font") ?? [];
+  for (const longhand of order) {
+    const current = serializedValues.get(longhand) ?? defaults[longhand];
+    if (current === undefined) return null;
+    result.set(longhand, current);
+  }
+  return result;
+}
+
 function typedRecords(
   name: string,
   parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
+  const capabilityInput = getMatchingShorthandCapabilityInput(name, parsed.observableValue);
   const values = expandLayeredTypedValue(name, parsed) ??
     expandBorderImageTypedValue(name, parsed) ??
-    (name === "grid-template" ? expandGridTemplateTypedValue(parsed) : null);
+    (name === "grid-template" ? expandGridTemplateTypedValue(parsed) : null) ??
+    (name === "grid" ? expandGridTypedValue(parsed) : null) ??
+    (name === "font" ? expandFontTypedValue(parsed, capabilityInput ?? undefined) : null);
   if (!values) return null;
   const safeValues = expandLayeredTypedValue(name, parsed, true) ?? values;
   return [...values].map(([longhand, value]) => ({
@@ -1719,6 +2289,13 @@ export function expandStaticShorthand(
     expandStructuralValue,
   );
   if (structuralExpansion) return structuralExpansion;
+  const uniformExpansion = expandMappedValues(
+    name,
+    parsed,
+    important,
+    expandUniformValue,
+  );
+  if (uniformExpansion) return uniformExpansion;
 
   const highRiskExpansion = expandHighRiskShorthand(name, parsed, important);
   if (highRiskExpansion) return highRiskExpansion;

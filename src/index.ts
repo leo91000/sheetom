@@ -798,9 +798,13 @@ export class CSSStyleDeclaration {
   }
 
   set cssText(value: string) {
+    const input = `${value}`;
     let parsed: csstree.CssNode;
     try {
-      parsed = csstree.parse(`${value}`, { context: "declarationList" });
+      parsed = csstree.parse(input, {
+        context: "declarationList",
+        positions: true,
+      });
     } catch {
       this.#block.replace(null);
       return;
@@ -816,7 +820,9 @@ export class CSSStyleDeclaration {
       if (child.type !== "Declaration") continue;
       declarations.push({
         name: csstree.ident.decode(child.property),
-        value: csstree.generate(child.value),
+        value: child.value.loc
+          ? input.slice(child.value.loc.start.offset, child.value.loc.end.offset)
+          : csstree.generate(child.value),
         important: child.important === true || child.important === "important",
       });
     }
@@ -1383,7 +1389,13 @@ function createStyleRule(
 function declarationTextFromBlock(block: csstree.Block): string {
   const declarations: string[] = [];
   for (const child of block.children) {
-    if (child.type === "Declaration") declarations.push(csstree.generate(child));
+    if (child.type !== "Declaration") continue;
+    const priority = child.important === true || child.important === "important"
+      ? " !important"
+      : "";
+    declarations.push(
+      `${child.property}:${generateDescriptorInput(child.value)}${priority}`,
+    );
   }
   return declarations.join(";");
 }

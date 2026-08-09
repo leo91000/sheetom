@@ -25,6 +25,13 @@ export interface DeclarationRecord extends ParsedPropertyValue {
   pendingGroup: PendingSubstitutionGroup | null;
 }
 
+const cssWideKeywords = new Set([
+  "inherit",
+  "unset",
+  "revert",
+  "revert-layer",
+]);
+
 export interface ParsedDeclaration {
   name: string;
   value: string;
@@ -404,6 +411,20 @@ export class DeclarationBlock {
       };
     }
     if (records.some(record => record?.pendingGroup)) return null;
+    const values = (records as DeclarationRecord[])
+      .map(record => safe ? record.safeValue : record.observableValue);
+    const cssWideValues = values.filter(value => cssWideKeywords.has(value));
+    if (cssWideValues.length > 0) {
+      const firstValue = values[0];
+      if (
+        firstValue &&
+        cssWideKeywords.has(firstValue) &&
+        values.every(value => value === firstValue)
+      ) {
+        return { value: firstValue, important: first.important };
+      }
+      return null;
+    }
     if (this.#codec.isFourSideShorthand(name) && records.length === 4) {
       const [top, right, bottom, left] = records;
       if (!top || !right || !bottom || !left) return null;
