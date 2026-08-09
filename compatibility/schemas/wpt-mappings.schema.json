@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/wpt-mappings.schema.json",
+  "title": "SheetOM WPT mappings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "wptCommit", "mappings", "tombstones"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "wptCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "subtest", "blobSha", "disposition", "coverage", "translation", "fixtureIds"],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "subtest": { "type": "string" },
+          "blobSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "disposition": { "enum": ["applicable", "partial", "excluded"] },
+          "coverage": { "enum": ["full", "partial", "none"] },
+          "translation": { "type": "string" },
+          "fixtureIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "reason": { "type": "string" },
+          "selectionNote": { "type": "string" }
+        }
+      }
+    },
+    "tombstones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "subtest", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "subtest": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

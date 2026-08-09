@@ -1,0 +1,59 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.setproperty-null-undefined",
+  "provenanceIds": [
+    "wpt.cssom.setproperty-undefined-value",
+    "wpt.cssom.setproperty-undefined-priority",
+    "wpt.cssom.setproperty-null-value",
+    "wpt.cssom.setproperty-null-priority"
+  ],
+  "operations": [
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "rule",
+      "args": ["body"]
+    },
+    {
+      "op": "getStyle",
+      "target": "rule",
+      "handle": "style",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", "white"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", { "$type": "undefined" }],
+      "observe": ["exception", "cssText"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", "red", { "$type": "undefined" }],
+      "observe": ["exception", "cssText"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", null],
+      "observe": ["exception", "cssText"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", "white"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", "red", null],
+      "observe": ["exception", "cssText"]
+    }
+  ]
+}

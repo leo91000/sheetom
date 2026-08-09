@@ -1,0 +1,103 @@
+name: Native browser oracles
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 4 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  stable-browser-wpt:
+    name: WPT / ${{ matrix.browser }} stable
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - name: Check out SheetOM
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Check out the pinned WPT source
+        shell: bash
+        run: |
+          commit=$(jq -r .commit compatibility/wpt.lock.json)
+          git clone --filter=blob:none --no-checkout https://github.com/web-platform-tests/wpt.git ../wpt
+          git -C ../wpt sparse-checkout set css/cssom css/css-syntax css/css-variables css/css-cascade css/css-conditional
+          git -C ../wpt fetch --depth 1 origin "$commit"
+          git -C ../wpt checkout --detach "$commit"
+
+      - name: Configure WPT hosts
+        run: ../wpt/wpt make-hosts-file | sudo tee -a /etc/hosts
+
+      - name: Install stable browser and WebDriver
+        if: matrix.browser == 'firefox'
+        run: ../wpt/wpt install --channel stable firefox browser && ../wpt/wpt install --channel stable firefox webdriver
+
+      - name: Install stable Chrome WebDriver
+        if: matrix.browser == 'chrome'
+        run: ../wpt/wpt install --channel stable chrome webdriver
+
+      - name: Run selected native WPT
+        shell: bash
+        run: |
+          npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --log-wptreport="wpt-${{ matrix.browser }}.json" "${{ matrix.browser }}"
+
+      - name: Upload native oracle report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: wpt-${{ matrix.browser }}-stable
+          path: wpt-${{ matrix.browser }}.json
+          if-no-files-found: error
+
+  stable-safari-release-oracle:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out SheetOM
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Check out the pinned WPT source
+        shell: bash
+        run: |
+          commit=$(jq -r .commit compatibility/wpt.lock.json)
+          git clone --filter=blob:none --no-checkout https://github.com/web-platform-tests/wpt.git ../wpt
+          git -C ../wpt sparse-checkout set css/cssom css/css-syntax css/css-variables css/css-cascade css/css-conditional
+          git -C ../wpt fetch --depth 1 origin "$commit"
+          git -C ../wpt checkout --detach "$commit"
+
+      - name: Configure WPT hosts and Safari Remote Automation
+        shell: bash
+        run: |
+          ../wpt/wpt make-hosts-file | sudo tee -a /etc/hosts
+          sudo safaridriver --enable
+
+      - name: Run selected WPT in stable Safari
+        shell: bash
+        run: |
+          npm run --silent wpt:paths | xargs ../wpt/wpt run --channel stable --log-wptreport=wpt-safari.json safari
+
+      - name: Upload native Safari report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: wpt-safari-stable
+          path: wpt-safari.json
+          if-no-files-found: error

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import { createStyleRule } from "./support/create-style-rule.js";
 
 test("custom properties preserve case and expose empty-but-present entries", () => {
   const sheet = new CSSStyleSheet();
@@ -22,7 +23,7 @@ test("custom properties preserve case and expose empty-but-present entries", () 
 });
 
 test("declaration-block parsing preserves empty custom-property records", () => {
-  const rule = new CSSStyleRule(".x");
+  const rule = createStyleRule(".x");
   rule.style.cssText = "--empty: ; --flag: false;";
 
   assert.equal(rule.style.length, 2);
@@ -32,7 +33,7 @@ test("declaration-block parsing preserves empty custom-property records", () => 
 });
 
 test("CSSOM custom-property names retain logical text and serialize as identifiers", () => {
-  const rule = new CSSStyleRule(".x");
+  const rule = createStyleRule(".x");
   rule.style.setProperty("-- x", "red");
   rule.style.setProperty("--x!", "blue");
   rule.style.setProperty("--", "green");

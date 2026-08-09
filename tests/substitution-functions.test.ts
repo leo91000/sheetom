@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { CSSStyleRule } from "../src/index.js";
+import { createStyleRule } from "./support/create-style-rule.js";
 
 test("current Chromium attr() and if() substitutions pass the value gate", () => {
-  const rule = new CSSStyleRule(".card");
+  const rule = createStyleRule(".card");
 
   const attrValue = "attr(data-width type(<length>), 1px)";
   rule.style.setProperty("width", attrValue);

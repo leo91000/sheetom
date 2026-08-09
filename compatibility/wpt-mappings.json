@@ -1,0 +1,48 @@
+{
+  "$schema": "./schemas/wpt-mappings.schema.json",
+  "schemaVersion": 1,
+  "wptCommit": "54f8f933629e7c010ae98a246729af01f8abcda5",
+  "mappings": [
+    {
+      "id": "wpt.cssom.setproperty-undefined-value",
+      "path": "css/cssom/setproperty-null-undefined.html",
+      "subtest": "Verify that setting a CSS property to undefined has no effect.",
+      "blobSha": "3de142c0b46dde2722bcf18386c6ca9154372488",
+      "disposition": "applicable",
+      "coverage": "full",
+      "translation": "manual@1",
+      "fixtureIds": ["declarations.setproperty-null-undefined"]
+    },
+    {
+      "id": "wpt.cssom.setproperty-undefined-priority",
+      "path": "css/cssom/setproperty-null-undefined.html",
+      "subtest": "Verify that setting a CSS property priority to undefined is accepted.",
+      "blobSha": "3de142c0b46dde2722bcf18386c6ca9154372488",
+      "disposition": "applicable",
+      "coverage": "full",
+      "translation": "manual@1",
+      "fixtureIds": ["declarations.setproperty-null-undefined"]
+    },
+    {
+      "id": "wpt.cssom.setproperty-null-value",
+      "path": "css/cssom/setproperty-null-undefined.html",
+      "subtest": "Verify that setting a CSS property to null is treated like empty string.",
+      "blobSha": "3de142c0b46dde2722bcf18386c6ca9154372488",
+      "disposition": "applicable",
+      "coverage": "full",
+      "translation": "manual@1",
+      "fixtureIds": ["declarations.setproperty-null-undefined"]
+    },
+    {
+      "id": "wpt.cssom.setproperty-null-priority",
+      "path": "css/cssom/setproperty-null-undefined.html",
+      "subtest": "Verify that setting a CSS property priority to null is treated like empty string.",
+      "blobSha": "3de142c0b46dde2722bcf18386c6ca9154372488",
+      "disposition": "applicable",
+      "coverage": "full",
+      "translation": "manual@1",
+      "fixtureIds": ["declarations.setproperty-null-undefined"]
+    }
+  ],
+  "tombstones": []
+}

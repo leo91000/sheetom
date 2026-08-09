@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/operation-fixture.schema.json",
+  "title": "SheetOM Operation Fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "operations"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "provenanceIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "boundaryValue": {
+      "oneOf": [
+        {
+          "anyOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "null" }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["$type"],
+          "properties": {
+            "$type": {
+              "enum": [
+                "undefined",
+                "nan",
+                "positive-infinity",
+                "negative-infinity",
+                "bigint",
+                "symbol",
+                "throwing-string-coercion"
+              ]
+            },
+            "value": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "target", "args"],
+      "properties": {
+        "op": { "type": "string" },
+        "target": { "type": "string" },
+        "handle": { "type": "string" },
+        "args": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/boundaryValue" }
+        },
+        "observe": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "return",
+              "exception",
+              "cssText",
+              "length",
+              "items",
+              "parentRule",
+              "parentStyleSheet",
+              "serialize"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
