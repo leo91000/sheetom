@@ -25,8 +25,21 @@ export interface DeclarationRecord extends ParsedPropertyValue {
   pendingGroup: PendingSubstitutionGroup | null;
 }
 
+const exposedInitialLonghands = new Set([
+  "background-image",
+  "background-position-x",
+  "background-position-y",
+  "background-size",
+  "background-repeat",
+  "background-attachment",
+  "background-origin",
+  "background-clip",
+  "background-color",
+]);
+
 function exposedObservableValue(record: DeclarationRecord): string {
   if (
+    !exposedInitialLonghands.has(record.name) ||
     !record.observableValue.includes("initial") ||
     record.safeValue === record.observableValue
   ) {
