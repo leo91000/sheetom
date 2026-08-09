@@ -29,6 +29,7 @@ jobs:
       pull-request: ${{ steps.changesets.outputs.pullRequestNumber }}
       head-ref: ${{ steps.release-pr.outputs.head_ref }}
       head-sha: ${{ steps.release-pr.outputs.head_sha }}
+      version-changed: ${{ steps.release-version.outputs.version_changed }}
 
     steps:
       - name: Check out the successful main commit
@@ -71,6 +72,10 @@ jobs:
           gh pr edit "$RELEASE_PR" --body ""
           echo "head_ref=$(gh pr view "$RELEASE_PR" --json headRefName --jq .headRefName)" >> "$GITHUB_OUTPUT"
           echo "head_sha=$(gh pr view "$RELEASE_PR" --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+
+      - name: Detect a versioned release commit
+        id: release-version
+        run: node scripts/detect-release-version-change.mjs
 
   native-oracles:
     needs: changesets
@@ -164,7 +169,9 @@ jobs:
 
   publish:
     needs: changesets
-    if: needs.changesets.outputs.has-changesets == 'false'
+    if: >-
+      needs.changesets.outputs.has-changesets == 'false' &&
+      needs.changesets.outputs.version-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: npm
