@@ -9,12 +9,29 @@ not implement the DOM, cascade, selector matching, layout, or computed styles.
 
 ## Install
 
+SheetOM is not published yet. The first registry release will be
+`0.1.0-rc.0` under the `next` dist-tag after the complete conformance gate
+passes. Once published:
+
 ```sh
-npm install sheetom
+npm install sheetom@next
 ```
 
-`lightningcss` and `css-tree` are regular dependencies; consumers do not need
-to install peer dependencies or globals.
+`lightningcss`, `css-tree`, `cssstyle`, and the CSS Tools tokenizer are regular
+dependencies; consumers do not need to install peer dependencies or globals.
+SheetOM validates values before using `cssstyle` only as a static shorthand
+expander, and uses the tokenizer for lossless recovered-rule spans.
+
+Node.js 22 and 24 are tested on Linux x64, Windows x64, and macOS arm64. Bun
+1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
+`node_modules` directory and grant the native Lightning CSS binding FFI and
+system-information permissions:
+
+```sh
+deno run --node-modules-dir=manual --allow-ffi --allow-sys app.ts
+```
+
+SheetOM exports browser-named classes but never modifies `globalThis`.
 
 ## Use
 
@@ -71,20 +88,43 @@ them using `takeDiagnostics()`.
 
 ## API scope
 
-- `CSSStyleSheet`, live `CSSRuleList`, `CSSRule`, and `CSSStyleRule`
+- `CSSStyleSheet`, live `CSSRuleList`, `CSSRule`, and `MediaList`
+- nested `CSSStyleRule`, `CSSGroupingRule`, and `CSSConditionRule`
+- media, supports, container, layer, scope, and starting-style rules
+- import, font-face, page/margin, nested-declaration, and position-try rules
+- keyframes and mutable keyframe rules
+- counter-style descriptors and font-feature-value maps
 - live indexed and named `CSSStyleDeclaration`
 - `insertRule`, `deleteRule`, `replace`, and `replaceSync`
 - `parseStyleSheet` for forgiving regular-sheet parsing
 - browser-facing `cssText` and reparsable `serialize()` output
-- generic retention and serialization of valid at-rules that do not yet have a
-  specialized interface
+- generic retention of read-only metadata rules and experimental/future rules
 
 SheetOM targets standards and shared browser behavior first, with Chromium
-behavior used for measured engine divergences. Compatibility is covered by both
-Node-based Vitest tests and native Chromium tests through Vitest Browser Mode.
+behavior used only as the final measured divergence fallback. Versioned JSON
+Operation Fixtures execute through SheetOM and native browser adapters;
+applicable WPT subtests retain their pinned source path, title, and blob SHA.
+Every release ships its machine-readable Compatibility Report.
+
+See [the behavioral API reference](./docs/api.md) for return, exception,
+identity, and detachment contracts. Maintainers use the separately reviewed
+[release procedure](./docs/releasing.md); Changesets never publishes by itself.
+
 The checked-in ordinary-property manifest was generated against Chromium
-151.0.7922.34. Run `npm run generate:properties` when intentionally advancing
-that release baseline.
+151.0.7922.34. Run `npm run generate:properties` only when intentionally
+advancing the Compatibility Baseline.
+
+## Security and resource boundaries
+
+SheetOM does not fetch `@import` targets or URLs and does not execute CSS. It is
+also not a sanitizer: valid authored URLs, imports, and browser features remain
+in serialized output. Callers must sanitize untrusted output before attaching
+it to a document or another rendering environment.
+
+The browser-shaped interface has no implicit input-size, nesting-depth, or
+mutation-count limits. Isolate or bound untrusted workloads according to your
+application's resource policy. See [SECURITY.md](./SECURITY.md) for private
+vulnerability reporting and supported-release policy.
 
 ## Development
 
@@ -92,11 +132,22 @@ that release baseline.
 npm test
 npm run typecheck
 npm run build
-npm pack --dry-run
+npm run conformance:validate
+npm run conformance:drift
+npm run fuzz
+npm run benchmark
+npm run pack:test
 ```
 
-`npm test` runs both the unit suite and the real-browser compatibility suite.
-Use `npm run test:unit` or `npm run test:browser` to run either project alone.
+`npm test` runs unit, deterministic fuzz, and local Chromium projects. Use
+`npm run test:browser:matrix` on a machine with all Playwright dependencies to
+run Chromium, Firefox, and WebKit. `npm run docs:build` generates the TypeDoc
+reference under `site/api`.
+
+Only the latest published `0.x` minor and its active prereleases receive fixes
+before 1.0. During `0.x`, observable compatibility corrections and interface
+breaks require a new minor version and migration note; patches remain backward
+compatible.
 
 ## License
 

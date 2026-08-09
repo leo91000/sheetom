@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/compatibility-report.schema.json",
+  "title": "SheetOM Compatibility Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "packageVersion", "baseline", "summary", "evidence", "resolutions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "packageVersion": { "type": "string" },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wptCommit", "lightningcss", "cssTree", "runtimes", "browsers"],
+      "properties": {
+        "wptCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "lightningcss": { "type": "string" },
+        "cssTree": { "type": "string" },
+        "runtimes": { "type": "object" },
+        "browsers": { "type": "object" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "divergences", "excluded", "unexplained"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "divergences": { "type": "integer", "minimum": 0 },
+        "excluded": { "type": "integer", "minimum": 0 },
+        "unexplained": { "const": 0 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationFixtures", "nativeWpt"],
+      "properties": {
+        "operationFixtures": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "total"],
+          "properties": {
+            "passed": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "nativeWpt": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["engine", "version", "sha256", "passed", "total"],
+            "properties": {
+              "engine": { "enum": ["chrome", "firefox", "safari"] },
+              "version": { "type": "string" },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "passed": { "type": "integer", "minimum": 0 },
+              "total": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "resolutions": { "type": "array" }
+  }
+}

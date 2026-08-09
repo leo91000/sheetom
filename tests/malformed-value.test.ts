@@ -6,6 +6,7 @@ import {
   CSSStyleSheet,
   parseStyleSheet,
 } from "../src/index.js";
+import { createStyleRule } from "./support/create-style-rule.js";
 
 test("a recovered setProperty value remains observable and serializes safely", () => {
   const sheet = new CSSStyleSheet();
@@ -46,7 +47,7 @@ test("a recovered setProperty value remains observable and serializes safely", (
 });
 
 test("declaration parsing retains pending shorthand priority and provenance", () => {
-  const rule = new CSSStyleRule(".x");
+  const rule = createStyleRule(".x");
   rule.style.cssText = "padding: var(--p) !important;";
 
   assert.equal(rule.style.getPropertyValue("padding"), "var(--p)");
@@ -62,7 +63,7 @@ test("declaration parsing retains pending shorthand priority and provenance", ()
 });
 
 test("generated shorthand metadata applies pending provenance beyond padding", () => {
-  const rule = new CSSStyleRule(".x");
+  const rule = createStyleRule(".x");
   const value = "12px var(--gap, var(--gap,";
   rule.style.setProperty("margin", value);
 

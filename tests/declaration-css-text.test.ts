@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { CSSStyleRule, parseStyleSheet } from "../src/index.js";
+import { createStyleRule } from "./support/create-style-rule.js";
 
 test("cssText replaces a declaration block using Chromium winner ordering", () => {
-  const rule = new CSSStyleRule(".card");
+  const rule = createStyleRule(".card");
 
   rule.style.cssText =
     "width: 1px !important; color: red; width: 2px; height: 3px !important;";

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import { createStyleRule } from "./support/create-style-rule.js";
 
 test("an invalid value leaves the declaration unchanged and reports a diagnostic", () => {
   const sheet = new CSSStyleSheet({ diagnostics: true });
@@ -43,7 +44,7 @@ test("an invalid value leaves the declaration unchanged and reports a diagnostic
 });
 
 test("setProperty rejects embedded priority tokens without rejecting data", () => {
-  const rule = new CSSStyleRule(".x");
+  const rule = createStyleRule(".x");
   rule.style.setProperty("color", "blue");
   rule.style.setProperty("color", "red !important");
   rule.style.setProperty("--fallback", "var(--x, !important)");

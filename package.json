@@ -2,8 +2,24 @@
   "name": "sheetom",
   "version": "0.0.0",
   "description": "A browser-compatible authoring CSSOM for server-side JavaScript runtimes",
+  "keywords": [
+    "css",
+    "cssom",
+    "stylesheet",
+    "lightningcss"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leo91000/sheetom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leo91000/sheetom/issues"
+  },
+  "homepage": "https://github.com/leo91000/sheetom#readme",
+  "packageManager": "npm@11.16.0",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,31 +32,60 @@
   },
   "files": [
     "dist",
+    "compatibility/baselines",
+    "compatibility/schemas",
+    "compatibility/WPT-LICENSE.md",
+    "docs/api.md",
+    "docs/releasing.md",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "tsdown",
+    "changeset": "changeset",
+    "changeset:check": "node scripts/check-changeset.mjs",
+    "check": "npm run typecheck && npm run test:unit && npm run conformance:validate && npm run docs:check && npm run build && npm run pack:test",
+    "conformance:validate": "node scripts/validate-conformance.mjs",
+    "conformance:drift": "node scripts/check-wpt-drift.mjs",
+    "conformance:record": "node scripts/record-compatibility.mjs",
+    "docs:build": "typedoc",
+    "docs:check": "typedoc --emit none",
+    "fuzz": "vitest run --project fuzz",
     "generate:properties": "node scripts/generate-chromium-properties.mjs",
+    "wpt:paths": "node scripts/list-wpt-paths.mjs",
+    "benchmark": "npm run build && node scripts/benchmark.mjs",
+    "pack:test": "node scripts/test-package.mjs",
+    "release:verify": "node scripts/verify-release.mjs",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:browser": "vitest run --project browser",
+    "test:browser:matrix": "SHEETOM_BROWSER_MATRIX=1 vitest run --project browser",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@csstools/css-tokenizer": "^4.0.0",
     "css-tree": "^3.2.1",
+    "cssstyle": "^6.2.0",
     "lightningcss": "^1.33.0"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "@types/css-tree": "^2.3.10",
     "@types/node": "^24.0.0",
     "@vitest/browser-playwright": "^4.1.10",
+    "ajv": "^8.20.0",
+    "fast-check": "^4.9.0",
     "playwright": "^1.62.1",
     "tsdown": "^0.22.14",
+    "typedoc": "^0.28.20",
     "typescript": "^5.9.0",
     "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

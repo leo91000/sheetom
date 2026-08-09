@@ -1,0 +1,64 @@
+{
+  "$schema": "../schemas/compatibility-resolutions.schema.json",
+  "schemaVersion": 1,
+  "resolutions": [
+    {
+      "fixtureId": "declarations.basic-set-property",
+      "decision": "shared",
+      "rationale": "The observable declaration state is shared by the pinned browser engines.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "color: red;",
+          "length": 1,
+          "items": ["color"]
+        }
+      ]
+    },
+    {
+      "fixtureId": "declarations.malformed-padding",
+      "decision": "chromium-fallback",
+      "rationale": "CSS Syntax accepts the EOF-recovered value; Chromium preserves the unclosed observable spelling while Firefox materializes closing parentheses.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "padding: 72px var(--space, var(--space,;",
+          "length": 4,
+          "items": ["padding-top", "padding-right", "padding-bottom", "padding-left"]
+        }
+      ]
+    },
+    {
+      "fixtureId": "declarations.setproperty-null-undefined",
+      "decision": "shared",
+      "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior.",
+      "expected": [
+        {},
+        {},
+        {},
+        { "exception": null, "cssText": "color: white;" },
+        { "exception": null, "cssText": "color: red;" },
+        { "exception": null, "cssText": "" },
+        {},
+        { "exception": null, "cssText": "color: red;" }
+      ]
+    },
+    {
+      "fixtureId": "declarations.required-arguments",
+      "decision": "shared",
+      "rationale": "Required WebIDL arguments throw TypeError before string conversion in the pinned browser engines.",
+      "expected": [
+        {},
+        {},
+        { "exception": { "name": "TypeError" }, "cssText": "" },
+        { "exception": { "name": "TypeError" }, "cssText": "" }
+      ]
+    }
+  ]
+}

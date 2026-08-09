@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/compatibility-resolutions.schema.json",
+  "title": "SheetOM Compatibility Resolutions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "resolutions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "resolutions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fixtureId", "decision", "rationale", "expected"],
+        "properties": {
+          "fixtureId": { "type": "string" },
+          "decision": {
+            "enum": ["shared", "specification", "chromium-fallback", "scope-exclusion"]
+          },
+          "rationale": { "type": "string", "minLength": 1 },
+          "expected": { "type": "array" }
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import {
+  CSSImportRule,
+  CSSStyleRule,
+  CSSStyleSheet,
+  parseStyleSheet,
+} from "../src/index.js";
 
 test("insertRule strictly parses one populated style rule", () => {
   const sheet = new CSSStyleSheet();
@@ -19,4 +24,20 @@ test("insertRule strictly parses one populated style rule", () => {
     error => error instanceof DOMException && error.name === "SyntaxError",
   );
   assert.equal(sheet.cssRules.length, 1);
+});
+
+test("regular stylesheets preserve top-level import ordering", () => {
+  const sheet = parseStyleSheet("");
+  assert.equal(sheet.insertRule('@import url("theme.css");'), 0);
+  assert.ok(sheet.cssRules[0] instanceof CSSImportRule);
+  assert.equal(sheet.insertRule(".x {}", 1), 1);
+
+  assert.throws(
+    () => sheet.insertRule('@import url("late.css");', 2),
+    error => error instanceof DOMException && error.name === "HierarchyRequestError",
+  );
+  assert.throws(
+    () => sheet.insertRule(".before {}", 0),
+    error => error instanceof DOMException && error.name === "HierarchyRequestError",
+  );
 });

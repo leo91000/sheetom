@@ -4,14 +4,34 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  changeset-policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Require a Changeset or explicit classification
+        run: npm run changeset:check
+        env:
+          SHEETOM_CHANGESET_BASE: ${{ github.event.pull_request.base.sha }}
+          SHEETOM_NO_CHANGESET: ${{ contains(github.event.pull_request.labels.*.name, 'no-changeset') && '1' || '0' }}
+
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -23,20 +43,179 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Pin npm
+        run: npm install --global npm@11.16.0
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
+      - name: Test public behavior
+        run: npm run test:unit
+
+      - name: Test browser adapters
+        run: npm run test:browser:matrix
+
+      - name: Run deterministic fuzz corpus
+        run: npm run fuzz
+        env:
+          SHEETOM_FUZZ_RUNS: 1000
+
+      - name: Validate conformance documents
+        run: npm run conformance:validate
+
+      - name: Check pinned WPT mapping drift
+        run: npm run conformance:drift
+
+      - name: Validate API documentation
+        run: npm run docs:check
 
       - name: Build
         run: npm run build
 
-      - name: Verify package contents
-        run: npm pack --dry-run
+      - name: Build package artifact
+        run: |
+          mkdir package-artifact
+          npm pack --pack-destination package-artifact
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sheetom-package
+          path: package-artifact/*.tgz
+          if-no-files-found: error
+
+  minimum-node:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run test:unit
+
+  lightningcss-range:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        lightningcss: ["1.33.0", "^1.33.0"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm install --no-save lightningcss@${{ matrix.lightningcss }}
+      - run: npm run test:unit
+      - run: npm run build
+
+  package-consumer:
+    needs: quality
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install --global npm@11.16.0
+      - uses: actions/download-artifact@v8
+        with:
+          name: sheetom-package
+          path: package-artifact
+      - run: node scripts/test-tarball.mjs package-artifact node
+
+  bun-consumer:
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+      - uses: actions/download-artifact@v8
+        with:
+          name: sheetom-package
+          path: package-artifact
+      - run: node scripts/test-tarball.mjs package-artifact bun
+
+  deno-consumer:
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.5
+      - uses: actions/download-artifact@v8
+        with:
+          name: sheetom-package
+          path: package-artifact
+      - run: node scripts/test-tarball.mjs package-artifact deno
+
+  node-current-signal:
+    if: github.event_name == 'schedule'
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run test:unit
+
+  performance:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/benchmark.mjs --output candidate-benchmark.json
+      - name: Check out base commit as a detached worktree
+        run: git worktree add --detach ../sheetom-baseline ${{ github.event.pull_request.base.sha }}
+      - run: npm ci
+        working-directory: ../sheetom-baseline
+      - run: npm run build
+        working-directory: ../sheetom-baseline
+      - name: Benchmark base commit with the candidate harness
+        run: node scripts/benchmark.mjs --module "$GITHUB_WORKSPACE/../sheetom-baseline/dist/index.js" --output candidate-base-benchmark.json
+      - run: node scripts/compare-benchmarks.mjs candidate-base-benchmark.json candidate-benchmark.json

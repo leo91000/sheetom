@@ -1,0 +1,14 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "site/api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "treatWarningsAsErrors": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}

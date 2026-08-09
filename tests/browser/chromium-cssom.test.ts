@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 
-test("Chromium preserves recovered setProperty values on the CSSOM surface", () => {
+const chromiumTest = test.skipIf(!navigator.userAgent.includes("Chrome"));
+
+chromiumTest("Chromium preserves recovered setProperty values on the CSSOM surface", () => {
   const style = document.createElement("div").style;
   style.setProperty("padding", "1px");
   style.setProperty("padding", "72px var(--space, var(--space,");
@@ -28,7 +30,7 @@ test("Chromium preserves recovered setProperty values on the CSSOM surface", () 
   );
 });
 
-test("Chromium resolves parsed priorities and preserves custom-property presence", () => {
+chromiumTest("Chromium resolves parsed priorities and preserves custom-property presence", () => {
   const ordered = document.createElement("div").style;
   ordered.cssText =
     "width: 1px !important; color: red; width: 2px; height: 3px !important;";
@@ -49,7 +51,7 @@ test("Chromium resolves parsed priorities and preserves custom-property presence
   expect(custom.cssText).toBe("--X: ; --x: false;");
 });
 
-test("Chromium applies WebIDL conversions at CSSOM method boundaries", () => {
+chromiumTest("Chromium applies WebIDL conversions at CSSOM method boundaries", () => {
   const style = document.createElement("div").style;
   style.cssText = "width: 1px; color: red;";
   expect(style.item(1.9)).toBe("color");
@@ -64,7 +66,7 @@ test("Chromium applies WebIDL conversions at CSSOM method boundaries", () => {
   ]);
 });
 
-test("Chromium accepts typed attr() and conditional if() substitutions", () => {
+chromiumTest("Chromium accepts typed attr() and conditional if() substitutions", () => {
   const style = document.createElement("div").style;
   const attrValue = "attr(data-width type(<length>), 1px)";
   const ifValue = "if(style(--theme: dark): white; else: black)";
@@ -80,7 +82,7 @@ test("Chromium accepts typed attr() and conditional if() substitutions", () => {
   expect(style.getPropertyValue("color")).toBe(ifValue);
 });
 
-test("Chromium escapes logical custom-property names only when serializing", () => {
+chromiumTest("Chromium escapes logical custom-property names only when serializing", () => {
   const style = document.createElement("div").style;
   style.setProperty("-- x", "red");
   style.setProperty("--x!", "blue");
@@ -91,7 +93,7 @@ test("Chromium escapes logical custom-property names only when serializing", () 
   expect(style.cssText).toBe("--\\ x: red; --x\\!: blue;");
 });
 
-test("Chromium rejects priority tokens embedded in setProperty values", () => {
+chromiumTest("Chromium rejects priority tokens embedded in setProperty values", () => {
   const style = document.createElement("div").style;
   style.setProperty("color", "blue");
   style.setProperty("color", "red !important");
@@ -105,7 +107,7 @@ test("Chromium rejects priority tokens embedded in setProperty values", () => {
   expect(style.getPropertyValue("--escaped")).toBe("foo\\!bar");
 });
 
-test("Chromium retains pending provenance for non-padding shorthands", () => {
+chromiumTest("Chromium retains pending provenance for non-padding shorthands", () => {
   const style = document.createElement("div").style;
   const value = "12px var(--gap, var(--gap,";
   style.setProperty("margin", value);
@@ -123,4 +125,14 @@ test("Chromium retains pending provenance for non-padding shorthands", () => {
   expect(style.cssText).toBe(
     "margin-top: ; margin-right: ; margin-bottom: ; margin-left: 3px;",
   );
+});
+
+chromiumTest("Chromium rule WebIDL constructors and cssText setters are inert", () => {
+  expect(() => new CSSStyleRule()).toThrow(TypeError);
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync("@media screen { .x {} }");
+  const media = sheet.cssRules[0] as CSSMediaRule;
+  const before = media.cssText;
+  expect(Reflect.set(media, "cssText", "garbage")).toBe(true);
+  expect(media.cssText).toBe(before);
 });
