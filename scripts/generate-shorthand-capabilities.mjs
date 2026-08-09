@@ -7,6 +7,10 @@ import { chromiumShorthandLonghands } from "../src/chromium-properties.ts";
 
 const manifestUrl = new URL("../src/chromium-properties.ts", import.meta.url);
 const outputUrl = new URL("../compatibility/shorthand-capabilities.json", import.meta.url);
+const mode = process.argv[2] ?? "--check";
+if (!["--check", "--record"].includes(mode)) {
+  throw new Error("Usage: generate-shorthand-capabilities.mjs [--check|--record]");
+}
 const manifestSource = await readFile(manifestUrl);
 const manifestSha256 = createHash("sha256").update(manifestSource).digest("hex");
 const shorthands = Object.fromEntries(
@@ -80,10 +84,24 @@ try {
     },
     cases: result.cases,
   };
-  await writeFile(outputUrl, `${JSON.stringify(corpus, null, 2)}\n`);
-  console.log(
-    `Wrote ${corpus.cases.length} concrete shorthand cases from ${result.userAgent}`,
-  );
+  const serialized = `${JSON.stringify(corpus, null, 2)}\n`;
+  if (mode === "--record") {
+    await writeFile(outputUrl, serialized);
+    console.log(
+      `Recorded ${corpus.cases.length} concrete shorthand cases from ${result.userAgent}`,
+    );
+  } else {
+    const current = await readFile(outputUrl, "utf8");
+    if (current !== serialized) {
+      throw new Error(
+        "Shorthand capability observations drifted; review the browser diff and run " +
+        "npm run record:shorthand-capabilities to accept it",
+      );
+    }
+    console.log(
+      `Verified ${corpus.cases.length} concrete shorthand cases against ${result.userAgent}`,
+    );
+  }
 } finally {
   await browser.close();
 }

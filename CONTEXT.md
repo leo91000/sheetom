@@ -41,7 +41,7 @@ The stable machine-readable classification of a Mutation Diagnostic; its accompa
 _Avoid_: Error message, exception name
 
 **Unsupported Shorthand Value**:
-The diagnostic classification for a browser-accepted static shorthand that SheetOM cannot expand completely through its registered codec. The mutation remains atomic, and any occurrence is a release-blocking implementation defect rather than an invalid CSS value.
+The diagnostic classification for a browser-accepted static shorthand that SheetOM cannot expand completely through its registered codec. The mutation remains atomic, its message describes a codec limitation rather than invalid CSS, and any occurrence in a positive Grammar Branch Case is a release-blocking implementation defect.
 _Avoid_: Invalid property value, parser rejection, opaque shorthand state
 
 **Declaration Record**:
@@ -56,17 +56,37 @@ _Avoid_: Raw input, repaired stylesheet value, universal canonical form
 The single internal expansion and synthesis seam for one semantic family of static shorthands, converting accepted values into complete canonical longhand records and reconstructing browser-facing shorthand text only from current longhand state.
 _Avoid_: Shorthand state, cssstyle delegation, parser fallback
 
+**Shorthand Codec Profile**:
+The shared semantic grammar and expansion shape implemented by one or more Static Shorthand Codecs, such as repeated sides, semantic pairs, parallel lists, or layered values. Every registered profile owns a reviewed Grammar Branch Contract.
+_Avoid_: Property name, test category, parser fallback
+
 **Pending Shorthand Group**:
 Provenance connecting expanded Declaration Records to one shorthand mutation containing a genuinely deferred substitution, retaining recovered tokens only until a longhand mutation breaks the group.
 _Avoid_: Static shorthand state, serialized shorthand, original declaration
 
 **Shorthand Coverage Gate**:
-The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec, one pinned non-CSS-wide Chromium capability case, and passing expansion, synthesis, mutation, and serialization checkpoints. It combines exhaustive breadth across all manifested shorthands with deeper grammar-branch tests per codec family.
+The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec, one pinned non-CSS-wide Chromium breadth case, one standard property mutation, and complete shared evidence for its Shorthand Codec Profile's reviewed Grammar Branch Contract. Structure-changing branches add dedicated mutation scenarios, while the gate proves exhaustive property breadth and reviewed branch depth without claiming complete CSS grammar coverage.
 _Avoid_: Best-effort expansion, supported examples, cssstyle coverage
 
 **Shorthand Capability Corpus**:
-The versioned, manifest-bound set of concrete non-CSS-wide shorthand mutations and ordered Chromium observations that proves breadth for every manifested shorthand while leaving grammar depth to shared codec-family tests.
-_Avoid_: Initial-value smoke test, exhaustive grammar, one fixture file per property
+The versioned, manifest-bound browser evidence containing concrete breadth cases, Grammar Branch Cases, mutation scenarios, and ordered Chromium observations for manifested shorthands. It is published with the package and release for offline audit, but is conformance evidence and never an authority that makes a runtime value valid.
+_Avoid_: Runtime allowlist, initial-value smoke test, exhaustive grammar, one fixture file per property
+
+**Grammar Branch Contract**:
+The finite, reviewed inventory of representative positive and negative forms that every registered Shorthand Codec Profile must recognize and measure, including relevant arities, separators, lists, optional components, and substitutions. Specification productions identify candidate forms, the pinned Engine Oracle determines baseline applicability, and the contract bounds the compatibility claim without pretending to enumerate every possible CSS value.
+_Avoid_: Complete CSS grammar, examples list, parser implementation branches
+
+**Grammar Branch Case**:
+A browser-observed positive or negative shorthand mutation assigned to one named branch of a Grammar Branch Contract and required to pass that branch's expansion, observation, mutation, and round-trip checks. Its evidence includes the semantic branch actually selected by the codec, not only a curated label, and a negative case names the positive state against which rejection must be atomic.
+_Avoid_: Unit-test example, literal runtime override, breadth seed
+
+**Measured Literal Override**:
+A narrowly reviewed runtime exception for one exact property-value form that the pinned browser accepts but the general parser stack cannot yet validate. It preserves measured compatibility but cannot satisfy a Grammar Branch Contract, and the release gate flags it when the parser stack makes it redundant.
+_Avoid_: Grammar validator, corpus case, permissive fallback
+
+**Authoring Roundtrip Witness**:
+A browser probe that reparses Reparsable Stylesheet Serialization and compares the resulting Authoring CSSOM declaration state, without relying on cascade, layout, or computed style.
+_Avoid_: Rendering Witness, SheetOM-only idempotence, computed-style test
 
 **Supported Property Manifest**:
 A checked-in list of ordinary property names accepted by the named Chromium compatibility baseline, generated offline from real-browser probes.
@@ -141,7 +161,7 @@ The named browser-engine and dependency versions against which a package release
 _Avoid_: Universal CSSOM compatibility, latest browsers
 
 **Compatibility Report**:
-The immutable, schema-validated release artifact containing a Compatibility Baseline, WPT Dispositions, Oracle Observations, Compatibility Resolutions, and their summary counts.
+The immutable, schema-validated release artifact containing a Compatibility Baseline, WPT Dispositions, Oracle Observations, Compatibility Resolutions, shorthand corpus and branch-model hashes, exact gate outcomes, and their summary counts.
 _Avoid_: Release notes, mutable dashboard, test log
 
 **Baseline Draft**:
@@ -161,7 +181,7 @@ A specification or Web Platform Test scenario that exercises Authoring CSSOM wit
 _Avoid_: Every WPT, browser test
 
 **Operation Fixture**:
-A schema-versioned declarative sequence of Authoring CSSOM operations and stable object handles that executes unchanged through SheetOM and Engine Oracle adapters.
+A schema-versioned declarative sequence of Authoring CSSOM operations and stable object handles that executes unchanged through SheetOM and Engine Oracle adapters. Significant cross-engine resolutions and multi-step API regressions use fixtures, while codec grammar breadth remains in Grammar Branch Cases instead of being duplicated here.
 _Avoid_: Vitest case, browser script, unit test
 
 **Boundary Value**:

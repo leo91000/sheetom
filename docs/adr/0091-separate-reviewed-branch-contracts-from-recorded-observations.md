@@ -1,0 +1,3 @@
+# Separate reviewed branch contracts from recorded observations
+
+The Shorthand Codec Profiles, required branches, property mappings, and scenario obligations live in a manually reviewed branch-contract artifact, while concrete inputs and Engine Oracle observations live in the independently recordable Shorthand Capability Corpus. Runtime literal and ordering exceptions remain a third, compact source-owned table. This separation prevents a browser refresh from weakening the compatibility claim, keeps generated evidence out of runtime bundles, and makes every contract change visible as an architectural review rather than snapshot churn.
