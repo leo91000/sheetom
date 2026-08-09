@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.pending-substitution-eof-recovery",
+  "provenanceIds": [],
+  "operations": [
+    {
+      "op": "constructStyleRule",
+      "target": "$root",
+      "handle": "rule",
+      "args": [".x"]
+    },
+    {
+      "op": "getStyle",
+      "target": "rule",
+      "handle": "style",
+      "args": []
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["width", "calc(var(--x, 1px"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["width"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "setProperty",
+      "target": "style",
+      "args": ["color", "var(--x, red/*comment"],
+      "observe": ["return", "exception"]
+    },
+    {
+      "op": "getPropertyValue",
+      "target": "style",
+      "args": ["color"],
+      "observe": ["return", "exception"]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import {
   chromiumSupportedProperties,
 } from "../chromium-properties.js";
 import type { ParsedPropertyValue } from "./declaration-block.js";
+import { serializeObservableValue } from "./observable-value-codec.js";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -372,9 +373,22 @@ export function parsePropertyValue(
       ? serialized.slice(valueLocation.start.offset, valueLocation.end.offset)
       : csstree.generate(serializedDeclaration.value);
 
+    const observableCategory = name.startsWith("--")
+      ? "custom"
+      : pendingSubstitution
+        ? "pending-substitution"
+        : "typed";
+    const serializedObservableValue = serializeObservableValue({
+      name,
+      input: observableValue,
+      safeValue: safeValue.trim(),
+      category: observableCategory,
+    });
     const trimmedObservableValue = canonicalizeBrowserValue(
       name,
-      canonicalizeLeadingDecimal(observableValue.trim()),
+      observableCategory === "typed"
+        ? canonicalizeLeadingDecimal(serializedObservableValue)
+        : serializedObservableValue,
     );
     const normalizedSafeValue = canonicalizeBrowserValue(name, safeValue.trim());
     return {

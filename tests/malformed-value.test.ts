@@ -81,3 +81,47 @@ test("generated shorthand metadata applies pending provenance beyond padding", (
     "margin-top: ; margin-right: ; margin-bottom: ; margin-left: 3px;",
   );
 });
+
+test("typed EOF recovery matches Chromium CSSOM serialization", () => {
+  const cases = [
+    ["font-family", '"Gotham', "Gotham"],
+    ["content", '"hello', '"hello"'],
+    ["color", "red/*comment", "red"],
+    ["width", "calc(1px", "calc(1px)"],
+    ["width", "min(1px", "calc(1px)"],
+    ["color", "rgb(1 2 3", "rgb(1, 2, 3)"],
+    ["background-image", "url(foo", 'url("foo")'],
+    ["transform", "translateX(1px", "translateX(1px)"],
+    [
+      "background-image",
+      "linear-gradient(red, blue",
+      "linear-gradient(red, blue)",
+    ],
+  ] as const;
+
+  for (const [property, input, expected] of cases) {
+    const rule = createStyleRule(".x");
+    rule.style.setProperty(property, input);
+    assert.equal(rule.style.getPropertyValue(property), expected, `${property}: ${input}`);
+    assert.equal(rule.style.cssText, `${property}: ${expected};`);
+  }
+});
+
+test("retained EOF token text applies lexical recovery without closing blocks", () => {
+  const cases = [
+    ["--escaped", "foo\\", "foo�"],
+    ["--string", '"hello', '"hello'],
+    ["--comment", "red/*comment", "red"],
+    ["--square", "[foo", "[foo"],
+    ["--curly", "{foo", "{foo"],
+    ["--url", "url(foo\\", "url(foo�)"],
+    ["width", "calc(var(--x, 1px", "calc(var(--x, 1px"],
+    ["color", "var(--x, red/*comment", "var(--x, red"],
+  ] as const;
+
+  for (const [property, input, expected] of cases) {
+    const rule = createStyleRule(".x");
+    rule.style.setProperty(property, input);
+    assert.equal(rule.style.getPropertyValue(property), expected, `${property}: ${input}`);
+  }
+});

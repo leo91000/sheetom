@@ -35,6 +35,68 @@
       ]
     },
     {
+      "fixtureId": "declarations.typed-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "font-family: Gotham;",
+          "length": 1,
+          "items": ["font-family"]
+        },
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "color: red;",
+          "length": 1,
+          "items": ["color"]
+        },
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "width: calc(1px);",
+          "length": 1,
+          "items": ["width"]
+        }
+      ]
+    },
+    {
+      "fixtureId": "declarations.custom-property-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains unclosed custom-property token structures, removes EOF comments, and replaces an escaped EOF with U+FFFD.",
+      "expected": [
+        {},
+        {},
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "\"hello", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "red", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "foo�", "exception": null }
+      ]
+    },
+    {
+      "fixtureId": "declarations.pending-substitution-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the unclosed pending-substitution spelling while applying lexical EOF recovery such as comment removal.",
+      "expected": [
+        {},
+        {},
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "calc(var(--x, 1px", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "var(--x, red", "exception": null }
+      ]
+    },
+    {
       "fixtureId": "declarations.setproperty-null-undefined",
       "decision": "shared",
       "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior.",
