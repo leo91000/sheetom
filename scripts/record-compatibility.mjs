@@ -48,7 +48,7 @@ if (!operationReportArgument) {
 const operationReportPath = path.resolve(operationReportArgument.slice("--operation-report=".length));
 const operationReportBytes = await readFile(operationReportPath);
 const operationReport = JSON.parse(operationReportBytes.toString("utf8"));
-if (operationReport.schemaVersion !== 1 || !Array.isArray(operationReport.adapters)) {
+if (operationReport.schemaVersion !== 2 || !Array.isArray(operationReport.adapters)) {
   throw new Error("Operation Fixture evidence has an unsupported shape");
 }
 const operationFixtureAdapters = operationReport.adapters;
@@ -61,6 +61,20 @@ for (const adapter of expectedOperationAdapters) {
   const [evidence] = matches;
   if (evidence.passed !== resolutions.length || evidence.total !== resolutions.length) {
     throw new Error(`${adapter} Operation Fixture evidence is incomplete`);
+  }
+  if (
+    typeof evidence.version !== "string" ||
+    !Array.isArray(evidence.observations) ||
+    evidence.observations.length !== resolutions.length
+  ) {
+    throw new Error(`${adapter} Operation Fixture observations are incomplete`);
+  }
+  const observedIds = new Set(evidence.observations.map(observation => observation.fixtureId));
+  if (
+    observedIds.size !== resolutions.length ||
+    resolutions.some(resolution => !observedIds.has(resolution.fixtureId))
+  ) {
+    throw new Error(`${adapter} Operation Fixture observation IDs are incomplete`);
   }
 }
 if (operationFixtureAdapters.length !== expectedOperationAdapters.length) {
@@ -115,7 +129,7 @@ for (const reportArgument of reportArguments) {
 }
 const report = {
   $schema: "../schemas/compatibility-report.schema.json",
-  schemaVersion: 2,
+  schemaVersion: 3,
   packageVersion: packageManifest.version,
   baseline: {
     wptCommit: wptLock.commit,

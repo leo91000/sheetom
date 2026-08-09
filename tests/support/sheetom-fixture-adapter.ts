@@ -39,12 +39,27 @@ export function createSheetOMFixtureAdapter(): FixtureAdapter {
             target,
             args,
           );
+        case "removeProperty":
+          return Reflect.apply(
+            (target as CSSStyleDeclaration).removeProperty,
+            target,
+            args,
+          );
         case "getPropertyValue":
           return Reflect.apply(
             (target as CSSStyleDeclaration).getPropertyValue,
             target,
             args,
           );
+        case "getPropertyPriority":
+          return Reflect.apply(
+            (target as CSSStyleDeclaration).getPropertyPriority,
+            target,
+            args,
+          );
+        case "setCssText":
+          (target as CSSStyleDeclaration).cssText = args[0] as string;
+          return undefined;
         default:
           throw new Error(`Unsupported SheetOM fixture operation: ${operation.op}`);
       }

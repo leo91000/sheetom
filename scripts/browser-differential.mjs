@@ -12,6 +12,8 @@ const trackedProperties = [
   "background-image",
   "color",
   "font-family",
+  "overflow-x",
+  "overflow-y",
   "padding-bottom",
   "padding-left",
   "padding-right",
@@ -55,6 +57,7 @@ const mutation = fc.oneof(
   ]),
   setMutation("transform", ["none", "translateX(1px)", "translateX(1px"]),
   setMutation("padding", ["1px", "1px 2px", "var(--token, 1px)"]),
+  setMutation("overflow", ["auto", "hidden", "clip scroll"]),
   setMutation("--token", [
     "red",
     '"a;b"',
@@ -213,6 +216,65 @@ async function verifyNativeReparsing(pages) {
   }
 }
 
+async function verifyShorthandRenderingWitness(page) {
+  const cases = [
+    ["background", "red", "background-color", "blue", "background-color"],
+    ["overflow", "hidden", "overflow-x", "scroll", "overflow-x"],
+    ["border-radius", "10px", "border-top-left-radius", "20px", "border-top-left-radius"],
+    ["font", "italic 16px serif", "font-size", "20px", "font-size"],
+    ["animation", "1s linear foo", "animation-duration", "2s", "animation-duration"],
+    ["transition", "color 1s linear", "transition-duration", "2s", "transition-duration"],
+    ["container", "card / inline-size", "container-name", "other", "container-name"],
+    ["white-space", "pre-wrap", "white-space-collapse", "collapse", "white-space-collapse"],
+  ];
+  const sheet = new CSSStyleSheet();
+  for (const [index, [shorthand, value, longhand, override]] of cases.entries()) {
+    sheet.insertRule(`.sheetom-shorthand-${index} {}`, index);
+    const rule = sheet.cssRules[index];
+    if (!(rule instanceof CSSStyleRule)) throw new TypeError("Expected style rule");
+    rule.style.setProperty(shorthand, value);
+    rule.style.setProperty(longhand, override);
+    rule.style.removeProperty(longhand);
+  }
+
+  const observations = await page.evaluate(({ css, definitions }) => {
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.append(style);
+    const results = [];
+    const elements = [];
+    try {
+      for (const [index, [shorthand, value, longhand, override, witness]] of definitions.entries()) {
+        const reference = document.createElement("div");
+        reference.style.setProperty(shorthand, value);
+        reference.style.setProperty(longhand, override);
+        reference.style.removeProperty(longhand);
+        const candidate = document.createElement("div");
+        candidate.className = `sheetom-shorthand-${index}`;
+        document.body.append(reference, candidate);
+        elements.push(reference, candidate);
+        results.push({
+          shorthand,
+          reference: getComputedStyle(reference).getPropertyValue(witness),
+          serialized: getComputedStyle(candidate).getPropertyValue(witness),
+        });
+      }
+    } finally {
+      style.remove();
+      for (const element of elements) element.remove();
+    }
+    return results;
+  }, { css: sheet.serialize(), definitions: cases });
+
+  for (const observation of observations) {
+    assert.equal(
+      observation.serialized,
+      observation.reference,
+      `Chromium rendering witness for ${observation.shorthand}`,
+    );
+  }
+}
+
 const browsers = new Map();
 try {
   for (const [name, browserType] of Object.entries({ chromium, firefox, webkit })) {
@@ -247,6 +309,7 @@ try {
   });
 
   await verifyNativeReparsing(pages);
+  await verifyShorthandRenderingWitness(pages.get("chromium"));
   console.log("Browser differential and native reparsing evidence passed.");
 } finally {
   for (const browser of browsers.values()) await browser.close();

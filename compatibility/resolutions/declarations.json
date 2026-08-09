@@ -275,6 +275,86 @@
           "parentStyleSheet": null
         }
       ]
+    },
+    {
+      "fixtureId": "declarations.shorthand-state-sequences",
+      "decision": "chromium-fallback",
+      "rationale": "Engines share expanded longhand ownership and prevent state resurrection, but background record order and omitted-component spelling diverge; SheetOM follows the pinned Chromium observation.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "background: red;",
+          "length": 9,
+          "items": ["background-image", "background-position-x", "background-position-y", "background-size", "background-repeat", "background-attachment", "background-origin", "background-clip", "background-color"]
+        },
+        {},
+        {
+          "return": "blue",
+          "exception": null,
+          "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+          "length": 8,
+          "items": ["background-image", "background-position-x", "background-position-y", "background-size", "background-repeat", "background-attachment", "background-origin", "background-clip"]
+        },
+        { "return": "", "exception": null },
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "overflow: hidden;",
+          "length": 2,
+          "items": ["overflow-x", "overflow-y"]
+        },
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+          "length": 2,
+          "items": ["overflow-x", "overflow-y"]
+        },
+        { "return": "", "exception": null },
+        {
+          "return": "scroll",
+          "exception": null,
+          "cssText": "overflow-y: hidden;",
+          "length": 1,
+          "items": ["overflow-y"]
+        }
+      ]
+    },
+    {
+      "fixtureId": "declarations.modern-value-capabilities",
+      "decision": "shared",
+      "rationale": "The pinned Chromium and Firefox engines accept the measured subgrid, anchor-size, contrast-color, and integer calc families with the same observable declaration state.",
+      "expected": [
+        {},
+        {},
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "grid-template-columns: subgrid;", "length": 1, "items": ["grid-template-columns"] },
+        { "return": "subgrid", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "grid-template-columns: subgrid; width: anchor-size(width);", "length": 2, "items": ["grid-template-columns", "width"] },
+        { "return": "anchor-size(width)", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);", "length": 3, "items": ["grid-template-columns", "width", "color"] },
+        { "return": "contrast-color(red)", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);", "length": 4, "items": ["grid-template-columns", "width", "color", "z-index"] },
+        { "return": "calc(2)", "exception": null }
+      ]
+    },
+    {
+      "fixtureId": "declarations.content-value-capabilities",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the incomplete pending-substitution spelling and supports target-text with a typed attr source while Firefox differs; both reject the measured leader and URL target-text cases.",
+      "expected": [
+        {},
+        {},
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "content: var(--x;", "length": 1, "items": ["content"] },
+        { "return": "var(--x", "exception": null },
+        {},
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "content: \"safe\";", "length": 1, "items": ["content"] },
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "content: \"safe\";", "length": 1, "items": ["content"] },
+        { "return": { "$type": "undefined" }, "exception": null, "cssText": "content: target-text(attr(href url));", "length": 1, "items": ["content"] },
+        { "return": "target-text(attr(href url))", "exception": null }
+      ]
     }
   ]
 }

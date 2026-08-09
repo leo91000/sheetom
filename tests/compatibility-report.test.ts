@@ -22,11 +22,16 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     const fixtureTotal = resolutions.resolutions.length;
     const operationReportPath = path.join(directory, "operation-fixtures.json");
     await writeFile(operationReportPath, JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       adapters: ["sheetom", "chromium", "firefox", "webkit"].map(adapter => ({
         adapter,
+        version: `${adapter}-test-version`,
         passed: fixtureTotal,
         total: fixtureTotal,
+        observations: resolutions.resolutions.map((resolution: { fixtureId: string }) => ({
+          fixtureId: resolution.fixtureId,
+          operations: [{}],
+        })),
       })),
     }));
     const argumentsList: string[] = [];
@@ -55,7 +60,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
-    assert.equal(report.schemaVersion, 2);
+    assert.equal(report.schemaVersion, 3);
     assert.deepEqual(report.baseline.syntaxEngineSet, {
       lightningcss: "1.33.0",
       cssTree: "3.2.1",

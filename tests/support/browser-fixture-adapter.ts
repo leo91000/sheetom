@@ -38,12 +38,27 @@ export function createNativeBrowserFixtureAdapter(): FixtureAdapter {
             target,
             args,
           );
+        case "removeProperty":
+          return Reflect.apply(
+            (target as globalThis.CSSStyleDeclaration).removeProperty,
+            target,
+            args,
+          );
         case "getPropertyValue":
           return Reflect.apply(
             (target as globalThis.CSSStyleDeclaration).getPropertyValue,
             target,
             args,
           );
+        case "getPropertyPriority":
+          return Reflect.apply(
+            (target as globalThis.CSSStyleDeclaration).getPropertyPriority,
+            target,
+            args,
+          );
+        case "setCssText":
+          (target as globalThis.CSSStyleDeclaration).cssText = args[0] as string;
+          return undefined;
         default:
           throw new Error(`Unsupported browser fixture operation: ${operation.op}`);
       }
