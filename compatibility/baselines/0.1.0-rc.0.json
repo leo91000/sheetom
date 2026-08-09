@@ -1,0 +1,70 @@
+{
+  "$schema": "../schemas/compatibility-report.schema.json",
+  "schemaVersion": 1,
+  "packageVersion": "0.1.0-rc.0",
+  "baseline": {
+    "wptCommit": "54f8f933629e7c010ae98a246729af01f8abcda5",
+    "lightningcss": "1.33.0",
+    "cssTree": "3.2.1",
+    "runtimes": {
+      "node": "v24.18.0",
+      "bun": "1.3.1",
+      "deno": "2.9.5"
+    },
+    "browsers": {
+      "chromium": "151.0.7922.34 (revision 1234)",
+      "firefox": "153.0 (revision 1538)",
+      "webkit": "26.5 (revision 2336)"
+    }
+  },
+  "summary": {
+    "passed": 3,
+    "divergences": 1,
+    "excluded": 0,
+    "unexplained": 0
+  },
+  "evidence": {
+    "operationFixtures": {
+      "passed": 4,
+      "total": 4
+    },
+    "nativeWpt": [
+      {
+        "engine": "chrome",
+        "version": "150.0.7871.128",
+        "sha256": "5270d46cd030875bdfa9237857465e942e0dcdc7276f5fc8c7c1493931d27366",
+        "passed": 4,
+        "total": 4
+      },
+      {
+        "engine": "firefox",
+        "version": "153.0.3",
+        "sha256": "25e205b04e0c4775c652e4260169c8f2464b0911a00abb8862f1b8241c6ca597",
+        "passed": 4,
+        "total": 4
+      }
+    ]
+  },
+  "resolutions": [
+    {
+      "fixtureId": "declarations.basic-set-property",
+      "decision": "shared",
+      "rationale": "The observable declaration state is shared by the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.malformed-padding",
+      "decision": "chromium-fallback",
+      "rationale": "CSS Syntax accepts the EOF-recovered value; Chromium preserves the unclosed observable spelling while Firefox materializes closing parentheses."
+    },
+    {
+      "fixtureId": "declarations.setproperty-null-undefined",
+      "decision": "shared",
+      "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior."
+    },
+    {
+      "fixtureId": "declarations.required-arguments",
+      "decision": "shared",
+      "rationale": "Required WebIDL arguments throw TypeError before string conversion in the pinned browser engines."
+    }
+  ]
+}

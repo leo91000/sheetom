@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "rc",
+  "initialVersions": {
+    "sheetom": "0.0.0"
+  },
+  "changesets": [
+    "bright-rules-bloom"
+  ]
+}
