@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/shorthand-grammar-observations.schema.json",
+  "title": "Chromium Shorthand Grammar Branch Observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "browser", "userAgent", "cases"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "browser": { "const": "chromium" },
+    "userAgent": { "type": "string", "minLength": 1 },
+    "cases": {
+      "type": "array",
+      "minItems": 92,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "accepted", "items", "longhands", "shorthandValue", "priority", "cssText"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "accepted": { "type": "boolean" },
+          "items": { "type": "array", "items": { "type": "string" } },
+          "longhands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "value", "priority"],
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "string" },
+                "priority": { "type": "string" }
+              }
+            }
+          },
+          "shorthandValue": { "type": "string" },
+          "priority": { "type": "string" },
+          "cssText": { "type": "string" }
+        }
+      }
+    }
+  }
+}

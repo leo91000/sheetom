@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.shorthand-observable-synthesis",
+  "operations": [
+    { "op": "constructStyleRule", "target": "$root", "handle": "animationRule", "args": [".animation"] },
+    { "op": "getStyle", "target": "animationRule", "handle": "animation", "args": [] },
+    { "op": "setProperty", "target": "animation", "args": ["animation", "1s ease foo, 2s linear bar"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "constructStyleRule", "target": "$root", "handle": "overscrollRule", "args": [".overscroll"] },
+    { "op": "getStyle", "target": "overscrollRule", "handle": "overscroll", "args": [] },
+    { "op": "setProperty", "target": "overscroll", "args": ["overscroll-behavior", "contain none"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "constructStyleRule", "target": "$root", "handle": "backgroundRule", "args": [".background"] },
+    { "op": "getStyle", "target": "backgroundRule", "handle": "background", "args": [] },
+    { "op": "setProperty", "target": "background", "args": ["background", "linear-gradient(red, blue)"], "observe": ["return", "exception", "cssText", "length", "items"] }
+  ]
+}

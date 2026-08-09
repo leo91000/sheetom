@@ -755,13 +755,16 @@ export class CSSStyleDeclaration {
       },
       (code, property, input) => {
         const priority = code === "INVALID_PRIORITY";
+        const unsupportedShorthand = code === "UNSUPPORTED_SHORTHAND_VALUE";
         (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)({
           code,
           severity: "warning",
           operation: "setProperty",
           message: priority
             ? `The mutation was ignored because ${input} is not a valid priority.`
-            : `The value was ignored because it is invalid for ${property}.`,
+            : unsupportedShorthand
+              ? `The value was ignored because the shorthand codec for ${property} cannot expand it.`
+              : `The value was ignored because it is invalid for ${property}.`,
           property,
           input,
           location: null,

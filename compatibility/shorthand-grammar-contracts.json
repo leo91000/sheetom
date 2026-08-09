@@ -1,0 +1,144 @@
+{
+  "$schema": "./schemas/shorthand-grammar-contracts.schema.json",
+  "schemaVersion": 1,
+  "profiles": [
+    { "codec": "four-side", "cases": [
+      { "id": "grammar.four-side.one", "branch": "one value", "property": "padding", "input": "1px", "accepted": true },
+      { "id": "grammar.four-side.two", "branch": "two values", "property": "padding", "input": "1px 2px", "accepted": true },
+      { "id": "grammar.four-side.four", "branch": "four values", "property": "padding", "input": "1px 2px 3px 4px", "accepted": true },
+      { "id": "grammar.four-side.five-invalid", "branch": "too many values", "property": "padding", "input": "1px 2px 3px 4px 5px", "accepted": false, "preserves": "grammar.four-side.four" }
+    ] },
+    { "codec": "two-value", "cases": [
+      { "id": "grammar.two-value.one", "branch": "one value", "property": "gap", "input": "1px", "accepted": true },
+      { "id": "grammar.two-value.two", "branch": "two values", "property": "gap", "input": "1px 2px", "accepted": true },
+      { "id": "grammar.two-value.keyword-pair", "branch": "keyword pair", "property": "overscroll-behavior", "input": "contain none", "accepted": true },
+      { "id": "grammar.two-value.three-invalid", "branch": "too many values", "property": "gap", "input": "1px 2px 3px", "accepted": false, "preserves": "grammar.two-value.two" }
+    ] },
+    { "codec": "slash-pair", "cases": [
+      { "id": "grammar.slash-pair.one", "branch": "one line", "property": "grid-column", "input": "1", "accepted": true },
+      { "id": "grammar.slash-pair.two", "branch": "slash pair", "property": "grid-column", "input": "1 / 3", "accepted": true },
+      { "id": "grammar.slash-pair.named", "branch": "named lines", "property": "grid-row", "input": "header / footer", "accepted": true },
+      { "id": "grammar.slash-pair.three-invalid", "branch": "too many slashes", "property": "grid-column", "input": "1 / 2 / 3", "accepted": false, "preserves": "grammar.slash-pair.two" }
+    ] },
+    { "codec": "animation", "cases": [
+      { "id": "grammar.animation.single", "branch": "single item", "property": "animation", "input": "1s ease foo", "accepted": true },
+      { "id": "grammar.animation.multiple", "branch": "comma list", "property": "animation", "input": "1s ease foo, 2s linear bar", "accepted": true },
+      { "id": "grammar.animation.direction-fill", "branch": "optional keywords", "property": "animation", "input": "2s reverse both slide", "accepted": true },
+      { "id": "grammar.animation.duplicate-duration-invalid", "branch": "duplicate duration", "property": "animation", "input": "1s 2s 3s foo", "accepted": false, "preserves": "grammar.animation.single" }
+    ] },
+    { "codec": "background", "cases": [
+      { "id": "grammar.background.color", "branch": "color", "property": "background", "input": "red", "accepted": true },
+      { "id": "grammar.background.image", "branch": "image", "property": "background", "input": "linear-gradient(red, blue)", "accepted": true },
+      { "id": "grammar.background.layer", "branch": "position size layer", "property": "background", "input": "url(\"x.png\") center / cover no-repeat red", "accepted": true },
+      { "id": "grammar.background.color-before-comma-invalid", "branch": "color before final layer", "property": "background", "input": "red, url(\"x.png\")", "accepted": false, "preserves": "grammar.background.color" }
+    ] },
+    { "codec": "border", "cases": [
+      { "id": "grammar.border.width", "branch": "width", "property": "border", "input": "2px", "accepted": true },
+      { "id": "grammar.border.style-color", "branch": "style and color", "property": "border-inline", "input": "dashed blue", "accepted": true },
+      { "id": "grammar.border.all-components", "branch": "all components", "property": "border", "input": "2px dashed blue", "accepted": true },
+      { "id": "grammar.border.duplicate-style-invalid", "branch": "duplicate component", "property": "border", "input": "solid dashed red", "accepted": false, "preserves": "grammar.border.all-components" }
+    ] },
+    { "codec": "border-image", "cases": [
+      { "id": "grammar.border-image.none", "branch": "none", "property": "border-image", "input": "none", "accepted": true },
+      { "id": "grammar.border-image.slice", "branch": "source and slice", "property": "border-image", "input": "url(\"x.png\") 30", "accepted": true },
+      { "id": "grammar.border-image.full", "branch": "slash sections", "property": "border-image", "input": "url(\"x.png\") 30 / 10 / 0 stretch", "accepted": true },
+      { "id": "grammar.border-image.extra-slash-invalid", "branch": "too many slash sections", "property": "border-image", "input": "url(\"x.png\") 30 / 10 / 0 / 1", "accepted": false, "preserves": "grammar.border-image.full" }
+    ] },
+    { "codec": "border-radius", "cases": [
+      { "id": "grammar.border-radius.one", "branch": "one radius", "property": "border-radius", "input": "4px", "accepted": true },
+      { "id": "grammar.border-radius.four", "branch": "four radii", "property": "border-radius", "input": "1px 2px 3px 4px", "accepted": true },
+      { "id": "grammar.border-radius.elliptical", "branch": "elliptical slash", "property": "border-radius", "input": "10px 20px / 30px 40px", "accepted": true },
+      { "id": "grammar.border-radius.extra-slash-invalid", "branch": "too many slash sections", "property": "border-radius", "input": "1px / 2px / 3px", "accepted": false, "preserves": "grammar.border-radius.elliptical" }
+    ] },
+    { "codec": "columns", "cases": [
+      { "id": "grammar.columns.width", "branch": "width", "property": "columns", "input": "100px", "accepted": true },
+      { "id": "grammar.columns.count", "branch": "count", "property": "columns", "input": "2", "accepted": true },
+      { "id": "grammar.columns.both", "branch": "width and count", "property": "columns", "input": "100px 2", "accepted": true },
+      { "id": "grammar.columns.two-widths-invalid", "branch": "duplicate width", "property": "columns", "input": "100px 200px", "accepted": false, "preserves": "grammar.columns.both" }
+    ] },
+    { "codec": "container", "cases": [
+      { "id": "grammar.container.name", "branch": "name", "property": "container", "input": "card", "accepted": true },
+      { "id": "grammar.container.slash-type", "branch": "name and type", "property": "container", "input": "card / inline-size", "accepted": true },
+      { "id": "grammar.container.normal", "branch": "none name", "property": "container", "input": "none / normal", "accepted": true },
+      { "id": "grammar.container.extra-slash-invalid", "branch": "too many slash sections", "property": "container", "input": "card / size / inline-size", "accepted": false, "preserves": "grammar.container.slash-type" }
+    ] },
+    { "codec": "flex-flow", "cases": [
+      { "id": "grammar.flex-flow.direction", "branch": "direction", "property": "flex-flow", "input": "column", "accepted": true },
+      { "id": "grammar.flex-flow.wrap", "branch": "wrap", "property": "flex-flow", "input": "wrap", "accepted": true },
+      { "id": "grammar.flex-flow.both", "branch": "direction and wrap", "property": "flex-flow", "input": "column wrap-reverse", "accepted": true },
+      { "id": "grammar.flex-flow.duplicate-direction-invalid", "branch": "duplicate direction", "property": "flex-flow", "input": "row column", "accepted": false, "preserves": "grammar.flex-flow.both" }
+    ] },
+    { "codec": "font", "cases": [
+      { "id": "grammar.font.required", "branch": "size and family", "property": "font", "input": "16px serif", "accepted": true },
+      { "id": "grammar.font.line-height", "branch": "line height", "property": "font", "input": "16px / 1.5 serif", "accepted": true },
+      { "id": "grammar.font.optional", "branch": "optional prefix", "property": "font", "input": "italic 700 16px / 1.5 serif", "accepted": true },
+      { "id": "grammar.font.missing-family-invalid", "branch": "missing family", "property": "font", "input": "italic 16px", "accepted": false, "preserves": "grammar.font.optional" }
+    ] },
+    { "codec": "grid", "cases": [
+      { "id": "grammar.grid.area", "branch": "four grid lines", "property": "grid-area", "input": "1 / 2 / 3 / 4", "accepted": true },
+      { "id": "grammar.grid.template", "branch": "rows and columns", "property": "grid-template", "input": "100px / 1fr 2fr", "accepted": true },
+      { "id": "grammar.grid.none", "branch": "none", "property": "grid", "input": "none", "accepted": true },
+      { "id": "grammar.grid.area-extra-invalid", "branch": "too many grid lines", "property": "grid-area", "input": "1 / 2 / 3 / 4 / 5", "accepted": false, "preserves": "grammar.grid.area" }
+    ] },
+    { "codec": "layered", "cases": [
+      { "id": "grammar.layered.none", "branch": "none", "property": "mask", "input": "none", "accepted": true },
+      { "id": "grammar.layered.image", "branch": "image", "property": "mask", "input": "url(\"m.png\")", "accepted": true },
+      { "id": "grammar.layered.position-size", "branch": "position and size", "property": "mask", "input": "url(\"m.png\") center / cover no-repeat", "accepted": true },
+      { "id": "grammar.layered.empty-layer-invalid", "branch": "empty layer", "property": "mask", "input": "url(\"m.png\"),", "accepted": false, "preserves": "grammar.layered.image" }
+    ] },
+    { "codec": "offset", "cases": [
+      { "id": "grammar.offset.normal", "branch": "normal", "property": "offset", "input": "normal", "accepted": true },
+      { "id": "grammar.offset.path", "branch": "path", "property": "offset", "input": "path(\"M 0 0 L 10 10\")", "accepted": true },
+      { "id": "grammar.offset.distance-rotate", "branch": "distance and rotate", "property": "offset", "input": "path(\"M 0 0 L 10 10\") 20% reverse", "accepted": true },
+      { "id": "grammar.offset.extra-anchor-invalid", "branch": "too many anchors", "property": "offset", "input": "path(\"M 0 0\") / center / left", "accepted": false, "preserves": "grammar.offset.path" }
+    ] },
+    { "codec": "overflow", "cases": [
+      { "id": "grammar.overflow.one", "branch": "one keyword", "property": "overflow", "input": "hidden", "accepted": true },
+      { "id": "grammar.overflow.two", "branch": "two keywords", "property": "overflow", "input": "hidden scroll", "accepted": true },
+      { "id": "grammar.overflow.clip-auto", "branch": "clip and auto", "property": "overflow", "input": "clip auto", "accepted": true },
+      { "id": "grammar.overflow.three-invalid", "branch": "too many values", "property": "overflow", "input": "hidden scroll auto", "accepted": false, "preserves": "grammar.overflow.two" }
+    ] },
+    { "codec": "repeated-pair", "cases": [
+      { "id": "grammar.repeated-pair.one", "branch": "one value", "property": "place-content", "input": "center", "accepted": true },
+      { "id": "grammar.repeated-pair.two", "branch": "two values", "property": "place-content", "input": "center space-evenly", "accepted": true },
+      { "id": "grammar.repeated-pair.compound", "branch": "compound first value", "property": "place-content", "input": "safe center space-evenly", "accepted": true },
+      { "id": "grammar.repeated-pair.extra-invalid", "branch": "unmatched extra value", "property": "place-content", "input": "safe center space-evenly stretch", "accepted": false, "preserves": "grammar.repeated-pair.compound" }
+    ] },
+    { "codec": "scroll-timeline", "cases": [
+      { "id": "grammar.scroll-timeline.name", "branch": "name", "property": "scroll-timeline", "input": "--x", "accepted": true },
+      { "id": "grammar.scroll-timeline.axis", "branch": "name and axis", "property": "scroll-timeline", "input": "--x inline", "accepted": true },
+      { "id": "grammar.scroll-timeline.list", "branch": "comma list", "property": "scroll-timeline", "input": "--x block, --y inline", "accepted": true },
+      { "id": "grammar.scroll-timeline.missing-name-invalid", "branch": "axis without name", "property": "scroll-timeline", "input": "inline", "accepted": false, "preserves": "grammar.scroll-timeline.axis" }
+    ] },
+    { "codec": "text-wrap", "cases": [
+      { "id": "grammar.text-wrap.mode", "branch": "mode", "property": "text-wrap", "input": "nowrap", "accepted": true },
+      { "id": "grammar.text-wrap.style", "branch": "style", "property": "text-wrap", "input": "balance", "accepted": true },
+      { "id": "grammar.text-wrap.both", "branch": "mode and style", "property": "text-wrap", "input": "wrap balance", "accepted": true },
+      { "id": "grammar.text-wrap.duplicate-mode-invalid", "branch": "duplicate mode", "property": "text-wrap", "input": "wrap nowrap", "accepted": false, "preserves": "grammar.text-wrap.both" }
+    ] },
+    { "codec": "transition", "cases": [
+      { "id": "grammar.transition.property-duration", "branch": "property and duration", "property": "transition", "input": "opacity 1s", "accepted": true },
+      { "id": "grammar.transition.optional", "branch": "timing delay behavior", "property": "transition", "input": "opacity 1s linear 2s allow-discrete", "accepted": true },
+      { "id": "grammar.transition.list", "branch": "comma list", "property": "transition", "input": "opacity 1s ease 0s, transform 2s linear 1s allow-discrete", "accepted": true },
+      { "id": "grammar.transition.three-times-invalid", "branch": "too many times", "property": "transition", "input": "opacity 1s 2s 3s", "accepted": false, "preserves": "grammar.transition.optional" }
+    ] },
+    { "codec": "typed-object", "cases": [
+      { "id": "grammar.typed-object.outline", "branch": "unordered components", "property": "outline", "input": "red dashed 2px", "accepted": true },
+      { "id": "grammar.typed-object.list-style", "branch": "list style components", "property": "list-style", "input": "inside square", "accepted": true },
+      { "id": "grammar.typed-object.text-box", "branch": "trim and paired edge", "property": "text-box", "input": "trim-both cap alphabetic", "accepted": true },
+      { "id": "grammar.typed-object.outline-duplicate-invalid", "branch": "duplicate component", "property": "outline", "input": "solid dashed red", "accepted": false, "preserves": "grammar.typed-object.outline" }
+    ] },
+    { "codec": "uniform", "cases": [
+      { "id": "grammar.uniform.one", "branch": "uniform value", "property": "border-block-color", "input": "red", "accepted": true },
+      { "id": "grammar.uniform.two", "branch": "paired values", "property": "border-block-color", "input": "red blue", "accepted": true },
+      { "id": "grammar.uniform.four", "branch": "four corner values", "property": "corner-shape", "input": "round bevel scoop notch", "accepted": true },
+      { "id": "grammar.uniform.five-invalid", "branch": "too many values", "property": "corner-shape", "input": "round bevel scoop notch square", "accepted": false, "preserves": "grammar.uniform.four" }
+    ] },
+    { "codec": "white-space", "cases": [
+      { "id": "grammar.white-space.alias", "branch": "legacy alias", "property": "white-space", "input": "pre-wrap", "accepted": true },
+      { "id": "grammar.white-space.collapse-mode", "branch": "collapse and mode", "property": "white-space", "input": "preserve nowrap", "accepted": true },
+      { "id": "grammar.white-space.break-spaces", "branch": "break spaces", "property": "white-space", "input": "break-spaces", "accepted": true },
+      { "id": "grammar.white-space.extra-invalid", "branch": "extra keyword", "property": "white-space", "input": "preserve wrap nowrap", "accepted": false, "preserves": "grammar.white-space.collapse-mode" }
+    ] }
+  ]
+}

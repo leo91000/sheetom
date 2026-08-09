@@ -48,12 +48,16 @@ const reportSchema = await readJson(path.join(compatibilityRoot, "schemas/compat
 const resolutionsSchema = await readJson(path.join(compatibilityRoot, "schemas/compatibility-resolutions.schema.json"));
 const valueCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "schemas/value-capability-corpus.schema.json"));
 const shorthandCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-capability-corpus.schema.json"));
+const shorthandGrammarContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-contracts.schema.json"));
+const shorthandGrammarObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-observations.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
 const validateResolutions = ajv.compile(resolutionsSchema);
 const validateValueCapabilities = ajv.compile(valueCapabilitiesSchema);
 const validateShorthandCapabilities = ajv.compile(shorthandCapabilitiesSchema);
+const validateShorthandGrammarContracts = ajv.compile(shorthandGrammarContractsSchema);
+const validateShorthandGrammarObservations = ajv.compile(shorthandGrammarObservationsSchema);
 
 const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");
 validateOrThrow(
@@ -69,6 +73,42 @@ validateOrThrow(
   shorthandCapabilities,
   shorthandCapabilitiesFile,
 );
+
+const shorthandGrammarContractsFile = path.join(
+  compatibilityRoot,
+  "shorthand-grammar-contracts.json",
+);
+const shorthandGrammarContracts = await readJson(shorthandGrammarContractsFile);
+validateOrThrow(
+  validateShorthandGrammarContracts,
+  shorthandGrammarContracts,
+  shorthandGrammarContractsFile,
+);
+const shorthandGrammarObservationsFile = path.join(
+  compatibilityRoot,
+  "shorthand-grammar-observations.json",
+);
+const shorthandGrammarObservations = await readJson(shorthandGrammarObservationsFile);
+validateOrThrow(
+  validateShorthandGrammarObservations,
+  shorthandGrammarObservations,
+  shorthandGrammarObservationsFile,
+);
+const grammarCases = shorthandGrammarContracts.profiles.flatMap(profile => profile.cases);
+assert.equal(new Set(shorthandGrammarContracts.profiles.map(profile => profile.codec)).size, 23);
+assert.equal(new Set(grammarCases.map(grammarCase => grammarCase.id)).size, grammarCases.length);
+assert.deepEqual(
+  shorthandGrammarObservations.cases.map(observation => observation.id),
+  grammarCases.map(grammarCase => grammarCase.id),
+  "Grammar Branch observations must exactly follow the reviewed contracts",
+);
+for (let index = 0; index < grammarCases.length; index += 1) {
+  assert.equal(
+    shorthandGrammarObservations.cases[index]?.accepted,
+    grammarCases[index]?.accepted,
+    `${grammarCases[index]?.id} Chromium acceptance drifted`,
+  );
+}
 const propertyManifestFile = path.join(repositoryRoot, "src/chromium-properties.ts");
 const propertyManifestSha256 = createHash("sha256")
   .update(await readFile(propertyManifestFile))

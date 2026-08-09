@@ -1,0 +1,20 @@
+{
+  "$schema": "../../schemas/operation-fixture.schema.json",
+  "schemaVersion": 1,
+  "id": "declarations.shorthand-grammar-branches",
+  "operations": [
+    { "op": "constructStyleRule", "target": "$root", "handle": "logicalRule", "args": [".logical"] },
+    { "op": "getStyle", "target": "logicalRule", "handle": "logical", "args": [] },
+    { "op": "setProperty", "target": "logical", "args": ["border-block-color", "red blue"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "constructStyleRule", "target": "$root", "handle": "placeRule", "args": [".place"] },
+    { "op": "getStyle", "target": "placeRule", "handle": "place", "args": [] },
+    { "op": "setProperty", "target": "place", "args": ["place-content", "safe center space-evenly"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "constructStyleRule", "target": "$root", "handle": "transitionRule", "args": [".transition"] },
+    { "op": "getStyle", "target": "transitionRule", "handle": "transition", "args": [] },
+    { "op": "setProperty", "target": "transition", "args": ["transition", "opacity 1s ease 0s, transform 2s linear 1s allow-discrete"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "constructStyleRule", "target": "$root", "handle": "timelineRule", "args": [".timeline"] },
+    { "op": "getStyle", "target": "timelineRule", "handle": "timeline", "args": [] },
+    { "op": "setProperty", "target": "timeline", "args": ["view-timeline", "--x block 10% 20%, --y inline auto"], "observe": ["return", "exception", "cssText", "length", "items"] },
+    { "op": "setProperty", "target": "timeline", "args": ["view-timeline", "--x block 10% 20%, --y inline auto extra"], "observe": ["return", "exception", "cssText", "length", "items"] }
+  ]
+}

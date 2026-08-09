@@ -55,6 +55,23 @@ const repeatedPairShorthandNames = new Set([
   "timeline-trigger-activation-range",
   "timeline-trigger-active-range",
 ]);
+const repeatedTwoValueShorthandNames = new Set([
+  "border-block-color",
+  "border-block-style",
+  "border-block-width",
+  "border-inline-color",
+  "border-inline-style",
+  "border-inline-width",
+  "corner-block-end-shape",
+  "corner-block-start-shape",
+  "corner-bottom-shape",
+  "corner-inline-end-shape",
+  "corner-inline-start-shape",
+  "corner-left-shape",
+  "corner-right-shape",
+  "corner-top-shape",
+]);
+const repeatedFourValueShorthandNames = new Set(["corner-shape"]);
 const borderLikeShorthandNames = new Set([
   "border",
   "border-block",
@@ -360,7 +377,11 @@ function synthesizeAnimation(
     ["animation-range-start", "normal"],
     ["animation-range-end", "normal"],
   ] as const) {
-    if (recordValue(records, longhand, safe) !== expected) return null;
+    const current = recordValue(records, longhand, safe);
+    if (
+      current === null ||
+      splitTopLevelDelimiter(current, ",").some(component => component !== expected)
+    ) return null;
   }
 
   const fields = [
@@ -386,6 +407,51 @@ function synthesizeAnimation(
     animations.push(values.join(" "));
   }
   return animations.join(", ");
+}
+
+function repeatList(values: readonly string[], length: number): string[] | null {
+  if (values.length === length) return [...values];
+  if (values.length !== 1 || !values[0]) return null;
+  return Array.from({ length }, () => values[0] ?? "");
+}
+
+function synthesizeTransition(
+  records: readonly DeclarationRecord[],
+  safe: boolean,
+): string | null {
+  const properties = [
+    "transition-behavior",
+    "transition-duration",
+    "transition-timing-function",
+    "transition-delay",
+    "transition-property",
+  ] as const;
+  const rawLists = properties.map(property => {
+    const current = recordValue(records, property, safe);
+    return current === null ? [] : splitTopLevelDelimiter(current, ",");
+  });
+  const length = Math.max(...rawLists.map(list => list.length));
+  if (length === 0) return null;
+  const lists = rawLists.map(list => repeatList(list, length));
+  if (lists.some(list => list === null)) return null;
+  const transitions: string[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const behavior = lists[0]?.[index];
+    const duration = lists[1]?.[index];
+    const timing = lists[2]?.[index];
+    const delay = lists[3]?.[index];
+    const property = lists[4]?.[index];
+    if (!behavior || !duration || !timing || !delay || !property) return null;
+    const components = [property];
+    if (duration !== "0s" || timing !== "ease" || delay !== "0s" || behavior !== "normal") {
+      components.push(duration);
+    }
+    if (timing !== "ease" || delay !== "0s" || behavior !== "normal") components.push(timing);
+    if (delay !== "0s" || behavior !== "normal") components.push(delay);
+    if (behavior !== "normal") components.push(behavior);
+    transitions.push(components.join(" "));
+  }
+  return transitions.join(", ");
 }
 
 function uniformSuffixValue(
@@ -424,10 +490,11 @@ function synthesizeBorderLike(
   const style = uniformSuffixValue(componentRecords, "-style", safe);
   const color = uniformSuffixValue(componentRecords, "-color", safe);
   if (width === null || style === null || color === null) return null;
-  const components = [width];
+  const components: string[] = [];
+  if (width !== "medium") components.push(width);
   if (style !== "none" || explicitNoneBorderStyleNames.has(name)) components.push(style);
   if (color !== "currentcolor") components.push(color);
-  return components.join(" ");
+  return components.length > 0 ? components.join(" ") : "none";
 }
 
 function parallelLonghandLists(
@@ -565,6 +632,35 @@ function synthesizeStructuralShorthand(
   if (border) return border;
   const value = (longhand: string): string | null => recordValue(records, longhand, safe);
 
+  if (
+    repeatedTwoValueShorthandNames.has(name) ||
+    repeatedFourValueShorthandNames.has(name)
+  ) {
+    const longhands = getShorthandRuntimeItems(name);
+    if (!longhands) return null;
+    const values = longhands.map(longhand => value(longhand));
+    if (values.some(component => component === null)) return null;
+    const concrete = values.filter(component => component !== null);
+    if (concrete.length === 2) {
+      return concrete[0] === concrete[1] ? concrete[0] ?? null : concrete.join(" ");
+    }
+    if (concrete.length !== 4) return null;
+    const [top, right, bottom, left] = concrete;
+    if (top === right && top === bottom && top === left) return top ?? null;
+    if (top === bottom && right === left) return `${top} ${right}`;
+    if (right === left) return `${top} ${right} ${bottom}`;
+    return concrete.join(" ");
+  }
+
+  if (twoValueShorthandNames.has(name)) {
+    const longhands = getShorthandLonghands(name);
+    if (!longhands || longhands.length !== 2) return null;
+    const first = value(longhands[0] ?? "");
+    const second = value(longhands[1] ?? "");
+    if (first === null || second === null) return null;
+    return first === second ? first : `${first} ${second}`;
+  }
+
   if (name === "grid-area") {
     const values = [
       value("grid-row-start"),
@@ -607,14 +703,18 @@ function synthesizeStructuralShorthand(
     const style = value("text-wrap-style");
     if (mode === null || style === null) return null;
     if (style === "initial") return mode;
-    if (mode === "wrap") return style;
+    if (mode === "wrap" || mode === "initial") return style;
     return `${mode} ${style}`;
   }
   if (name === "scroll-timeline") {
     const timelineName = value("scroll-timeline-name");
     const axis = value("scroll-timeline-axis");
     if (timelineName === null || axis === null) return null;
-    return axis === "block" ? timelineName : `${timelineName} ${axis}`;
+    const names = splitTopLevelDelimiter(timelineName, ",");
+    const axes = repeatList(splitTopLevelDelimiter(axis, ","), names.length);
+    if (!axes || names.length === 0) return null;
+    return names.map((entry, index) =>
+      axes[index] === "block" ? entry : `${entry} ${axes[index]}`).join(", ");
   }
   if (name === "offset") {
     const position = value("offset-position");
@@ -660,7 +760,8 @@ function synthesizeStructuralShorthand(
     const edge = value("text-box-edge");
     if (!trim || !edge) return null;
     if (trim === "none" && edge === "auto") return "normal";
-    return edge === "auto" ? trim : `${trim} ${edge}`;
+    if (edge === "auto") return trim;
+    return trim === "trim-both" ? edge : `${trim} ${edge}`;
   }
   if (name === "timeline-trigger") {
     const values = [
@@ -680,10 +781,16 @@ function synthesizeStructuralShorthand(
     const inset = value("view-timeline-inset");
     if (!timelineName || !axis || !inset) return null;
     if (timelineName === "none" && axis === "block" && inset === "auto") return "none";
-    const components = [timelineName];
-    if (axis !== "block") components.push(axis);
-    if (inset !== "auto") components.push(inset);
-    return components.join(" ");
+    const names = splitTopLevelDelimiter(timelineName, ",");
+    const axes = repeatList(splitTopLevelDelimiter(axis, ","), names.length);
+    const insets = repeatList(splitTopLevelDelimiter(inset, ","), names.length);
+    if (!axes || !insets || names.length === 0) return null;
+    return names.map((entry, index) => {
+      const components = [entry];
+      if (axes[index] !== "block") components.push(axes[index] ?? "");
+      if (insets[index] !== "auto") components.push(insets[index] ?? "");
+      return components.join(" ");
+    }).join(", ");
   }
   if (name === "position-try") {
     const order = value("position-try-order");
@@ -746,7 +853,8 @@ function synthesizeStructuralShorthand(
     const image = value("list-style-image");
     const type = value("list-style-type");
     if (!position || !image || !type) return null;
-    return `${position} ${image} ${type}`;
+    const components = [position, image, type].filter(component => component !== "initial");
+    return components.length > 0 ? components.join(" ") : "initial";
   }
   if (name === "outline") {
     const color = value("outline-color");
@@ -814,6 +922,9 @@ export function synthesizeStaticShorthand(
 
   if (serializationName === "animation") {
     return synthesizeAnimation(records, safe);
+  }
+  if (serializationName === "transition") {
+    return synthesizeTransition(records, safe);
   }
 
   if (serializationName === "background") {
@@ -1094,7 +1205,28 @@ function expandRepeatedPairValue(
   const longhands = getShorthandLonghands(name);
   if (!longhands || longhands.length !== 2) return null;
   const components = splitTopLevelWhitespace(value);
-  if (components.length < 1 || components.length > 2 || !components[0]) return null;
+  if (components.length < 1 || !components[0]) return null;
+  if (["place-content", "place-items", "place-self"].includes(name)) {
+    for (let split = 1; split < components.length; split += 1) {
+      const first = components.slice(0, split).join(" ");
+      const second = components.slice(split).join(" ");
+      if (
+        matchesPropertyGrammar(longhands[0] ?? "", first) &&
+        matchesPropertyGrammar(longhands[1] ?? "", second)
+      ) {
+        return new Map([
+          [longhands[0] ?? "", first],
+          [longhands[1] ?? "", second],
+        ]);
+      }
+    }
+    if (!matchesPropertyGrammar(longhands[0] ?? "", value)) return null;
+    return new Map([
+      [longhands[0] ?? "", value],
+      [longhands[1] ?? "", value],
+    ]);
+  }
+  if (components.length > 2) return null;
   return new Map([
     [longhands[0] ?? "", components[0]],
     [longhands[1] ?? "", components[1] ?? components[0]],
@@ -1161,7 +1293,7 @@ function expandTextWrapValue(value: string): ReadonlyMap<string, string> | null 
   const components = splitTopLevelWhitespace(value);
   if (components.length < 1 || components.length > 2) return null;
   const modeKeywords = new Set(["wrap", "nowrap"]);
-  const mode = components.find(component => modeKeywords.has(component)) ?? "wrap";
+  const mode = components.find(component => modeKeywords.has(component)) ?? "initial";
   const style = components.find(component => !modeKeywords.has(component)) ?? "initial";
   return new Map([
     ["text-wrap-mode", mode],
@@ -1170,14 +1302,21 @@ function expandTextWrapValue(value: string): ReadonlyMap<string, string> | null 
 }
 
 function expandScrollTimelineValue(value: string): ReadonlyMap<string, string> | null {
-  const components = splitTopLevelWhitespace(value);
-  if (components.length < 1 || components.length > 2 || !components[0]) return null;
   const axes = new Set(["block", "inline", "x", "y"]);
-  const axis = components.find(component => axes.has(component)) ?? "block";
-  const name = components.find(component => !axes.has(component)) ?? "none";
+  const names: string[] = [];
+  const axisValues: string[] = [];
+  for (const entry of splitTopLevelDelimiter(value, ",")) {
+    const components = splitTopLevelWhitespace(entry);
+    if (components.length < 1 || components.length > 2 || !components[0]) return null;
+    const axis = components.find(component => axes.has(component)) ?? "block";
+    const name = components.find(component => !axes.has(component)) ?? "none";
+    if (!name.startsWith("--") && name !== "none") return null;
+    names.push(name);
+    axisValues.push(axis);
+  }
   return new Map([
-    ["scroll-timeline-name", name],
-    ["scroll-timeline-axis", axis],
+    ["scroll-timeline-name", names.join(", ")],
+    ["scroll-timeline-axis", axisValues.join(", ")],
   ]);
 }
 
@@ -1289,10 +1428,15 @@ function expandTextBoxValue(value: string): ReadonlyMap<string, string> | null {
     ]);
   }
   const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 3) return null;
+  const trimKeywords = new Set(["none", "trim-start", "trim-end", "trim-both"]);
+  const trim = trimKeywords.has(components[0] ?? "")
+    ? components.shift() ?? "none"
+    : "trim-both";
   if (components.length < 1 || components.length > 2) return null;
   return new Map([
-    ["text-box-trim", components[0] ?? "none"],
-    ["text-box-edge", components[1] ?? "auto"],
+    ["text-box-trim", trim],
+    ["text-box-edge", components.join(" ")],
   ]);
 }
 
@@ -1309,9 +1453,7 @@ function expandTimelineTriggerValue(value: string): ReadonlyMap<string, string> 
 }
 
 function expandViewTimelineValue(value: string): ReadonlyMap<string, string> | null {
-  const components = splitTopLevelWhitespace(value);
-  if (components.length < 1 || components.length > 3 || !components[0]) return null;
-  if (components[0] === "none" && components.length === 1) {
+  if (value === "none") {
     return new Map([
       ["view-timeline-name", "none"],
       ["view-timeline-axis", "block"],
@@ -1319,13 +1461,25 @@ function expandViewTimelineValue(value: string): ReadonlyMap<string, string> | n
     ]);
   }
   const axes = new Set(["block", "inline", "x", "y"]);
-  const axis = components.find(component => axes.has(component)) ?? "block";
-  const name = components[0];
-  const inset = components.find(component => component !== name && !axes.has(component)) ?? "auto";
+  const names: string[] = [];
+  const axisValues: string[] = [];
+  const insets: string[] = [];
+  for (const entry of splitTopLevelDelimiter(value, ",")) {
+    const components = splitTopLevelWhitespace(entry);
+    const name = components.shift();
+    if (!name || (!name.startsWith("--") && name !== "none")) return null;
+    const axisIndex = components.findIndex(component => axes.has(component));
+    const axis = axisIndex === -1 ? "block" : components.splice(axisIndex, 1)[0] ?? "block";
+    if (components.length > 2) return null;
+    const inset = components.length === 0 ? "auto" : components.join(" ");
+    names.push(name);
+    axisValues.push(axis);
+    insets.push(inset);
+  }
   return new Map([
-    ["view-timeline-name", name],
-    ["view-timeline-axis", axis],
-    ["view-timeline-inset", inset],
+    ["view-timeline-name", names.join(", ")],
+    ["view-timeline-axis", axisValues.join(", ")],
+    ["view-timeline-inset", insets.join(", ")],
   ]);
 }
 
@@ -1361,6 +1515,32 @@ function expandTextEmphasisValue(value: string): ReadonlyMap<string, string> | n
   return new Map([
     ["text-emphasis-style", style.join(" ")],
     ["text-emphasis-color", color],
+  ]);
+}
+
+function expandListStyleValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 3) return null;
+  let position = "initial";
+  let image = "initial";
+  let type = "initial";
+  for (const component of components) {
+    if (["inside", "outside"].includes(component)) {
+      if (position !== "initial") return null;
+      position = component;
+      continue;
+    }
+    if (component.startsWith("url(") || component === "none" && image === "initial") {
+      image = component;
+      continue;
+    }
+    if (type !== "initial") return null;
+    type = component;
+  }
+  return new Map([
+    ["list-style-position", position],
+    ["list-style-image", image],
+    ["list-style-type", type],
   ]);
 }
 
@@ -1405,6 +1585,8 @@ function expandStructuralValue(name: string, value: string): ReadonlyMap<string,
   if (border) return border;
   const pair = expandRepeatedPairValue(name, value);
   if (pair) return pair;
+  const repeated = expandRepeatedValues(name, value);
+  if (repeated) return repeated;
   if (name === "grid-area") return expandGridAreaValue(value);
   if (name === "grid-template") return expandGridTemplateValue(value);
   if (name === "columns") return expandColumnsValue(value);
@@ -1418,10 +1600,34 @@ function expandStructuralValue(name: string, value: string): ReadonlyMap<string,
   if (name === "timeline-trigger") return expandTimelineTriggerValue(value);
   if (name === "view-timeline") return expandViewTimelineValue(value);
   if (name === "position-try") return expandPositionTryValue(value);
+  if (name === "list-style") return expandListStyleValue(value);
   if (name === "text-emphasis") return expandTextEmphasisValue(value);
   if (name === "outline") return expandOutlineValue(value);
   if (name === "text-decoration") return expandTextDecorationValue(value);
   return null;
+}
+
+function expandRepeatedValues(
+  name: string,
+  value: string,
+): ReadonlyMap<string, string> | null {
+  const count = repeatedTwoValueShorthandNames.has(name)
+    ? 2
+    : repeatedFourValueShorthandNames.has(name)
+      ? 4
+      : 0;
+  if (count === 0) return null;
+  const longhands = getShorthandRuntimeItems(name);
+  if (!longhands || longhands.length !== count) return null;
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > count) return null;
+  const first = components[0];
+  if (first === undefined) return null;
+  const expanded = count === 2
+    ? [first, components[1] ?? first]
+    : expandFourSides(value);
+  if (!expanded || expanded.length !== count) return null;
+  return new Map(longhands.map((longhand, index) => [longhand, expanded[index] ?? first]));
 }
 
 function expandUniformValue(name: string, value: string): ReadonlyMap<string, string> | null {
@@ -1888,11 +2094,14 @@ function typedRecords(
   important: boolean,
 ): DeclarationRecord[] | null {
   const capabilityInput = getMatchingShorthandCanonicalInput(name, parsed.observableValue);
-  const values = expandLayeredTypedValue(name, parsed) ??
+  const typedValues = expandLayeredTypedValue(name, parsed) ??
     expandBorderImageTypedValue(name, parsed) ??
     (name === "grid-template" ? expandGridTemplateTypedValue(parsed) : null) ??
     (name === "grid" ? expandGridTypedValue(parsed) : null) ??
     (name === "font" ? expandFontTypedValue(parsed, capabilityInput ?? undefined) : null);
+  const values = name === "background"
+    ? expandBackgroundValue(parsed.observableValue) ?? typedValues
+    : typedValues;
   if (!values) return null;
   const safeValues = expandLayeredTypedValue(name, parsed, true) ?? values;
   return [...values].map(([longhand, value]) => ({
@@ -1927,7 +2136,6 @@ function expandAnimationValue(value: string): ReadonlyMap<string, string> | null
     ["animation-fill-mode", "fillMode"],
     ["animation-play-state", "playState"],
     ["animation-name", "name"],
-    ["animation-timeline", "timeline"],
   ] as const;
   const result = new Map<string, string>();
   for (const [property, fieldName] of definitions) {
@@ -1937,6 +2145,7 @@ function expandAnimationValue(value: string): ReadonlyMap<string, string> | null
     if (serialized === null) return null;
     result.set(property, serialized);
   }
+  result.set("animation-timeline", "auto");
   result.set("animation-range-start", "normal");
   result.set("animation-range-end", "normal");
   return result;
@@ -1944,7 +2153,9 @@ function expandAnimationValue(value: string): ReadonlyMap<string, string> | null
 
 function expandTransitionValue(value: string): ReadonlyMap<string, string> | null {
   const declaration = parseTypedDeclaration("transition", value);
-  if (declaration?.property !== "transition" || !Array.isArray(declaration.value)) return null;
+  if (declaration?.property !== "transition" || !Array.isArray(declaration.value)) {
+    return expandModernTransitionValue(value);
+  }
   const transitions = declaration.value;
   const field = (name: string): unknown[] | null => {
     const values: unknown[] = [];
@@ -1970,6 +2181,57 @@ function expandTransitionValue(value: string): ReadonlyMap<string, string> | nul
     result.set(property, serialized);
   }
   return result;
+}
+
+function expandModernTransitionValue(value: string): ReadonlyMap<string, string> | null {
+  const behaviors: string[] = [];
+  const durations: string[] = [];
+  const timings: string[] = [];
+  const delays: string[] = [];
+  const properties: string[] = [];
+  for (const entry of splitTopLevelDelimiter(value, ",")) {
+    const components = splitTopLevelWhitespace(entry);
+    if (components.length === 0) return null;
+    let behavior: string | null = null;
+    let duration = "0s";
+    let timing = "ease";
+    let delay = "0s";
+    let property = "all";
+    let timeCount = 0;
+    for (const component of components) {
+      if (component === "normal" || component === "allow-discrete") {
+        if (behavior !== null) return null;
+        behavior = component;
+        continue;
+      }
+      if (matchesPropertyGrammar("transition-duration", component)) {
+        if (timeCount === 0) duration = component;
+        else if (timeCount === 1) delay = component;
+        else return null;
+        timeCount += 1;
+        continue;
+      }
+      if (matchesPropertyGrammar("transition-timing-function", component)) {
+        if (timing !== "ease") return null;
+        timing = component;
+        continue;
+      }
+      if (property !== "all") return null;
+      property = component;
+    }
+    behaviors.push(behavior ?? "normal");
+    durations.push(duration);
+    timings.push(timing);
+    delays.push(delay);
+    properties.push(property);
+  }
+  return new Map([
+    ["transition-behavior", behaviors.join(", ")],
+    ["transition-duration", durations.join(", ")],
+    ["transition-timing-function", timings.join(", ")],
+    ["transition-delay", delays.join(", ")],
+    ["transition-property", properties.join(", ")],
+  ]);
 }
 
 function expandBorderRadiusValue(value: string): ReadonlyMap<string, string> | null {
@@ -2065,12 +2327,7 @@ function expandFontValue(value: string): ReadonlyMap<string, string> | null {
 }
 
 function expandBackgroundValue(value: string): ReadonlyMap<string, string> | null {
-  try {
-    if (csstree.lexer.matchType("color", value).error !== null) return null;
-  } catch {
-    return null;
-  }
-  return new Map([
+  const defaults = new Map<string, string>([
     ["background-image", "initial"],
     ["background-position-x", "initial"],
     ["background-position-y", "initial"],
@@ -2079,8 +2336,21 @@ function expandBackgroundValue(value: string): ReadonlyMap<string, string> | nul
     ["background-attachment", "initial"],
     ["background-origin", "initial"],
     ["background-clip", "initial"],
-    ["background-color", value.trim()],
+    ["background-color", "initial"],
   ]);
+  try {
+    if (csstree.lexer.matchType("color", value).error === null) {
+      defaults.set("background-color", value.trim());
+      return defaults;
+    }
+    if (csstree.lexer.matchProperty("background-image", value).error === null) {
+      defaults.set("background-image", value.trim());
+      return defaults;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 const typedObjectShorthandFields: Readonly<
@@ -2261,6 +2531,10 @@ export function expandStaticShorthand(
 ): DeclarationRecord[] | null {
   const longhands = getShorthandLonghands(name);
   if (!longhands || longhands.length === 0 || parsed.pendingSubstitution) return null;
+  if (
+    ["background", "mask", "-webkit-mask"].includes(name) &&
+    !matchesPropertyGrammar(name, parsed.observableValue)
+  ) return null;
 
   if (
     cssWideKeywords.has(parsed.observableValue) &&
@@ -2286,6 +2560,8 @@ export function expandStaticShorthand(
     expandStructuralValue,
   );
   if (structuralExpansion) return structuralExpansion;
+  const slashPairExpansion = expandSlashPairShorthand(name, parsed, important);
+  if (slashPairExpansion) return slashPairExpansion;
   const uniformExpansion = expandMappedValues(
     name,
     parsed,
@@ -2298,8 +2574,6 @@ export function expandStaticShorthand(
   if (highRiskExpansion) return highRiskExpansion;
   const twoValueExpansion = expandTwoValueShorthand(name, parsed, important);
   if (twoValueExpansion) return twoValueExpansion;
-  const slashPairExpansion = expandSlashPairShorthand(name, parsed, important);
-  if (slashPairExpansion) return slashPairExpansion;
 
   const observableStyle = new CSSStyleDeclarationOracle();
   const safeStyle = new CSSStyleDeclarationOracle();
