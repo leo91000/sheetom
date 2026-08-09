@@ -1,6 +1,12 @@
 name: Native browser oracles
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit or branch to test
+        required: false
+        type: string
   workflow_dispatch:
   schedule:
     - cron: "41 4 * * 2"
@@ -21,6 +27,8 @@ jobs:
     steps:
       - name: Check out SheetOM
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v7
