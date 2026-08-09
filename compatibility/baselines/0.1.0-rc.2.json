@@ -1,0 +1,142 @@
+{
+  "$schema": "../schemas/compatibility-report.schema.json",
+  "schemaVersion": 2,
+  "packageVersion": "0.1.0-rc.2",
+  "baseline": {
+    "wptCommit": "54f8f933629e7c010ae98a246729af01f8abcda5",
+    "syntaxEngineSet": {
+      "lightningcss": "1.33.0",
+      "cssTree": "3.2.1",
+      "cssstyle": "6.2.0",
+      "cssTokenizer": "4.0.0"
+    },
+    "runtimes": {
+      "node": "v24.18.0",
+      "bun": "1.3.1",
+      "deno": "2.9.5"
+    },
+    "browsers": {
+      "chromium": "151.0.7922.34 (revision 1234)",
+      "firefox": "153.0 (revision 1538)",
+      "webkit": "26.5 (revision 2336)"
+    }
+  },
+  "summary": {
+    "passed": 6,
+    "divergences": 7,
+    "excluded": 0,
+    "unexplained": 0
+  },
+  "evidence": {
+    "operationFixtures": {
+      "passed": 13,
+      "total": 13,
+      "sha256": "7909f90571b8d6595d18b006bb4f2c5337cca9d413084558e913e760be45a3aa",
+      "adapters": [
+        {
+          "adapter": "sheetom",
+          "passed": 13,
+          "total": 13
+        },
+        {
+          "adapter": "chromium",
+          "passed": 13,
+          "total": 13
+        },
+        {
+          "adapter": "firefox",
+          "passed": 13,
+          "total": 13
+        },
+        {
+          "adapter": "webkit",
+          "passed": 13,
+          "total": 13
+        }
+      ]
+    },
+    "nativeWpt": [
+      {
+        "engine": "chrome",
+        "version": "150.0.7871.128",
+        "sha256": "3f66a5f324bb9023cdd4b168e780640700449f22f28ca378eca91504b7d68e3f",
+        "passed": 4,
+        "total": 4
+      },
+      {
+        "engine": "firefox",
+        "version": "153.0.3",
+        "sha256": "e5f88e3431f602dc29fd8dbd79667bef33930ee7f87ee6d2069f17126421a230",
+        "passed": 4,
+        "total": 4
+      }
+    ]
+  },
+  "resolutions": [
+    {
+      "fixtureId": "declarations.basic-set-property",
+      "decision": "shared",
+      "rationale": "The observable declaration state is shared by the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.malformed-padding",
+      "decision": "chromium-fallback",
+      "rationale": "CSS Syntax accepts the EOF-recovered value; Chromium preserves the unclosed observable spelling while Firefox materializes closing parentheses."
+    },
+    {
+      "fixtureId": "declarations.modern-color-canonicalization",
+      "decision": "shared",
+      "rationale": "The pinned browser engines expose modern rgb syntax through the shared legacy rgba serialization in CSSStyleDeclaration."
+    },
+    {
+      "fixtureId": "declarations.typed-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string."
+    },
+    {
+      "fixtureId": "declarations.quoted-font-family",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and WebKit remove unnecessary quotes around a simple font-family while Firefox retains them; SheetOM follows the measured Chromium fallback."
+    },
+    {
+      "fixtureId": "declarations.custom-property-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains unclosed custom-property token structures, removes EOF comments, and replaces an escaped EOF with U+FFFD."
+    },
+    {
+      "fixtureId": "declarations.custom-property-priority-replacement",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and Firefox replace the existing custom-property priority when setProperty is called without a priority, while WebKit retains !important; SheetOM follows the measured Chromium fallback."
+    },
+    {
+      "fixtureId": "declarations.pending-substitution-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the unclosed pending-substitution spelling while applying lexical EOF recovery such as comment removal."
+    },
+    {
+      "fixtureId": "declarations.setproperty-null-undefined",
+      "decision": "shared",
+      "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior."
+    },
+    {
+      "fixtureId": "declarations.required-arguments",
+      "decision": "shared",
+      "rationale": "Required WebIDL arguments throw TypeError before string conversion in the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.set-property-multiple-declarations",
+      "decision": "shared",
+      "rationale": "A setProperty value is parsed independently and cannot escape into another declaration; invalid input leaves the previous declaration unchanged."
+    },
+    {
+      "fixtureId": "declarations.escaped-custom-property-name",
+      "decision": "shared",
+      "rationale": "Custom-property method arguments retain their logical names and cssText escapes those names only when serializing CSS syntax."
+    },
+    {
+      "fixtureId": "integration.weweb-authoring-tree",
+      "decision": "chromium-fallback",
+      "rationale": "The standard rule-tree operations and detachment identity are shared; the recovered padding spelling follows the existing Chromium fallback resolution."
+    }
+  ]
+}
