@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/shorthand-grammar-contracts.schema.json",
+  "title": "SheetOM Shorthand Grammar Branch Contracts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profiles"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "profiles": {
+      "type": "array",
+      "minItems": 23,
+      "maxItems": 23,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["codec", "cases"],
+        "properties": {
+          "codec": { "type": "string", "minLength": 1 },
+          "cases": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "branch", "property", "input", "accepted"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^grammar\\.[a-z0-9-]+\\.[a-z0-9-]+$" },
+                "branch": { "type": "string", "minLength": 1 },
+                "property": { "type": "string", "minLength": 1 },
+                "input": { "type": "string", "minLength": 1 },
+                "accepted": { "type": "boolean" },
+                "preserves": { "type": "string", "pattern": "^grammar\\.[a-z0-9-]+\\.[a-z0-9-]+$" }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "accepted": { "const": false } } },
+                  "then": {
+                    "properties": {
+                      "preserves": { "type": "string" }
+                    },
+                    "required": ["preserves"]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

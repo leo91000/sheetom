@@ -61,6 +61,17 @@ test("diagnostic codes expose a stable public string union", () => {
   ]);
 });
 
+test("unsupported shorthand diagnostics identify the codec limitation", () => {
+  const sheet = new CSSStyleSheet({ diagnostics: true });
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+  rule.style.setProperty("font", "caption");
+  const diagnostic = sheet.takeDiagnostics()[0];
+  assert.equal(diagnostic?.code, "UNSUPPORTED_SHORTHAND_VALUE");
+  assert.match(diagnostic?.message ?? "", /shorthand codec/i);
+});
+
 test("setProperty rejects embedded priority tokens without rejecting data", () => {
   const rule = createStyleRule(".x");
   rule.style.setProperty("color", "blue");

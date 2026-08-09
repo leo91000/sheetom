@@ -355,6 +355,42 @@
         { "return": { "$type": "undefined" }, "exception": null, "cssText": "content: target-text(attr(href url));", "length": 1, "items": ["content"] },
         { "return": "target-text(attr(href url))", "exception": null }
       ]
+    },
+    {
+      "fixtureId": "declarations.shorthand-grammar-branches",
+      "decision": "chromium-fallback",
+      "rationale": "The reviewed branches follow pinned Chromium where newer timelines are not shared across engines.",
+      "expected": [
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "border-block-color: red blue;", "length": 2, "items": ["border-block-start-color", "border-block-end-color"] },
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "place-content: safe center space-evenly;", "length": 2, "items": ["align-content", "justify-content"] },
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "transition: opacity 1s, transform 2s linear 1s allow-discrete;", "length": 5, "items": ["transition-behavior", "transition-duration", "transition-timing-function", "transition-delay", "transition-property"] },
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "view-timeline: --x 10% 20%, --y inline;", "length": 3, "items": ["view-timeline-name", "view-timeline-axis", "view-timeline-inset"] },
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "view-timeline: --x 10% 20%, --y inline;", "length": 3, "items": ["view-timeline-name", "view-timeline-axis", "view-timeline-inset"] }
+      ]
+    },
+    {
+      "fixtureId": "declarations.shorthand-observable-synthesis",
+      "decision": "shared",
+      "rationale": "The engines share the observable shorthand synthesis for the measured animation, overscroll, and background cases.",
+      "expected": [
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "animation: 1s ease 0s 1 normal none running foo, 2s linear 0s 1 normal none running bar;", "length": 11, "items": ["animation-duration", "animation-timing-function", "animation-delay", "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-play-state", "animation-name", "animation-timeline", "animation-range-start", "animation-range-end"] },
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "overscroll-behavior: contain none;", "length": 2, "items": ["overscroll-behavior-x", "overscroll-behavior-y"] },
+        {},
+        {},
+        { "exception": null, "return": { "$type": "undefined" }, "cssText": "background: linear-gradient(red, blue);", "length": 9, "items": ["background-image", "background-position-x", "background-position-y", "background-size", "background-repeat", "background-attachment", "background-origin", "background-clip", "background-color"] }
+      ]
     }
   ]
 }

@@ -1,0 +1,3061 @@
+{
+  "schemaVersion": 1,
+  "browser": "chromium",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "cases": [
+    {
+      "id": "grammar.four-side.one",
+      "accepted": true,
+      "items": [
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left"
+      ],
+      "longhands": [
+        {
+          "name": "padding-top",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "padding-right",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "padding-bottom",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "padding-left",
+          "value": "1px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px",
+      "priority": "",
+      "cssText": "padding: 1px;"
+    },
+    {
+      "id": "grammar.four-side.two",
+      "accepted": true,
+      "items": [
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left"
+      ],
+      "longhands": [
+        {
+          "name": "padding-top",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "padding-right",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "padding-bottom",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "padding-left",
+          "value": "2px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px 2px",
+      "priority": "",
+      "cssText": "padding: 1px 2px;"
+    },
+    {
+      "id": "grammar.four-side.four",
+      "accepted": true,
+      "items": [
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left"
+      ],
+      "longhands": [
+        {
+          "name": "padding-top",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "padding-right",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "padding-bottom",
+          "value": "3px",
+          "priority": ""
+        },
+        {
+          "name": "padding-left",
+          "value": "4px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px 2px 3px 4px",
+      "priority": "",
+      "cssText": "padding: 1px 2px 3px 4px;"
+    },
+    {
+      "id": "grammar.four-side.five-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.two-value.one",
+      "accepted": true,
+      "items": [
+        "row-gap",
+        "column-gap"
+      ],
+      "longhands": [
+        {
+          "name": "row-gap",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "column-gap",
+          "value": "1px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px",
+      "priority": "",
+      "cssText": "gap: 1px;"
+    },
+    {
+      "id": "grammar.two-value.two",
+      "accepted": true,
+      "items": [
+        "row-gap",
+        "column-gap"
+      ],
+      "longhands": [
+        {
+          "name": "row-gap",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "column-gap",
+          "value": "2px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px 2px",
+      "priority": "",
+      "cssText": "gap: 1px 2px;"
+    },
+    {
+      "id": "grammar.two-value.keyword-pair",
+      "accepted": true,
+      "items": [
+        "overscroll-behavior-x",
+        "overscroll-behavior-y"
+      ],
+      "longhands": [
+        {
+          "name": "overscroll-behavior-x",
+          "value": "contain",
+          "priority": ""
+        },
+        {
+          "name": "overscroll-behavior-y",
+          "value": "none",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "contain none",
+      "priority": "",
+      "cssText": "overscroll-behavior: contain none;"
+    },
+    {
+      "id": "grammar.two-value.three-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.slash-pair.one",
+      "accepted": true,
+      "items": [
+        "grid-column-start",
+        "grid-column-end"
+      ],
+      "longhands": [
+        {
+          "name": "grid-column-start",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "grid-column-end",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1",
+      "priority": "",
+      "cssText": "grid-column: 1;"
+    },
+    {
+      "id": "grammar.slash-pair.two",
+      "accepted": true,
+      "items": [
+        "grid-column-start",
+        "grid-column-end"
+      ],
+      "longhands": [
+        {
+          "name": "grid-column-start",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "grid-column-end",
+          "value": "3",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1 / 3",
+      "priority": "",
+      "cssText": "grid-column: 1 / 3;"
+    },
+    {
+      "id": "grammar.slash-pair.named",
+      "accepted": true,
+      "items": [
+        "grid-row-start",
+        "grid-row-end"
+      ],
+      "longhands": [
+        {
+          "name": "grid-row-start",
+          "value": "header",
+          "priority": ""
+        },
+        {
+          "name": "grid-row-end",
+          "value": "footer",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "header / footer",
+      "priority": "",
+      "cssText": "grid-row: header / footer;"
+    },
+    {
+      "id": "grammar.slash-pair.three-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.animation.single",
+      "accepted": true,
+      "items": [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end"
+      ],
+      "longhands": [
+        {
+          "name": "animation-duration",
+          "value": "1s",
+          "priority": ""
+        },
+        {
+          "name": "animation-timing-function",
+          "value": "ease",
+          "priority": ""
+        },
+        {
+          "name": "animation-delay",
+          "value": "0s",
+          "priority": ""
+        },
+        {
+          "name": "animation-iteration-count",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "animation-direction",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "animation-fill-mode",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "animation-play-state",
+          "value": "running",
+          "priority": ""
+        },
+        {
+          "name": "animation-name",
+          "value": "foo",
+          "priority": ""
+        },
+        {
+          "name": "animation-timeline",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "animation-range-start",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "animation-range-end",
+          "value": "normal",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1s ease 0s 1 normal none running foo",
+      "priority": "",
+      "cssText": "animation: 1s ease 0s 1 normal none running foo;"
+    },
+    {
+      "id": "grammar.animation.multiple",
+      "accepted": true,
+      "items": [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end"
+      ],
+      "longhands": [
+        {
+          "name": "animation-duration",
+          "value": "1s, 2s",
+          "priority": ""
+        },
+        {
+          "name": "animation-timing-function",
+          "value": "ease, linear",
+          "priority": ""
+        },
+        {
+          "name": "animation-delay",
+          "value": "0s, 0s",
+          "priority": ""
+        },
+        {
+          "name": "animation-iteration-count",
+          "value": "1, 1",
+          "priority": ""
+        },
+        {
+          "name": "animation-direction",
+          "value": "normal, normal",
+          "priority": ""
+        },
+        {
+          "name": "animation-fill-mode",
+          "value": "none, none",
+          "priority": ""
+        },
+        {
+          "name": "animation-play-state",
+          "value": "running, running",
+          "priority": ""
+        },
+        {
+          "name": "animation-name",
+          "value": "foo, bar",
+          "priority": ""
+        },
+        {
+          "name": "animation-timeline",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "animation-range-start",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "animation-range-end",
+          "value": "normal",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1s ease 0s 1 normal none running foo, 2s linear 0s 1 normal none running bar",
+      "priority": "",
+      "cssText": "animation: 1s ease 0s 1 normal none running foo, 2s linear 0s 1 normal none running bar;"
+    },
+    {
+      "id": "grammar.animation.direction-fill",
+      "accepted": true,
+      "items": [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end"
+      ],
+      "longhands": [
+        {
+          "name": "animation-duration",
+          "value": "2s",
+          "priority": ""
+        },
+        {
+          "name": "animation-timing-function",
+          "value": "ease",
+          "priority": ""
+        },
+        {
+          "name": "animation-delay",
+          "value": "0s",
+          "priority": ""
+        },
+        {
+          "name": "animation-iteration-count",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "animation-direction",
+          "value": "reverse",
+          "priority": ""
+        },
+        {
+          "name": "animation-fill-mode",
+          "value": "both",
+          "priority": ""
+        },
+        {
+          "name": "animation-play-state",
+          "value": "running",
+          "priority": ""
+        },
+        {
+          "name": "animation-name",
+          "value": "slide",
+          "priority": ""
+        },
+        {
+          "name": "animation-timeline",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "animation-range-start",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "animation-range-end",
+          "value": "normal",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2s ease 0s 1 reverse both running slide",
+      "priority": "",
+      "cssText": "animation: 2s ease 0s 1 reverse both running slide;"
+    },
+    {
+      "id": "grammar.animation.duplicate-duration-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.background.color",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "red",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "red",
+      "priority": "",
+      "cssText": "background: red;"
+    },
+    {
+      "id": "grammar.background.image",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "linear-gradient(red, blue)",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "linear-gradient(red, blue)",
+      "priority": "",
+      "cssText": "background: linear-gradient(red, blue);"
+    },
+    {
+      "id": "grammar.background.layer",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "url(\"x.png\")",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "cover",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "no-repeat",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "red",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "url(\"x.png\") center center / cover no-repeat red",
+      "priority": "",
+      "cssText": "background: url(\"x.png\") center center / cover no-repeat red;"
+    },
+    {
+      "id": "grammar.background.color-before-comma-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.border.width",
+      "accepted": true,
+      "items": [
+        "border-top-width",
+        "border-right-width",
+        "border-bottom-width",
+        "border-left-width",
+        "border-top-style",
+        "border-right-style",
+        "border-bottom-style",
+        "border-left-style",
+        "border-top-color",
+        "border-right-color",
+        "border-bottom-color",
+        "border-left-color",
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ],
+      "longhands": [
+        {
+          "name": "border-top-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-right-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-left-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-top-style",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-right-style",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-style",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-left-style",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-top-color",
+          "value": "currentcolor",
+          "priority": ""
+        },
+        {
+          "name": "border-right-color",
+          "value": "currentcolor",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-color",
+          "value": "currentcolor",
+          "priority": ""
+        },
+        {
+          "name": "border-left-color",
+          "value": "currentcolor",
+          "priority": ""
+        },
+        {
+          "name": "border-image-source",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-image-slice",
+          "value": "100%",
+          "priority": ""
+        },
+        {
+          "name": "border-image-width",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "border-image-outset",
+          "value": "0",
+          "priority": ""
+        },
+        {
+          "name": "border-image-repeat",
+          "value": "stretch",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2px",
+      "priority": "",
+      "cssText": "border: 2px;"
+    },
+    {
+      "id": "grammar.border.style-color",
+      "accepted": true,
+      "items": [
+        "border-inline-start-width",
+        "border-inline-end-width",
+        "border-inline-start-style",
+        "border-inline-end-style",
+        "border-inline-start-color",
+        "border-inline-end-color"
+      ],
+      "longhands": [
+        {
+          "name": "border-inline-start-width",
+          "value": "medium",
+          "priority": ""
+        },
+        {
+          "name": "border-inline-end-width",
+          "value": "medium",
+          "priority": ""
+        },
+        {
+          "name": "border-inline-start-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "border-inline-end-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "border-inline-start-color",
+          "value": "blue",
+          "priority": ""
+        },
+        {
+          "name": "border-inline-end-color",
+          "value": "blue",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "dashed blue",
+      "priority": "",
+      "cssText": "border-inline: dashed blue;"
+    },
+    {
+      "id": "grammar.border.all-components",
+      "accepted": true,
+      "items": [
+        "border-top-width",
+        "border-right-width",
+        "border-bottom-width",
+        "border-left-width",
+        "border-top-style",
+        "border-right-style",
+        "border-bottom-style",
+        "border-left-style",
+        "border-top-color",
+        "border-right-color",
+        "border-bottom-color",
+        "border-left-color",
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ],
+      "longhands": [
+        {
+          "name": "border-top-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-right-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-left-width",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-top-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "border-right-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "border-left-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "border-top-color",
+          "value": "blue",
+          "priority": ""
+        },
+        {
+          "name": "border-right-color",
+          "value": "blue",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-color",
+          "value": "blue",
+          "priority": ""
+        },
+        {
+          "name": "border-left-color",
+          "value": "blue",
+          "priority": ""
+        },
+        {
+          "name": "border-image-source",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-image-slice",
+          "value": "100%",
+          "priority": ""
+        },
+        {
+          "name": "border-image-width",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "border-image-outset",
+          "value": "0",
+          "priority": ""
+        },
+        {
+          "name": "border-image-repeat",
+          "value": "stretch",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2px dashed blue",
+      "priority": "",
+      "cssText": "border: 2px dashed blue;"
+    },
+    {
+      "id": "grammar.border.duplicate-style-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.border-image.none",
+      "accepted": true,
+      "items": [
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ],
+      "longhands": [
+        {
+          "name": "border-image-source",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "border-image-slice",
+          "value": "100%",
+          "priority": ""
+        },
+        {
+          "name": "border-image-width",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "border-image-outset",
+          "value": "0",
+          "priority": ""
+        },
+        {
+          "name": "border-image-repeat",
+          "value": "stretch",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none",
+      "priority": "",
+      "cssText": "border-image: none;"
+    },
+    {
+      "id": "grammar.border-image.slice",
+      "accepted": true,
+      "items": [
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ],
+      "longhands": [
+        {
+          "name": "border-image-source",
+          "value": "url(\"x.png\")",
+          "priority": ""
+        },
+        {
+          "name": "border-image-slice",
+          "value": "30",
+          "priority": ""
+        },
+        {
+          "name": "border-image-width",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "border-image-outset",
+          "value": "0",
+          "priority": ""
+        },
+        {
+          "name": "border-image-repeat",
+          "value": "stretch",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "url(\"x.png\") 30 / 1 / 0 stretch",
+      "priority": "",
+      "cssText": "border-image: url(\"x.png\") 30 / 1 / 0 stretch;"
+    },
+    {
+      "id": "grammar.border-image.full",
+      "accepted": true,
+      "items": [
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ],
+      "longhands": [
+        {
+          "name": "border-image-source",
+          "value": "url(\"x.png\")",
+          "priority": ""
+        },
+        {
+          "name": "border-image-slice",
+          "value": "30",
+          "priority": ""
+        },
+        {
+          "name": "border-image-width",
+          "value": "10",
+          "priority": ""
+        },
+        {
+          "name": "border-image-outset",
+          "value": "0",
+          "priority": ""
+        },
+        {
+          "name": "border-image-repeat",
+          "value": "stretch",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "url(\"x.png\") 30 / 10 / 0 stretch",
+      "priority": "",
+      "cssText": "border-image: url(\"x.png\") 30 / 10 / 0 stretch;"
+    },
+    {
+      "id": "grammar.border-image.extra-slash-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.border-radius.one",
+      "accepted": true,
+      "items": [
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius"
+      ],
+      "longhands": [
+        {
+          "name": "border-top-left-radius",
+          "value": "4px",
+          "priority": ""
+        },
+        {
+          "name": "border-top-right-radius",
+          "value": "4px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-right-radius",
+          "value": "4px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-left-radius",
+          "value": "4px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "4px",
+      "priority": "",
+      "cssText": "border-radius: 4px;"
+    },
+    {
+      "id": "grammar.border-radius.four",
+      "accepted": true,
+      "items": [
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius"
+      ],
+      "longhands": [
+        {
+          "name": "border-top-left-radius",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "border-top-right-radius",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-right-radius",
+          "value": "3px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-left-radius",
+          "value": "4px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px 2px 3px 4px",
+      "priority": "",
+      "cssText": "border-radius: 1px 2px 3px 4px;"
+    },
+    {
+      "id": "grammar.border-radius.elliptical",
+      "accepted": true,
+      "items": [
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius"
+      ],
+      "longhands": [
+        {
+          "name": "border-top-left-radius",
+          "value": "10px 30px",
+          "priority": ""
+        },
+        {
+          "name": "border-top-right-radius",
+          "value": "20px 40px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-right-radius",
+          "value": "10px 30px",
+          "priority": ""
+        },
+        {
+          "name": "border-bottom-left-radius",
+          "value": "20px 40px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "10px 20px / 30px 40px",
+      "priority": "",
+      "cssText": "border-radius: 10px 20px / 30px 40px;"
+    },
+    {
+      "id": "grammar.border-radius.extra-slash-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.columns.width",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "100px",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "100px",
+      "priority": "",
+      "cssText": "columns: 100px;"
+    },
+    {
+      "id": "grammar.columns.count",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2",
+      "priority": "",
+      "cssText": "columns: 2;"
+    },
+    {
+      "id": "grammar.columns.both",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "100px",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "100px 2",
+      "priority": "",
+      "cssText": "columns: 100px 2;"
+    },
+    {
+      "id": "grammar.columns.two-widths-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.container.name",
+      "accepted": true,
+      "items": [
+        "container-name",
+        "container-type"
+      ],
+      "longhands": [
+        {
+          "name": "container-name",
+          "value": "card",
+          "priority": ""
+        },
+        {
+          "name": "container-type",
+          "value": "normal",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "card",
+      "priority": "",
+      "cssText": "container: card;"
+    },
+    {
+      "id": "grammar.container.slash-type",
+      "accepted": true,
+      "items": [
+        "container-name",
+        "container-type"
+      ],
+      "longhands": [
+        {
+          "name": "container-name",
+          "value": "card",
+          "priority": ""
+        },
+        {
+          "name": "container-type",
+          "value": "inline-size",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "card / inline-size",
+      "priority": "",
+      "cssText": "container: card / inline-size;"
+    },
+    {
+      "id": "grammar.container.normal",
+      "accepted": true,
+      "items": [
+        "container-name",
+        "container-type"
+      ],
+      "longhands": [
+        {
+          "name": "container-name",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "container-type",
+          "value": "normal",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none",
+      "priority": "",
+      "cssText": "container: none;"
+    },
+    {
+      "id": "grammar.container.extra-slash-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.flex-flow.direction",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "column",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "nowrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "column",
+      "priority": "",
+      "cssText": "flex-flow: column;"
+    },
+    {
+      "id": "grammar.flex-flow.wrap",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "row",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "wrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "wrap",
+      "priority": "",
+      "cssText": "flex-flow: wrap;"
+    },
+    {
+      "id": "grammar.flex-flow.both",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "column",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "wrap-reverse",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "column wrap-reverse",
+      "priority": "",
+      "cssText": "flex-flow: column wrap-reverse;"
+    },
+    {
+      "id": "grammar.flex-flow.duplicate-direction-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.font.required",
+      "accepted": true,
+      "items": [
+        "font-style",
+        "font-variant-caps",
+        "font-variant-ligatures",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-alternates",
+        "font-size-adjust",
+        "font-language-override",
+        "font-kerning",
+        "font-optical-sizing",
+        "font-feature-settings",
+        "font-variation-settings",
+        "font-variant-position",
+        "font-variant-emoji",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family"
+      ],
+      "longhands": [
+        {
+          "name": "font-style",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-caps",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-ligatures",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-numeric",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-east-asian",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-alternates",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size-adjust",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "font-language-override",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-kerning",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-optical-sizing",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-feature-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variation-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-emoji",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-weight",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-stretch",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size",
+          "value": "16px",
+          "priority": ""
+        },
+        {
+          "name": "line-height",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-family",
+          "value": "serif",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "16px serif",
+      "priority": "",
+      "cssText": "font: 16px serif;"
+    },
+    {
+      "id": "grammar.font.line-height",
+      "accepted": true,
+      "items": [
+        "font-style",
+        "font-variant-caps",
+        "font-variant-ligatures",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-alternates",
+        "font-size-adjust",
+        "font-language-override",
+        "font-kerning",
+        "font-optical-sizing",
+        "font-feature-settings",
+        "font-variation-settings",
+        "font-variant-position",
+        "font-variant-emoji",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family"
+      ],
+      "longhands": [
+        {
+          "name": "font-style",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-caps",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-ligatures",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-numeric",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-east-asian",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-alternates",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size-adjust",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "font-language-override",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-kerning",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-optical-sizing",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-feature-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variation-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-emoji",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-weight",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-stretch",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size",
+          "value": "16px",
+          "priority": ""
+        },
+        {
+          "name": "line-height",
+          "value": "1.5",
+          "priority": ""
+        },
+        {
+          "name": "font-family",
+          "value": "serif",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "16px / 1.5 serif",
+      "priority": "",
+      "cssText": "font: 16px / 1.5 serif;"
+    },
+    {
+      "id": "grammar.font.optional",
+      "accepted": true,
+      "items": [
+        "font-style",
+        "font-variant-caps",
+        "font-variant-ligatures",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-alternates",
+        "font-size-adjust",
+        "font-language-override",
+        "font-kerning",
+        "font-optical-sizing",
+        "font-feature-settings",
+        "font-variation-settings",
+        "font-variant-position",
+        "font-variant-emoji",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family"
+      ],
+      "longhands": [
+        {
+          "name": "font-style",
+          "value": "italic",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-caps",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-ligatures",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-numeric",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-east-asian",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-alternates",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size-adjust",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "font-language-override",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-kerning",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-optical-sizing",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-feature-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variation-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-emoji",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-weight",
+          "value": "700",
+          "priority": ""
+        },
+        {
+          "name": "font-stretch",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size",
+          "value": "16px",
+          "priority": ""
+        },
+        {
+          "name": "line-height",
+          "value": "1.5",
+          "priority": ""
+        },
+        {
+          "name": "font-family",
+          "value": "serif",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "italic 700 16px / 1.5 serif",
+      "priority": "",
+      "cssText": "font: italic 700 16px / 1.5 serif;"
+    },
+    {
+      "id": "grammar.font.missing-family-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.grid.area",
+      "accepted": true,
+      "items": [
+        "grid-row-start",
+        "grid-column-start",
+        "grid-row-end",
+        "grid-column-end"
+      ],
+      "longhands": [
+        {
+          "name": "grid-row-start",
+          "value": "1",
+          "priority": ""
+        },
+        {
+          "name": "grid-column-start",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "grid-row-end",
+          "value": "3",
+          "priority": ""
+        },
+        {
+          "name": "grid-column-end",
+          "value": "4",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1 / 2 / 3 / 4",
+      "priority": "",
+      "cssText": "grid-area: 1 / 2 / 3 / 4;"
+    },
+    {
+      "id": "grammar.grid.template",
+      "accepted": true,
+      "items": [
+        "grid-template-rows",
+        "grid-template-columns",
+        "grid-template-areas"
+      ],
+      "longhands": [
+        {
+          "name": "grid-template-rows",
+          "value": "100px",
+          "priority": ""
+        },
+        {
+          "name": "grid-template-columns",
+          "value": "1fr 2fr",
+          "priority": ""
+        },
+        {
+          "name": "grid-template-areas",
+          "value": "none",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "100px / 1fr 2fr",
+      "priority": "",
+      "cssText": "grid-template: 100px / 1fr 2fr;"
+    },
+    {
+      "id": "grammar.grid.none",
+      "accepted": true,
+      "items": [
+        "grid-template-rows",
+        "grid-template-columns",
+        "grid-template-areas",
+        "grid-auto-flow",
+        "grid-auto-columns",
+        "grid-auto-rows"
+      ],
+      "longhands": [
+        {
+          "name": "grid-template-rows",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "grid-template-columns",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "grid-template-areas",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "grid-auto-flow",
+          "value": "row",
+          "priority": ""
+        },
+        {
+          "name": "grid-auto-columns",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "grid-auto-rows",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none",
+      "priority": "",
+      "cssText": "grid: none;"
+    },
+    {
+      "id": "grammar.grid.area-extra-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.layered.none",
+      "accepted": true,
+      "items": [
+        "mask-image",
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode"
+      ],
+      "longhands": [
+        {
+          "name": "mask-image",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "-webkit-mask-position-x",
+          "value": "0%",
+          "priority": ""
+        },
+        {
+          "name": "-webkit-mask-position-y",
+          "value": "0%",
+          "priority": ""
+        },
+        {
+          "name": "mask-size",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "mask-repeat",
+          "value": "repeat",
+          "priority": ""
+        },
+        {
+          "name": "mask-origin",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "mask-clip",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "mask-composite",
+          "value": "add",
+          "priority": ""
+        },
+        {
+          "name": "mask-mode",
+          "value": "match-source",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none",
+      "priority": "",
+      "cssText": "mask: none;"
+    },
+    {
+      "id": "grammar.layered.image",
+      "accepted": true,
+      "items": [
+        "mask-image",
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode"
+      ],
+      "longhands": [
+        {
+          "name": "mask-image",
+          "value": "url(\"m.png\")",
+          "priority": ""
+        },
+        {
+          "name": "-webkit-mask-position-x",
+          "value": "0%",
+          "priority": ""
+        },
+        {
+          "name": "-webkit-mask-position-y",
+          "value": "0%",
+          "priority": ""
+        },
+        {
+          "name": "mask-size",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "mask-repeat",
+          "value": "repeat",
+          "priority": ""
+        },
+        {
+          "name": "mask-origin",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "mask-clip",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "mask-composite",
+          "value": "add",
+          "priority": ""
+        },
+        {
+          "name": "mask-mode",
+          "value": "match-source",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "url(\"m.png\")",
+      "priority": "",
+      "cssText": "mask: url(\"m.png\");"
+    },
+    {
+      "id": "grammar.layered.position-size",
+      "accepted": true,
+      "items": [
+        "mask-image",
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode"
+      ],
+      "longhands": [
+        {
+          "name": "mask-image",
+          "value": "url(\"m.png\")",
+          "priority": ""
+        },
+        {
+          "name": "-webkit-mask-position-x",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "-webkit-mask-position-y",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "mask-size",
+          "value": "cover",
+          "priority": ""
+        },
+        {
+          "name": "mask-repeat",
+          "value": "no-repeat",
+          "priority": ""
+        },
+        {
+          "name": "mask-origin",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "mask-clip",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "mask-composite",
+          "value": "add",
+          "priority": ""
+        },
+        {
+          "name": "mask-mode",
+          "value": "match-source",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "url(\"m.png\") center center / cover no-repeat",
+      "priority": "",
+      "cssText": "mask: url(\"m.png\") center center / cover no-repeat;"
+    },
+    {
+      "id": "grammar.layered.empty-layer-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.offset.normal",
+      "accepted": true,
+      "items": [
+        "offset-position",
+        "offset-path",
+        "offset-distance",
+        "offset-rotate",
+        "offset-anchor"
+      ],
+      "longhands": [
+        {
+          "name": "offset-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "offset-path",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "offset-distance",
+          "value": "0px",
+          "priority": ""
+        },
+        {
+          "name": "offset-rotate",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "offset-anchor",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "normal",
+      "priority": "",
+      "cssText": "offset: normal;"
+    },
+    {
+      "id": "grammar.offset.path",
+      "accepted": true,
+      "items": [
+        "offset-position",
+        "offset-path",
+        "offset-distance",
+        "offset-rotate",
+        "offset-anchor"
+      ],
+      "longhands": [
+        {
+          "name": "offset-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "offset-path",
+          "value": "path(\"M 0 0 L 10 10\")",
+          "priority": ""
+        },
+        {
+          "name": "offset-distance",
+          "value": "0px",
+          "priority": ""
+        },
+        {
+          "name": "offset-rotate",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "offset-anchor",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "path(\"M 0 0 L 10 10\")",
+      "priority": "",
+      "cssText": "offset: path(\"M 0 0 L 10 10\");"
+    },
+    {
+      "id": "grammar.offset.distance-rotate",
+      "accepted": true,
+      "items": [
+        "offset-position",
+        "offset-path",
+        "offset-distance",
+        "offset-rotate",
+        "offset-anchor"
+      ],
+      "longhands": [
+        {
+          "name": "offset-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "offset-path",
+          "value": "path(\"M 0 0 L 10 10\")",
+          "priority": ""
+        },
+        {
+          "name": "offset-distance",
+          "value": "20%",
+          "priority": ""
+        },
+        {
+          "name": "offset-rotate",
+          "value": "reverse",
+          "priority": ""
+        },
+        {
+          "name": "offset-anchor",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "path(\"M 0 0 L 10 10\") 20% reverse",
+      "priority": "",
+      "cssText": "offset: path(\"M 0 0 L 10 10\") 20% reverse;"
+    },
+    {
+      "id": "grammar.offset.extra-anchor-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.overflow.one",
+      "accepted": true,
+      "items": [
+        "overflow-x",
+        "overflow-y"
+      ],
+      "longhands": [
+        {
+          "name": "overflow-x",
+          "value": "hidden",
+          "priority": ""
+        },
+        {
+          "name": "overflow-y",
+          "value": "hidden",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "hidden",
+      "priority": "",
+      "cssText": "overflow: hidden;"
+    },
+    {
+      "id": "grammar.overflow.two",
+      "accepted": true,
+      "items": [
+        "overflow-x",
+        "overflow-y"
+      ],
+      "longhands": [
+        {
+          "name": "overflow-x",
+          "value": "hidden",
+          "priority": ""
+        },
+        {
+          "name": "overflow-y",
+          "value": "scroll",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "hidden scroll",
+      "priority": "",
+      "cssText": "overflow: hidden scroll;"
+    },
+    {
+      "id": "grammar.overflow.clip-auto",
+      "accepted": true,
+      "items": [
+        "overflow-x",
+        "overflow-y"
+      ],
+      "longhands": [
+        {
+          "name": "overflow-x",
+          "value": "clip",
+          "priority": ""
+        },
+        {
+          "name": "overflow-y",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "clip auto",
+      "priority": "",
+      "cssText": "overflow: clip auto;"
+    },
+    {
+      "id": "grammar.overflow.three-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.repeated-pair.one",
+      "accepted": true,
+      "items": [
+        "align-content",
+        "justify-content"
+      ],
+      "longhands": [
+        {
+          "name": "align-content",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "justify-content",
+          "value": "center",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "center",
+      "priority": "",
+      "cssText": "place-content: center;"
+    },
+    {
+      "id": "grammar.repeated-pair.two",
+      "accepted": true,
+      "items": [
+        "align-content",
+        "justify-content"
+      ],
+      "longhands": [
+        {
+          "name": "align-content",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "justify-content",
+          "value": "space-evenly",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "center space-evenly",
+      "priority": "",
+      "cssText": "place-content: center space-evenly;"
+    },
+    {
+      "id": "grammar.repeated-pair.compound",
+      "accepted": true,
+      "items": [
+        "align-content",
+        "justify-content"
+      ],
+      "longhands": [
+        {
+          "name": "align-content",
+          "value": "safe center",
+          "priority": ""
+        },
+        {
+          "name": "justify-content",
+          "value": "space-evenly",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "safe center space-evenly",
+      "priority": "",
+      "cssText": "place-content: safe center space-evenly;"
+    },
+    {
+      "id": "grammar.repeated-pair.extra-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.scroll-timeline.name",
+      "accepted": true,
+      "items": [
+        "scroll-timeline-name",
+        "scroll-timeline-axis"
+      ],
+      "longhands": [
+        {
+          "name": "scroll-timeline-name",
+          "value": "--x",
+          "priority": ""
+        },
+        {
+          "name": "scroll-timeline-axis",
+          "value": "block",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "--x",
+      "priority": "",
+      "cssText": "scroll-timeline: --x;"
+    },
+    {
+      "id": "grammar.scroll-timeline.axis",
+      "accepted": true,
+      "items": [
+        "scroll-timeline-name",
+        "scroll-timeline-axis"
+      ],
+      "longhands": [
+        {
+          "name": "scroll-timeline-name",
+          "value": "--x",
+          "priority": ""
+        },
+        {
+          "name": "scroll-timeline-axis",
+          "value": "inline",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "--x inline",
+      "priority": "",
+      "cssText": "scroll-timeline: --x inline;"
+    },
+    {
+      "id": "grammar.scroll-timeline.list",
+      "accepted": true,
+      "items": [
+        "scroll-timeline-name",
+        "scroll-timeline-axis"
+      ],
+      "longhands": [
+        {
+          "name": "scroll-timeline-name",
+          "value": "--x, --y",
+          "priority": ""
+        },
+        {
+          "name": "scroll-timeline-axis",
+          "value": "block, inline",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "--x, --y inline",
+      "priority": "",
+      "cssText": "scroll-timeline: --x, --y inline;"
+    },
+    {
+      "id": "grammar.scroll-timeline.missing-name-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.text-wrap.mode",
+      "accepted": true,
+      "items": [
+        "text-wrap-mode",
+        "text-wrap-style"
+      ],
+      "longhands": [
+        {
+          "name": "text-wrap-mode",
+          "value": "nowrap",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-style",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "nowrap",
+      "priority": "",
+      "cssText": "text-wrap: nowrap;"
+    },
+    {
+      "id": "grammar.text-wrap.style",
+      "accepted": true,
+      "items": [
+        "text-wrap-mode",
+        "text-wrap-style"
+      ],
+      "longhands": [
+        {
+          "name": "text-wrap-mode",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-style",
+          "value": "balance",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "balance",
+      "priority": "",
+      "cssText": "text-wrap: balance;"
+    },
+    {
+      "id": "grammar.text-wrap.both",
+      "accepted": true,
+      "items": [
+        "text-wrap-mode",
+        "text-wrap-style"
+      ],
+      "longhands": [
+        {
+          "name": "text-wrap-mode",
+          "value": "wrap",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-style",
+          "value": "balance",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "balance",
+      "priority": "",
+      "cssText": "text-wrap: balance;"
+    },
+    {
+      "id": "grammar.text-wrap.duplicate-mode-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.transition.property-duration",
+      "accepted": true,
+      "items": [
+        "transition-behavior",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-property"
+      ],
+      "longhands": [
+        {
+          "name": "transition-behavior",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "transition-duration",
+          "value": "1s",
+          "priority": ""
+        },
+        {
+          "name": "transition-timing-function",
+          "value": "ease",
+          "priority": ""
+        },
+        {
+          "name": "transition-delay",
+          "value": "0s",
+          "priority": ""
+        },
+        {
+          "name": "transition-property",
+          "value": "opacity",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "opacity 1s",
+      "priority": "",
+      "cssText": "transition: opacity 1s;"
+    },
+    {
+      "id": "grammar.transition.optional",
+      "accepted": true,
+      "items": [
+        "transition-behavior",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-property"
+      ],
+      "longhands": [
+        {
+          "name": "transition-behavior",
+          "value": "allow-discrete",
+          "priority": ""
+        },
+        {
+          "name": "transition-duration",
+          "value": "1s",
+          "priority": ""
+        },
+        {
+          "name": "transition-timing-function",
+          "value": "linear",
+          "priority": ""
+        },
+        {
+          "name": "transition-delay",
+          "value": "2s",
+          "priority": ""
+        },
+        {
+          "name": "transition-property",
+          "value": "opacity",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "opacity 1s linear 2s allow-discrete",
+      "priority": "",
+      "cssText": "transition: opacity 1s linear 2s allow-discrete;"
+    },
+    {
+      "id": "grammar.transition.list",
+      "accepted": true,
+      "items": [
+        "transition-behavior",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-property"
+      ],
+      "longhands": [
+        {
+          "name": "transition-behavior",
+          "value": "normal, allow-discrete",
+          "priority": ""
+        },
+        {
+          "name": "transition-duration",
+          "value": "1s, 2s",
+          "priority": ""
+        },
+        {
+          "name": "transition-timing-function",
+          "value": "ease, linear",
+          "priority": ""
+        },
+        {
+          "name": "transition-delay",
+          "value": "0s, 1s",
+          "priority": ""
+        },
+        {
+          "name": "transition-property",
+          "value": "opacity, transform",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "opacity 1s, transform 2s linear 1s allow-discrete",
+      "priority": "",
+      "cssText": "transition: opacity 1s, transform 2s linear 1s allow-discrete;"
+    },
+    {
+      "id": "grammar.transition.three-times-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.typed-object.outline",
+      "accepted": true,
+      "items": [
+        "outline-color",
+        "outline-style",
+        "outline-width"
+      ],
+      "longhands": [
+        {
+          "name": "outline-color",
+          "value": "red",
+          "priority": ""
+        },
+        {
+          "name": "outline-style",
+          "value": "dashed",
+          "priority": ""
+        },
+        {
+          "name": "outline-width",
+          "value": "2px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "red dashed 2px",
+      "priority": "",
+      "cssText": "outline: red dashed 2px;"
+    },
+    {
+      "id": "grammar.typed-object.list-style",
+      "accepted": true,
+      "items": [
+        "list-style-position",
+        "list-style-image",
+        "list-style-type"
+      ],
+      "longhands": [
+        {
+          "name": "list-style-position",
+          "value": "inside",
+          "priority": ""
+        },
+        {
+          "name": "list-style-image",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "list-style-type",
+          "value": "square",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "inside square",
+      "priority": "",
+      "cssText": "list-style: inside square;"
+    },
+    {
+      "id": "grammar.typed-object.text-box",
+      "accepted": true,
+      "items": [
+        "text-box-trim",
+        "text-box-edge"
+      ],
+      "longhands": [
+        {
+          "name": "text-box-trim",
+          "value": "trim-both",
+          "priority": ""
+        },
+        {
+          "name": "text-box-edge",
+          "value": "cap alphabetic",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "cap alphabetic",
+      "priority": "",
+      "cssText": "text-box: cap alphabetic;"
+    },
+    {
+      "id": "grammar.typed-object.outline-duplicate-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.uniform.one",
+      "accepted": true,
+      "items": [
+        "border-block-start-color",
+        "border-block-end-color"
+      ],
+      "longhands": [
+        {
+          "name": "border-block-start-color",
+          "value": "red",
+          "priority": ""
+        },
+        {
+          "name": "border-block-end-color",
+          "value": "red",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "red",
+      "priority": "",
+      "cssText": "border-block-color: red;"
+    },
+    {
+      "id": "grammar.uniform.two",
+      "accepted": true,
+      "items": [
+        "border-block-start-color",
+        "border-block-end-color"
+      ],
+      "longhands": [
+        {
+          "name": "border-block-start-color",
+          "value": "red",
+          "priority": ""
+        },
+        {
+          "name": "border-block-end-color",
+          "value": "blue",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "red blue",
+      "priority": "",
+      "cssText": "border-block-color: red blue;"
+    },
+    {
+      "id": "grammar.uniform.four",
+      "accepted": true,
+      "items": [
+        "corner-top-left-shape",
+        "corner-top-right-shape",
+        "corner-bottom-right-shape",
+        "corner-bottom-left-shape"
+      ],
+      "longhands": [
+        {
+          "name": "corner-top-left-shape",
+          "value": "round",
+          "priority": ""
+        },
+        {
+          "name": "corner-top-right-shape",
+          "value": "bevel",
+          "priority": ""
+        },
+        {
+          "name": "corner-bottom-right-shape",
+          "value": "scoop",
+          "priority": ""
+        },
+        {
+          "name": "corner-bottom-left-shape",
+          "value": "notch",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "round bevel scoop notch",
+      "priority": "",
+      "cssText": "corner-shape: round bevel scoop notch;"
+    },
+    {
+      "id": "grammar.uniform.five-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.white-space.alias",
+      "accepted": true,
+      "items": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ],
+      "longhands": [
+        {
+          "name": "white-space-collapse",
+          "value": "preserve",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-mode",
+          "value": "wrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "pre-wrap",
+      "priority": "",
+      "cssText": "white-space: pre-wrap;"
+    },
+    {
+      "id": "grammar.white-space.collapse-mode",
+      "accepted": true,
+      "items": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ],
+      "longhands": [
+        {
+          "name": "white-space-collapse",
+          "value": "preserve",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-mode",
+          "value": "nowrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "pre",
+      "priority": "",
+      "cssText": "white-space: pre;"
+    },
+    {
+      "id": "grammar.white-space.break-spaces",
+      "accepted": true,
+      "items": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ],
+      "longhands": [
+        {
+          "name": "white-space-collapse",
+          "value": "break-spaces",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-mode",
+          "value": "wrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "break-spaces",
+      "priority": "",
+      "cssText": "white-space: break-spaces;"
+    },
+    {
+      "id": "grammar.white-space.extra-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    }
+  ]
+}
