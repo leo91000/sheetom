@@ -48,16 +48,32 @@ _Avoid_: Raw declaration, parallel stylesheet entry
 Browser-facing value text produced by CSS token recovery while preserving category-specific omitted EOF structures after lexical effects such as comment removal and escaped-code-point replacement.
 _Avoid_: Raw input, repaired stylesheet value, universal canonical form
 
-**Shorthand Group**:
-Provenance connecting expanded Declaration Records to the accepted shorthand mutation from which they came, allowing getters and serialization to reconstruct a shorthand only while current values and priorities permit it.
-_Avoid_: Shorthand declaration, serialized shorthand
+**Static Shorthand Codec**:
+The single internal expansion and synthesis seam for one semantic family of static shorthands, converting accepted values into complete canonical longhand records and reconstructing browser-facing shorthand text only from current longhand state.
+_Avoid_: Shorthand state, cssstyle delegation, parser fallback
+
+**Pending Shorthand Group**:
+Provenance connecting expanded Declaration Records to one shorthand mutation containing a genuinely deferred substitution, retaining recovered tokens only until a longhand mutation breaks the group.
+_Avoid_: Static shorthand state, serialized shorthand, original declaration
+
+**Shorthand Coverage Gate**:
+The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec and measured expansion coverage.
+_Avoid_: Best-effort expansion, supported examples, cssstyle coverage
 
 **Supported Property Manifest**:
 A checked-in list of ordinary property names accepted by the named Chromium compatibility baseline, generated offline from real-browser probes.
 _Avoid_: Specification property list, Lightning CSS property list
 
+**Value Capability Corpus**:
+A release-versioned set of positive and negative property-value families measured against the pinned browser baseline, used to bound SheetOM's claim for modern or implementation-dependent CSS grammar.
+_Avoid_: Complete CSS grammar, latest-browser support, string allowlist
+
+**Value Capability Validator**:
+A narrow property-family validator that fills a measured grammar gap or corrects a known parser mismatch, backed by neighboring positive and negative cases in the Value Capability Corpus.
+_Avoid_: Literal value allowlist, permissive unparsed fallback, browser runtime probe
+
 **Value Gate**:
-The layered decision that accepts or rejects one independently parsed property value using typed parsing, validated substitutions, grammar matching, and recorded browser quirks.
+The layered decision that accepts or rejects one independently parsed property value by classifying substitutions from original tokens before typed parsing, grammar matching, and measured Value Capability Validators.
 _Avoid_: Lightning CSS parse result, text heuristic
 
 **Syntax Engine Set**:
@@ -171,6 +187,10 @@ _Avoid_: Test suite, coverage target
 **Engine Oracle**:
 A pinned browser build that executes an Authoring CSSOM scenario to provide empirical behavior for differential comparison; it informs compatibility but does not override specifications or Web Platform Tests by itself.
 _Avoid_: Source of truth, browser profile
+
+**Rendering Witness**:
+An out-of-scope browser probe that attaches reparsable SheetOM output and compares selected computed longhands solely as evidence that serialization preserved the authored state.
+_Avoid_: SheetOM computed style, conformance API, rendering engine
 
 **Reference Workload**:
 The server and build-time authoring scales used to evaluate SheetOM performance: both a large single sheet with concentrated mutations and a publisher-shaped set of shared and page sheets with distributed rules, declarations, grouping, mutations, and final serialization.

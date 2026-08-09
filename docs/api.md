@@ -57,6 +57,8 @@ and embedded priority tokens are atomic no-ops. Diagnostics are optional and
 never change those return values or mutations.
 
 Shorthands expose their expanded longhands through indexing. SheetOM retains
+no parallel static shorthand declaration: getters and serialization reconstruct
+one only from the complete current longhand state. SheetOM retains
 pending-substitution provenance so recovered values such as
 `72px var(--space, var(--space,` remain observable exactly as Chromium exposes
 them. Mutating one longhand breaks shorthand reconstruction.

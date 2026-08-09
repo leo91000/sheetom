@@ -16,7 +16,9 @@ import {
   expandStaticFourSide,
   expandStaticShorthand,
   getShorthandLonghands,
+  getStaticShorthandNames,
   isFourSideShorthand,
+  synthesizeStaticShorthand,
 } from "./internal/shorthand-registry.js";
 import {
   parseAtruleDescriptorValue,
@@ -30,6 +32,7 @@ import {
 
 import {
   chromiumPropertyAliases,
+  chromiumShorthandLonghands,
   chromiumSupportedProperties,
 } from "./chromium-properties.js";
 
@@ -117,7 +120,21 @@ function parseDeclarationValue(
 function normalizeDeclarationName(name: string): string {
   if (name.startsWith("--")) return name;
   const lowerName = name.toLowerCase();
-  return chromiumPropertyAliases[lowerName] ?? lowerName;
+  const propertyAlias = chromiumPropertyAliases[lowerName];
+  if (propertyAlias) return propertyAlias;
+  if (!lowerName.startsWith("-webkit-")) return lowerName;
+  const unprefixed = lowerName.slice("-webkit-".length);
+  const prefixedLonghands = chromiumShorthandLonghands[lowerName];
+  const unprefixedLonghands = chromiumShorthandLonghands[unprefixed];
+  if (
+    prefixedLonghands &&
+    unprefixedLonghands &&
+    prefixedLonghands.length === unprefixedLonghands.length &&
+    prefixedLonghands.every((longhand, index) => longhand === unprefixedLonghands[index])
+  ) {
+    return unprefixed;
+  }
+  return lowerName;
 }
 
 function namedPropertyToCSS(property: string): string {
@@ -721,8 +738,10 @@ export class CSSStyleDeclaration {
         normalizeName: normalizeDeclarationName,
         parseValue: (name, value) => parseDeclarationValue(this, name, value),
         shorthandLonghands: getShorthandLonghands,
+        staticShorthandNames: getStaticShorthandNames,
         expandFourSide: expandStaticFourSide,
         expandShorthand: expandStaticShorthand,
+        synthesizeShorthand: synthesizeStaticShorthand,
         serializeIdentifier,
         normalizeIndex: toUnsignedLong,
         isFourSideShorthand,

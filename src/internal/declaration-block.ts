@@ -28,6 +28,7 @@ export interface DeclarationBlockCodec {
   normalizeName(name: string): string;
   parseValue(name: string, value: string): ParsedPropertyValue | null;
   shorthandLonghands(name: string): readonly string[] | null;
+  staticShorthandNames(): readonly string[];
   expandFourSide(
     name: string,
     parsed: ParsedPropertyValue,
@@ -38,6 +39,11 @@ export interface DeclarationBlockCodec {
     parsed: ParsedPropertyValue,
     important: boolean,
   ): DeclarationRecord[] | null;
+  synthesizeShorthand(
+    name: string,
+    records: readonly DeclarationRecord[],
+    safe: boolean,
+  ): string | null;
   serializeIdentifier(value: string): string;
   normalizeIndex(value: unknown): number;
   isFourSideShorthand(name: string): boolean;
@@ -126,6 +132,11 @@ export class DeclarationBlock {
           const record = expansion[index];
           if (record) consider(record, index);
         }
+        sourceIndex += 1;
+        continue;
+      }
+
+      if (longhands) {
         sourceIndex += 1;
         continue;
       }
@@ -222,6 +233,11 @@ export class DeclarationBlock {
       return;
     }
 
+    if (longhands) {
+      this.#reportDiagnostic("INVALID_PROPERTY_VALUE", normalizedName, value);
+      return;
+    }
+
     this.#commitRecord(normalizedName, parsed, important);
   }
 
@@ -248,19 +264,34 @@ export class DeclarationBlock {
     const declarations: string[] = [];
     const writtenPendingGroups = new Set<PendingSubstitutionGroup>();
     const writtenStaticShorthands = new Set<string>();
-    const staticShorthands = new Map<string, { value: string; important: boolean }>();
-    for (const name of [
-      "padding",
-      "margin",
-      "inset",
-      "border-width",
-      "border-style",
-      "border-color",
-      "scroll-margin",
-      "scroll-padding",
-    ]) {
+    const staticShorthandCandidates: Array<{
+      name: string;
+      longhands: readonly string[];
+      value: string;
+      important: boolean;
+    }> = [];
+    for (const name of this.#codec.staticShorthandNames()) {
       const shorthand = this.#shorthand(name, safe);
-      if (shorthand) staticShorthands.set(name, shorthand);
+      const longhands = this.#codec.shorthandLonghands(name);
+      if (shorthand && shorthand.value !== "" && longhands) {
+        staticShorthandCandidates.push({ name, longhands, ...shorthand });
+      }
+    }
+    staticShorthandCandidates.sort((left, right) =>
+      right.longhands.length - left.longhands.length ||
+      Number(left.name.startsWith("-")) - Number(right.name.startsWith("-")),
+    );
+    const staticShorthands = new Map<
+      string,
+      { name: string; value: string; important: boolean }
+    >();
+    const claimedLonghands = new Set<string>();
+    for (const candidate of staticShorthandCandidates) {
+      if (candidate.longhands.some(longhand => claimedLonghands.has(longhand))) continue;
+      for (const longhand of candidate.longhands) {
+        claimedLonghands.add(longhand);
+        staticShorthands.set(longhand, candidate);
+      }
     }
 
     for (const record of this.#records) {
@@ -278,17 +309,15 @@ export class DeclarationBlock {
       }
 
       let staticShorthandWritten = false;
-      for (const [name, shorthand] of staticShorthands) {
-        const longhands = this.#codec.shorthandLonghands(name);
-        if (!longhands?.includes(record.name)) continue;
-        if (!writtenStaticShorthands.has(name)) {
+      const staticShorthand = staticShorthands.get(record.name);
+      if (staticShorthand) {
+        if (!writtenStaticShorthands.has(staticShorthand.name)) {
           declarations.push(
-            `${indent}${name}: ${shorthand.value}${shorthand.important ? " !important" : ""};`,
+            `${indent}${staticShorthand.name}: ${staticShorthand.value}${staticShorthand.important ? " !important" : ""};`,
           );
-          writtenStaticShorthands.add(name);
+          writtenStaticShorthands.add(staticShorthand.name);
         }
         staticShorthandWritten = true;
-        break;
       }
       if (staticShorthandWritten) continue;
 
@@ -343,6 +372,14 @@ export class DeclarationBlock {
       };
     }
     if (records.some(record => record?.pendingGroup)) return null;
+    const synthesized = this.#codec.synthesizeShorthand(
+      name,
+      records as DeclarationRecord[],
+      safe,
+    );
+    if (synthesized !== null) {
+      return { value: synthesized, important: first.important };
+    }
     if (!this.#codec.isFourSideShorthand(name) || records.length !== 4) return null;
 
     const [top, right, bottom, left] = records;
