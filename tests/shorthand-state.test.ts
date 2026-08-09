@@ -84,7 +84,7 @@ test("removing an overridden background longhand cannot reactivate the shorthand
 
   assert.equal(rule.style.length, 9);
   assert.equal(rule.style.getPropertyValue("background"), "red");
-  assert.equal(rule.style.getPropertyValue("background-image"), "none");
+  assert.equal(rule.style.getPropertyValue("background-image"), "initial");
   assert.equal(rule.style.cssText, "background: red;");
 
   rule.style.setProperty("background-color", "blue");
@@ -112,9 +112,9 @@ test("removed layered background longhands leave valid concrete defaults", () =>
 
   assert.equal(
     rule.style.getPropertyValue("background-image"),
-    "linear-gradient(red, #00f), none",
+    "linear-gradient(red, #00f), initial",
   );
-  assert.equal(rule.style.getPropertyValue("background-position-x"), "center, 0%");
+  assert.equal(rule.style.getPropertyValue("background-position-x"), "center, initial");
   assert.doesNotMatch(sheet.serialize(), /, initial/);
 });
 

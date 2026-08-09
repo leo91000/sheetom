@@ -25,29 +25,6 @@ export interface DeclarationRecord extends ParsedPropertyValue {
   pendingGroup: PendingSubstitutionGroup | null;
 }
 
-const exposedInitialLonghands = new Set([
-  "background-image",
-  "background-position-x",
-  "background-position-y",
-  "background-size",
-  "background-repeat",
-  "background-attachment",
-  "background-origin",
-  "background-clip",
-  "background-color",
-]);
-
-function exposedObservableValue(record: DeclarationRecord): string {
-  if (
-    !exposedInitialLonghands.has(record.name) ||
-    !record.observableValue.includes("initial") ||
-    record.safeValue === record.observableValue
-  ) {
-    return record.observableValue;
-  }
-  return record.safeValue;
-}
-
 export interface ParsedDeclaration {
   name: string;
   value: string;
@@ -201,8 +178,7 @@ export class DeclarationBlock {
     const normalizedName = this.#codec.normalizeName(name);
     const shorthand = this.#shorthand(normalizedName, false);
     if (shorthand) return shorthand.value;
-    const record = this.#records.find(candidate => candidate.name === normalizedName);
-    return record ? exposedObservableValue(record) : "";
+    return this.#records.find(record => record.name === normalizedName)?.observableValue ?? "";
   }
 
   getPropertyPriority(name: string): string {
@@ -290,7 +266,7 @@ export class DeclarationBlock {
     const index = this.#records.findIndex(record => record.name === normalizedName);
     if (index === -1) return "";
     const [removed] = this.#records.splice(index, 1);
-    return removed ? exposedObservableValue(removed) : "";
+    return removed?.observableValue ?? "";
   }
 
   serialize(safe: boolean, indent: string, separator: string): string {
@@ -368,7 +344,7 @@ export class DeclarationBlock {
       const name = record.name.startsWith("--")
         ? this.#codec.serializeIdentifier(record.name)
         : record.name;
-      const value = safe ? record.safeValue : exposedObservableValue(record);
+      const value = safe ? record.safeValue : record.observableValue;
       declarations.push(
         `${indent}${name}: ${value}${record.important ? " !important" : ""};`,
       );
