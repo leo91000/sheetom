@@ -5,6 +5,7 @@
     "sheetom": "0.0.0"
   },
   "changesets": [
-    "bright-rules-bloom"
+    "bright-rules-bloom",
+    "calm-values-recover"
   ]
 }
