@@ -17,6 +17,10 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   changeset-policy:
     if: github.event_name == 'pull_request' || inputs.base_sha != ''
@@ -36,6 +40,46 @@ jobs:
           SHEETOM_NO_CHANGESET: ${{ contains(github.event.pull_request.labels.*.name, 'no-changeset') && '1' || '0' }}
 
   quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test public behavior
+        run: npm run test:unit
+
+      - name: Run deterministic fuzz corpus
+        run: npm run fuzz
+        env:
+          SHEETOM_FUZZ_RUNS: 1000
+
+      - name: Validate conformance documents
+        run: npm run conformance:validate
+
+      - name: Check pinned WPT mapping drift
+        run: npm run conformance:drift
+
+      - name: Validate API documentation
+        run: npm run docs:check
+
+  browser-compatibility:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -58,12 +102,6 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test public behavior
-        run: npm run test:unit
-
       - name: Test browser adapters
         run: npm run test:browser:matrix
 
@@ -73,19 +111,25 @@ jobs:
       - name: Run browser differential and native reparsing evidence
         run: npm run test:differential
 
-      - name: Run deterministic fuzz corpus
-        run: npm run fuzz
-        env:
-          SHEETOM_FUZZ_RUNS: 1000
+  package-artifact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
-      - name: Validate conformance documents
-        run: npm run conformance:validate
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
 
-      - name: Check pinned WPT mapping drift
-        run: npm run conformance:drift
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
 
-      - name: Validate API documentation
-        run: npm run docs:check
+      - name: Pin npm
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build
         run: npm run build
@@ -111,8 +155,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm install --global npm@11.16.0
-      - run: npm ci
+      - name: Install with the npm bundled with Node 22
+        run: npm ci
       - run: npm run test:unit
 
   syntax-engine-future-signal:
@@ -133,7 +177,7 @@ jobs:
       - run: npm run build
 
   package-consumer:
-    needs: quality
+    needs: package-artifact
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -146,15 +190,16 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: npm install --global npm@11.16.0
+          cache: npm
       - uses: actions/download-artifact@v8
         with:
           name: sheetom-package
           path: package-artifact
-      - run: node scripts/test-tarball.mjs package-artifact node
+      - name: Test with the npm bundled with the selected Node version
+        run: node scripts/test-tarball.mjs package-artifact node
 
   bun-consumer:
-    needs: quality
+    needs: package-artifact
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -162,6 +207,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.1
@@ -172,7 +218,7 @@ jobs:
       - run: node scripts/test-tarball.mjs package-artifact bun
 
   deno-consumer:
-    needs: quality
+    needs: package-artifact
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -180,6 +226,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.9.5
