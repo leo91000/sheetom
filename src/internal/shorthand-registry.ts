@@ -37,6 +37,41 @@ const twoValueShorthandNames = new Set([
   "scroll-padding-inline",
 ]);
 const slashPairShorthandNames = new Set(["grid-column", "grid-row"]);
+const repeatedPairShorthandNames = new Set([
+  "animation-range",
+  "background-position",
+  "border-spacing",
+  "contain-intrinsic-size",
+  "interest-delay",
+  "mask-position",
+  "-webkit-mask-position",
+  "place-content",
+  "place-items",
+  "place-self",
+  "timeline-trigger-activation-range",
+  "timeline-trigger-active-range",
+]);
+const borderLikeShorthandNames = new Set([
+  "border",
+  "border-block",
+  "border-block-end",
+  "border-block-start",
+  "border-bottom",
+  "border-inline",
+  "border-inline-end",
+  "border-inline-start",
+  "border-left",
+  "border-right",
+  "border-top",
+  "column-rule",
+  "row-rule",
+  "rule",
+  "-webkit-border-after",
+  "-webkit-border-before",
+  "-webkit-border-end",
+  "-webkit-border-start",
+  "-webkit-column-rule",
+]);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const cssWideKeywords = new Set(["initial", "inherit", "unset", "revert", "revert-layer"]);
@@ -81,10 +116,17 @@ export type StaticShorthandCodecId =
   | "slash-pair"
   | "animation"
   | "background"
+  | "border"
   | "border-radius"
+  | "columns"
   | "container"
+  | "flex-flow"
   | "font"
+  | "grid"
   | "overflow"
+  | "repeated-pair"
+  | "scroll-timeline"
+  | "text-wrap"
   | "transition"
   | "typed-object"
   | "white-space"
@@ -117,6 +159,13 @@ function codecIdFor(name: string): StaticShorthandCodecId {
   if (fourSideShorthandNames.has(name)) return "four-side";
   if (twoValueShorthandNames.has(name)) return "two-value";
   if (slashPairShorthandNames.has(name)) return "slash-pair";
+  if (borderLikeShorthandNames.has(name)) return "border";
+  if (repeatedPairShorthandNames.has(name)) return "repeated-pair";
+  if (["grid-area", "grid-template"].includes(name)) return "grid";
+  if (name === "columns") return "columns";
+  if (name === "text-wrap") return "text-wrap";
+  if (name === "scroll-timeline") return "scroll-timeline";
+  if (name === "flex-flow") return "flex-flow";
   return namedCodecIds[name] ?? "legacy-cssstyle";
 }
 
@@ -222,6 +271,124 @@ function synthesizeAnimation(
   return animations.join(", ");
 }
 
+function uniformSuffixValue(
+  records: readonly DeclarationRecord[],
+  suffix: string,
+  safe: boolean,
+): string | null {
+  const values = records
+    .filter(record => record.name.endsWith(suffix))
+    .map(record => safe ? record.safeValue : record.observableValue);
+  if (values.length === 0 || values.some(value => value !== values[0])) return null;
+  return values[0] ?? null;
+}
+
+function synthesizeBorderLike(
+  name: string,
+  records: readonly DeclarationRecord[],
+  safe: boolean,
+): string | null {
+  if (!borderLikeShorthandNames.has(name)) return null;
+  const componentRecords = name === "border"
+    ? records.filter(record => !record.name.startsWith("border-image-"))
+    : records;
+  if (name === "border") {
+    for (const residual of [
+      "border-image-source",
+      "border-image-slice",
+      "border-image-width",
+      "border-image-outset",
+      "border-image-repeat",
+    ]) {
+      if (!isAllowedResidual("border", residual, records, safe)) return null;
+    }
+  }
+  const width = uniformSuffixValue(componentRecords, "-width", safe);
+  const style = uniformSuffixValue(componentRecords, "-style", safe);
+  const color = uniformSuffixValue(componentRecords, "-color", safe);
+  if (width === null || style === null || color === null) return null;
+  const components = [width];
+  if (style !== "none") components.push(style);
+  if (color !== "currentcolor") components.push(color);
+  return components.join(" ");
+}
+
+function synthesizeStructuralShorthand(
+  name: string,
+  records: readonly DeclarationRecord[],
+  safe: boolean,
+): string | null {
+  const border = synthesizeBorderLike(name, records, safe);
+  if (border) return border;
+  const value = (longhand: string): string | null => recordValue(records, longhand, safe);
+
+  if (name === "grid-area") {
+    const values = [
+      value("grid-row-start"),
+      value("grid-column-start"),
+      value("grid-row-end"),
+      value("grid-column-end"),
+    ];
+    if (values.some(component => component === null)) return null;
+    if (values.every(component => component === "auto")) return "auto";
+    return values.join(" / ");
+  }
+  if (name === "grid-template") {
+    const rows = value("grid-template-rows");
+    const columns = value("grid-template-columns");
+    const areas = value("grid-template-areas");
+    if (rows === null || columns === null || areas !== "none") return null;
+    if (rows === "none" && columns === "none") return "none";
+    return `${rows} / ${columns}`;
+  }
+  if (name === "columns") {
+    const width = value("column-width");
+    const count = value("column-count");
+    if (
+      width === null || count === null ||
+      value("column-height") !== "auto" || value("column-wrap") !== "auto"
+    ) return null;
+    if (width === "auto" && count === "auto") return "auto";
+    if (width === "auto") return count;
+    if (count === "auto") return width;
+    return `${width} ${count}`;
+  }
+  if (name === "text-wrap") {
+    const mode = value("text-wrap-mode");
+    const style = value("text-wrap-style");
+    if (mode === null || style === null) return null;
+    if (style === "initial") return mode;
+    if (mode === "wrap") return style;
+    return `${mode} ${style}`;
+  }
+  if (name === "scroll-timeline") {
+    const timelineName = value("scroll-timeline-name");
+    const axis = value("scroll-timeline-axis");
+    if (timelineName === null || axis === null) return null;
+    return axis === "block" ? timelineName : `${timelineName} ${axis}`;
+  }
+  if (name === "flex-flow") {
+    const direction = value("flex-direction");
+    const wrap = value("flex-wrap");
+    if (direction === null || wrap === null) return null;
+    if (wrap === "nowrap") return direction;
+    if (direction === "row") return wrap;
+    return `${direction} ${wrap}`;
+  }
+  if (repeatedPairShorthandNames.has(name)) {
+    const longhands = getShorthandLonghands(name);
+    if (!longhands || longhands.length !== 2) return null;
+    const first = value(longhands[0] ?? "");
+    const second = value(longhands[1] ?? "");
+    if (first === null || second === null) return null;
+    if (["background-position", "mask-position", "-webkit-mask-position"].includes(name)) {
+      return `${first} ${second}`;
+    }
+    return first === second ? first : `${first} ${second}`;
+  }
+  return null;
+}
+
 export function synthesizeStaticShorthand(
   name: string,
   records: readonly DeclarationRecord[],
@@ -254,6 +421,9 @@ export function synthesizeStaticShorthand(
       return color;
     }
   }
+
+  const structural = synthesizeStructuralShorthand(serializationName, records, safe);
+  if (structural !== null) return structural;
 
   if (
     serializationName === "font-variant" &&
@@ -414,6 +584,227 @@ function splitTopLevelDelimiter(value: string, delimiter: string): string[] {
   }
   components.push(current.trim());
   return components;
+}
+
+function matchesPropertyGrammar(property: string, value: string): boolean {
+  try {
+    return csstree.lexer.matchProperty(property, value).error === null;
+  } catch {
+    return false;
+  }
+}
+
+function borderComponentValues(
+  value: string,
+  longhands: readonly string[],
+): Readonly<Record<"width" | "style" | "color", string>> | null {
+  const widthProperty = longhands.find(longhand => longhand.endsWith("-width"));
+  const styleProperty = longhands.find(longhand => longhand.endsWith("-style"));
+  const colorProperty = longhands.find(longhand => longhand.endsWith("-color"));
+  if (!widthProperty || !styleProperty || !colorProperty) return null;
+
+  const result = { width: "medium", style: "none", color: "currentcolor" };
+  const components = splitTopLevelWhitespace(value);
+  if (components.length === 0 || components.length > 3) return null;
+  for (const component of components) {
+    if (matchesPropertyGrammar(widthProperty, component)) {
+      result.width = component;
+      continue;
+    }
+    if (matchesPropertyGrammar(styleProperty, component)) {
+      result.style = component;
+      continue;
+    }
+    if (matchesPropertyGrammar(colorProperty, component)) {
+      result.color = component;
+      continue;
+    }
+    return null;
+  }
+  return result;
+}
+
+function orderedBorderLonghands(longhands: readonly string[]): string[] {
+  const ranked = longhands.map((longhand, index) => ({
+    longhand,
+    index,
+    rank: longhand.endsWith("-width")
+      ? 0
+      : longhand.endsWith("-style")
+        ? 1
+        : longhand.endsWith("-color")
+          ? 2
+          : 3,
+  }));
+  ranked.sort((left, right) => left.rank - right.rank || left.index - right.index);
+  return ranked.map(entry => entry.longhand);
+}
+
+function expandBorderLikeValue(
+  name: string,
+  value: string,
+): ReadonlyMap<string, string> | null {
+  if (!borderLikeShorthandNames.has(name)) return null;
+  const longhands = getShorthandLonghands(name);
+  if (!longhands) return null;
+  const components = borderComponentValues(value, longhands);
+  if (!components) return null;
+  const result = new Map<string, string>();
+  for (const longhand of orderedBorderLonghands(longhands)) {
+    if (longhand === "border-image-source") result.set(longhand, "none");
+    else if (longhand === "border-image-slice") result.set(longhand, "100%");
+    else if (longhand === "border-image-width") result.set(longhand, "1");
+    else if (longhand === "border-image-outset") result.set(longhand, "0");
+    else if (longhand === "border-image-repeat") result.set(longhand, "stretch");
+    else if (longhand.endsWith("-width")) result.set(longhand, components.width);
+    else if (longhand.endsWith("-style")) result.set(longhand, components.style);
+    else if (longhand.endsWith("-color")) result.set(longhand, components.color);
+    else return null;
+  }
+  return result;
+}
+
+function expandRepeatedPairValue(
+  name: string,
+  value: string,
+): ReadonlyMap<string, string> | null {
+  if (!repeatedPairShorthandNames.has(name)) return null;
+  const longhands = getShorthandLonghands(name);
+  if (!longhands || longhands.length !== 2) return null;
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2 || !components[0]) return null;
+  return new Map([
+    [longhands[0] ?? "", components[0]],
+    [longhands[1] ?? "", components[1] ?? components[0]],
+  ]);
+}
+
+function expandGridAreaValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelDelimiter(value, "/");
+  if (components.length < 1 || components.length > 4 || !components[0]) return null;
+  const [rowStart, columnStart = "auto", rowEnd = "auto", columnEnd = "auto"] = components;
+  if (!rowStart) return null;
+  return new Map([
+    ["grid-row-start", rowStart],
+    ["grid-column-start", columnStart],
+    ["grid-row-end", rowEnd],
+    ["grid-column-end", columnEnd],
+  ]);
+}
+
+function expandGridTemplateValue(value: string): ReadonlyMap<string, string> | null {
+  if (value === "none") {
+    return new Map([
+      ["grid-template-rows", "none"],
+      ["grid-template-columns", "none"],
+      ["grid-template-areas", "none"],
+    ]);
+  }
+  const components = splitTopLevelDelimiter(value, "/");
+  if (components.length !== 2 || !components[0] || !components[1]) return null;
+  if (components[0].includes('"') || components[0].includes("'")) return null;
+  return new Map([
+    ["grid-template-rows", components[0]],
+    ["grid-template-columns", components[1]],
+    ["grid-template-areas", "none"],
+  ]);
+}
+
+function expandColumnsValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2) return null;
+  let width = "auto";
+  let count = "auto";
+  for (const component of components) {
+    if (component === "auto") continue;
+    if (matchesPropertyGrammar("column-width", component)) {
+      width = component;
+      continue;
+    }
+    if (matchesPropertyGrammar("column-count", component)) {
+      count = component;
+      continue;
+    }
+    return null;
+  }
+  return new Map([
+    ["column-width", width],
+    ["column-count", count],
+    ["column-height", "auto"],
+    ["column-wrap", "auto"],
+  ]);
+}
+
+function expandTextWrapValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2) return null;
+  const modeKeywords = new Set(["wrap", "nowrap"]);
+  const mode = components.find(component => modeKeywords.has(component)) ?? "wrap";
+  const style = components.find(component => !modeKeywords.has(component)) ?? "initial";
+  return new Map([
+    ["text-wrap-mode", mode],
+    ["text-wrap-style", style],
+  ]);
+}
+
+function expandScrollTimelineValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2 || !components[0]) return null;
+  const axes = new Set(["block", "inline", "x", "y"]);
+  const axis = components.find(component => axes.has(component)) ?? "block";
+  const name = components.find(component => !axes.has(component)) ?? "none";
+  return new Map([
+    ["scroll-timeline-name", name],
+    ["scroll-timeline-axis", axis],
+  ]);
+}
+
+function expandFlexFlowValue(value: string): ReadonlyMap<string, string> | null {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length < 1 || components.length > 2) return null;
+  const directions = new Set(["row", "row-reverse", "column", "column-reverse"]);
+  const wraps = new Set(["nowrap", "wrap", "wrap-reverse"]);
+  const direction = components.find(component => directions.has(component)) ?? "row";
+  const wrap = components.find(component => wraps.has(component)) ?? "nowrap";
+  if (!components.every(component => directions.has(component) || wraps.has(component))) return null;
+  return new Map([
+    ["flex-direction", direction],
+    ["flex-wrap", wrap],
+  ]);
+}
+
+function expandStructuralValue(name: string, value: string): ReadonlyMap<string, string> | null {
+  const border = expandBorderLikeValue(name, value);
+  if (border) return border;
+  const pair = expandRepeatedPairValue(name, value);
+  if (pair) return pair;
+  if (name === "grid-area") return expandGridAreaValue(value);
+  if (name === "grid-template") return expandGridTemplateValue(value);
+  if (name === "columns") return expandColumnsValue(value);
+  if (name === "text-wrap") return expandTextWrapValue(value);
+  if (name === "scroll-timeline") return expandScrollTimelineValue(value);
+  if (name === "flex-flow") return expandFlexFlowValue(value);
+  return null;
+}
+
+function expandMappedValues(
+  name: string,
+  parsed: AcceptedPropertyValue,
+  important: boolean,
+  expand: (name: string, value: string) => ReadonlyMap<string, string> | null,
+): DeclarationRecord[] | null {
+  const observable = expand(name, parsed.observableValue);
+  const safe = expand(name, parsed.safeValue);
+  if (!observable || !safe) return null;
+  if ([...observable.keys()].join("\0") !== [...safe.keys()].join("\0")) return null;
+  return [...observable].map(([longhand, observableValue]) => ({
+    name: longhand,
+    observableValue,
+    safeValue: safe.get(longhand) ?? observableValue,
+    pendingSubstitution: false,
+    important,
+    pendingGroup: null,
+  }));
 }
 
 function extractSerializedValue(serialized: string, property: string): string | null {
@@ -839,6 +1230,14 @@ export function expandStaticShorthand(
       pendingGroup: null,
     }));
   }
+
+  const structuralExpansion = expandMappedValues(
+    name,
+    parsed,
+    important,
+    expandStructuralValue,
+  );
+  if (structuralExpansion) return structuralExpansion;
 
   const highRiskExpansion = expandHighRiskShorthand(name, parsed, important);
   if (highRiskExpansion) return highRiskExpansion;
