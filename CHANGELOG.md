@@ -1,5 +1,15 @@
 # sheetom
 
+## 0.1.0-rc.5
+
+### Patch Changes
+
+- 7e1e99c: Expand shorthand compatibility across reviewed grammar branches, including
+  logical multi-values, compound placement, transition and timeline lists,
+  text-box edges, and browser-facing animation, overscroll, and background
+  synthesis. Ship exact Chromium evidence for 92 cases across all 23 codec
+  profiles and block releases when that evidence is incomplete.
+
 ## 0.1.0-rc.4
 
 ### Patch Changes
