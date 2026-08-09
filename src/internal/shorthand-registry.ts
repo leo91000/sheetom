@@ -1,4 +1,3 @@
-import { CSSStyleDeclaration as CSSStyleDeclarationOracle } from "cssstyle";
 import * as csstree from "css-tree";
 import {
   transformStyleAttribute,
@@ -234,6 +233,7 @@ export type StaticShorthandCodecId =
   | "border-radius"
   | "columns"
   | "container"
+  | "flex"
   | "flex-flow"
   | "font"
   | "grid"
@@ -246,8 +246,7 @@ export type StaticShorthandCodecId =
   | "transition"
   | "typed-object"
   | "uniform"
-  | "white-space"
-  | "legacy-cssstyle";
+  | "white-space";
 
 export interface StaticShorthandDefinition {
   name: string;
@@ -267,6 +266,9 @@ const namedCodecIds: Readonly<Record<string, StaticShorthandCodecId>> = {
   "border-radius": "border-radius",
   "-webkit-border-radius": "border-radius",
   container: "container",
+  flex: "flex",
+  "-webkit-flex": "flex",
+  "-webkit-flex-flow": "flex-flow",
   font: "font",
   overflow: "overflow",
   transition: "transition",
@@ -300,7 +302,7 @@ function codecIdFor(name: string): StaticShorthandCodecId {
   const namedCodec = namedCodecIds[name];
   if (namedCodec) return namedCodec;
   if (uniformValueShorthandNames.has(name)) return "uniform";
-  return "legacy-cssstyle";
+  throw new Error(`Missing static shorthand codec for ${name}`);
 }
 
 const staticShorthandDefinitions = staticShorthandNames.map(name => ({
@@ -2295,35 +2297,22 @@ function expandOverflowValue(value: string): ReadonlyMap<string, string> | null 
   ]);
 }
 
-function expandFontValue(value: string): ReadonlyMap<string, string> | null {
-  const style = new CSSStyleDeclarationOracle();
-  style.setProperty("font", value);
-  const read = (name: string, fallback: string): string =>
-    style.getPropertyValue(name) || fallback;
-  const variant = read("font-variant", "normal");
-  const result = new Map<string, string>([
-    ["font-style", read("font-style", "normal")],
-    ["font-variant-caps", variant],
-    ["font-variant-ligatures", "normal"],
-    ["font-variant-numeric", "normal"],
-    ["font-variant-east-asian", "normal"],
-    ["font-variant-alternates", "normal"],
-    ["font-size-adjust", "none"],
-    ["font-language-override", "normal"],
-    ["font-kerning", "auto"],
-    ["font-optical-sizing", "auto"],
-    ["font-feature-settings", "normal"],
-    ["font-variation-settings", "normal"],
-    ["font-variant-position", "normal"],
-    ["font-variant-emoji", "normal"],
-    ["font-weight", read("font-weight", "normal")],
-    ["font-stretch", "normal"],
-    ["font-size", read("font-size", "")],
-    ["line-height", read("line-height", "normal")],
-    ["font-family", read("font-family", "")],
+function expandFlexValue(value: string): ReadonlyMap<string, string> | null {
+  const declaration = parseTypedDeclaration("flex", value);
+  if (declaration?.property !== "flex") return null;
+  const shorthandValue = declaration.value;
+  if (typeof shorthandValue !== "object" || shorthandValue === null) return null;
+  const fields = shorthandValue as Record<string, unknown>;
+  if (
+    !Object.hasOwn(fields, "grow") ||
+    !Object.hasOwn(fields, "shrink") ||
+    !Object.hasOwn(fields, "basis")
+  ) return null;
+  return serializeTypedFields([
+    ["flex-grow", fields.grow],
+    ["flex-shrink", fields.shrink],
+    ["flex-basis", fields.basis],
   ]);
-  if (result.get("font-size") === "" || result.get("font-family") === "") return null;
-  return result;
 }
 
 function expandBackgroundValue(value: string): ReadonlyMap<string, string> | null {
@@ -2397,7 +2386,8 @@ function expandHighRiskValue(name: string, value: string): ReadonlyMap<string, s
     case "background": return expandBackgroundValue(value);
     case "overflow": return expandOverflowValue(value);
     case "border-radius": return expandBorderRadiusValue(value);
-    case "font": return expandFontValue(value);
+    case "flex":
+    case "-webkit-flex": return expandFlexValue(value);
     case "animation": return expandAnimationValue(value);
     case "transition": return expandTransitionValue(value);
     case "container": return expandContainerValue(value);
@@ -2575,61 +2565,5 @@ export function expandStaticShorthand(
   const twoValueExpansion = expandTwoValueShorthand(name, parsed, important);
   if (twoValueExpansion) return twoValueExpansion;
 
-  const observableStyle = new CSSStyleDeclarationOracle();
-  const safeStyle = new CSSStyleDeclarationOracle();
-  observableStyle.setProperty(name, parsed.observableValue);
-  safeStyle.setProperty(name, parsed.safeValue);
-
-  const fallbackValues: Readonly<Record<string, string>> = name === "border"
-    ? {
-        "border-image-source": "none",
-        "border-image-slice": "100%",
-        "border-image-width": "1",
-        "border-image-outset": "0",
-        "border-image-repeat": "stretch",
-      }
-    : name === "background"
-      ? {
-          "background-position-x": "0%",
-          "background-position-y": "0%",
-        }
-    : {};
-  const orderedLonghands = name === "border"
-    ? [
-        "border-top-width",
-        "border-right-width",
-        "border-bottom-width",
-        "border-left-width",
-        "border-top-style",
-        "border-right-style",
-        "border-bottom-style",
-        "border-left-style",
-        "border-top-color",
-        "border-right-color",
-        "border-bottom-color",
-        "border-left-color",
-        "border-image-source",
-        "border-image-slice",
-        "border-image-width",
-        "border-image-outset",
-        "border-image-repeat",
-      ]
-    : longhands;
-
-  const records: DeclarationRecord[] = [];
-  for (const longhand of orderedLonghands) {
-    if (!longhands.includes(longhand)) return null;
-    const observableValue = observableStyle.getPropertyValue(longhand) || fallbackValues[longhand] || "";
-    const safeValue = safeStyle.getPropertyValue(longhand) || fallbackValues[longhand] || "";
-    if (observableValue === "" || safeValue === "") return null;
-    records.push({
-      name: longhand,
-      observableValue,
-      safeValue,
-      pendingSubstitution: false,
-      important,
-      pendingGroup: null,
-    });
-  }
-  return records;
+  return null;
 }

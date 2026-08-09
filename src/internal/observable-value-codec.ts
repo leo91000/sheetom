@@ -3,7 +3,8 @@ import {
   tokenize,
   type CSSToken,
 } from "@csstools/css-tokenizer";
-import { CSSStyleDeclaration as CSSStyleDeclarationOracle } from "cssstyle";
+
+import { chromiumShorthandLonghands } from "../chromium-properties.js";
 
 export type ObservableValueCategory =
   | "typed"
@@ -149,6 +150,109 @@ function serializeRecoveredFontFamily(value: string): string {
   return `"${escapedString(value, '"')}"`;
 }
 
+function byteFromHex(value: string): number {
+  return Number.parseInt(value, 16);
+}
+
+function alphaFromByte(value: number): string {
+  const rounded = Math.round((value / 255) * 1000) / 1000;
+  return `${rounded}`;
+}
+
+function serializeHexColor(value: string): string | null {
+  const match = /^#([\da-f]{3,8})$/i.exec(value);
+  if (!match?.[1] || ![3, 4, 6, 8].includes(match[1].length)) return null;
+  const expanded = match[1].length <= 4
+    ? [...match[1]].map(character => `${character}${character}`).join("")
+    : match[1];
+  const red = byteFromHex(expanded.slice(0, 2));
+  const green = byteFromHex(expanded.slice(2, 4));
+  const blue = byteFromHex(expanded.slice(4, 6));
+  if (expanded.length === 6) return `rgb(${red}, ${green}, ${blue})`;
+  const alpha = byteFromHex(expanded.slice(6, 8));
+  return `rgba(${red}, ${green}, ${blue}, ${alphaFromByte(alpha)})`;
+}
+
+function serializeRgbColor(value: string): string | null {
+  const match = /^rgba?\(\s*([^)]*)\s*\)$/i.exec(value);
+  if (!match?.[1]) return null;
+  const commaSyntax = match[1].includes(",");
+  const slashParts = match[1].split("/").map(part => part.trim());
+  const colorParts = commaSyntax
+    ? (slashParts[0] ?? "").split(",").map(part => part.trim())
+    : (slashParts[0] ?? "").split(/\s+/).filter(Boolean);
+  let alpha = slashParts[1];
+  if (commaSyntax && colorParts.length === 4) alpha = colorParts.pop();
+  if (colorParts.length !== 3) return null;
+  const channel = (part: string): number | null => {
+    const numeric = Number.parseFloat(part);
+    if (!Number.isFinite(numeric)) return null;
+    return part.endsWith("%")
+      ? Math.round(Math.min(100, Math.max(0, numeric)) * 255 / 100)
+      : Math.round(Math.min(255, Math.max(0, numeric)));
+  };
+  const channels = colorParts.map(channel);
+  if (channels.some(component => component === null)) return null;
+  const [red, green, blue] = channels;
+  if (red === undefined || green === undefined || blue === undefined) return null;
+  if (alpha === undefined) return `rgb(${red}, ${green}, ${blue})`;
+  const numericAlpha = Number.parseFloat(alpha);
+  if (!Number.isFinite(numericAlpha)) return null;
+  const normalizedAlpha = alpha.endsWith("%")
+    ? Math.min(100, Math.max(0, numericAlpha)) / 100
+    : Math.min(1, Math.max(0, numericAlpha));
+  return `rgba(${red}, ${green}, ${blue}, ${normalizedAlpha})`;
+}
+
+function serializeColor(value: string, safeValue: string): string {
+  const direct = serializeRgbColor(value) ?? serializeHexColor(value);
+  if (direct !== null) return direct;
+  if (/^(?:hsl|hsla|hwb|lab|lch|oklab|oklch|color)\(/i.test(value)) {
+    return serializeHexColor(safeValue) ?? value;
+  }
+  return /^[a-z-]+$/i.test(value) ? value.toLowerCase() : value;
+}
+
+function serializeIntegerCalculation(name: string, value: string): string | null {
+  if (name !== "z-index") return null;
+  const match = /^calc\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([+-])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\)$/i.exec(value);
+  if (!match?.[1] || !match[2] || !match[3]) return null;
+  const left = Number.parseFloat(match[1]);
+  const right = Number.parseFloat(match[3]);
+  const result = match[2] === "+" ? left + right : left - right;
+  if (!Number.isInteger(result)) return null;
+  return `calc(${result})`;
+}
+
+function serializeTypedValue(
+  name: string,
+  input: string,
+  safeValue: string,
+  recovered: ReturnType<typeof recoverTokenText>,
+): string {
+  const shorthandLonghands = chromiumShorthandLonghands[name];
+  if (shorthandLonghands && shorthandLonghands.length > 1 && !recovered.recovered) {
+    return input;
+  }
+  if (name.endsWith("color") || name === "color") {
+    return serializeColor(recovered.closed, safeValue);
+  }
+  const integerCalculation = serializeIntegerCalculation(name, recovered.closed);
+  if (integerCalculation !== null) return integerCalculation;
+  if (/^(?:calc|min|max|clamp)\(/i.test(recovered.closed)) {
+    return safeValue.startsWith("calc(") ? safeValue : `calc(${safeValue})`;
+  }
+  if (/gradient\(/i.test(recovered.closed)) return recovered.closed;
+  if (!recovered.recovered) {
+    return safeValue;
+  }
+  if (/^url\(/i.test(recovered.closed) || /^['"]/.test(input)) return safeValue;
+  if (input.includes("/*")) {
+    return recovered.retained;
+  }
+  return recovered.closed;
+}
+
 /** Produces browser-facing text without changing acceptance or reparsable output. */
 export function serializeObservableValue({
   name,
@@ -162,10 +266,5 @@ export function serializeObservableValue({
     return serializeRecoveredFontFamily(recovered.stringValue);
   }
   if (name === "font-family") return safeValue;
-
-  const oracle = new CSSStyleDeclarationOracle();
-  oracle.setProperty(name, recovered.closed);
-  const canonicalValue = oracle.getPropertyValue(name);
-  if (canonicalValue !== "") return canonicalValue;
-  return recovered.recovered ? recovered.closed : input.trim();
+  return serializeTypedValue(name, input.trim(), safeValue, recovered);
 }

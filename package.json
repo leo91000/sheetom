@@ -76,7 +76,6 @@
   "dependencies": {
     "@csstools/css-tokenizer": "4.0.0",
     "css-tree": "3.2.1",
-    "cssstyle": "6.2.0",
     "lightningcss": "1.33.0"
   },
   "devDependencies": {

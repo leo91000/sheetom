@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: superseded
+superseded-by: 0093
 ---
 
 # Pin the Syntax Engine Set

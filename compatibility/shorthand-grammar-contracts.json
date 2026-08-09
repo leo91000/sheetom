@@ -62,6 +62,12 @@
       { "id": "grammar.container.normal", "branch": "none name", "property": "container", "input": "none / normal", "accepted": true },
       { "id": "grammar.container.extra-slash-invalid", "branch": "too many slash sections", "property": "container", "input": "card / size / inline-size", "accepted": false, "preserves": "grammar.container.slash-type" }
     ] },
+    { "codec": "flex", "cases": [
+      { "id": "grammar.flex.grow", "branch": "grow factor", "property": "flex", "input": "2", "accepted": true },
+      { "id": "grammar.flex.basis", "branch": "basis", "property": "flex", "input": "10px", "accepted": true },
+      { "id": "grammar.flex.full", "branch": "grow shrink and basis", "property": "flex", "input": "2 3 10px", "accepted": true },
+      { "id": "grammar.flex.extra-invalid", "branch": "too many values", "property": "flex", "input": "2 3 10px 4", "accepted": false, "preserves": "grammar.flex.full" }
+    ] },
     { "codec": "flex-flow", "cases": [
       { "id": "grammar.flex-flow.direction", "branch": "direction", "property": "flex-flow", "input": "column", "accepted": true },
       { "id": "grammar.flex-flow.wrap", "branch": "wrap", "property": "flex-flow", "input": "wrap", "accepted": true },
