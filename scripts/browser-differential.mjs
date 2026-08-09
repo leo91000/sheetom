@@ -147,7 +147,7 @@ async function verifyNativeReparsing(pages) {
   ];
   const substitutionSheet = new CSSStyleSheet();
   for (const [index, candidate] of substitutionCases.entries()) {
-    substitutionSheet.insertRule(`.sheetom-substitution-${index} {}`);
+    substitutionSheet.insertRule(`.sheetom-substitution-${index} {}`, index);
     const rule = substitutionSheet.cssRules[index];
     if (!(rule instanceof CSSStyleRule)) throw new TypeError("Expected style rule");
     rule.style.setProperty("--x", candidate.malformed);
