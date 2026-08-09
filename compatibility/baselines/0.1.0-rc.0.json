@@ -32,14 +32,14 @@
       {
         "engine": "chrome",
         "version": "150.0.7871.128",
-        "sha256": "5270d46cd030875bdfa9237857465e942e0dcdc7276f5fc8c7c1493931d27366",
+        "sha256": "93b768eb22570bb5d0b2ce26ec3a6df1576f5bb410b0d9c4a59b7913326e8a5d",
         "passed": 4,
         "total": 4
       },
       {
         "engine": "firefox",
         "version": "153.0.3",
-        "sha256": "25e205b04e0c4775c652e4260169c8f2464b0911a00abb8862f1b8241c6ca597",
+        "sha256": "64d86d8096a586634b6522b010960d29a487fc40e33d8a419907f924b2633ca0",
         "passed": 4,
         "total": 4
       }
