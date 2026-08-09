@@ -11,10 +11,9 @@ import type {
   DeclarationRecord,
 } from "./declaration-block.js";
 import {
-  getShorthandCapabilityItems,
-  getMatchingShorthandCapabilityInput,
-  matchesShorthandCapability,
-} from "./shorthand-capabilities.js";
+  getMatchingShorthandCanonicalInput,
+  getShorthandRuntimeItems,
+} from "./shorthand-runtime-overrides.js";
 
 const fourSideShorthandNames = new Set([
   "padding",
@@ -1046,7 +1045,7 @@ function borderComponentValues(
 }
 
 function orderedBorderLonghands(name: string, longhands: readonly string[]): string[] {
-  const measured = getShorthandCapabilityItems(name);
+  const measured = getShorthandRuntimeItems(name);
   if (measured && measured.length === longhands.length) return [...measured];
   const ranked = longhands.map((longhand, index) => ({
     longhand,
@@ -1430,7 +1429,7 @@ function expandUniformValue(name: string, value: string): ReadonlyMap<string, st
   if (splitTopLevelWhitespace(value).length !== 1) return null;
   const longhands = getShorthandLonghands(name);
   if (!longhands) return null;
-  const ordered = getShorthandCapabilityItems(name) ?? longhands;
+  const ordered = getShorthandRuntimeItems(name) ?? longhands;
   return new Map(ordered.map(longhand => [longhand, value]));
 }
 
@@ -1440,14 +1439,12 @@ function expandMappedValues(
   important: boolean,
   expand: (name: string, value: string) => ReadonlyMap<string, string> | null,
 ): DeclarationRecord[] | null {
-  const capabilityInput = getMatchingShorthandCapabilityInput(name, parsed.observableValue);
+  const capabilityInput = getMatchingShorthandCanonicalInput(name, parsed.observableValue);
   const observableInput = capabilityInput ?? parsed.observableValue;
   const observable = expand(name, observableInput);
-  const safeInput = capabilityInput !== null
-    ? capabilityInput
-    : name === "offset"
-      ? parsed.observableValue
-      : parsed.safeValue;
+  const safeInput = name === "offset"
+    ? parsed.observableValue
+    : parsed.safeValue;
   const safe = expand(
     name,
     safeInput,
@@ -1876,7 +1873,7 @@ function expandFontTypedValue(
     "font-variant-position": "normal",
     "font-variant-emoji": "normal",
   };
-  const order = getShorthandCapabilityItems("font") ?? getShorthandLonghands("font") ?? [];
+  const order = getShorthandRuntimeItems("font") ?? getShorthandLonghands("font") ?? [];
   for (const longhand of order) {
     const current = serializedValues.get(longhand) ?? defaults[longhand];
     if (current === undefined) return null;
@@ -1890,7 +1887,7 @@ function typedRecords(
   parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
-  const capabilityInput = getMatchingShorthandCapabilityInput(name, parsed.observableValue);
+  const capabilityInput = getMatchingShorthandCanonicalInput(name, parsed.observableValue);
   const values = expandLayeredTypedValue(name, parsed) ??
     expandBorderImageTypedValue(name, parsed) ??
     (name === "grid-template" ? expandGridTemplateTypedValue(parsed) : null) ??
