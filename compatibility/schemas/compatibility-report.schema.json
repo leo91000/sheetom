@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "packageVersion", "baseline", "summary", "evidence", "resolutions"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "enum": [1, 2, 3] },
+    "schemaVersion": { "enum": [1, 2, 3, 4] },
     "packageVersion": { "type": "string" },
     "baseline": {
       "type": "object",
@@ -89,6 +89,18 @@
             }
           }
         },
+        "shorthandGrammar": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["profiles", "passed", "total", "contractsSha256", "observationsSha256"],
+          "properties": {
+            "profiles": { "const": 23 },
+            "passed": { "const": 92 },
+            "total": { "const": 92 },
+            "contractsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "observationsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        },
         "nativeWpt": {
           "type": "array",
           "items": {
@@ -125,7 +137,7 @@
       }
     },
     {
-      "if": { "properties": { "schemaVersion": { "enum": [2, 3] } } },
+      "if": { "properties": { "schemaVersion": { "enum": [2, 3, 4] } } },
       "then": {
         "properties": {
           "baseline": {
@@ -133,6 +145,20 @@
             "required": ["syntaxEngineSet"],
             "properties": {
               "syntaxEngineSet": { "type": "object" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "schemaVersion": { "const": 4 } } },
+      "then": {
+        "properties": {
+          "evidence": {
+            "type": "object",
+            "required": ["shorthandGrammar"],
+            "properties": {
+              "shorthandGrammar": { "type": "object" }
             }
           }
         }

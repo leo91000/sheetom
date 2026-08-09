@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
@@ -30,6 +31,25 @@ if (report.evidence.operationFixtures.passed !== report.evidence.operationFixtur
 }
 if (!/^[0-9a-f]{64}$/.test(report.evidence.operationFixtures.sha256 ?? "")) {
   throw new Error("Operation Fixture evidence does not identify its executed report");
+}
+const shorthandGrammar = report.evidence.shorthandGrammar;
+if (
+  shorthandGrammar?.profiles !== 23 ||
+  shorthandGrammar?.passed !== 92 ||
+  shorthandGrammar?.total !== 92 ||
+  !/^[0-9a-f]{64}$/.test(shorthandGrammar?.contractsSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(shorthandGrammar?.observationsSha256 ?? "")
+) {
+  throw new Error("Shorthand Grammar Branch evidence is incomplete");
+}
+for (const [filename, recordedHash] of [
+  ["compatibility/shorthand-grammar-contracts.json", shorthandGrammar.contractsSha256],
+  ["compatibility/shorthand-grammar-observations.json", shorthandGrammar.observationsSha256],
+]) {
+  const actualHash = createHash("sha256").update(await readFile(filename)).digest("hex");
+  if (actualHash !== recordedHash) {
+    throw new Error(`${filename} does not match the release Compatibility Report`);
+  }
 }
 const operationAdapters = new Map(
   report.evidence.operationFixtures.adapters?.map(evidence => [evidence.adapter, evidence]) ?? [],
