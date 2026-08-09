@@ -218,14 +218,44 @@ async function verifyNativeReparsing(pages) {
 
 async function verifyShorthandRenderingWitness(page) {
   const cases = [
-    ["background", "red", "background-color", "blue", "background-color"],
-    ["overflow", "hidden", "overflow-x", "scroll", "overflow-x"],
-    ["border-radius", "10px", "border-top-left-radius", "20px", "border-top-left-radius"],
+    [
+      "background",
+      "linear-gradient(red, blue) center / cover no-repeat, green",
+      "background-color",
+      "blue",
+      "background-image",
+    ],
+    [
+      "mask",
+      "linear-gradient(black, transparent) center / cover no-repeat",
+      "mask-size",
+      "10px",
+      "mask-image",
+    ],
+    [
+      "border-image",
+      "linear-gradient(red, blue) 30 / 10 / 0 stretch",
+      "border-image-slice",
+      "20",
+      "border-image-source",
+    ],
+    [
+      "grid-template",
+      '"a a" 100px "b c" 1fr / 1fr 2fr',
+      "grid-template-rows",
+      "20px",
+      "grid-template-columns",
+    ],
     ["font", "italic 16px serif", "font-size", "20px", "font-size"],
     ["animation", "1s linear foo", "animation-duration", "2s", "animation-duration"],
     ["transition", "color 1s linear", "transition-duration", "2s", "transition-duration"],
-    ["container", "card / inline-size", "container-name", "other", "container-name"],
-    ["white-space", "pre-wrap", "white-space-collapse", "collapse", "white-space-collapse"],
+    [
+      "offset",
+      'path("M 0 0 L 100 100") 50% auto 45deg / center',
+      "offset-distance",
+      "20%",
+      "offset-path",
+    ],
   ];
   const sheet = new CSSStyleSheet();
   for (const [index, [shorthand, value, longhand, override]] of cases.entries()) {

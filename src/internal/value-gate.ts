@@ -324,6 +324,7 @@ function containsTopLevelDeclarationBoundary(value: string): boolean {
 }
 
 function canonicalizeBrowserValue(name: string, value: string): string {
+  if (name === "-webkit-mask-box-image" && value === "") return "none";
   if (
     name === "-webkit-box-reflect" &&
     ["above", "below", "left", "right"].includes(value)
