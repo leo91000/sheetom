@@ -1,5 +1,11 @@
 # sheetom
 
+## 0.1.0-rc.4
+
+### Patch Changes
+
+- 532fbfe: Complete the Chromium 151 shorthand codec registry with 129 concrete capability fixtures, safe round-trips, and browser-backed rendering witnesses for high-risk families.
+
 ## 0.1.0-rc.3
 
 ### Patch Changes

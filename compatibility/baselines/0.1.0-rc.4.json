@@ -1,0 +1,2541 @@
+{
+  "$schema": "../schemas/compatibility-report.schema.json",
+  "schemaVersion": 3,
+  "packageVersion": "0.1.0-rc.4",
+  "baseline": {
+    "wptCommit": "54f8f933629e7c010ae98a246729af01f8abcda5",
+    "syntaxEngineSet": {
+      "lightningcss": "1.33.0",
+      "cssTree": "3.2.1",
+      "cssstyle": "6.2.0",
+      "cssTokenizer": "4.0.0"
+    },
+    "runtimes": {
+      "node": "v24.18.0",
+      "bun": "1.3.1",
+      "deno": "2.9.5"
+    },
+    "browsers": {
+      "chromium": "151.0.7922.34 (revision 1234)",
+      "firefox": "153.0 (revision 1538)",
+      "webkit": "26.5 (revision 2336)"
+    }
+  },
+  "summary": {
+    "passed": 7,
+    "divergences": 9,
+    "excluded": 0,
+    "unexplained": 0
+  },
+  "evidence": {
+    "operationFixtures": {
+      "passed": 16,
+      "total": 16,
+      "sha256": "fe024ae4fd70844f367cf51ca58fabca0e322cbdf56710b6580e02ce5aab78c0",
+      "adapters": [
+        {
+          "adapter": "sheetom",
+          "version": "0.1.0-rc.4",
+          "passed": 16,
+          "total": 16,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x;",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: target-text(attr(href url));",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "target-text(attr(href url))"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,;",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "Gotham"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+                  "length": 8,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "adapter": "chromium",
+          "version": "151.0.7922.34",
+          "passed": 16,
+          "total": 16,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x;",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: target-text(attr(href url));",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "target-text(attr(href url))"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,;",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "Gotham"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+                  "length": 8,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "adapter": "firefox",
+          "version": "153.0",
+          "passed": 16,
+          "total": 16,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x);",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x)"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "\"safe\""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello\""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red/*comment*/"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo\\�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,));",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px))"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red/*comment*/)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: \"Gotham\";",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "\"Gotham\""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-color",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-image",
+                    "background-size",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-position: 0% 0%; background-repeat: repeat; background-attachment: scroll; background-image: none; background-size: auto; background-origin: padding-box; background-clip: border-box;",
+                  "length": 8,
+                  "items": [
+                    "background-position-x",
+                    "background-position-y",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-image",
+                    "background-size",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: \"Gotham\";",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,));",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "adapter": "webkit",
+          "version": "26.5",
+          "passed": 16,
+          "total": 16,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x;",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: target-text(attr(href url));",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "target-text(attr(href url))"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello\""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,;",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "Gotham"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-image: none; background-position: 0% 0%; background-size: auto; background-repeat: repeat; background-attachment: scroll; background-origin: padding-box; background-clip: border-box;",
+                  "length": 8,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "nativeWpt": [
+      {
+        "engine": "chrome",
+        "version": "150.0.7871.128",
+        "sha256": "05904f50c4a5117de18cccf0f27ac688121211feb85a1ee3a8c92c2ba818b938",
+        "passed": 4,
+        "total": 4
+      },
+      {
+        "engine": "firefox",
+        "version": "153.0.3",
+        "sha256": "a74f90e871d3d465478a409313323d98755dded77c389351f567f359332ac64a",
+        "passed": 4,
+        "total": 4
+      }
+    ]
+  },
+  "resolutions": [
+    {
+      "fixtureId": "declarations.basic-set-property",
+      "decision": "shared",
+      "rationale": "The observable declaration state is shared by the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.malformed-padding",
+      "decision": "chromium-fallback",
+      "rationale": "CSS Syntax accepts the EOF-recovered value; Chromium preserves the unclosed observable spelling while Firefox materializes closing parentheses."
+    },
+    {
+      "fixtureId": "declarations.modern-color-canonicalization",
+      "decision": "shared",
+      "rationale": "The pinned browser engines expose modern rgb syntax through the shared legacy rgba serialization in CSSStyleDeclaration."
+    },
+    {
+      "fixtureId": "declarations.typed-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string."
+    },
+    {
+      "fixtureId": "declarations.quoted-font-family",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and WebKit remove unnecessary quotes around a simple font-family while Firefox retains them; SheetOM follows the measured Chromium fallback."
+    },
+    {
+      "fixtureId": "declarations.custom-property-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains unclosed custom-property token structures, removes EOF comments, and replaces an escaped EOF with U+FFFD."
+    },
+    {
+      "fixtureId": "declarations.custom-property-priority-replacement",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and Firefox replace the existing custom-property priority when setProperty is called without a priority, while WebKit retains !important; SheetOM follows the measured Chromium fallback."
+    },
+    {
+      "fixtureId": "declarations.pending-substitution-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the unclosed pending-substitution spelling while applying lexical EOF recovery such as comment removal."
+    },
+    {
+      "fixtureId": "declarations.setproperty-null-undefined",
+      "decision": "shared",
+      "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior."
+    },
+    {
+      "fixtureId": "declarations.required-arguments",
+      "decision": "shared",
+      "rationale": "Required WebIDL arguments throw TypeError before string conversion in the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.set-property-multiple-declarations",
+      "decision": "shared",
+      "rationale": "A setProperty value is parsed independently and cannot escape into another declaration; invalid input leaves the previous declaration unchanged."
+    },
+    {
+      "fixtureId": "declarations.escaped-custom-property-name",
+      "decision": "shared",
+      "rationale": "Custom-property method arguments retain their logical names and cssText escapes those names only when serializing CSS syntax."
+    },
+    {
+      "fixtureId": "integration.weweb-authoring-tree",
+      "decision": "chromium-fallback",
+      "rationale": "The standard rule-tree operations and detachment identity are shared; the recovered padding spelling follows the existing Chromium fallback resolution."
+    },
+    {
+      "fixtureId": "declarations.shorthand-state-sequences",
+      "decision": "chromium-fallback",
+      "rationale": "Engines share expanded longhand ownership and prevent state resurrection, but background record order and omitted-component spelling diverge; SheetOM follows the pinned Chromium observation."
+    },
+    {
+      "fixtureId": "declarations.modern-value-capabilities",
+      "decision": "shared",
+      "rationale": "The pinned Chromium and Firefox engines accept the measured subgrid, anchor-size, contrast-color, and integer calc families with the same observable declaration state."
+    },
+    {
+      "fixtureId": "declarations.content-value-capabilities",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the incomplete pending-substitution spelling and supports target-text with a typed attr source while Firefox differs; both reject the measured leader and URL target-text cases."
+    }
+  ]
+}
