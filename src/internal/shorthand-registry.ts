@@ -117,12 +117,15 @@ export type StaticShorthandCodecId =
   | "animation"
   | "background"
   | "border"
+  | "border-image"
   | "border-radius"
   | "columns"
   | "container"
   | "flex-flow"
   | "font"
   | "grid"
+  | "layered"
+  | "offset"
   | "overflow"
   | "repeated-pair"
   | "scroll-timeline"
@@ -142,6 +145,11 @@ const namedCodecIds: Readonly<Record<string, StaticShorthandCodecId>> = {
   animation: "animation",
   "-webkit-animation": "animation",
   background: "background",
+  mask: "layered",
+  "-webkit-mask": "layered",
+  "border-image": "border-image",
+  "-webkit-mask-box-image": "border-image",
+  offset: "offset",
   "border-radius": "border-radius",
   "-webkit-border-radius": "border-radius",
   container: "container",
@@ -313,6 +321,132 @@ function synthesizeBorderLike(
   return components.join(" ");
 }
 
+function parallelLonghandLists(
+  records: readonly DeclarationRecord[],
+  properties: readonly string[],
+  safe: boolean,
+): string[][] | null {
+  const lists = properties.map(property => {
+    const value = recordValue(records, property, safe);
+    return value === null ? [] : splitTopLevelDelimiter(value, ",");
+  });
+  const length = lists[0]?.length ?? 0;
+  if (length === 0 || lists.some(list => list.length !== length)) return null;
+  return lists;
+}
+
+function synthesizeBackground(
+  records: readonly DeclarationRecord[],
+  safe: boolean,
+): string | null {
+  const properties = [
+    "background-image",
+    "background-position-x",
+    "background-position-y",
+    "background-size",
+    "background-repeat",
+    "background-attachment",
+    "background-origin",
+    "background-clip",
+  ] as const;
+  const lists = parallelLonghandLists(records, properties, safe);
+  const color = recordValue(records, "background-color", safe);
+  if (!lists || color === null) return null;
+  const layers: string[] = [];
+  for (let index = 0; index < (lists[0]?.length ?? 0); index += 1) {
+    const values = lists.map(list => list[index] ?? "initial");
+    const image = values[0] ?? "initial";
+    const x = values[1] ?? "initial";
+    const y = values[2] ?? "initial";
+    const size = values[3] ?? "initial";
+    const repeat = values[4] ?? "initial";
+    const attachment = values[5] ?? "initial";
+    const origin = values[6] ?? "initial";
+    const clip = values[7] ?? "initial";
+    const components: string[] = [];
+    if (image !== "initial") components.push(image);
+    if (x !== "initial" || y !== "initial" || size !== "initial") {
+      if (x === "initial" || y === "initial") return null;
+      components.push(`${x} ${y}`);
+      if (size !== "initial") components.push(`/ ${size}`);
+    }
+    if (repeat !== "initial") components.push(repeat);
+    if (attachment !== "initial") components.push(attachment);
+    if (origin !== "initial" || clip !== "initial") {
+      if (origin === "initial" || clip === "initial") return null;
+      components.push(origin);
+      if (clip !== origin) components.push(clip);
+    }
+    if (index === (lists[0]?.length ?? 0) - 1 && color !== "initial") {
+      components.push(color);
+    }
+    if (components.length === 0) return null;
+    layers.push(components.join(" "));
+  }
+  return layers.join(", ");
+}
+
+function synthesizeMask(
+  records: readonly DeclarationRecord[],
+  safe: boolean,
+): string | null {
+  const properties = [
+    "mask-image",
+    "-webkit-mask-position-x",
+    "-webkit-mask-position-y",
+    "mask-size",
+    "mask-repeat",
+    "mask-origin",
+    "mask-clip",
+    "mask-composite",
+    "mask-mode",
+  ] as const;
+  const lists = parallelLonghandLists(records, properties, safe);
+  if (!lists) return null;
+  const layers: string[] = [];
+  for (let index = 0; index < (lists[0]?.length ?? 0); index += 1) {
+    const [image, x, y, size, repeat, origin, clip, composite, mode] =
+      lists.map(list => list[index] ?? "");
+    if (!image || !x || !y || !size || !repeat || !origin || !clip || !composite || !mode) {
+      return null;
+    }
+    const components = [image];
+    if (x !== "0%" || y !== "0%" || size !== "auto") {
+      components.push(`${x} ${y}`);
+      if (size !== "auto") components.push(`/ ${size}`);
+    }
+    if (repeat !== "repeat") components.push(repeat);
+    if (origin !== "border-box" || clip !== "border-box") {
+      components.push(origin);
+      if (clip !== origin) components.push(clip);
+    }
+    if (composite !== "add") components.push(composite);
+    if (mode !== "match-source") components.push(mode);
+    layers.push(components.join(" "));
+  }
+  return layers.join(", ");
+}
+
+function synthesizeBorderImage(
+  name: string,
+  records: readonly DeclarationRecord[],
+  safe: boolean,
+): string | null {
+  if (name === "-webkit-mask-box-image") return null;
+  if (name !== "border-image") return null;
+  const source = recordValue(records, "border-image-source", safe);
+  const slice = recordValue(records, "border-image-slice", safe);
+  const width = recordValue(records, "border-image-width", safe);
+  const outset = recordValue(records, "border-image-outset", safe);
+  const repeat = recordValue(records, "border-image-repeat", safe);
+  if (!source || !slice || !width || !outset || !repeat) return null;
+  if (
+    source === "none" && slice === "100%" && width === "1" &&
+    outset === "0" && repeat === "stretch"
+  ) return "none";
+  return `${source} ${slice} / ${width} / ${outset} ${repeat}`;
+}
+
 function synthesizeStructuralShorthand(
   name: string,
   records: readonly DeclarationRecord[],
@@ -337,8 +471,14 @@ function synthesizeStructuralShorthand(
     const rows = value("grid-template-rows");
     const columns = value("grid-template-columns");
     const areas = value("grid-template-areas");
-    if (rows === null || columns === null || areas !== "none") return null;
+    if (rows === null || columns === null || areas === null) return null;
     if (rows === "none" && columns === "none") return "none";
+    if (areas !== "none") {
+      const areaRows = splitTopLevelWhitespace(areas);
+      const rowSizes = splitTopLevelWhitespace(rows);
+      if (areaRows.length !== rowSizes.length) return null;
+      return `${areaRows.map((area, index) => `${area} ${rowSizes[index]}`).join(" ")} / ${columns}`;
+    }
     return `${rows} / ${columns}`;
   }
   if (name === "columns") {
@@ -366,6 +506,25 @@ function synthesizeStructuralShorthand(
     const axis = value("scroll-timeline-axis");
     if (timelineName === null || axis === null) return null;
     return axis === "block" ? timelineName : `${timelineName} ${axis}`;
+  }
+  if (name === "offset") {
+    const position = value("offset-position");
+    const path = value("offset-path");
+    const distance = value("offset-distance");
+    const rotate = value("offset-rotate");
+    const anchor = value("offset-anchor");
+    if (!position || !path || !distance || !rotate || !anchor) return null;
+    if (
+      position === "normal" && path === "none" && distance === "0px" &&
+      rotate === "auto" && anchor === "auto"
+    ) return "normal";
+    const components: string[] = [];
+    if (position !== "normal") components.push(position);
+    if (path !== "none") components.push(path);
+    if (distance !== "0px") components.push(distance);
+    if (rotate !== "auto") components.push(rotate);
+    if (anchor !== "auto") components.push(`/ ${anchor}`);
+    return components.length > 0 ? components.join(" ") : null;
   }
   if (name === "flex-flow") {
     const direction = value("flex-direction");
@@ -412,15 +571,14 @@ export function synthesizeStaticShorthand(
   }
 
   if (serializationName === "background") {
-    const color = recordValue(records, "background-color", safe);
-    const resetLonghands = longhands.filter(longhand => longhand !== "background-color");
-    if (
-      color !== null &&
-      resetLonghands.every(longhand => recordValue(records, longhand, safe) === "initial")
-    ) {
-      return color;
-    }
+    const background = synthesizeBackground(records, safe);
+    if (background !== null) return background;
   }
+
+  if (serializationName === "mask") return synthesizeMask(records, safe);
+  const borderImage = synthesizeBorderImage(serializationName, records, safe);
+  if (borderImage !== null) return borderImage;
+  if (safe && serializationName === "offset") return null;
 
   const structural = synthesizeStructuralShorthand(serializationName, records, safe);
   if (structural !== null) return structural;
@@ -773,6 +931,57 @@ function expandFlexFlowValue(value: string): ReadonlyMap<string, string> | null 
   ]);
 }
 
+function canonicalPositionPair(value: string): string {
+  const components = splitTopLevelWhitespace(value);
+  if (components.length === 1 && components[0] !== "auto") {
+    return `${components[0]} ${components[0]}`;
+  }
+  return value;
+}
+
+function expandOffsetValue(value: string): ReadonlyMap<string, string> | null {
+  if (value === "normal") {
+    return new Map([
+      ["offset-position", "normal"],
+      ["offset-path", "none"],
+      ["offset-distance", "0px"],
+      ["offset-rotate", "auto"],
+      ["offset-anchor", "auto"],
+    ]);
+  }
+  const slash = splitTopLevelDelimiter(value, "/");
+  if (slash.length > 2 || !slash[0]) return null;
+  const components = splitTopLevelWhitespace(slash[0]);
+  let path = "none";
+  let distance = "0px";
+  let rotate = "auto";
+  const position: string[] = [];
+  const rotation: string[] = [];
+  for (const component of components) {
+    if (path === "none" && matchesPropertyGrammar("offset-path", component)) {
+      path = component;
+      continue;
+    }
+    if (distance === "0px" && matchesPropertyGrammar("offset-distance", component)) {
+      distance = component;
+      continue;
+    }
+    if (["auto", "reverse"].includes(component) || matchesPropertyGrammar("rotate", component)) {
+      rotation.push(component);
+      continue;
+    }
+    position.push(component);
+  }
+  if (rotation.length > 0) rotate = rotation.join(" ");
+  return new Map([
+    ["offset-position", position.length > 0 ? position.join(" ") : "normal"],
+    ["offset-path", path],
+    ["offset-distance", distance],
+    ["offset-rotate", rotate],
+    ["offset-anchor", slash[1] ? canonicalPositionPair(slash[1]) : "auto"],
+  ]);
+}
+
 function expandStructuralValue(name: string, value: string): ReadonlyMap<string, string> | null {
   const border = expandBorderLikeValue(name, value);
   if (border) return border;
@@ -784,6 +993,7 @@ function expandStructuralValue(name: string, value: string): ReadonlyMap<string,
   if (name === "text-wrap") return expandTextWrapValue(value);
   if (name === "scroll-timeline") return expandScrollTimelineValue(value);
   if (name === "flex-flow") return expandFlexFlowValue(value);
+  if (name === "offset") return expandOffsetValue(value);
   return null;
 }
 
@@ -794,7 +1004,10 @@ function expandMappedValues(
   expand: (name: string, value: string) => ReadonlyMap<string, string> | null,
 ): DeclarationRecord[] | null {
   const observable = expand(name, parsed.observableValue);
-  const safe = expand(name, parsed.safeValue);
+  const safe = expand(
+    name,
+    name === "offset" ? parsed.observableValue : parsed.safeValue,
+  );
   if (!observable || !safe) return null;
   if ([...observable.keys()].join("\0") !== [...safe.keys()].join("\0")) return null;
   return [...observable].map(([longhand, observableValue]) => ({
@@ -858,6 +1071,271 @@ function serializeTypedLonghand(property: string, value: unknown): string | null
   } catch {
     return null;
   }
+}
+
+function acceptedTypedValue(
+  parsed: AcceptedPropertyValue,
+  properties: readonly string[],
+): Record<string, unknown> | unknown[] | null {
+  if (parsed.representation.kind !== "typed") return null;
+  const declaration = parsed.representation.declaration;
+  if (typeof declaration !== "object" || declaration === null) return null;
+  const record = declaration as Record<string, unknown>;
+  if (typeof record.property !== "string" || !properties.includes(record.property)) return null;
+  const value = record.value;
+  if (typeof value !== "object" || value === null) return null;
+  return value as Record<string, unknown> | unknown[];
+}
+
+function serializeTypedFields(
+  definitions: readonly (readonly [string, unknown, string?])[],
+): ReadonlyMap<string, string> | null {
+  const result = new Map<string, string>();
+  for (const [property, value, serializationProperty = property] of definitions) {
+    const serialized = serializeTypedLonghand(serializationProperty, value);
+    if (serialized === null) return null;
+    result.set(property, serialized);
+  }
+  return result;
+}
+
+interface BackgroundLayerPresence {
+  image: boolean;
+  position: boolean;
+  size: boolean;
+  repeat: boolean;
+  attachment: boolean;
+  boxes: number;
+  color: boolean;
+}
+
+function backgroundLayerPresence(value: string): BackgroundLayerPresence[] {
+  const layers = splitTopLevelDelimiter(value, ",");
+  return layers.map((layer, index) => {
+    const slash = splitTopLevelDelimiter(layer, "/");
+    const beforeSize = slash[0] ?? "";
+    const components = splitTopLevelWhitespace(beforeSize);
+    const allComponents = [
+      ...components,
+      ...splitTopLevelWhitespace(slash[1] ?? ""),
+    ];
+    const repeatKeywords = new Set([
+      "repeat", "no-repeat", "repeat-x", "repeat-y", "space", "round",
+    ]);
+    const attachmentKeywords = new Set(["scroll", "fixed", "local"]);
+    const boxKeywords = new Set(["border-box", "padding-box", "content-box"]);
+    const isLast = index === layers.length - 1;
+    return {
+      image: components.some(component => matchesPropertyGrammar("background-image", component)) ||
+        /(?:^|\s)(?:url|(?:repeating-)?(?:linear|radial|conic)-gradient|image-set|cross-fade)\(/i
+          .test(beforeSize) || components.includes("none"),
+      position: components.some(component =>
+        matchesPropertyGrammar("background-position-x", component) ||
+        matchesPropertyGrammar("background-position-y", component),
+      ),
+      size: slash.length === 2 && (slash[1]?.trim() ?? "") !== "",
+      repeat: allComponents.some(component => repeatKeywords.has(component)),
+      attachment: allComponents.some(component => attachmentKeywords.has(component)),
+      boxes: allComponents.filter(component => boxKeywords.has(component)).length,
+      color: isLast && allComponents.some(component =>
+        matchesPropertyGrammar("background-color", component),
+      ),
+    };
+  });
+}
+
+function applyBackgroundOmissions(
+  values: ReadonlyMap<string, string>,
+  input: string,
+  concreteDefaults: boolean,
+): ReadonlyMap<string, string> | null {
+  const presence = backgroundLayerPresence(input);
+  const result = new Map(values);
+  const initialValues: Readonly<Record<string, string>> = {
+    "background-image": "none",
+    "background-position-x": "0%",
+    "background-position-y": "0%",
+    "background-size": "auto",
+    "background-repeat": "repeat",
+    "background-attachment": "scroll",
+    "background-origin": "padding-box",
+    "background-clip": "border-box",
+  };
+  const flags: Readonly<Record<string, (layer: BackgroundLayerPresence) => boolean>> = {
+    "background-image": layer => layer.image,
+    "background-position-x": layer => layer.position,
+    "background-position-y": layer => layer.position,
+    "background-size": layer => layer.size,
+    "background-repeat": layer => layer.repeat,
+    "background-attachment": layer => layer.attachment,
+    "background-origin": layer => layer.boxes > 0,
+    "background-clip": layer => layer.boxes > 0,
+  };
+  for (const [property, isPresent] of Object.entries(flags)) {
+    const serialized = result.get(property);
+    if (serialized === undefined) return null;
+    const components = splitTopLevelDelimiter(serialized, ",");
+    if (components.length !== presence.length) return null;
+    result.set(
+      property,
+      components.map((component, index) =>
+        presence[index] && isPresent(presence[index])
+          ? component
+          : concreteDefaults ? initialValues[property] ?? component : "initial",
+      ).join(", "),
+    );
+  }
+  if (!presence[presence.length - 1]?.color) {
+    result.set(
+      "background-color",
+      concreteDefaults ? "rgba(0, 0, 0, 0)" : "initial",
+    );
+  }
+  return result;
+}
+
+function expandLayeredTypedValue(
+  name: string,
+  parsed: AcceptedPropertyValue,
+  safe = false,
+): ReadonlyMap<string, string> | null {
+  if (name !== "background" && name !== "mask") return null;
+  const value = acceptedTypedValue(parsed, [name]);
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const layers: Record<string, unknown>[] = [];
+  for (const layer of value) {
+    if (typeof layer !== "object" || layer === null) return null;
+    layers.push(layer as Record<string, unknown>);
+  }
+  const fields = (field: string): unknown[] | null => {
+    const values: unknown[] = [];
+    for (const layer of layers) {
+      if (!Object.hasOwn(layer, field)) return null;
+      values.push(layer[field]);
+    }
+    return values;
+  };
+  const positions = layers.map(layer => layer.position);
+  if (positions.some(position => typeof position !== "object" || position === null)) {
+    return null;
+  }
+  const positionRecords = positions as Record<string, unknown>[];
+  const positionX = positionRecords.map(position => position.x);
+  const positionY = positionRecords.map(position => position.y);
+  if (positionX.some(position => position === undefined) || positionY.some(position => position === undefined)) {
+    return null;
+  }
+
+  if (name === "background") {
+    const lastLayer = layers[layers.length - 1];
+    if (!lastLayer) return null;
+    const image = fields("image");
+    const size = fields("size");
+    const repeat = fields("repeat");
+    const attachment = fields("attachment");
+    const origin = fields("origin");
+    const clip = fields("clip");
+    if (!image || !size || !repeat || !attachment || !origin || !clip) return null;
+    const serialized = serializeTypedFields([
+      ["background-image", image],
+      ["background-position-x", positionX],
+      ["background-position-y", positionY],
+      ["background-size", size],
+      ["background-repeat", repeat],
+      ["background-attachment", attachment],
+      ["background-origin", origin],
+      ["background-clip", clip],
+      ["background-color", lastLayer.color],
+    ]);
+    const source = safe ? parsed.safeValue : parsed.observableValue;
+    return serialized ? applyBackgroundOmissions(serialized, source, safe) : null;
+  }
+
+  const image = fields("image");
+  const size = fields("size");
+  const repeat = fields("repeat");
+  const origin = fields("origin");
+  const clip = fields("clip");
+  const composite = fields("composite");
+  const mode = fields("mode");
+  if (!image || !size || !repeat || !origin || !clip || !composite || !mode) return null;
+  return serializeTypedFields([
+    ["mask-image", image],
+    ["-webkit-mask-position-x", positionX, "background-position-x"],
+    ["-webkit-mask-position-y", positionY, "background-position-y"],
+    ["mask-size", size],
+    ["mask-repeat", repeat],
+    ["mask-origin", origin],
+    ["mask-clip", clip],
+    ["mask-composite", composite],
+    ["mask-mode", mode],
+  ]);
+}
+
+function expandBorderImageTypedValue(
+  name: string,
+  parsed: AcceptedPropertyValue,
+): ReadonlyMap<string, string> | null {
+  const isBorderImage = name === "border-image";
+  const isMaskBoxImage = name === "-webkit-mask-box-image";
+  if (!isBorderImage && !isMaskBoxImage) return null;
+  if (isMaskBoxImage && parsed.observableValue === "none") {
+    return new Map([
+      ["-webkit-mask-box-image-source", "none"],
+      ["-webkit-mask-box-image-slice", "initial"],
+      ["-webkit-mask-box-image-width", "initial"],
+      ["-webkit-mask-box-image-outset", "initial"],
+      ["-webkit-mask-box-image-repeat", "initial"],
+    ]);
+  }
+  const value = acceptedTypedValue(parsed, isBorderImage ? ["border-image"] : ["mask-box-image"]);
+  if (Array.isArray(value) || value === null) return null;
+  const prefix = isBorderImage ? "border-image" : "-webkit-mask-box-image";
+  for (const field of ["source", "slice", "width", "outset", "repeat"]) {
+    if (!Object.hasOwn(value, field)) return null;
+  }
+  return serializeTypedFields([
+    [`${prefix}-source`, value.source],
+    [`${prefix}-slice`, value.slice],
+    [`${prefix}-width`, value.width],
+    [`${prefix}-outset`, value.outset],
+    [`${prefix}-repeat`, value.repeat],
+  ]);
+}
+
+function expandGridTemplateTypedValue(
+  parsed: AcceptedPropertyValue,
+): ReadonlyMap<string, string> | null {
+  const value = acceptedTypedValue(parsed, ["grid-template"]);
+  if (Array.isArray(value) || value === null) return null;
+  for (const field of ["rows", "columns", "areas"]) {
+    if (!Object.hasOwn(value, field)) return null;
+  }
+  return serializeTypedFields([
+    ["grid-template-rows", value.rows],
+    ["grid-template-columns", value.columns],
+    ["grid-template-areas", value.areas],
+  ]);
+}
+
+function typedRecords(
+  name: string,
+  parsed: AcceptedPropertyValue,
+  important: boolean,
+): DeclarationRecord[] | null {
+  const values = expandLayeredTypedValue(name, parsed) ??
+    expandBorderImageTypedValue(name, parsed) ??
+    (name === "grid-template" ? expandGridTemplateTypedValue(parsed) : null);
+  if (!values) return null;
+  const safeValues = expandLayeredTypedValue(name, parsed, true) ?? values;
+  return [...values].map(([longhand, value]) => ({
+    name: longhand,
+    observableValue: value,
+    safeValue: safeValues.get(longhand) ?? value,
+    pendingSubstitution: false,
+    important,
+    pendingGroup: null,
+  }));
 }
 
 function expandAnimationValue(value: string): ReadonlyMap<string, string> | null {
@@ -1230,6 +1708,9 @@ export function expandStaticShorthand(
       pendingGroup: null,
     }));
   }
+
+  const typedExpansion = typedRecords(name, parsed, important);
+  if (typedExpansion) return typedExpansion;
 
   const structuralExpansion = expandMappedValues(
     name,

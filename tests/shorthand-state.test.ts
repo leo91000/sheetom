@@ -97,6 +97,27 @@ test("removing an overridden background longhand cannot reactivate the shorthand
   assert.equal(rule.style.cssText.includes("background: red"), false);
 });
 
+test("removed layered background longhands leave valid concrete defaults", () => {
+  const sheet = new CSSStyleSheet();
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty(
+    "background",
+    "linear-gradient(red, blue) center / cover no-repeat, green",
+  );
+  rule.style.setProperty("background-color", "blue");
+  rule.style.removeProperty("background-color");
+
+  assert.equal(
+    rule.style.getPropertyValue("background-image"),
+    "linear-gradient(red, #00f), initial",
+  );
+  assert.equal(rule.style.getPropertyValue("background-position-x"), "center, initial");
+  assert.doesNotMatch(sheet.serialize(), /, initial/);
+});
+
 test("static shorthand families own only their expanded longhand state", () => {
   const cases = [
     ["overflow", "hidden", 2, "overflow-x", "scroll"],
@@ -294,4 +315,69 @@ test("structural shorthand codecs expand and synthesize Chromium state", () => {
     assert.equal(rule.style.getPropertyValue(fixture.shorthand), "", fixture.shorthand);
     assert.equal(rule.style.cssText.includes(`${fixture.shorthand}:`), false, fixture.shorthand);
   }
+});
+
+test("layered and image shorthands preserve complete longhand state", () => {
+  const cases = [
+    [
+      "background",
+      'url("a.png") center / cover no-repeat, red',
+      'url("a.png") center center / cover no-repeat, red',
+      9,
+    ],
+    [
+      "mask",
+      'url("m.png") center / cover no-repeat',
+      'url("m.png") center center / cover no-repeat',
+      9,
+    ],
+    [
+      "border-image",
+      'url("x.png") 30 / 10 / 0 stretch',
+      'url("x.png") 30 / 10 / 0 stretch',
+      5,
+    ],
+    [
+      "offset",
+      'path("M 0 0 L 100 100") 50% auto 45deg / center',
+      'path("M 0 0 L 100 100") 50% auto 45deg / center center',
+      5,
+    ],
+  ] as const;
+
+  for (const [shorthand, input, expected, length] of cases) {
+    const sheet = new CSSStyleSheet();
+    sheet.insertRule(".x {}");
+    const rule = sheet.cssRules[0];
+    assert.ok(rule instanceof CSSStyleRule);
+    rule.style.setProperty(shorthand, input);
+
+    assert.equal(rule.style.length, length, shorthand);
+    assert.equal(rule.style.getPropertyValue(shorthand), expected, shorthand);
+    assert.equal(rule.style.cssText, `${shorthand}: ${expected};`, shorthand);
+
+    const serialized = sheet.serialize();
+    const reparsed = new CSSStyleSheet();
+    reparsed.replaceSync(serialized);
+    assert.equal(reparsed.serialize(), serialized, shorthand);
+  }
+});
+
+test("grid template areas expand through the accepted typed representation", () => {
+  const rule = createStyleRule(".x");
+  rule.style.setProperty(
+    "grid-template",
+    '"a a" 100px "b c" 1fr / 1fr 2fr',
+  );
+
+  assert.deepEqual(
+    Array.from({ length: rule.style.length }, (_, index) => rule.style.item(index)),
+    ["grid-template-rows", "grid-template-columns", "grid-template-areas"],
+  );
+  assert.equal(rule.style.getPropertyValue("grid-template-rows"), "100px 1fr");
+  assert.equal(rule.style.getPropertyValue("grid-template-columns"), "1fr 2fr");
+  assert.equal(
+    rule.style.getPropertyValue("grid-template"),
+    '"a a" 100px "b c" 1fr / 1fr 2fr',
+  );
 });
