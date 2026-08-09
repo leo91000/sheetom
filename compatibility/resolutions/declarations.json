@@ -36,8 +36,8 @@
     },
     {
       "fixtureId": "declarations.typed-eof-recovery",
-      "decision": "shared",
-      "rationale": "Typed property values expose the browser-canonical serialization after CSS Syntax EOF recovery.",
+      "decision": "chromium-fallback",
+      "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string.",
       "expected": [
         {},
         {},
