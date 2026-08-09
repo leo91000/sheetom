@@ -215,3 +215,83 @@ test("an unexpanded shorthand never creates parallel shorthand state", () => {
     false,
   );
 });
+
+test("structural shorthand codecs expand and synthesize Chromium state", () => {
+  const cases = [
+    {
+      shorthand: "border-inline",
+      value: "2px dashed blue",
+      items: [
+        "border-inline-start-width",
+        "border-inline-end-width",
+        "border-inline-start-style",
+        "border-inline-end-style",
+        "border-inline-start-color",
+        "border-inline-end-color",
+      ],
+      getter: "2px dashed blue",
+    },
+    {
+      shorthand: "grid-template",
+      value: "100px / 1fr 2fr",
+      items: ["grid-template-rows", "grid-template-columns", "grid-template-areas"],
+      getter: "100px / 1fr 2fr",
+    },
+    {
+      shorthand: "grid-area",
+      value: "1 / 2 / 3 / 4",
+      items: ["grid-row-start", "grid-column-start", "grid-row-end", "grid-column-end"],
+      getter: "1 / 2 / 3 / 4",
+    },
+    {
+      shorthand: "place-items",
+      value: "center stretch",
+      items: ["align-items", "justify-items"],
+      getter: "center stretch",
+    },
+    {
+      shorthand: "columns",
+      value: "100px 2",
+      items: ["column-width", "column-count", "column-height", "column-wrap"],
+      getter: "100px 2",
+    },
+    {
+      shorthand: "text-wrap",
+      value: "wrap balance",
+      items: ["text-wrap-mode", "text-wrap-style"],
+      getter: "balance",
+    },
+    {
+      shorthand: "scroll-timeline",
+      value: "--x block",
+      items: ["scroll-timeline-name", "scroll-timeline-axis"],
+      getter: "--x",
+    },
+  ] as const;
+
+  for (const fixture of cases) {
+    const rule = createStyleRule(".x");
+    rule.style.setProperty(fixture.shorthand, fixture.value);
+    assert.deepEqual(
+      Array.from({ length: rule.style.length }, (_, index) => rule.style.item(index)),
+      fixture.items,
+      fixture.shorthand,
+    );
+    assert.equal(
+      rule.style.getPropertyValue(fixture.shorthand),
+      fixture.getter,
+      fixture.shorthand,
+    );
+    assert.equal(
+      rule.style.cssText,
+      `${fixture.shorthand}: ${fixture.getter};`,
+      fixture.shorthand,
+    );
+
+    const overriddenLonghand = fixture.items[0];
+    rule.style.setProperty(overriddenLonghand, "inherit");
+    rule.style.removeProperty(overriddenLonghand);
+    assert.equal(rule.style.getPropertyValue(fixture.shorthand), "", fixture.shorthand);
+    assert.equal(rule.style.cssText.includes(`${fixture.shorthand}:`), false, fixture.shorthand);
+  }
+});
