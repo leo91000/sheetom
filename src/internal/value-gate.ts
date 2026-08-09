@@ -181,6 +181,16 @@ function analyzeSubstitutions(value: unknown): SubstitutionAnalysis {
   if (!isUnknownRecord(value)) return { found: false, valid: true };
 
   let found = value.type === "var" || value.type === "env";
+  if (found) {
+    const details = value.value;
+    if (!isUnknownRecord(details)) return { found: true, valid: false };
+    const fallback = details.fallback;
+    if (Array.isArray(fallback) && fallback.some(item =>
+      isToken(item, "semicolon") || isToken(item, "delim", "!")
+    )) {
+      return { found: true, valid: false };
+    }
+  }
   const cssFunction = functionValue(value);
   if (cssFunction?.name === "attr") {
     found = true;
@@ -251,15 +261,6 @@ export function serializeIdentifier(value: string): string {
   return result;
 }
 
-function containsPriorityDelimiter(value: string): boolean {
-  let found = false;
-  csstree.tokenize(value, (type, start, end) => {
-    if (csstree.tokenNames[type] !== "delim-token") return;
-    if (value.slice(start, end) === "!") found = true;
-  });
-  return found;
-}
-
 function canonicalizeLeadingDecimal(value: string): string {
   const replacements: Array<{ start: number; end: number; value: string }> = [];
   csstree.tokenize(value, (type, start, end) => {
@@ -283,6 +284,43 @@ function canonicalizeLeadingDecimal(value: string): string {
   return result;
 }
 
+function containsTopLevelDeclarationBoundary(value: string): boolean {
+  let depth = 0;
+  let found = false;
+  csstree.tokenize(value, (type, start, end) => {
+    const tokenName = csstree.tokenNames[type];
+    if (tokenName === undefined) return;
+    if (["function-token", "(-token", "[-token", "{-token"].includes(tokenName)) {
+      depth += 1;
+      return;
+    }
+    if ([")-token", "]-token", "}-token"].includes(tokenName)) {
+      if (depth > 0) depth -= 1;
+      return;
+    }
+    if (
+      depth === 0 &&
+      (
+        tokenName === "semicolon-token" ||
+        (tokenName === "delim-token" && value.slice(start, end) === "!")
+      )
+    ) {
+      found = true;
+    }
+  });
+  return found;
+}
+
+function canonicalizeBrowserValue(name: string, value: string): string {
+  if (
+    name === "-webkit-box-reflect" &&
+    ["above", "below", "left", "right"].includes(value)
+  ) {
+    return `${value} 0px`;
+  }
+  return value;
+}
+
 export function parsePropertyValue(
   name: string,
   observableValue: string,
@@ -291,9 +329,9 @@ export function parsePropertyValue(
   if (!name.startsWith("--") && !chromiumSupportedProperties.has(name)) {
     return null;
   }
-  if (containsPriorityDelimiter(observableValue)) return null;
-
+  if (containsTopLevelDeclarationBoundary(observableValue)) return null;
   let declaration: unknown;
+  let declarationCount = 0;
 
   try {
     const result = transformStyleAttribute({
@@ -302,31 +340,49 @@ export function parsePropertyValue(
       ),
       visitor: {
         Declaration(candidate) {
+          declarationCount += 1;
           declaration = candidate;
         },
       },
     });
 
-    if (!isUnknownRecord(declaration)) return null;
+    if (declarationCount !== 1 || !isUnknownRecord(declaration)) return null;
     if (!Object.hasOwn(declaration, "property")) return null;
 
     const pendingSubstitution = declaration.property === "unparsed";
-    if (pendingSubstitution) {
-      const analysis = analyzeSubstitutions(declaration);
-      if (!analysis.found || !analysis.valid) return null;
-    }
+    const analysis = analyzeSubstitutions(declaration);
+    if (!analysis.valid || (pendingSubstitution && !analysis.found)) return null;
 
     const serialized = decoder.decode(result.code);
-    const colonIndex = serialized.indexOf(":");
-    if (colonIndex === -1) return null;
+    const parsed = csstree.parse(serialized, {
+      context: "declarationList",
+      positions: true,
+    });
+    if (parsed.type !== "DeclarationList") return null;
+    const serializedDeclarations = parsed.children.toArray();
+    if (serializedDeclarations.length !== 1) return null;
+    const serializedDeclaration = serializedDeclarations[0];
+    if (serializedDeclaration?.type !== "Declaration") return null;
+    if (serializedDeclaration.important) return null;
 
-    const trimmedObservableValue = canonicalizeLeadingDecimal(observableValue.trim());
+    const serializedName = csstree.ident.decode(serializedDeclaration.property);
+    if (serializedName !== name) return null;
+    const valueLocation = serializedDeclaration.value.loc;
+    const safeValue = valueLocation
+      ? serialized.slice(valueLocation.start.offset, valueLocation.end.offset)
+      : csstree.generate(serializedDeclaration.value);
+
+    const trimmedObservableValue = canonicalizeBrowserValue(
+      name,
+      canonicalizeLeadingDecimal(observableValue.trim()),
+    );
+    const normalizedSafeValue = canonicalizeBrowserValue(name, safeValue.trim());
     return {
       observableValue:
         trimmedObservableValue === "0" && zeroLengthProperties.has(name)
           ? "0px"
           : trimmedObservableValue,
-      safeValue: serialized.slice(colonIndex + 1).trim(),
+      safeValue: normalizedSafeValue,
       pendingSubstitution,
     };
   } catch {
@@ -338,8 +394,7 @@ export function parseAtruleDescriptorValue(
   name: string,
   observableValue: string,
 ): ParsedPropertyValue | null {
-  if (containsPriorityDelimiter(observableValue)) return null;
-
+  if (containsTopLevelDeclarationBoundary(observableValue)) return null;
   try {
     const match = csstree.lexer.matchAtruleDescriptor(
       atrule,

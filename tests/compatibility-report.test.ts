@@ -15,6 +15,20 @@ const subtests = [
 test("compatibility recording verifies and hashes every native WPT report", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "sheetom-report-test-"));
   try {
+    const resolutions = JSON.parse(await readFile(
+      "compatibility/resolutions/declarations.json",
+      "utf8",
+    ));
+    const fixtureTotal = resolutions.resolutions.length;
+    const operationReportPath = path.join(directory, "operation-fixtures.json");
+    await writeFile(operationReportPath, JSON.stringify({
+      schemaVersion: 1,
+      adapters: ["sheetom", "chromium", "firefox", "webkit"].map(adapter => ({
+        adapter,
+        passed: fixtureTotal,
+        total: fixtureTotal,
+      })),
+    }));
     const argumentsList: string[] = [];
     for (const engine of ["chrome", "firefox", "safari"]) {
       const reportPath = path.join(directory, `${engine}.json`);
@@ -31,7 +45,13 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     const output = path.join(directory, "compatibility.json");
     execFileSync(
       process.execPath,
-      ["scripts/record-compatibility.mjs", "--output", output, ...argumentsList],
+      [
+        "scripts/record-compatibility.mjs",
+        "--output",
+        output,
+        `--operation-report=${operationReportPath}`,
+        ...argumentsList,
+      ],
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
@@ -44,6 +64,13 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       assert.equal(evidence.total, 4);
       assert.match(evidence.sha256, /^[0-9a-f]{64}$/);
     }
+    assert.deepEqual(
+      report.evidence.operationFixtures.adapters.map(
+        (evidence: { adapter: string }) => evidence.adapter,
+      ),
+      ["sheetom", "chromium", "firefox", "webkit"],
+    );
+    assert.match(report.evidence.operationFixtures.sha256, /^[0-9a-f]{64}$/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

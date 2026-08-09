@@ -12,8 +12,12 @@ a separate maintainer operation from an exact reviewed commit.
    `SHEETOM_FUZZ_RUNS=1000 npm run fuzz`, `npm run conformance:drift`, and
    `npm run benchmark`.
 3. Download the stable native-WPT artifacts and record the immutable evidence
-   from that version with `SHEETOM_RECORD_BASELINE=1 npm run
-   conformance:record -- --wpt-report=chrome=reports/chrome.json
+   from that version. First run every Operation Fixture through SheetOM,
+   Chromium, Firefox, and WebKit with `SHEETOM_RECORD_BASELINE=1 node
+   scripts/record-operation-fixtures.mjs --output
+   reports/operation-fixtures.json`. Then run `SHEETOM_RECORD_BASELINE=1 npm
+   run conformance:record -- --operation-report=reports/operation-fixtures.json
+   --wpt-report=chrome=reports/chrome.json
    --wpt-report=firefox=reports/firefox.json`. Move the reviewed
    draft to `compatibility/baselines/0.1.0-rc.0.json`, rerun
    `npm run conformance:validate`, and commit the release preparation through a

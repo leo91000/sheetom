@@ -56,3 +56,45 @@ test("setProperty rejects embedded priority tokens without rejecting data", () =
   assert.equal(rule.style.getPropertyValue("--url"), "url(foo!bar)");
   assert.equal(rule.style.getPropertyValue("--escaped"), "foo\\!bar");
 });
+
+test("setProperty rejects values that escape into another declaration", () => {
+  const sheet = new CSSStyleSheet({ diagnostics: true });
+  sheet.insertRule(".x { width: 10px; }");
+
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  for (const invalidValue of [
+    "20px;",
+    "20px; color: red",
+    "var(--x, 20px; color: red)",
+    "20px } .evil { color: red",
+    "20px!important",
+    "20px ! important",
+  ]) {
+    rule.style.setProperty("width", invalidValue);
+    assert.equal(rule.style.getPropertyValue("width"), "10px");
+    assert.equal(rule.style.getPropertyValue("color"), "");
+    assert.equal(rule.style.cssText, "width: 10px;");
+    assert.equal(sheet.serialize(), ".x {\n  width: 10px;\n}\n");
+  }
+
+  assert.deepEqual(
+    sheet.takeDiagnostics().map(diagnostic => diagnostic.code),
+    Array.from({ length: 6 }, () => "INVALID_PROPERTY_VALUE"),
+  );
+});
+
+test("substitution fallbacks reject boundary delimiters but allow nested data", () => {
+  const rule = createStyleRule(".x");
+  rule.style.setProperty("width", "10px");
+
+  rule.style.setProperty("width", "var(--x, 20px; color: red)");
+  assert.equal(rule.style.getPropertyValue("width"), "10px");
+
+  rule.style.setProperty("width", "var(--x, fn(!important))");
+  assert.equal(
+    rule.style.getPropertyValue("width"),
+    "var(--x, fn(!important))",
+  );
+});

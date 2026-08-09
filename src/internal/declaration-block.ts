@@ -23,6 +23,7 @@ export interface ParsedDeclaration {
 }
 
 export interface DeclarationBlockCodec {
+  normalizeName(name: string): string;
   parseValue(name: string, value: string): ParsedPropertyValue | null;
   shorthandLonghands(name: string): readonly string[] | null;
   expandFourSide(
@@ -83,9 +84,7 @@ export class DeclarationBlock {
     };
 
     for (const declaration of declarations) {
-      const name = declaration.name.startsWith("--")
-        ? declaration.name
-        : declaration.name.toLowerCase();
+      const name = this.#codec.normalizeName(declaration.name);
       const propertyValue = this.#codec.parseValue(name, declaration.value);
       if (!propertyValue) {
         sourceIndex += 1;
@@ -158,14 +157,14 @@ export class DeclarationBlock {
   }
 
   getPropertyValue(name: string): string {
-    const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
+    const normalizedName = this.#codec.normalizeName(name);
     const shorthand = this.#shorthand(normalizedName, false);
     if (shorthand) return shorthand.value;
     return this.#records.find(record => record.name === normalizedName)?.observableValue ?? "";
   }
 
   getPropertyPriority(name: string): string {
-    const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
+    const normalizedName = this.#codec.normalizeName(name);
     const shorthand = this.#shorthand(normalizedName, false);
     if (shorthand) return shorthand.important ? "important" : "";
     return this.#records.find(record => record.name === normalizedName)?.important
@@ -174,7 +173,7 @@ export class DeclarationBlock {
   }
 
   setProperty(name: string, value: string, priority: string): void {
-    const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
+    const normalizedName = this.#codec.normalizeName(name);
     const normalizedPriority = priority.toLowerCase();
     if (normalizedPriority !== "" && normalizedPriority !== "important") {
       this.#reportDiagnostic("INVALID_PRIORITY", normalizedName, priority);
@@ -229,7 +228,7 @@ export class DeclarationBlock {
   }
 
   removeProperty(name: string): string {
-    const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
+    const normalizedName = this.#codec.normalizeName(name);
     const longhands = this.#codec.shorthandLonghands(normalizedName);
     if (longhands) {
       const previousValue = this.getPropertyValue(normalizedName);

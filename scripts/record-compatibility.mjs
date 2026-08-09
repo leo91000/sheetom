@@ -39,6 +39,34 @@ for (const filename of resolutionFiles) {
 }
 
 const count = decision => resolutions.filter(resolution => resolution.decision === decision).length;
+const operationReportArgument = process.argv.find(argument =>
+  argument.startsWith("--operation-report="),
+);
+if (!operationReportArgument) {
+  throw new Error("Compatibility recording requires --operation-report=path/to/report.json");
+}
+const operationReportPath = path.resolve(operationReportArgument.slice("--operation-report=".length));
+const operationReportBytes = await readFile(operationReportPath);
+const operationReport = JSON.parse(operationReportBytes.toString("utf8"));
+if (operationReport.schemaVersion !== 1 || !Array.isArray(operationReport.adapters)) {
+  throw new Error("Operation Fixture evidence has an unsupported shape");
+}
+const operationFixtureAdapters = operationReport.adapters;
+const expectedOperationAdapters = ["sheetom", "chromium", "firefox", "webkit"];
+for (const adapter of expectedOperationAdapters) {
+  const matches = operationFixtureAdapters.filter(evidence => evidence.adapter === adapter);
+  if (matches.length !== 1) {
+    throw new Error(`Operation Fixture evidence must contain one ${adapter} adapter result`);
+  }
+  const [evidence] = matches;
+  if (evidence.passed !== resolutions.length || evidence.total !== resolutions.length) {
+    throw new Error(`${adapter} Operation Fixture evidence is incomplete`);
+  }
+}
+if (operationFixtureAdapters.length !== expectedOperationAdapters.length) {
+  throw new Error("Operation Fixture evidence contains an unknown adapter result");
+}
+
 const reportArguments = process.argv
   .filter(argument => argument.startsWith("--wpt-report="))
   .map(argument => argument.slice("--wpt-report=".length));
@@ -113,7 +141,9 @@ const report = {
   evidence: {
     operationFixtures: {
       passed: resolutions.length,
-      total: resolutions.length
+      total: resolutions.length,
+      sha256: createHash("sha256").update(operationReportBytes).digest("hex"),
+      adapters: operationFixtureAdapters
     },
     nativeWpt
   },

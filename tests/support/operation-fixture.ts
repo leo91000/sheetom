@@ -68,6 +68,7 @@ function observeTarget(
   observation: FixtureObservation,
   target: unknown,
   requested: string[],
+  handles: Map<string, unknown>,
 ): void {
   if (typeof target !== "object" || target === null) return;
   const record = target as Record<string, unknown>;
@@ -85,6 +86,20 @@ function observeTarget(
       ? Array.from({ length }, (_, index) => item.call(target, index))
       : [];
   }
+  if (requested.includes("parentRule")) {
+    observation.parentRule = encodeHandle(record.parentRule, handles);
+  }
+  if (requested.includes("parentStyleSheet")) {
+    observation.parentStyleSheet = encodeHandle(record.parentStyleSheet, handles);
+  }
+}
+
+function encodeHandle(value: unknown, handles: Map<string, unknown>): string | null {
+  if (value === null) return null;
+  for (const [handle, candidate] of handles) {
+    if (candidate === value) return handle;
+  }
+  return "$untracked";
 }
 
 export async function runOperationFixture(
@@ -122,7 +137,7 @@ export async function runOperationFixture(
       observation.return = encodeBoundaryValue(result);
     }
     if (!requested.includes("exception")) delete observation.exception;
-    observeTarget(observation, target, requested);
+    observeTarget(observation, target, requested, handles);
     observations.push(observation);
   }
 

@@ -26,7 +26,7 @@ const mutation = fc.oneof(
   }),
 );
 
-test("arbitrary declaration sequences preserve reparsable safe output", () => {
+test("arbitrary declaration sequences preserve reparsable stylesheet output", () => {
   const numRuns = Number.parseInt(process.env.SHEETOM_FUZZ_RUNS ?? "200", 10);
 
   fc.assert(

@@ -4,6 +4,8 @@ export function createNativeBrowserFixtureAdapter(): FixtureAdapter {
   return {
     invoke(operation, target, args) {
       switch (operation.op) {
+        case "constructStyleSheet":
+          return new globalThis.CSSStyleSheet();
         case "constructStyleRule": {
           const sheet = new globalThis.CSSStyleSheet();
           sheet.insertRule(`${args[0]} {}`);
@@ -11,6 +13,25 @@ export function createNativeBrowserFixtureAdapter(): FixtureAdapter {
         }
         case "getStyle":
           return (target as globalThis.CSSStyleRule).style;
+        case "replaceSync":
+          return (target as globalThis.CSSStyleSheet).replaceSync(args[0] as string);
+        case "getRule":
+          return (target as globalThis.CSSStyleSheet | globalThis.CSSGroupingRule)
+            .cssRules[args[0] as number];
+        case "insertRule":
+          return Reflect.apply(
+            (target as globalThis.CSSStyleSheet | globalThis.CSSGroupingRule).insertRule,
+            target,
+            args,
+          );
+        case "deleteRule":
+          return Reflect.apply(
+            (target as globalThis.CSSStyleSheet | globalThis.CSSGroupingRule).deleteRule,
+            target,
+            args,
+          );
+        case "identity":
+          return target;
         case "setProperty":
           return Reflect.apply(
             (target as globalThis.CSSStyleDeclaration).setProperty,

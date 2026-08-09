@@ -32,6 +32,17 @@ readable and mutable. Assigning any `CSSRule.cssText` is a successful no-op.
 state. This can differ deliberately from browser-facing `cssText` when CSS
 Syntax end-of-input recovery preserved malformed source text.
 
+| Surface | Contract |
+| --- | --- |
+| `CSSStyleDeclaration.cssText` | Browser-compatible observable declarations, including recovery quirks. |
+| `CSSRule.cssText` | Browser-compatible observable text for the current rule. |
+| `CSSStyleSheet.serialize()` | Deterministic Reparsable Stylesheet Serialization with repairs confined to their declaration or rule. |
+
+“Reparsable” guarantees syntactic reparse, no declaration/rule leakage, and
+preservation of SheetOM’s valid semantic state. It is not URL sanitization,
+CSP enforcement, remote-resource control, or a guarantee that valid untrusted
+CSS is safe to attach at the Rendering Boundary.
+
 ## Declarations
 
 `CSSStyleDeclaration` exposes live indexed names, named JavaScript properties,

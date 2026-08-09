@@ -59,6 +59,103 @@
         { "exception": { "name": "TypeError" }, "cssText": "" },
         { "exception": { "name": "TypeError" }, "cssText": "" }
       ]
+    },
+    {
+      "fixtureId": "declarations.set-property-multiple-declarations",
+      "decision": "shared",
+      "rationale": "A setProperty value is parsed independently and cannot escape into another declaration; invalid input leaves the previous declaration unchanged.",
+      "expected": [
+        {},
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "width: 10px;",
+          "length": 1,
+          "items": ["width"]
+        },
+        {
+          "return": "10px",
+          "exception": null,
+          "cssText": "width: 10px;"
+        }
+      ]
+    },
+    {
+      "fixtureId": "declarations.escaped-custom-property-name",
+      "decision": "shared",
+      "rationale": "Custom-property method arguments retain their logical names and cssText escapes those names only when serializing CSS syntax.",
+      "expected": [
+        {},
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+          "length": 2,
+          "items": ["--foo:bar", "--foo\\:bar"]
+        },
+        {
+          "return": "red",
+          "exception": null,
+          "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+        },
+        {
+          "return": "blue",
+          "exception": null,
+          "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+        }
+      ]
+    },
+    {
+      "fixtureId": "integration.weweb-authoring-tree",
+      "decision": "chromium-fallback",
+      "rationale": "The standard rule-tree operations and detachment identity are shared; the recovered padding spelling follows the existing Chromium fallback resolution.",
+      "expected": [
+        {},
+        {},
+        {},
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+          "length": 5,
+          "items": ["color", "padding-top", "padding-right", "padding-bottom", "padding-left"]
+        },
+        {},
+        {},
+        {
+          "return": 1,
+          "exception": null
+        },
+        {},
+        { "exception": null },
+        {
+          "parentRule": null,
+          "parentStyleSheet": null
+        },
+        { "exception": null },
+        {
+          "parentRule": null,
+          "parentStyleSheet": null
+        },
+        {
+          "parentRule": "layer",
+          "parentStyleSheet": null
+        },
+        {
+          "parentRule": "layer",
+          "parentStyleSheet": null
+        },
+        {
+          "parentRule": "media",
+          "parentStyleSheet": null
+        }
+      ]
     }
   ]
 }
