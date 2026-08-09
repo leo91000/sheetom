@@ -3,6 +3,7 @@ import {
   extractReleaseNotes,
   npmTagForVersion,
   parsePackResult,
+  waitForDistTag,
 } from "../scripts/publish-release.mjs";
 
 describe("release automation", () => {
@@ -32,5 +33,39 @@ describe("release automation", () => {
       filename: "sheetom-0.1.0.tgz",
     });
     expect(() => parsePackResult("[]")).toThrow(/exactly one/);
+  });
+
+  it("waits for an npm dist-tag to propagate", async () => {
+    let reads = 0;
+    const distTags = await waitForDistTag("sheetom", "next", "0.1.0-rc.1", {
+      attempts: 3,
+      intervalMs: 0,
+      readTags: async () => {
+        reads += 1;
+        return { next: reads === 1 ? "0.1.0-rc.0" : "0.1.0-rc.1" };
+      },
+      wait: async () => {},
+    });
+
+    expect(reads).toBe(2);
+    expect(distTags.next).toBe("0.1.0-rc.1");
+  });
+
+  it("bounds npm dist-tag propagation retries", async () => {
+    let waits = 0;
+    const result = waitForDistTag("sheetom", "next", "0.1.0-rc.1", {
+      attempts: 3,
+      intervalMs: 0,
+      readTags: async () => ({ next: "0.1.0-rc.0" }),
+      wait: async () => {
+        waits += 1;
+      },
+    });
+
+    await expect(result).rejects.toThrow(
+      "npm dist-tag next did not point to 0.1.0-rc.1 after 3 attempts; " +
+        "last observed 0.1.0-rc.0",
+    );
+    expect(waits).toBe(2);
   });
 });
