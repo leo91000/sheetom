@@ -1,0 +1,46 @@
+{
+  "name": "sheetom",
+  "version": "0.0.0",
+  "description": "A browser-compatible authoring CSSOM for server-side JavaScript runtimes",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "generate:properties": "node scripts/generate-chromium-properties.mjs",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:browser": "vitest run --project browser",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "css-tree": "^3.2.1",
+    "lightningcss": "^1.33.0"
+  },
+  "devDependencies": {
+    "@types/css-tree": "^2.3.10",
+    "@types/node": "^24.0.0",
+    "@vitest/browser-playwright": "^4.1.10",
+    "playwright": "^1.62.1",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
