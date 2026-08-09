@@ -14,13 +14,12 @@ a separate maintainer operation from an exact reviewed commit.
 3. Download the stable native-WPT artifacts and record the immutable evidence
    from that version with `SHEETOM_RECORD_BASELINE=1 npm run
    conformance:record -- --wpt-report=chrome=reports/chrome.json
-   --wpt-report=firefox=reports/firefox.json
-   --wpt-report=safari=reports/safari.json`. Move the reviewed
+   --wpt-report=firefox=reports/firefox.json`. Move the reviewed
    draft to `compatibility/baselines/0.1.0-rc.0.json`, rerun
    `npm run conformance:validate`, and commit the release preparation through a
    deliberately created pull request with an empty body.
 4. Require green CI plus a manual `Native browser oracles` run. Download and
-   review the stable Chrome, Firefox, and actual stable Safari WPT reports.
+   review the stable Chrome and Firefox WPT reports.
 5. On the exact clean merge commit, run `npm run release:verify`, then `npm
    pack`. Preserve the resulting tarball; this is the artifact that is tested,
    published, and attached to GitHub.
@@ -37,6 +36,10 @@ a separate maintainer operation from an exact reviewed commit.
 After the first verified release, enable immutable GitHub Releases. Do not
 enable immutability earlier: it would prevent correcting a bootstrap draft
 before its first publication.
+
+Native Safari WPT is deferred until a compatible no-cost runner is available.
+Pinned Playwright WebKit remains part of the browser differential matrix, but
+it is not presented as evidence from actual Safari.
 
 ## Stable release
 
