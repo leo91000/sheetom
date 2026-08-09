@@ -378,8 +378,8 @@
     },
     {
       "fixtureId": "declarations.shorthand-observable-synthesis",
-      "decision": "shared",
-      "rationale": "The engines share the observable shorthand synthesis for the measured animation, overscroll, and background cases.",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium exposes expanded animation defaults and a different longhand order from Firefox and WebKit; SheetOM follows the pinned Chromium observable synthesis while preserving equivalent longhand semantics.",
       "expected": [
         {},
         {},
