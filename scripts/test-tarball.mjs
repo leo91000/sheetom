@@ -12,7 +12,15 @@ const tarball = artifact.endsWith(".tgz")
   : await resolveSingleTarball(artifact);
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-consumer-"));
 const packageDirectory = path.join(temporaryRoot, "consumer");
-const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
+
+function runNpm(arguments_, options) {
+  if (process.platform !== "win32") {
+    execFileSync("npm", arguments_, options);
+    return;
+  }
+
+  execFileSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "npm", ...arguments_], options);
+}
 
 async function resolveSingleTarball(directory) {
   const entries = (await readdir(directory))
@@ -25,8 +33,8 @@ async function resolveSingleTarball(directory) {
 
 try {
   await mkdir(packageDirectory);
-  execFileSync(npmExecutable, ["init", "--yes"], { cwd: packageDirectory, stdio: "ignore" });
-  execFileSync(npmExecutable, ["install", "--ignore-scripts", tarball], {
+  runNpm(["init", "--yes"], { cwd: packageDirectory, stdio: "ignore" });
+  runNpm(["install", "--ignore-scripts", tarball], {
     cwd: packageDirectory,
     stdio: "inherit",
   });
