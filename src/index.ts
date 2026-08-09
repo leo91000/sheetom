@@ -5,6 +5,7 @@ import {
   type ParsedDeclaration,
   type ParsedPropertyValue,
 } from "./internal/declaration-block.js";
+import type { SheetOMDiagnosticCode } from "./diagnostics.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
 import { RuleTree } from "./internal/rule-tree.js";
 import {
@@ -31,6 +32,8 @@ import {
   chromiumPropertyAliases,
   chromiumSupportedProperties,
 } from "./chromium-properties.js";
+
+export type { SheetOMDiagnosticCode } from "./diagnostics.js";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -65,7 +68,7 @@ const pageMarginRuleNames = new Set([
 
 /** A structured explanation for an ignored or recovered mutation. */
 export interface SheetOMDiagnostic {
-  code: string;
+  code: SheetOMDiagnosticCode;
   severity: "warning";
   operation: "setProperty";
   message: string;

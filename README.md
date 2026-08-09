@@ -96,7 +96,10 @@ block remote resources, or make valid hostile CSS safe to render.
 
 Invalid `setProperty` values and priorities are atomic no-ops, matching browser
 behavior. Opt into mutation diagnostics with `{ diagnostics: true }` and drain
-them using `takeDiagnostics()`.
+them using `takeDiagnostics()`. `SheetOMDiagnostic.code` is a stable string
+union. Diagnostics retain the complete rejected input until drained; when
+processing untrusted or very large input, callers should leave diagnostics off
+or drain them promptly to bound memory use.
 
 ## API scope
 
