@@ -1,0 +1,108 @@
+{
+  "$schema": "../schemas/compatibility-report.schema.json",
+  "schemaVersion": 1,
+  "packageVersion": "0.1.0-rc.1",
+  "baseline": {
+    "wptCommit": "54f8f933629e7c010ae98a246729af01f8abcda5",
+    "lightningcss": "1.33.0",
+    "cssTree": "3.2.1",
+    "runtimes": {
+      "node": "v24.18.0",
+      "bun": "1.3.1",
+      "deno": "2.9.5"
+    },
+    "browsers": {
+      "chromium": "151.0.7922.34 (revision 1234)",
+      "firefox": "153.0 (revision 1538)",
+      "webkit": "26.5 (revision 2336)"
+    }
+  },
+  "summary": {
+    "passed": 5,
+    "divergences": 2,
+    "excluded": 0,
+    "unexplained": 0
+  },
+  "evidence": {
+    "operationFixtures": {
+      "passed": 7,
+      "total": 7,
+      "sha256": "b4ec45fce8ad92393966d1b538748f6b3256d7d51af2fb0f76b4539a3300c349",
+      "adapters": [
+        {
+          "adapter": "sheetom",
+          "passed": 7,
+          "total": 7
+        },
+        {
+          "adapter": "chromium",
+          "passed": 7,
+          "total": 7
+        },
+        {
+          "adapter": "firefox",
+          "passed": 7,
+          "total": 7
+        },
+        {
+          "adapter": "webkit",
+          "passed": 7,
+          "total": 7
+        }
+      ]
+    },
+    "nativeWpt": [
+      {
+        "engine": "chrome",
+        "version": "150.0.7871.128",
+        "sha256": "33aaf2418507bb1d335cd5350b21a86cee86cbe3059e9eb1b2001c9e2693c1f1",
+        "passed": 4,
+        "total": 4
+      },
+      {
+        "engine": "firefox",
+        "version": "153.0.3",
+        "sha256": "20ee01df1d83cc67a50e7949ff6a62c87c572c2fb0159ee5c2b15bc8e9a13a1f",
+        "passed": 4,
+        "total": 4
+      }
+    ]
+  },
+  "resolutions": [
+    {
+      "fixtureId": "declarations.basic-set-property",
+      "decision": "shared",
+      "rationale": "The observable declaration state is shared by the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.malformed-padding",
+      "decision": "chromium-fallback",
+      "rationale": "CSS Syntax accepts the EOF-recovered value; Chromium preserves the unclosed observable spelling while Firefox materializes closing parentheses."
+    },
+    {
+      "fixtureId": "declarations.setproperty-null-undefined",
+      "decision": "shared",
+      "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior."
+    },
+    {
+      "fixtureId": "declarations.required-arguments",
+      "decision": "shared",
+      "rationale": "Required WebIDL arguments throw TypeError before string conversion in the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.set-property-multiple-declarations",
+      "decision": "shared",
+      "rationale": "A setProperty value is parsed independently and cannot escape into another declaration; invalid input leaves the previous declaration unchanged."
+    },
+    {
+      "fixtureId": "declarations.escaped-custom-property-name",
+      "decision": "shared",
+      "rationale": "Custom-property method arguments retain their logical names and cssText escapes those names only when serializing CSS syntax."
+    },
+    {
+      "fixtureId": "integration.weweb-authoring-tree",
+      "decision": "chromium-fallback",
+      "rationale": "The standard rule-tree operations and detachment identity are shared; the recovered padding spelling follows the existing Chromium fallback resolution."
+    }
+  ]
+}
