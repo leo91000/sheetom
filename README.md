@@ -101,6 +101,12 @@ union. Diagnostics retain the complete rejected input until drained; when
 processing untrusted or very large input, callers should leave diagnostics off
 or drain them promptly to bound memory use.
 
+Static shorthands are owned as canonical longhand records. Updating or removing
+one longhand can therefore never reactivate an older shorthand value. Shorthand
+getters and `cssText` are synthesized only while the complete current longhand
+set has compatible values and priorities; genuinely deferred substitutions
+retain separate provenance until a longhand mutation breaks their group.
+
 ## API scope
 
 - `CSSStyleSheet`, live `CSSRuleList`, `CSSRule`, and `MediaList`
