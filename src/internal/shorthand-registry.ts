@@ -7,8 +7,8 @@ import {
 
 import { chromiumShorthandLonghands } from "../chromium-properties.js";
 import type {
+  AcceptedPropertyValue,
   DeclarationRecord,
-  ParsedPropertyValue,
 } from "./declaration-block.js";
 
 const fourSideShorthandNames = new Set([
@@ -75,6 +75,57 @@ const staticShorthandNames = Object.entries(chromiumShorthandLonghands)
   .filter(([, longhands]) => longhands.length > 1)
   .map(([name]) => name);
 
+export type StaticShorthandCodecId =
+  | "four-side"
+  | "two-value"
+  | "slash-pair"
+  | "animation"
+  | "background"
+  | "border-radius"
+  | "container"
+  | "font"
+  | "overflow"
+  | "transition"
+  | "typed-object"
+  | "white-space"
+  | "legacy-cssstyle";
+
+export interface StaticShorthandDefinition {
+  name: string;
+  longhands: readonly string[];
+  codec: StaticShorthandCodecId;
+}
+
+const namedCodecIds: Readonly<Record<string, StaticShorthandCodecId>> = {
+  animation: "animation",
+  "-webkit-animation": "animation",
+  background: "background",
+  "border-radius": "border-radius",
+  "-webkit-border-radius": "border-radius",
+  container: "container",
+  font: "font",
+  overflow: "overflow",
+  transition: "transition",
+  "-webkit-transition": "transition",
+  "list-style": "typed-object",
+  outline: "typed-object",
+  "text-decoration": "typed-object",
+  "white-space": "white-space",
+};
+
+function codecIdFor(name: string): StaticShorthandCodecId {
+  if (fourSideShorthandNames.has(name)) return "four-side";
+  if (twoValueShorthandNames.has(name)) return "two-value";
+  if (slashPairShorthandNames.has(name)) return "slash-pair";
+  return namedCodecIds[name] ?? "legacy-cssstyle";
+}
+
+const staticShorthandDefinitions = staticShorthandNames.map(name => ({
+  name,
+  longhands: chromiumShorthandLonghands[name] ?? [],
+  codec: codecIdFor(name),
+}));
+
 function isAllowedResidual(
   shorthand: string,
   property: string,
@@ -105,6 +156,10 @@ export function getShorthandLonghands(name: string): readonly string[] | null {
 
 export function getStaticShorthandNames(): readonly string[] {
   return staticShorthandNames;
+}
+
+export function getStaticShorthandDefinitions(): readonly StaticShorthandDefinition[] {
+  return staticShorthandDefinitions;
 }
 
 function canonicalShorthandName(name: string, longhands: readonly string[]): string {
@@ -647,7 +702,7 @@ function expandHighRiskValue(name: string, value: string): ReadonlyMap<string, s
 
 function expandHighRiskShorthand(
   name: string,
-  parsed: ParsedPropertyValue,
+  parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
   const observable = expandHighRiskValue(name, parsed.observableValue);
@@ -666,7 +721,7 @@ function expandHighRiskShorthand(
 
 function expandTwoValueShorthand(
   name: string,
-  parsed: ParsedPropertyValue,
+  parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
   if (!twoValueShorthandNames.has(name)) return null;
@@ -693,7 +748,7 @@ function expandTwoValueShorthand(
 
 function expandSlashPairShorthand(
   name: string,
-  parsed: ParsedPropertyValue,
+  parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
   if (!slashPairShorthandNames.has(name)) return null;
@@ -733,7 +788,7 @@ function expandFourSides(value: string): [string, string, string, string] | null
 
 export function expandStaticFourSide(
   name: string,
-  parsed: ParsedPropertyValue,
+  parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
   if (!fourSideShorthandNames.has(name)) return null;
@@ -765,7 +820,7 @@ export function expandStaticFourSide(
 }
 export function expandStaticShorthand(
   name: string,
-  parsed: ParsedPropertyValue,
+  parsed: AcceptedPropertyValue,
   important: boolean,
 ): DeclarationRecord[] | null {
   const longhands = getShorthandLonghands(name);

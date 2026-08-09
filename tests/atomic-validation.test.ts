@@ -51,9 +51,14 @@ test("diagnostic codes expose a stable public string union", () => {
   const codes: SheetOMDiagnosticCode[] = [
     "INVALID_PRIORITY",
     "INVALID_PROPERTY_VALUE",
+    "UNSUPPORTED_SHORTHAND_VALUE",
   ];
 
-  assert.deepEqual(codes, ["INVALID_PRIORITY", "INVALID_PROPERTY_VALUE"]);
+  assert.deepEqual(codes, [
+    "INVALID_PRIORITY",
+    "INVALID_PROPERTY_VALUE",
+    "UNSUPPORTED_SHORTHAND_VALUE",
+  ]);
 });
 
 test("setProperty rejects embedded priority tokens without rejecting data", () => {

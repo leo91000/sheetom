@@ -40,6 +40,10 @@ _Avoid_: Error callback, diagnostic event
 The stable machine-readable classification of a Mutation Diagnostic; its accompanying human-readable message is explanatory and may change.
 _Avoid_: Error message, exception name
 
+**Unsupported Shorthand Value**:
+The diagnostic classification for a browser-accepted static shorthand that SheetOM cannot expand completely through its registered codec. The mutation remains atomic, and any occurrence is a release-blocking implementation defect rather than an invalid CSS value.
+_Avoid_: Invalid property value, parser rejection, opaque shorthand state
+
 **Declaration Record**:
 One ordered, unique expanded-longhand or exact-case custom-property entry containing its browser-facing text and recovered semantic representation together with its priority and shorthand provenance.
 _Avoid_: Raw declaration, parallel stylesheet entry
@@ -57,8 +61,12 @@ Provenance connecting expanded Declaration Records to one shorthand mutation con
 _Avoid_: Static shorthand state, serialized shorthand, original declaration
 
 **Shorthand Coverage Gate**:
-The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec and measured expansion coverage.
+The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec, one pinned non-CSS-wide Chromium capability case, and passing expansion, synthesis, mutation, and serialization checkpoints. It combines exhaustive breadth across all manifested shorthands with deeper grammar-branch tests per codec family.
 _Avoid_: Best-effort expansion, supported examples, cssstyle coverage
+
+**Shorthand Capability Corpus**:
+The versioned, manifest-bound set of concrete non-CSS-wide shorthand mutations and ordered Chromium observations that proves breadth for every manifested shorthand while leaving grammar depth to shared codec-family tests.
+_Avoid_: Initial-value smoke test, exhaustive grammar, one fixture file per property
 
 **Supported Property Manifest**:
 A checked-in list of ordinary property names accepted by the named Chromium compatibility baseline, generated offline from real-browser probes.
@@ -75,6 +83,10 @@ _Avoid_: Literal value allowlist, permissive unparsed fallback, browser runtime 
 **Value Gate**:
 The layered decision that accepts or rejects one independently parsed property value by classifying substitutions from original tokens before typed parsing, grammar matching, and measured Value Capability Validators.
 _Avoid_: Lightning CSS parse result, text heuristic
+
+**Accepted Property Value**:
+The internal structured result transported from the Value Gate to mutation codecs, retaining either a typed parser declaration, validated grammar tokens, or recovered pending-substitution tokens together with observable and reparsable serializations.
+_Avoid_: Reparsed value string, public value object, raw input
 
 **Syntax Engine Set**:
 The exact, release-versioned combination of parser and tokenizer dependencies whose joint behavior underpins a Compatibility Baseline.

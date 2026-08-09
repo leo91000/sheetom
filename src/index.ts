@@ -2,8 +2,8 @@ import { transform } from "lightningcss";
 import * as csstree from "css-tree";
 import {
   DeclarationBlock,
+  type AcceptedPropertyValue,
   type ParsedDeclaration,
-  type ParsedPropertyValue,
 } from "./internal/declaration-block.js";
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
@@ -109,11 +109,18 @@ function parseDeclarationValue(
   declaration: CSSStyleDeclaration,
   name: string,
   observableValue: string,
-): ParsedPropertyValue | null {
+): AcceptedPropertyValue | null {
   const atrule = declaration.parentRule instanceof CSSFontFaceRule
     ? "font-face"
     : null;
-  if (atrule) return parseAtruleDescriptorValue(atrule, name, observableValue);
+  if (atrule) {
+    const parsed = parseAtruleDescriptorValue(atrule, name, observableValue);
+    if (!parsed) return null;
+    return {
+      ...parsed,
+      representation: { kind: "grammar", declaration: null },
+    };
+  }
   return parsePropertyValue(name, observableValue);
 }
 

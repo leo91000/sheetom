@@ -5,7 +5,10 @@ import {
   chromiumShorthandLonghands,
   chromiumSupportedProperties,
 } from "../chromium-properties.js";
-import type { ParsedPropertyValue } from "./declaration-block.js";
+import type {
+  AcceptedPropertyValue,
+  ParsedPropertyValue,
+} from "./declaration-block.js";
 import { serializeObservableValue } from "./observable-value-codec.js";
 import {
   matchesMeasuredValueCapability,
@@ -333,7 +336,7 @@ function canonicalizeBrowserValue(name: string, value: string): string {
 export function parsePropertyValue(
   name: string,
   observableValue: string,
-): ParsedPropertyValue | null {
+): AcceptedPropertyValue | null {
   if (name === "--") return null;
   if (!name.startsWith("--") && !chromiumSupportedProperties.has(name)) {
     return null;
@@ -345,6 +348,7 @@ export function parsePropertyValue(
       observableValue: trimmedInput,
       safeValue: trimmedInput,
       pendingSubstitution: false,
+      representation: { kind: "grammar", declaration: null },
     };
   }
   let declaration: unknown;
@@ -430,6 +434,14 @@ export function parsePropertyValue(
           : trimmedObservableValue,
       safeValue: normalizedSafeValue,
       pendingSubstitution,
+      representation: {
+        kind: pendingSubstitution
+          ? "pending-substitution"
+          : typedOrdinaryValue
+            ? "typed"
+            : "grammar",
+        declaration,
+      },
     };
   } catch {
     return null;

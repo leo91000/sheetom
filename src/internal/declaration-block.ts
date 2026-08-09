@@ -6,6 +6,13 @@ export interface ParsedPropertyValue {
   pendingSubstitution: boolean;
 }
 
+export interface AcceptedPropertyValue extends ParsedPropertyValue {
+  representation: {
+    kind: "typed" | "grammar" | "pending-substitution";
+    declaration: unknown;
+  };
+}
+
 export interface PendingSubstitutionGroup {
   shorthand: string;
   observableValue: string;
@@ -26,17 +33,17 @@ export interface ParsedDeclaration {
 
 export interface DeclarationBlockCodec {
   normalizeName(name: string): string;
-  parseValue(name: string, value: string): ParsedPropertyValue | null;
+  parseValue(name: string, value: string): AcceptedPropertyValue | null;
   shorthandLonghands(name: string): readonly string[] | null;
   staticShorthandNames(): readonly string[];
   expandFourSide(
     name: string,
-    parsed: ParsedPropertyValue,
+    parsed: AcceptedPropertyValue,
     important: boolean,
   ): DeclarationRecord[] | null;
   expandShorthand(
     name: string,
-    parsed: ParsedPropertyValue,
+    parsed: AcceptedPropertyValue,
     important: boolean,
   ): DeclarationRecord[] | null;
   synthesizeShorthand(
@@ -143,7 +150,9 @@ export class DeclarationBlock {
 
       consider({
         name,
-        ...propertyValue,
+        observableValue: propertyValue.observableValue,
+        safeValue: propertyValue.safeValue,
+        pendingSubstitution: propertyValue.pendingSubstitution,
         important: declaration.important,
         pendingGroup: null,
       }, 0);
@@ -234,7 +243,7 @@ export class DeclarationBlock {
     }
 
     if (longhands) {
-      this.#reportDiagnostic("INVALID_PROPERTY_VALUE", normalizedName, value);
+      this.#reportDiagnostic("UNSUPPORTED_SHORTHAND_VALUE", normalizedName, value);
       return;
     }
 
@@ -359,7 +368,14 @@ export class DeclarationBlock {
       existing.pendingGroup = pendingGroup;
       return;
     }
-    this.#records.push({ name, ...parsed, important, pendingGroup });
+    this.#records.push({
+      name,
+      observableValue: parsed.observableValue,
+      safeValue: parsed.safeValue,
+      pendingSubstitution: parsed.pendingSubstitution,
+      important,
+      pendingGroup,
+    });
   }
 
   #shorthand(
