@@ -157,7 +157,10 @@ npm run pack:test
 `npm test` runs unit, deterministic fuzz, and local Chromium projects. Use
 `npm run test:browser:matrix` on a machine with all Playwright dependencies to
 run Chromium, Firefox, and WebKit. `npm run docs:build` generates the TypeDoc
-reference under `site/api`.
+reference under `site/api`. The benchmark gates both a 10,000-rule stress case
+and a publisher-shaped reference workload with one shared stylesheet, 20 page
+stylesheets, nested layers/media, distributed mutations, and two idempotent
+serialization passes.
 
 Only the latest published `0.x` minor and its active prereleases receive fixes
 before 1.0. During `0.x`, observable compatibility corrections and interface
