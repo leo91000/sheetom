@@ -56,6 +56,10 @@ throws `TypeError`. Invalid priorities, unsupported names, invalid grammars,
 and embedded priority tokens are atomic no-ops. Diagnostics are optional and
 never change those return values or mutations.
 
+Parser support for modern or implementation-dependent grammar is described by
+the release-versioned Value Capability Corpus. SheetOM uses checked-in
+validators synchronously and never launches or contacts a browser at runtime.
+
 Shorthands expose their expanded longhands through indexing. SheetOM retains
 no parallel static shorthand declaration: getters and serialization reconstruct
 one only from the complete current longhand state. SheetOM retains

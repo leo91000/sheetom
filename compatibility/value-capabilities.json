@@ -1,0 +1,19 @@
+{
+  "$schema": "./schemas/value-capability-corpus.schema.json",
+  "schemaVersion": 1,
+  "baseline": { "browser": "chromium", "major": 151 },
+  "cases": [
+    { "id": "grid.subgrid", "property": "grid-template-columns", "input": "subgrid", "accepted": true, "observable": "subgrid" },
+    { "id": "grid.invalid-subgrid-track", "property": "grid-template-columns", "input": "subgrid 1px", "accepted": false },
+    { "id": "anchor.anchor-size", "property": "width", "input": "anchor-size(width)", "accepted": true, "observable": "anchor-size(width)" },
+    { "id": "anchor.invalid-anchor-size", "property": "width", "input": "anchor-size(width,)", "accepted": false },
+    { "id": "color.contrast-color", "property": "color", "input": "contrast-color(red)", "accepted": true, "observable": "contrast-color(red)" },
+    { "id": "color.invalid-contrast-color", "property": "color", "input": "contrast-color()", "accepted": false },
+    { "id": "integer.calc-folding", "property": "z-index", "input": "calc(1 + 1)", "accepted": true, "observable": "calc(2)" },
+    { "id": "integer.invalid-dimensional-calc", "property": "z-index", "input": "calc(1px)", "accepted": false },
+    { "id": "content.pending-var-eof", "property": "content", "input": "var(--x", "accepted": true, "observable": "var(--x" },
+    { "id": "content.typed-attr-target-text", "property": "content", "input": "target-text(attr(href url))", "accepted": true, "observable": "target-text(attr(href url))" },
+    { "id": "content.invalid-leader", "property": "content", "input": "leader(.)", "accepted": false },
+    { "id": "content.unsupported-url-target-text", "property": "content", "input": "target-text(url(#x))", "accepted": false }
+  ]
+}

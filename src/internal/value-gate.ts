@@ -7,9 +7,14 @@ import {
 } from "../chromium-properties.js";
 import type { ParsedPropertyValue } from "./declaration-block.js";
 import { serializeObservableValue } from "./observable-value-codec.js";
+import {
+  matchesMeasuredValueCapability,
+  rejectsMeasuredValueCapability,
+} from "./value-capabilities.js";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const cssWideKeywords = new Set(["initial", "inherit", "unset", "revert", "revert-layer"]);
 const paddingLonghands = [
   "padding-top",
   "padding-right",
@@ -193,6 +198,9 @@ function analyzeSubstitutions(value: unknown): SubstitutionAnalysis {
     }
   }
   const cssFunction = functionValue(value);
+  if (cssFunction && ["var", "env"].includes(cssFunction.name)) {
+    found = true;
+  }
   if (cssFunction?.name === "attr") {
     found = true;
     if (!isValidAttrFunction(cssFunction.arguments)) {
@@ -331,6 +339,14 @@ export function parsePropertyValue(
     return null;
   }
   if (containsTopLevelDeclarationBoundary(observableValue)) return null;
+  const trimmedInput = observableValue.trim();
+  if (!name.startsWith("--") && cssWideKeywords.has(trimmedInput)) {
+    return {
+      observableValue: trimmedInput,
+      safeValue: trimmedInput,
+      pendingSubstitution: false,
+    };
+  }
   let declaration: unknown;
   let declarationCount = 0;
 
@@ -350,9 +366,25 @@ export function parsePropertyValue(
     if (declarationCount !== 1 || !isUnknownRecord(declaration)) return null;
     if (!Object.hasOwn(declaration, "property")) return null;
 
-    const pendingSubstitution = declaration.property === "unparsed";
     const analysis = analyzeSubstitutions(declaration);
-    if (!analysis.valid || (pendingSubstitution && !analysis.found)) return null;
+    if (!analysis.valid) return null;
+    const pendingSubstitution = analysis.found;
+    if (
+      !pendingSubstitution &&
+      rejectsMeasuredValueCapability(name, observableValue)
+    ) {
+      return null;
+    }
+    const typedOrdinaryValue = declaration.property !== "unparsed" &&
+      declaration.property !== "custom";
+    if (
+      !name.startsWith("--") &&
+      !pendingSubstitution &&
+      !typedOrdinaryValue &&
+      !matchesMeasuredValueCapability(name, observableValue)
+    ) {
+      return null;
+    }
 
     const serialized = decoder.decode(result.code);
     const parsed = csstree.parse(serialized, {

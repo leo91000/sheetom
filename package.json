@@ -34,6 +34,7 @@
     "dist",
     "compatibility/baselines",
     "compatibility/schemas",
+    "compatibility/value-capabilities.json",
     "compatibility/WPT-LICENSE.md",
     "docs/api.md",
     "docs/releasing.md",
