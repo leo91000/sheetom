@@ -55,6 +55,13 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
+    assert.equal(report.schemaVersion, 2);
+    assert.deepEqual(report.baseline.syntaxEngineSet, {
+      lightningcss: "1.33.0",
+      cssTree: "3.2.1",
+      cssstyle: "6.2.0",
+      cssTokenizer: "4.0.0",
+    });
     assert.deepEqual(
       report.evidence.nativeWpt.map((evidence: { engine: string }) => evidence.engine),
       ["chrome", "firefox", "safari"],

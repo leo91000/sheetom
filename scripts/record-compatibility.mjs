@@ -115,12 +115,16 @@ for (const reportArgument of reportArguments) {
 }
 const report = {
   $schema: "../schemas/compatibility-report.schema.json",
-  schemaVersion: 1,
+  schemaVersion: 2,
   packageVersion: packageManifest.version,
   baseline: {
     wptCommit: wptLock.commit,
-    lightningcss: packageLock.packages["node_modules/lightningcss"].version,
-    cssTree: packageLock.packages["node_modules/css-tree"].version,
+    syntaxEngineSet: {
+      lightningcss: packageLock.packages["node_modules/lightningcss"].version,
+      cssTree: packageLock.packages["node_modules/css-tree"].version,
+      cssstyle: packageLock.packages["node_modules/cssstyle"].version,
+      cssTokenizer: packageLock.packages["node_modules/@csstools/css-tokenizer"].version,
+    },
     runtimes: {
       node: process.version,
       bun: "1.3.1",
