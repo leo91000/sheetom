@@ -101,6 +101,29 @@
       ]
     },
     {
+      "fixtureId": "declarations.custom-property-priority-replacement",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and Firefox replace the existing custom-property priority when setProperty is called without a priority, while WebKit retains !important; SheetOM follows the measured Chromium fallback.",
+      "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "--token: red !important;",
+          "length": 1,
+          "items": ["--token"]
+        },
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "--token: red;",
+          "length": 1,
+          "items": ["--token"]
+        }
+      ]
+    },
+    {
       "fixtureId": "declarations.pending-substitution-eof-recovery",
       "decision": "chromium-fallback",
       "rationale": "Chromium retains the unclosed pending-substitution spelling while applying lexical EOF recovery such as comment removal.",

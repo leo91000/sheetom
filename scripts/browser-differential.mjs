@@ -20,12 +20,12 @@ const trackedProperties = [
   "width",
 ];
 
-function setMutation(name, values) {
+function setMutation(name, values, priorities = ["", "important", "bogus"]) {
   return fc.record({
     operation: fc.constant("set"),
     name: fc.constant(name),
     value: fc.constantFrom(...values),
-    priority: fc.constantFrom("", "important", "bogus"),
+    priority: fc.constantFrom(...priorities),
   });
 }
 
@@ -62,7 +62,7 @@ const mutation = fc.oneof(
     "foo\\!bar",
     "url(foo!bar)",
     "var(--fallback, red)",
-  ]),
+  ], [""]),
   fc.record({
     operation: fc.constant("remove"),
     name: fc.constantFrom(...trackedProperties, "padding"),
