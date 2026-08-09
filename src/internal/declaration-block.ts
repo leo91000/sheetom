@@ -264,6 +264,9 @@ export class DeclarationBlock {
     const declarations: string[] = [];
     const writtenPendingGroups = new Set<PendingSubstitutionGroup>();
     const writtenStaticShorthands = new Set<string>();
+    const recordsByName = new Map(
+      this.#records.map(record => [record.name, record] as const),
+    );
     const staticShorthandCandidates: Array<{
       name: string;
       longhands: readonly string[];
@@ -271,9 +274,17 @@ export class DeclarationBlock {
       important: boolean;
     }> = [];
     for (const name of this.#codec.staticShorthandNames()) {
-      const shorthand = this.#shorthand(name, safe);
       const longhands = this.#codec.shorthandLonghands(name);
-      if (shorthand && shorthand.value !== "" && longhands) {
+      if (
+        !longhands ||
+        longhands.length > recordsByName.size ||
+        longhands.some(longhand => !recordsByName.has(longhand))
+      ) {
+        continue;
+      }
+
+      const shorthand = this.#shorthand(name, safe, recordsByName);
+      if (shorthand && shorthand.value !== "") {
         staticShorthandCandidates.push({ name, longhands, ...shorthand });
       }
     }
@@ -351,10 +362,15 @@ export class DeclarationBlock {
     this.#records.push({ name, ...parsed, important, pendingGroup });
   }
 
-  #shorthand(name: string, safe: boolean): { value: string; important: boolean } | null {
+  #shorthand(
+    name: string,
+    safe: boolean,
+    recordsByName?: ReadonlyMap<string, DeclarationRecord>,
+  ): { value: string; important: boolean } | null {
     const longhands = this.#codec.shorthandLonghands(name);
     if (!longhands) return null;
     const records = longhands.map(longhand =>
+      recordsByName?.get(longhand) ??
       this.#records.find(record => record.name === longhand),
     );
     if (records.some(record => record === undefined)) return null;
@@ -372,6 +388,19 @@ export class DeclarationBlock {
       };
     }
     if (records.some(record => record?.pendingGroup)) return null;
+    if (this.#codec.isFourSideShorthand(name) && records.length === 4) {
+      const [top, right, bottom, left] = records;
+      if (!top || !right || !bottom || !left) return null;
+      const values: [string, string, string, string] = [top, right, bottom, left]
+        .map(record => safe ? record.safeValue : record.observableValue) as [
+          string,
+          string,
+          string,
+          string,
+        ];
+      return { value: compressFourSides(values), important: first.important };
+    }
+
     const synthesized = this.#codec.synthesizeShorthand(
       name,
       records as DeclarationRecord[],
@@ -380,18 +409,7 @@ export class DeclarationBlock {
     if (synthesized !== null) {
       return { value: synthesized, important: first.important };
     }
-    if (!this.#codec.isFourSideShorthand(name) || records.length !== 4) return null;
-
-    const [top, right, bottom, left] = records;
-    if (!top || !right || !bottom || !left) return null;
-    const values: [string, string, string, string] = [top, right, bottom, left]
-      .map(record => safe ? record.safeValue : record.observableValue) as [
-        string,
-        string,
-        string,
-        string,
-      ];
-    return { value: compressFourSides(values), important: first.important };
+    return null;
   }
 }
 

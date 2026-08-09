@@ -71,6 +71,9 @@ const shorthandResidualDefaults: Readonly<Record<string, Readonly<Record<string,
     "transition-behavior": "normal",
   },
 };
+const staticShorthandNames = Object.entries(chromiumShorthandLonghands)
+  .filter(([, longhands]) => longhands.length > 1)
+  .map(([name]) => name);
 
 function isAllowedResidual(
   shorthand: string,
@@ -101,9 +104,7 @@ export function getShorthandLonghands(name: string): readonly string[] | null {
 }
 
 export function getStaticShorthandNames(): readonly string[] {
-  return Object.entries(chromiumShorthandLonghands)
-    .filter(([, longhands]) => longhands.length > 1)
-    .map(([name]) => name);
+  return staticShorthandNames;
 }
 
 function canonicalShorthandName(name: string, longhands: readonly string[]): string {
