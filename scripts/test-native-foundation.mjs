@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.3");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.4");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
@@ -16,6 +16,27 @@ const result = binding.canonicalizeDeclarationBlock(
 
 assert.match(result, /background:/u);
 assert.match(result, /image-set\(/u);
+
+const parsedRules = JSON.parse(binding.parseStylesheetTreeJson(
+    "@media screen {.x {width:1px;} @supports (display:grid) {.y {color:red;}}}",
+    false,
+));
+assert.equal(parsedRules.length, 1);
+assert.equal(parsedRules[0].kind, "media");
+assert.equal(parsedRules[0].prelude, "screen");
+assert.equal(parsedRules[0].children[0].kind, "style");
+assert.equal(parsedRules[0].children[0].declarations, "width:1px");
+assert.equal(parsedRules[0].children[1].kind, "supports");
+
+const fontFace = JSON.parse(binding.parseRuleTreeJson(
+    "@font-face {font-family:Test;src:local(Test)}",
+));
+assert.equal(fontFace.kind, "font-face");
+assert.equal(fontFace.declarations.includes('local("Test")'), true);
+assert.throws(
+    () => binding.parseRuleTreeJson(".a{} .b{}"),
+    /exactly one rule/u,
+);
 
 const state = new binding.NativeDeclarationState();
 assert.equal(state.setProperty("color", "red", ""), "applied");

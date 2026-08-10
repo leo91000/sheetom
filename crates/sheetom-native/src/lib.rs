@@ -5,8 +5,8 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 
 use napi_derive::napi;
 use sheetom_core::{
-    canonicalize_declaration_block as canonicalize, DeclarationContext, DeclarationState,
-    MutationOutcome, ENGINE_REVISION,
+    canonicalize_declaration_block as canonicalize, parse_rule_tree, parse_stylesheet_tree,
+    DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -124,4 +124,20 @@ pub fn native_engine_revision() -> &'static str {
 #[napi]
 pub fn canonicalize_declaration_block(source: String) -> napi::Result<String> {
     canonicalize(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+/// Parses exactly one rule and returns an owned, parser-independent JSON DTO.
+#[napi]
+pub fn parse_rule_tree_json(source: String) -> napi::Result<String> {
+    let parsed =
+        parse_rule_tree(&source).map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+/// Parses a stylesheet and returns owned, parser-independent JSON DTOs.
+#[napi]
+pub fn parse_stylesheet_tree_json(source: String, error_recovery: bool) -> napi::Result<String> {
+    let parsed = parse_stylesheet_tree(&source, error_recovery)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }

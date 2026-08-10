@@ -46,8 +46,12 @@ try {
     const require = createRequire(import.meta.url);
     const packageRoot = path.resolve(path.dirname(require.resolve("sheetom")), "..");
     const native = require(path.join(packageRoot, "native/index.cjs"));
-    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.3") {
+    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.4") {
       throw new Error("native engine revision mismatch");
+    }
+    const nativeTree = JSON.parse(native.parseRuleTreeJson("@media screen {.x {width:1px;}}"));
+    if (nativeTree.kind !== "media" || nativeTree.children[0]?.kind !== "style") {
+      throw new Error("native rule parser missing");
     }
     const sheet = parseStyleSheet("@media screen { .x { width: 1px; } }");
     const media = sheet.cssRules[0];

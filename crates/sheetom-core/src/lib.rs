@@ -7,6 +7,7 @@ mod catalog;
 mod declaration_state;
 mod font_face;
 mod observable;
+mod rules;
 mod shorthand;
 mod syntax;
 mod value_grammar;
@@ -19,6 +20,7 @@ pub use declaration_state::{
     DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
     PendingSubstitutionGroup,
 };
+pub use rules::{parse_rule_tree, parse_stylesheet_tree, ParsedRule};
 
 #[cfg(panic = "abort")]
 compile_error!("sheetom-core must be compiled with panic=unwind");
@@ -34,7 +36,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.3";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.4";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -43,6 +45,7 @@ const MAX_NESTING_DEPTH: usize = 4096;
 pub enum EngineError {
     InputLimitExceeded { actual: usize, limit: usize },
     DeclarationLimitExceeded { actual: usize, limit: usize },
+    RuleLimitExceeded { actual: usize, limit: usize },
     NestingLimitExceeded { actual: usize, limit: usize },
     Parse(String),
     Serialize(String),
@@ -73,6 +76,10 @@ impl Display for EngineError {
             Self::DeclarationLimitExceeded { actual, limit } => write!(
                 formatter,
                 "SHEETOM_DECLARATION_LIMIT: declaration block has {actual} entries; the limit is {limit}"
+            ),
+            Self::RuleLimitExceeded { actual, limit } => write!(
+                formatter,
+                "SHEETOM_RULE_LIMIT: stylesheet has {actual} rules; the limit is {limit} rules"
             ),
             Self::NestingLimitExceeded { actual, limit } => write!(
                 formatter,
@@ -355,7 +362,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.3");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.4");
     }
 
     #[test]
