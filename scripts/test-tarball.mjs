@@ -40,7 +40,15 @@ try {
   });
 
   const esmProbe = `
+    import { createRequire } from "node:module";
+    import path from "node:path";
     import { CSSStyleRule, CSSMediaRule, parseStyleSheet } from "sheetom";
+    const require = createRequire(import.meta.url);
+    const packageRoot = path.resolve(path.dirname(require.resolve("sheetom")), "..");
+    const native = require(path.join(packageRoot, "native/index.cjs"));
+    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.2") {
+      throw new Error("native engine revision mismatch");
+    }
     const sheet = parseStyleSheet("@media screen { .x { width: 1px; } }");
     const media = sheet.cssRules[0];
     if (!(media instanceof CSSMediaRule)) throw new Error("specialized media rule missing");
