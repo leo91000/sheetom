@@ -180,10 +180,25 @@ in serialized output. Callers must apply their own content and resource policy
 before attaching untrusted output to a document or another rendering
 environment.
 
-The browser-shaped interface has no implicit input-size, nesting-depth, or
-mutation-count limits. Isolate or bound untrusted workloads according to your
-application's resource policy. See [SECURITY.md](./SECURITY.md) for private
-vulnerability reporting and supported-release policy.
+Every sheet has a high default Resource Budget that is checked before native
+parsing or CSSOM mutation: 64 MiB of stylesheet source, 1 MiB per declaration
+value, syntax depth 4,096, one million rules, and 100,000 declarations per
+block. Exceeding a budget throws `RangeError` without changing the previous
+sheet or declaration state. Limits are UTF-8 byte counts where applicable and
+can be changed per sheet without affecting other sheets:
+
+```js
+const bounded = new CSSStyleSheet({
+  resourceBudget: {
+    maxStylesheetBytes: 8 * 1024 * 1024,
+    maxRuleCount: 100_000,
+  },
+});
+```
+
+Resource Budgets protect the host process; they are not content policy,
+sanitization, or a rendering sandbox. See [the API contract](./docs/api.md) and
+[SECURITY.md](./SECURITY.md) for details.
 
 ## Development
 

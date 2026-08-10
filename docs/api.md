@@ -8,7 +8,7 @@ behavioral contract that TypeScript declarations cannot express.
 
 `new CSSStyleSheet(options?)` is the only standards-defined constructible CSSOM
 class. `options` accepts `baseURL`, `media`, `disabled`, and the SheetOM-only
-`diagnostics` flag. `parseStyleSheet(cssText, options?)` is a SheetOM extension
+`diagnostics` and `resourceBudget` options. `parseStyleSheet(cssText, options?)` is a SheetOM extension
 for existing regular sheets; it preserves valid `@import` rules without loading
 them and accepts `href` as source metadata.
 Rules rejected by the constructed CSSOM parser are retained as immutable opaque
@@ -44,6 +44,32 @@ Syntax end-of-input recovery preserved malformed source text.
 preservation of SheetOM’s valid semantic state. It is not URL sanitization,
 CSP enforcement, remote-resource control, or a guarantee that valid untrusted
 CSS is safe to attach at the Rendering Boundary.
+
+## Resource budgets
+
+`resourceBudget` configures per-sheet limits and is inherited by every parsed,
+nested, inserted, and later detached rule or declaration object from that
+sheet. Omitted fields use these RC6 defaults:
+
+| Field | Default | Measures |
+| --- | ---: | --- |
+| `maxStylesheetBytes` | 64 MiB | UTF-8 bytes in one stylesheet or rule source input. |
+| `maxDeclarationValueBytes` | 1 MiB | UTF-8 bytes in one declaration value. |
+| `maxSyntaxDepth` | 4,096 | Maximum nested CSS component-value and rule-block depth. |
+| `maxRuleCount` | 1,000,000 | Rules in the resulting sheet or detached tree, including descendants. |
+| `maxDeclarationsPerBlock` | 100,000 | Expanded declaration records in the resulting block. |
+
+Fields must be non-negative integer numbers. Byte, rule, and declaration
+limits may be raised through the N-API unsigned-long maximum; syntax depth may
+be raised to 16,384. Internal parser wrappers do not consume the caller's
+source or depth budget.
+
+An input over budget throws `RangeError` with a stable `SHEETOM_*_LIMIT`
+prefix before changing CSSOM state. The check applies equally to
+`replaceSync`, `insertRule`, `cssText` replacement, `setProperty`, selector and
+condition mutation, and specialized descriptor mutation. Resource Budgets are
+process-safety controls, not timeouts, sanitization, URL policy, or rendering
+isolation.
 
 ## Declarations
 

@@ -2,7 +2,14 @@ import type { SheetOMDiagnosticCode } from "../diagnostics.js";
 import {
   nativeBinding,
   type NativeDeclarationStateHandle,
+  type NativeMutationOutcome,
 } from "./native-binding.js";
+import {
+  defaultResourceBudget,
+  nativeBudgetArguments,
+  rethrowResourceBudgetError,
+  type NativeResourceBudget,
+} from "./resource-budget.js";
 
 type ReportDeclarationDiagnostic = (
   code: SheetOMDiagnosticCode,
@@ -20,9 +27,13 @@ export class NativeDeclarationBlock {
   constructor(
     reportDiagnostic: ReportDeclarationDiagnostic,
     context: "style" | "font-face" | "function" = "style",
+    resourceBudget: NativeResourceBudget = defaultResourceBudget,
   ) {
     this.#reportDiagnostic = reportDiagnostic;
-    this.#state = new nativeBinding.NativeDeclarationState(context);
+    this.#state = new nativeBinding.NativeDeclarationState(
+      context,
+      ...nativeBudgetArguments(resourceBudget),
+    );
   }
 
   get cssText(): string {
@@ -47,7 +58,13 @@ export class NativeDeclarationBlock {
   }
 
   setProperty(name: string, value: string, priority: string): void {
-    const outcome = this.#state.setProperty(name, value, priority);
+    let outcome: NativeMutationOutcome;
+    try {
+      outcome = this.#state.setProperty(name, value, priority);
+    } catch (error) {
+      rethrowResourceBudgetError(error);
+      throw error;
+    }
     if (outcome === "applied") {
       this.#invalidateSerialization();
       return;
@@ -69,7 +86,12 @@ export class NativeDeclarationBlock {
   }
 
   replaceCssText(source: string): void {
-    this.#state.replaceCssText(source);
+    try {
+      this.#state.replaceCssText(source);
+    } catch (error) {
+      rethrowResourceBudgetError(error);
+      throw error;
+    }
     this.#invalidateSerialization();
   }
 

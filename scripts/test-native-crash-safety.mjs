@@ -56,6 +56,7 @@ const crashCases = [
     },
     {
         name: "declaration input budget",
+        mode: "declaration-state",
         oversized: true,
         expectError: "SHEETOM_INPUT_LIMIT",
     },
@@ -68,6 +69,21 @@ const crashCases = [
         name: "nesting above the supported limit",
         nestingDepth: 4097,
         expectError: "SHEETOM_NESTING_LIMIT",
+    },
+    {
+        name: "public stylesheet at the resource boundary",
+        mode: "stylesheet-resource",
+        nestingDepth: 4095,
+        public: true,
+        publicOnly: true,
+    },
+    {
+        name: "public stylesheet above the resource boundary",
+        mode: "stylesheet-resource",
+        nestingDepth: 4096,
+        expectError: "SHEETOM_NESTING_LIMIT",
+        public: true,
+        publicOnly: true,
     },
     {
         name: "declaration count above the supported limit",
@@ -111,10 +127,14 @@ const crashCases = [
         expectError: "SHEETOM_PARSE_ERROR",
     },
     {
-        name: "recovered rule parser nesting above the supported limit",
+        name: "recovered rule parser nesting formerly below the RC5 implementation cap",
         mode: "recovered-rule",
         source: `${"@media all{".repeat(257)}.x{color:red}${"}".repeat(257)}`,
-        expectError: "SHEETOM_NESTING_LIMIT",
+    },
+    {
+        name: "recovered rule parser at the resource boundary",
+        mode: "recovered-rule",
+        source: `${"@media all{".repeat(4095)}.x{color:red}${"}".repeat(4095)}`,
     },
     {
         name: "selector normalization",
@@ -180,7 +200,8 @@ const crashCases = [
     },
 ];
 
-for (const crashCase of crashCases) {
+const nativeCrashCases = crashCases.filter(candidate => !candidate.publicOnly);
+for (const crashCase of nativeCrashCases) {
     const encodedCase = Buffer.from(JSON.stringify(crashCase)).toString("base64url");
     const child = spawnSync(process.execPath, [workerPath, artifactPath, encodedCase], {
         encoding: "utf8",
@@ -212,5 +233,5 @@ for (const crashCase of publicCrashCases) {
 }
 
 console.log(
-    `${crashCases.length} native and ${publicCrashCases.length} public crash-safety subprocesses passed.`,
+    `${nativeCrashCases.length} native and ${publicCrashCases.length} public crash-safety subprocesses passed.`,
 );

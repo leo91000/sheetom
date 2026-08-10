@@ -1,4 +1,10 @@
 import { nativeBinding } from "./native-binding.js";
+import {
+  defaultResourceBudget,
+  nativeBudgetArguments,
+  rethrowResourceBudgetError,
+  type NativeResourceBudget,
+} from "./resource-budget.js";
 
 export interface NativeCounterStyleDescriptor {
   name: string;
@@ -10,16 +16,23 @@ export interface NativeCounterStyleName {
   serialized: string;
 }
 
-export function parseNativeCounterStyleName(source: string): NativeCounterStyleName | null {
+export function parseNativeCounterStyleName(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): NativeCounterStyleName | null {
   try {
-    const encoded = nativeBinding.parseCounterStyleNameJson(source);
+    const encoded = nativeBinding.parseCounterStyleNameJson(
+      source,
+      ...nativeBudgetArguments(resourceBudget),
+    );
     if (encoded === null) return null;
     const parsed: unknown = JSON.parse(encoded);
     if (typeof parsed !== "object" || parsed === null) return null;
     const candidate = parsed as Partial<NativeCounterStyleName>;
     if (typeof candidate.name !== "string" || typeof candidate.serialized !== "string") return null;
     return candidate as NativeCounterStyleName;
-  } catch {
+  } catch (error) {
+    rethrowResourceBudgetError(error);
     return null;
   }
 }
@@ -35,15 +48,29 @@ export function serializeNativeFontFamily(value: string): string {
 export function parseNativeCounterStyleDescriptor(
   name: string,
   value: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): string | null {
-  return nativeBinding.parseCounterStyleDescriptorValue(name, value);
+  try {
+    return nativeBinding.parseCounterStyleDescriptorValue(
+      name,
+      value,
+      ...nativeBudgetArguments(resourceBudget),
+    );
+  } catch (error) {
+    rethrowResourceBudgetError(error);
+    return null;
+  }
 }
 
 export function parseNativeCounterStyleDescriptors(
   source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeCounterStyleDescriptor[] {
   try {
-    const parsed: unknown = JSON.parse(nativeBinding.parseCounterStyleDescriptorsJson(source));
+    const parsed: unknown = JSON.parse(nativeBinding.parseCounterStyleDescriptorsJson(
+      source,
+      ...nativeBudgetArguments(resourceBudget),
+    ));
     if (!Array.isArray(parsed)) return [];
     const descriptors: NativeCounterStyleDescriptor[] = [];
     for (const value of parsed) {
@@ -53,7 +80,8 @@ export function parseNativeCounterStyleDescriptors(
       descriptors.push(candidate as NativeCounterStyleDescriptor);
     }
     return descriptors;
-  } catch {
+  } catch (error) {
+    rethrowResourceBudgetError(error);
     return [];
   }
 }

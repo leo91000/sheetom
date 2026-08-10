@@ -5,8 +5,10 @@ use crate::{
         shorthand_longhands as style_shorthand_longhands, shorthand_names,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
-    shorthand::{parse_value, synthesize_shorthand},
+    shorthand::{parse_value_with_limits, synthesize_shorthand},
     syntax::{parse_declaration_list, serialize_identifier},
+    validate_declaration_block_input, validate_declaration_value_input, EngineError,
+    ResourceLimits,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -52,11 +54,12 @@ pub enum DeclarationContext {
     Function,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct DeclarationState {
     records: Vec<DeclarationRecord>,
     next_pending_group_id: u64,
     context: DeclarationContext,
+    limits: ResourceLimits,
 }
 
 impl DeclarationState {
@@ -65,8 +68,16 @@ impl DeclarationState {
     }
 
     pub fn new_with_context(context: DeclarationContext) -> Self {
+        Self::new_with_context_and_limits(context, ResourceLimits::default())
+    }
+
+    pub fn new_with_context_and_limits(
+        context: DeclarationContext,
+        limits: ResourceLimits,
+    ) -> Self {
         Self {
             context,
+            limits,
             ..Self::default()
         }
     }
@@ -135,6 +146,28 @@ impl DeclarationState {
     }
 
     pub fn set_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
+        self.set_property_checked(name, value, priority)
+            .unwrap_or(MutationOutcome::InvalidValue)
+    }
+
+    pub fn set_property_checked(
+        &mut self,
+        name: &str,
+        value: &str,
+        priority: &str,
+    ) -> Result<MutationOutcome, EngineError> {
+        validate_declaration_value_input(value, self.limits)?;
+        let mut candidate = self.clone();
+        let outcome = candidate.apply_property(name, value, priority);
+        if outcome != MutationOutcome::Applied {
+            return Ok(outcome);
+        }
+        candidate.validate_record_limit()?;
+        *self = candidate;
+        Ok(outcome)
+    }
+
+    fn apply_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
         let Some(name) = self.canonical_name(name) else {
             return MutationOutcome::InvalidName;
         };
@@ -153,10 +186,6 @@ impl DeclarationState {
         let important = priority == "important";
         let mut parsed = match self.parse_value(&name, value, important) {
             Ok(parsed) => parsed,
-            Err(MutationOutcome::InvalidValue) => return MutationOutcome::InvalidValue,
-            Err(MutationOutcome::UnsupportedShorthand) => {
-                return MutationOutcome::UnsupportedShorthand;
-            }
             Err(outcome) => return outcome,
         };
 
@@ -231,6 +260,11 @@ impl DeclarationState {
     }
 
     pub fn replace_css_text(&mut self, source: &str) {
+        let _ = self.replace_css_text_checked(source);
+    }
+
+    pub fn replace_css_text_checked(&mut self, source: &str) -> Result<(), EngineError> {
+        validate_declaration_block_input(source, self.limits)?;
         let declarations = parse_declaration_list(source)
             .into_iter()
             .map(|declaration| ParsedDeclaration {
@@ -239,7 +273,14 @@ impl DeclarationState {
                 important: declaration.important,
             })
             .collect::<Vec<_>>();
-        self.replace_declarations(&declarations);
+        for declaration in &declarations {
+            validate_declaration_value_input(&declaration.value, self.limits)?;
+        }
+        let mut candidate = self.clone();
+        candidate.replace_declarations(&declarations);
+        candidate.validate_record_limit()?;
+        *self = candidate;
+        Ok(())
     }
 
     pub fn clear(&mut self) {
@@ -314,7 +355,9 @@ impl DeclarationState {
         important: bool,
     ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
         match self.context {
-            DeclarationContext::Style => parse_value(name, value, important),
+            DeclarationContext::Style => {
+                parse_value_with_limits(name, value, important, self.limits)
+            }
             DeclarationContext::FontFace => {
                 parse_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
             }
@@ -338,6 +381,16 @@ impl DeclarationState {
             return;
         }
         self.records.push(record);
+    }
+
+    fn validate_record_limit(&self) -> Result<(), EngineError> {
+        if self.records.len() <= self.limits.max_declarations_per_block {
+            return Ok(());
+        }
+        Err(EngineError::DeclarationLimitExceeded {
+            actual: self.records.len(),
+            limit: self.limits.max_declarations_per_block,
+        })
     }
 
     fn records_for_parsed(
@@ -660,6 +713,7 @@ fn format_declaration(name: &str, value: &str, important: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::{DeclarationContext, DeclarationState, MutationOutcome, ParsedDeclaration};
+    use crate::{EngineError, ResourceLimits};
     use serde_json::Value;
 
     #[test]
@@ -696,6 +750,35 @@ mod tests {
         );
         assert_eq!(state.get_property_value("width"), "10px");
         assert_eq!(state.len(), 1);
+    }
+
+    #[test]
+    fn enforces_the_expanded_record_limit_atomically() {
+        let limits = ResourceLimits {
+            max_declarations_per_block: 1,
+            ..ResourceLimits::default()
+        };
+        let mut state =
+            DeclarationState::new_with_context_and_limits(DeclarationContext::Style, limits);
+        state.set_property_checked("width", "1px", "").unwrap();
+
+        assert!(matches!(
+            state.set_property_checked("height", "2px", ""),
+            Err(EngineError::DeclarationLimitExceeded {
+                actual: 2,
+                limit: 1
+            })
+        ));
+        assert_eq!(state.css_text(), "width: 1px;");
+
+        assert!(matches!(
+            state.replace_css_text_checked("padding: 1px"),
+            Err(EngineError::DeclarationLimitExceeded {
+                actual: 4,
+                limit: 1
+            })
+        ));
+        assert_eq!(state.css_text(), "width: 1px;");
     }
 
     #[test]

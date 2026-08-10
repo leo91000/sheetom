@@ -28,8 +28,15 @@ import {
   assertInternalConstructor,
   constructInternally,
 } from "./internal/webidl-construction.js";
+import {
+  defaultResourceBudget,
+  normalizeResourceBudget,
+  type NativeResourceBudget,
+  type SheetOMResourceBudget,
+} from "./internal/resource-budget.js";
 
 export type { SheetOMDiagnosticCode } from "./diagnostics.js";
+export type { SheetOMResourceBudget } from "./internal/resource-budget.js";
 
 const arrayIndexPattern = /^(0|[1-9]\d*)$/;
 const regularSheetMetadata = new WeakMap<
@@ -40,6 +47,10 @@ const ruleParentage = new WeakMap<
   object,
   { parentRule: CSSRule | null; parentStyleSheet: CSSStyleSheet | null }
 >();
+const ruleResourceBudgets = new WeakMap<object, NativeResourceBudget>();
+const sheetResourceBudgets = new WeakMap<object, NativeResourceBudget>();
+const sheetRuleArrays = new WeakMap<object, CSSRule[]>();
+const sheetRuleCounts = new WeakMap<object, number>();
 const functionRuleHeaders = new WeakMap<object, string>();
 const unsignedLongRange = 2 ** 32;
 const pageMarginRuleNames = new Set([
@@ -78,6 +89,7 @@ export interface CSSStyleSheetOptions {
   media?: string;
   disabled?: boolean;
   diagnostics?: boolean;
+  resourceBudget?: SheetOMResourceBudget | null;
 }
 
 /** Options for forgiving parsing of an existing regular stylesheet. */
@@ -103,6 +115,24 @@ const ruleTree = new RuleTree<CSSRule, CSSStyleSheet>(
   rule => rule.parentStyleSheet,
 );
 const safeSerializer = new Serializer<CSSRule>(describeRuleSafe);
+let activeConstructionResourceBudget = defaultResourceBudget;
+
+function constructWithResourceBudget<T>(
+  factory: () => T,
+  resourceBudget: NativeResourceBudget,
+): T {
+  const previous = activeConstructionResourceBudget;
+  activeConstructionResourceBudget = resourceBudget;
+  try {
+    return constructInternally(factory);
+  } finally {
+    activeConstructionResourceBudget = previous;
+  }
+}
+
+function currentConstructionResourceBudget(): NativeResourceBudget {
+  return activeConstructionResourceBudget;
+}
 
 function namedPropertyToCSS(property: string): string {
   if (property === "cssFloat") return "float";
@@ -112,8 +142,11 @@ function namedPropertyToCSS(property: string): string {
   return cssName;
 }
 
-function normalizeSelectorText(value: string): string | null {
-  return normalizeNativeSelector(value);
+function normalizeSelectorText(
+  value: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): string | null {
+  return normalizeNativeSelector(value, resourceBudget);
 }
 
 function toUnsignedLong(value: unknown): number {
@@ -186,6 +219,7 @@ export class CSSRule {
     assertInternalConstructor(new.target.name);
     this.#type = type;
     ruleParentage.set(this, { parentRule: null, parentStyleSheet: null });
+    ruleResourceBudgets.set(this, currentConstructionResourceBudget());
   }
 
   get parentRule(): CSSRule | null {
@@ -267,8 +301,11 @@ export class CSSRuleList {
   }
 }
 
-function normalizeMediaText(value: string): string | null {
-  return normalizeNativeMedia(value);
+function normalizeMediaText(
+  value: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): string | null {
+  return normalizeNativeMedia(value, resourceBudget);
 }
 
 interface ContainerPrelude {
@@ -277,8 +314,11 @@ interface ContainerPrelude {
   query: string;
 }
 
-function parseContainerPrelude(value: string): ContainerPrelude | null {
-  return parseNativeContainerPrelude(value);
+function parseContainerPrelude(
+  value: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): ContainerPrelude | null {
+  return parseNativeContainerPrelude(value, resourceBudget);
 }
 
 function splitMediaQueries(value: string): string[] {
@@ -302,11 +342,15 @@ export class MediaList {
   readonly [index: number]: string | undefined;
 
   #mediaText: string;
+  readonly #resourceBudget: NativeResourceBudget;
 
   constructor(mediaText = "") {
     assertInternalConstructor("MediaList");
+    this.#resourceBudget = currentConstructionResourceBudget();
     const input = `${mediaText}`.trim();
-    this.#mediaText = input === "" ? "" : normalizeMediaText(input) ?? "not all";
+    this.#mediaText = input === ""
+      ? ""
+      : normalizeMediaText(input, this.#resourceBudget) ?? "not all";
 
     return new Proxy(this, {
       get(target, property) {
@@ -333,7 +377,7 @@ export class MediaList {
       this.#mediaText = "";
       return;
     }
-    const normalized = normalizeMediaText(input);
+    const normalized = normalizeMediaText(input, this.#resourceBudget);
     this.#mediaText = normalized ?? "not all";
   }
 
@@ -348,7 +392,7 @@ export class MediaList {
 
   appendMedium(medium: string): void {
     requireArguments(arguments.length, 1, "MediaList", "appendMedium");
-    const normalized = normalizeMediaText(`${medium}`);
+    const normalized = normalizeMediaText(`${medium}`, this.#resourceBudget);
     if (!normalized) return;
     const existing = splitMediaQueries(this.#mediaText);
     if (existing.includes(normalized)) return;
@@ -357,7 +401,7 @@ export class MediaList {
 
   deleteMedium(medium: string): void {
     requireArguments(arguments.length, 1, "MediaList", "deleteMedium");
-    const normalized = normalizeMediaText(`${medium}`);
+    const normalized = normalizeMediaText(`${medium}`, this.#resourceBudget);
     const existing = splitMediaQueries(this.#mediaText);
     const index = normalized ? existing.indexOf(normalized) : -1;
     if (index === -1) {
@@ -370,6 +414,82 @@ export class MediaList {
 
 function indentRuleText(value: string): string {
   return value.split("\n").map(line => `  ${line}`).join("\n");
+}
+
+function ruleChildren(rule: CSSRule): CSSRule[] {
+  if (rule instanceof CSSGroupingRule || rule instanceof CSSKeyframesRule) {
+    return ruleTree.children(rule);
+  }
+  return [];
+}
+
+function ruleForestSize(roots: readonly CSSRule[]): number {
+  let count = 0;
+  const pending = [...roots];
+  while (pending.length > 0) {
+    const rule = pending.pop();
+    if (!rule) continue;
+    count += 1;
+    for (const child of ruleChildren(rule)) pending.push(child);
+  }
+  return count;
+}
+
+function assertRuleForestBudget(
+  roots: readonly CSSRule[],
+  resourceBudget: NativeResourceBudget,
+): void {
+  const count = ruleForestSize(roots);
+  assertRuleCountBudget(count, resourceBudget);
+}
+
+function assertRuleCountBudget(
+  count: number,
+  resourceBudget: NativeResourceBudget,
+): void {
+  if (count <= resourceBudget.maxRuleCount) return;
+  throw new RangeError(
+    `SHEETOM_RULE_LIMIT: stylesheet has ${count} rules; the limit is ${resourceBudget.maxRuleCount} rules`,
+  );
+}
+
+function assertRuleInsertionBudget(
+  owner: CSSRule | CSSStyleSheet,
+  inserted: CSSRule,
+  resourceBudget: NativeResourceBudget,
+): number {
+  const insertedCount = ruleForestSize([inserted]);
+  if (owner instanceof CSSStyleSheet) {
+    const roots = sheetRuleArrays.get(owner) ?? [];
+    assertRuleCountBudget(
+      (sheetRuleCounts.get(owner) ?? ruleForestSize(roots)) + insertedCount,
+      resourceBudget,
+    );
+    return insertedCount;
+  }
+  const sheet = owner.parentStyleSheet;
+  if (sheet) {
+    const roots = sheetRuleArrays.get(sheet) ?? [];
+    assertRuleCountBudget(
+      (sheetRuleCounts.get(sheet) ?? ruleForestSize(roots)) + insertedCount,
+      resourceBudget,
+    );
+    return insertedCount;
+  }
+  let root = owner;
+  while (root.parentRule) root = root.parentRule;
+  assertRuleCountBudget(
+    ruleForestSize([root]) + insertedCount,
+    resourceBudget,
+  );
+  return insertedCount;
+}
+
+function adjustSheetRuleCount(sheet: CSSStyleSheet | null, difference: number): void {
+  if (!sheet) return;
+  const roots = sheetRuleArrays.get(sheet) ?? [];
+  const current = sheetRuleCounts.get(sheet) ?? ruleForestSize(roots);
+  sheetRuleCounts.set(sheet, current + difference);
 }
 
 /** A rule containing a live nested rule list. */
@@ -392,7 +512,11 @@ export class CSSGroupingRule extends CSSRule {
     }
 
     const input = `${ruleText}`;
-    if (!(this instanceof CSSPageRule) && parseNativeRule(input)?.kind === "import") {
+    const resourceBudget = ruleResourceBudgets.get(this) ?? defaultResourceBudget;
+    if (
+      !(this instanceof CSSPageRule)
+      && parseNativeRule(input, resourceBudget)?.kind === "import"
+    ) {
       throw new DOMException(
         "@import rules cannot be inserted inside a group rule.",
         "HierarchyRequestError",
@@ -404,6 +528,7 @@ export class CSSGroupingRule extends CSSRule {
       ruleDiagnostics.get(this) ?? ignoreDiagnostic,
       false,
       this,
+      resourceBudget,
     );
     if (!rule) throw new DOMException("The rule could not be parsed.", "SyntaxError");
 
@@ -415,8 +540,10 @@ export class CSSGroupingRule extends CSSRule {
       rule.selectorText = `& ${rule.selectorText}`;
     }
 
+    const insertedCount = assertRuleInsertionBudget(this, rule, resourceBudget);
     rules.splice(normalizedIndex, 0, rule);
     attachRuleTree(rule, this, this.parentStyleSheet);
+    adjustSheetRuleCount(this.parentStyleSheet, insertedCount);
     return normalizedIndex;
   }
 
@@ -428,7 +555,11 @@ export class CSSGroupingRule extends CSSRule {
       throw new DOMException("The index is outside the allowed range.", "IndexSizeError");
     }
     const [removed] = rules.splice(normalizedIndex, 1);
-    if (removed) attachRuleTree(removed, null, null);
+    if (removed) {
+      const removedCount = ruleForestSize([removed]);
+      adjustSheetRuleCount(this.parentStyleSheet, -removedCount);
+      attachRuleTree(removed, null, null);
+    }
   }
 
   protected serializeGroup(header: string): string {
@@ -442,7 +573,10 @@ export class CSSGroupingRule extends CSSRule {
 export class CSSConditionRule extends CSSGroupingRule {
   readonly #conditionText: string;
 
-  protected constructor(type: number, conditionText: string) {
+  protected constructor(
+    type: number,
+    conditionText: string,
+  ) {
     super(type);
     this.#conditionText = conditionText;
   }
@@ -552,7 +686,10 @@ export class CSSContainerRule extends CSSConditionRule {
   readonly containerQuery: string;
 
   constructor(conditionText: string) {
-    const parsed = parseContainerPrelude(conditionText);
+    const parsed = parseContainerPrelude(
+      conditionText,
+      currentConstructionResourceBudget(),
+    );
     const normalizedCondition = parsed?.conditionText ?? conditionText.trim();
     super(0, normalizedCondition);
     this.containerName = parsed?.name ?? "";
@@ -609,7 +746,10 @@ export class CSSScopeRule extends CSSGroupingRule {
   readonly start: string | null;
   readonly end: string | null;
 
-  constructor(start: string | null, end: string | null) {
+  constructor(
+    start: string | null,
+    end: string | null,
+  ) {
     super(0);
     this.start = start;
     this.end = end;
@@ -693,7 +833,11 @@ export class CSSNamespaceRule extends CSSRule {
   readonly prefix: string;
   readonly #cssText: string;
 
-  constructor(namespaceURI: string, prefix: string, cssText: string) {
+  constructor(
+    namespaceURI: string,
+    prefix: string,
+    cssText: string,
+  ) {
     super(CSSRule.NAMESPACE_RULE);
     this.namespaceURI = namespaceURI;
     this.prefix = prefix;
@@ -711,7 +855,10 @@ export class CSSNamespaceRule extends CSSRule {
 class CSSGenericRule extends CSSRule {
   readonly #cssText: string;
 
-  constructor(type: number, cssText: string) {
+  constructor(
+    type: number,
+    cssText: string,
+  ) {
     super(type);
     this.#cssText = cssText;
   }
@@ -790,7 +937,11 @@ export class CSSViewTransitionRule extends CSSRule {
   readonly types: readonly string[];
   readonly #cssText: string;
 
-  constructor(navigation: string, types: readonly string[], cssText: string) {
+  constructor(
+    navigation: string,
+    types: readonly string[],
+    cssText: string,
+  ) {
     super(0);
     this.navigation = navigation;
     this.types = Object.freeze([...types]);
@@ -844,6 +995,7 @@ export class CSSStyleDeclaration {
         : parentRule instanceof CSSFunctionDeclarations
           ? "function"
           : "style",
+      ruleResourceBudgets.get(parentRule) ?? defaultResourceBudget,
     );
 
     return new Proxy(this, {
@@ -1138,11 +1290,18 @@ export class CSSKeyframesRule extends CSSRule {
 
   appendRule(ruleText: string): void {
     requireArguments(arguments.length, 1, "CSSKeyframesRule", "appendRule");
-    const parsed = parseKeyframeRule(`${ruleText}`, ruleDiagnostics.get(this) ?? ignoreDiagnostic);
+    const parsed = parseKeyframeRule(
+      `${ruleText}`,
+      ruleDiagnostics.get(this) ?? ignoreDiagnostic,
+      ruleResourceBudgets.get(this) ?? defaultResourceBudget,
+    );
     if (!parsed) return;
     const rules = ruleTree.children(this);
+    const resourceBudget = ruleResourceBudgets.get(this) ?? defaultResourceBudget;
+    const insertedCount = assertRuleInsertionBudget(this, parsed, resourceBudget);
     rules.push(parsed);
     attachRuleTree(parsed, this, this.parentStyleSheet);
+    adjustSheetRuleCount(this.parentStyleSheet, insertedCount);
   }
 
   deleteRule(select: string): void {
@@ -1159,7 +1318,10 @@ export class CSSKeyframesRule extends CSSRule {
     }
     if (index === -1) return;
     const [removed] = rules.splice(index, 1);
-    if (removed) attachRuleTree(removed, null, null);
+    if (removed) {
+      adjustSheetRuleCount(this.parentStyleSheet, -1);
+      attachRuleTree(removed, null, null);
+    }
   }
 
   findRule(select: string): CSSKeyframeRule | null {
@@ -1204,14 +1366,20 @@ export class CSSCounterStyleRule extends CSSRule {
 
   constructor(name: string) {
     super(CSSRule.COUNTER_STYLE_RULE);
-    const parsed = parseNativeCounterStyleName(name);
+    const parsed = parseNativeCounterStyleName(
+      name,
+      currentConstructionResourceBudget(),
+    );
     this.#name = parsed?.name ?? name;
     this.#serializedName = parsed?.serialized ?? name;
   }
 
   get name(): string { return this.#name; }
   set name(value: string) {
-    const parsed = parseNativeCounterStyleName(`${value}`);
+    const parsed = parseNativeCounterStyleName(
+      `${value}`,
+      ruleResourceBudgets.get(this) ?? defaultResourceBudget,
+    );
     if (!parsed) return;
     this.#name = parsed.name;
     this.#serializedName = parsed.serialized;
@@ -1244,7 +1412,11 @@ export class CSSCounterStyleRule extends CSSRule {
 
   #set(name: string, value: string): void {
     const text = `${value}`;
-    const parsed = parseNativeCounterStyleDescriptor(name, text);
+    const parsed = parseNativeCounterStyleDescriptor(
+      name,
+      text,
+      ruleResourceBudgets.get(this) ?? defaultResourceBudget,
+    );
     if (!parsed) return;
     this.#descriptors.set(name, parsed);
   }
@@ -1413,7 +1585,11 @@ export class CSSStyleRule extends CSSGroupingRule {
 
   constructor(selectorText: string) {
     super(CSSRule.STYLE_RULE);
-    this.#selectorText = normalizeSelectorText(`${selectorText}`) ?? `${selectorText}`;
+    this.#selectorText = normalizeSelectorText(
+      `${selectorText}`,
+      currentConstructionResourceBudget(),
+    )
+      ?? `${selectorText}`;
     this.style = new CSSStyleDeclaration(this);
     lockOwnProperties(this, "style");
   }
@@ -1423,7 +1599,10 @@ export class CSSStyleRule extends CSSGroupingRule {
   }
 
   set selectorText(value: string) {
-    const normalized = normalizeSelectorText(`${value}`);
+    const normalized = normalizeSelectorText(
+      `${value}`,
+      ruleResourceBudgets.get(this) ?? defaultResourceBudget,
+    );
     if (normalized === null) return;
     this.#selectorText = normalized;
   }
@@ -1450,10 +1629,16 @@ export class CSSStyleRule extends CSSGroupingRule {
 function parseKeyframeRule(
   ruleText: string,
   reportDiagnostic: ReportDiagnostic,
+  resourceBudget: NativeResourceBudget,
 ): CSSKeyframeRule | null {
-  const keyframes = parseNativeRule(`@keyframes sheetom { ${ruleText} }`);
+  const keyframes = parseNativeRule(`@keyframes sheetom { ${ruleText} }`, resourceBudget);
   if (keyframes?.kind !== "keyframes" || keyframes.children.length !== 1) return null;
-  const frame = createRuleFromNative(keyframes.children[0]!, reportDiagnostic, false);
+  const frame = createRuleFromNative(
+    keyframes.children[0]!,
+    reportDiagnostic,
+    false,
+    resourceBudget,
+  );
   return frame instanceof CSSKeyframeRule ? frame : null;
 }
 
@@ -1551,8 +1736,11 @@ function groupingRuleHeader(rule: CSSGroupingRule): string {
   return blockIndex === -1 ? rule.cssText : rule.cssText.slice(0, blockIndex).trimEnd();
 }
 
-function parseScopePrelude(prelude: string): [string | null, string | null] {
-  const parsed = parseNativeScopePrelude(prelude);
+function parseScopePrelude(
+  prelude: string,
+  resourceBudget: NativeResourceBudget,
+): [string | null, string | null] {
+  const parsed = parseNativeScopePrelude(prelude, resourceBudget);
   return parsed ? [parsed.start, parsed.end] : [null, null];
 }
 
@@ -1600,9 +1788,16 @@ function createRuleFromNative(
   description: NativeRuleDescription,
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
+  resourceBudget: NativeResourceBudget,
 ): CSSRule | null {
-  return constructInternally(() =>
-    createRuleFromNativeInternal(description, reportDiagnostic, preserveImports),
+  return constructWithResourceBudget(() =>
+    createRuleFromNativeInternal(
+      description,
+      reportDiagnostic,
+      preserveImports,
+      resourceBudget,
+    ),
+    resourceBudget,
   );
 }
 
@@ -1610,6 +1805,7 @@ function createRuleFromNativeInternal(
   description: NativeRuleDescription,
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
+  resourceBudget: NativeResourceBudget,
 ): CSSRule | null {
   let rule: CSSRule;
   switch (description.kind) {
@@ -1618,7 +1814,12 @@ function createRuleFromNativeInternal(
       style.style.cssText = description.declarations;
       replaceGroupingRules(
         style,
-        createNativeChildren(description, reportDiagnostic, preserveImports),
+        createNativeChildren(
+          description,
+          reportDiagnostic,
+          preserveImports,
+          resourceBudget,
+        ),
       );
       rule = style;
       break;
@@ -1642,7 +1843,12 @@ function createRuleFromNativeInternal(
         .replace(/;\s*$/u, "");
       const parsed = parseImportPrelude(prelude);
       if (!parsed) return null;
-      rule = new CSSImportRule(parsed.href, parsed.media, parsed.layer, parsed.supports);
+      rule = new CSSImportRule(
+        parsed.href,
+        parsed.media,
+        parsed.layer,
+        parsed.supports,
+      );
       break;
     }
     case "font-face": {
@@ -1656,7 +1862,12 @@ function createRuleFromNativeInternal(
       page.style.cssText = description.declarations;
       replaceGroupingRules(
         page,
-        createNativeChildren(description, reportDiagnostic, preserveImports),
+        createNativeChildren(
+          description,
+          reportDiagnostic,
+          preserveImports,
+          resourceBudget,
+        ),
       );
       rule = page;
       break;
@@ -1679,6 +1890,7 @@ function createRuleFromNativeInternal(
         description,
         reportDiagnostic,
         preserveImports,
+        resourceBudget,
       ).filter((candidate): candidate is CSSKeyframeRule => candidate instanceof CSSKeyframeRule);
       replaceKeyframeRules(keyframes, frames);
       rule = keyframes;
@@ -1692,12 +1904,18 @@ function createRuleFromNativeInternal(
     }
     case "counter-style": {
       const counterStyle = new CSSCounterStyleRule(description.prelude);
-      hydrateCounterStyleDescriptors(counterStyle, description.declarations);
+      hydrateCounterStyleDescriptors(
+        counterStyle,
+        description.declarations,
+        resourceBudget,
+      );
       rule = counterStyle;
       break;
     }
     case "font-feature-values": {
-      const featureValues = new CSSFontFeatureValuesRule(description.prelude);
+      const featureValues = new CSSFontFeatureValuesRule(
+        description.prelude,
+      );
       for (const mapDescription of description.children) {
         if (mapDescription.kind !== "font-feature-map") continue;
         const map = featureValues.featureMap(mapDescription.prelude);
@@ -1782,7 +2000,7 @@ function createRuleFromNativeInternal(
       rule = new CSSLayerBlockRule(description.prelude);
       break;
     case "scope": {
-      const [start, end] = parseScopePrelude(description.prelude);
+      const [start, end] = parseScopePrelude(description.prelude, resourceBudget);
       rule = new CSSScopeRule(start, end);
       break;
     }
@@ -1811,7 +2029,12 @@ function createRuleFromNativeInternal(
   ) {
     replaceGroupingRules(
       rule,
-      createNativeChildren(description, reportDiagnostic, preserveImports),
+      createNativeChildren(
+        description,
+        reportDiagnostic,
+        preserveImports,
+        resourceBudget,
+      ),
     );
   }
   return rule;
@@ -1826,8 +2049,12 @@ function nativeRuleDescriptor(description: NativeRuleDescription, name: string):
 function hydrateCounterStyleDescriptors(
   rule: CSSCounterStyleRule,
   declarations: string,
+  resourceBudget: NativeResourceBudget,
 ): void {
-  for (const descriptor of parseNativeCounterStyleDescriptors(declarations)) {
+  for (const descriptor of parseNativeCounterStyleDescriptors(
+    declarations,
+    resourceBudget,
+  )) {
     rule.setParsedDescriptor(descriptor.name, descriptor.value);
   }
 }
@@ -1836,6 +2063,7 @@ function createNativeChildren(
   description: NativeRuleDescription,
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
+  resourceBudget: NativeResourceBudget,
 ): CSSRule[] {
   const children: CSSRule[] = [];
   for (const child of description.children) {
@@ -1845,7 +2073,12 @@ function createNativeChildren(
       || child.kind === "view-transition-type"
       || child.kind === "layer-name"
     ) continue;
-    const rule = createRuleFromNative(child, reportDiagnostic, preserveImports);
+    const rule = createRuleFromNative(
+      child,
+      reportDiagnostic,
+      preserveImports,
+      resourceBudget,
+    );
     if (rule instanceof CSSFunctionDeclarations && rule.style.length === 0) continue;
     if (rule) children.push(rule);
   }
@@ -1857,20 +2090,31 @@ function parseStrictRule(
   reportDiagnostic: ReportDiagnostic,
   preserveImports = false,
   parentRule: CSSGroupingRule | null = null,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): CSSRule | null {
   if (parentRule instanceof CSSPageRule) {
-    const page = parseNativeRule(`@page { ${ruleText} }`);
+    const page = parseNativeRule(`@page { ${ruleText} }`, resourceBudget);
     if (page?.kind !== "page" || page.children.length !== 1) return null;
     const child = page.children[0];
     if (!child || child.kind !== "margin" || !pageMarginRuleNames.has(child.prelude)) return null;
-    return createRuleFromNative(child, reportDiagnostic, preserveImports);
+    return createRuleFromNative(
+      child,
+      reportDiagnostic,
+      preserveImports,
+      resourceBudget,
+    );
   }
-  const description = parseNativeRule(ruleText)
+  const description = parseNativeRule(ruleText, resourceBudget)
     ?? (parentRule && hasFunctionAncestor(parentRule)
-      ? parseNativeRuleWithErrorRecovery(ruleText)
+      ? parseNativeRuleWithErrorRecovery(ruleText, resourceBudget)
       : null);
   if (!description || (description.kind === "import" && !preserveImports)) return null;
-  return createRuleFromNative(description, reportDiagnostic, preserveImports);
+  return createRuleFromNative(
+    description,
+    reportDiagnostic,
+    preserveImports,
+    resourceBudget,
+  );
 }
 
 function hasFunctionAncestor(rule: CSSRule): boolean {
@@ -1908,16 +2152,32 @@ function parseStyleSheetRules(
   cssText: string,
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
+  resourceBudget: NativeResourceBudget,
 ): CSSRule[] {
   const rules: CSSRule[] = [];
-  for (const rawRule of scanTopLevelRules(cssText)) {
-    const rule = parseStrictRule(rawRule, reportDiagnostic, preserveImports);
+  let parsedRuleCount = 0;
+  for (const rawRule of scanTopLevelRules(cssText, resourceBudget)) {
+    const rule = parseStrictRule(
+      rawRule,
+      reportDiagnostic,
+      preserveImports,
+      null,
+      resourceBudget,
+    );
     if (rule) {
+      parsedRuleCount += ruleForestSize([rule]);
+      assertRuleCountBudget(parsedRuleCount, resourceBudget);
       rules.push(rule);
       continue;
     }
     if (!preserveImports) continue;
-    rules.push(constructInternally(() => new CSSOpaqueRule(0, rawRule)));
+    const opaque = constructWithResourceBudget(
+      () => new CSSOpaqueRule(0, rawRule),
+      resourceBudget,
+    );
+    parsedRuleCount += 1;
+    assertRuleCountBudget(parsedRuleCount, resourceBudget);
+    rules.push(opaque);
   }
 
   return rules;
@@ -1940,6 +2200,10 @@ export class CSSStyleSheet {
 
   constructor(options: CSSStyleSheetOptions | null = {}) {
     const normalizedOptions = options ?? {};
+    const resourceBudget = normalizeResourceBudget(normalizedOptions.resourceBudget);
+    sheetResourceBudgets.set(this, resourceBudget);
+    sheetRuleArrays.set(this, this.#rules);
+    sheetRuleCounts.set(this, 0);
     this.#diagnostics = Boolean(normalizedOptions.diagnostics) ? [] : null;
     this.#constructedBaseURL = normalizedOptions.baseURL === undefined
       ? "about:blank"
@@ -1947,7 +2211,10 @@ export class CSSStyleSheet {
     const media = normalizedOptions.media === undefined
       ? ""
       : `${normalizedOptions.media}`;
-    this.media = constructInternally(() => new MediaList(media));
+    this.media = constructWithResourceBudget(
+      () => new MediaList(media),
+      resourceBudget,
+    );
     this.disabled = Boolean(normalizedOptions.disabled);
     this.cssRules = constructInternally(() => new CSSRuleList(this.#rules));
     lockOwnProperties(
@@ -1982,7 +2249,14 @@ export class CSSStyleSheet {
     }
 
     const regular = regularSheetMetadata.has(this);
-    const rule = parseStrictRule(`${ruleText}`, this.#reportDiagnostic, regular);
+    const resourceBudget = sheetResourceBudgets.get(this) ?? defaultResourceBudget;
+    const rule = parseStrictRule(
+      `${ruleText}`,
+      this.#reportDiagnostic,
+      regular,
+      null,
+      resourceBudget,
+    );
     if (!rule) throw new DOMException("The rule could not be parsed.", "SyntaxError");
 
     const precedingRules = this.#rules.slice(0, normalizedIndex);
@@ -1994,8 +2268,10 @@ export class CSSStyleSheet {
       throw new DOMException("The rule violates stylesheet ordering.", "HierarchyRequestError");
     }
 
+    const insertedCount = assertRuleInsertionBudget(this, rule, resourceBudget);
     attachRuleTree(rule, null, this);
     this.#rules.splice(normalizedIndex, 0, rule);
+    adjustSheetRuleCount(this, insertedCount);
     return normalizedIndex;
   }
 
@@ -2008,6 +2284,7 @@ export class CSSStyleSheet {
 
     const [removed] = this.#rules.splice(normalizedIndex, 1);
     if (!removed) return;
+    adjustSheetRuleCount(this, -ruleForestSize([removed]));
     attachRuleTree(removed, null, null);
   }
 
@@ -2017,6 +2294,7 @@ export class CSSStyleSheet {
       `${cssText}`,
       this.#reportDiagnostic,
       regularSheetMetadata.has(this),
+      sheetResourceBudgets.get(this) ?? defaultResourceBudget,
     );
 
     for (const rule of this.#rules) {
@@ -2025,6 +2303,7 @@ export class CSSStyleSheet {
     for (const rule of replacement) attachRuleTree(rule, null, this);
 
     this.#rules.splice(0, this.#rules.length, ...replacement);
+    sheetRuleCounts.set(this, ruleForestSize(replacement));
   }
 
   async replace(cssText: string): Promise<CSSStyleSheet> {

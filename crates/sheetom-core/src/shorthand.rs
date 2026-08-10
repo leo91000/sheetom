@@ -1,12 +1,12 @@
 use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
-    inspect_property,
+    inspect_property, inspect_property_with_limits,
     observable::{serialize_observable_value, ObservableCategory},
     sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
     value_grammar::parse_browser_grammar_gap,
-    EngineError, PropertyParseKind,
+    EngineError, PropertyParseKind, ResourceLimits,
 };
 use lightningcss::{
     declaration::DeclarationBlock,
@@ -783,6 +783,15 @@ pub(crate) fn parse_value(
     value: &str,
     important: bool,
 ) -> Result<ParsedValue, MutationOutcome> {
+    parse_value_with_limits(name, value, important, ResourceLimits::default())
+}
+
+pub(crate) fn parse_value_with_limits(
+    name: &str,
+    value: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Result<ParsedValue, MutationOutcome> {
     let substitutions = analyze_substitutions(value);
     if !substitutions.valid {
         return Err(MutationOutcome::InvalidValue);
@@ -891,7 +900,7 @@ pub(crate) fn parse_value(
         });
     }
 
-    let inspection = inspect_property(name, value);
+    let inspection = inspect_property_with_limits(name, value, limits);
     if !inspection.as_ref().is_ok_and(|candidate| {
         matches!(
             candidate.kind,

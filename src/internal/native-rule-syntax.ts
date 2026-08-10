@@ -1,4 +1,10 @@
 import { nativeBinding } from "./native-binding.js";
+import {
+  defaultResourceBudget,
+  nativeBudgetArguments,
+  rethrowResourceBudgetError,
+  type NativeResourceBudget,
+} from "./resource-budget.js";
 
 export interface NativeContainerPrelude {
   conditionText: string;
@@ -11,20 +17,44 @@ export interface NativeScopePrelude {
   end: string | null;
 }
 
-export function normalizeNativeSelector(source: string): string | null {
-  return callNative(() => nativeBinding.normalizeSelector(source));
+export function normalizeNativeSelector(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): string | null {
+  return callNative(() => nativeBinding.normalizeSelector(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
 }
 
-export function normalizeNativeMedia(source: string): string | null {
-  return callNative(() => nativeBinding.normalizeMedia(source));
+export function normalizeNativeMedia(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): string | null {
+  return callNative(() => nativeBinding.normalizeMedia(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
 }
 
-export function normalizeNativeSupports(source: string): string | null {
-  return callNative(() => nativeBinding.normalizeSupports(source));
+export function normalizeNativeSupports(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): string | null {
+  return callNative(() => nativeBinding.normalizeSupports(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
 }
 
-export function parseNativeContainerPrelude(source: string): NativeContainerPrelude | null {
-  const parsed = callNative(() => nativeBinding.parseContainerPreludeJson(source));
+export function parseNativeContainerPrelude(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): NativeContainerPrelude | null {
+  const parsed = callNative(() => nativeBinding.parseContainerPreludeJson(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
   if (parsed === null) return null;
   try {
     const value: unknown = JSON.parse(parsed);
@@ -41,8 +71,14 @@ export function parseNativeContainerPrelude(source: string): NativeContainerPrel
   }
 }
 
-export function parseNativeScopePrelude(source: string): NativeScopePrelude | null {
-  const parsed = callNative(() => nativeBinding.parseScopePreludeJson(source));
+export function parseNativeScopePrelude(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): NativeScopePrelude | null {
+  const parsed = callNative(() => nativeBinding.parseScopePreludeJson(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
   if (parsed === null) return null;
   try {
     const value: unknown = JSON.parse(parsed);
@@ -61,7 +97,8 @@ export function parseNativeScopePrelude(source: string): NativeScopePrelude | nu
 function callNative(operation: () => string): string | null {
   try {
     return operation();
-  } catch {
+  } catch (error) {
+    rethrowResourceBudgetError(error);
     return null;
   }
 }
