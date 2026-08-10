@@ -9,13 +9,15 @@ use lightningcss::{
 use crate::{
     analyze_recovered_substitutions,
     catalog::{property_grammar, PropertyGrammarOwner},
+    extension_value::parse_extension_value,
     recover_component_values_with_limits, EngineError, PropertyParseKind, RecoveredValue,
-    ResourceLimits, SemanticSubstitutionValue,
+    ResourceLimits, SemanticExtensionValue, SemanticSubstitutionValue,
 };
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SemanticPropertyValue {
     Standard(Property<'static>),
+    Extension(SemanticExtensionValue),
     PendingSubstitution(SemanticSubstitutionValue),
     CustomTokenStream,
 }
@@ -50,6 +52,7 @@ impl SemanticDeclaration {
             SemanticPropertyValue::Standard(property) => property
                 .value_to_css_string(PrinterOptions::default())
                 .map_err(|error| EngineError::Serialize(error.to_string())),
+            SemanticPropertyValue::Extension(value) => value.canonical_value(),
             SemanticPropertyValue::PendingSubstitution(_)
             | SemanticPropertyValue::CustomTokenStream => self.recovered.reparsable_css(),
         }
@@ -90,7 +93,39 @@ pub fn parse_semantic_property_with_limits(
         });
     }
 
-    parse_standard_with_recovered(grammar, source, recovered)
+    let standard = if grammar.has_standard_parser() {
+        match parse_standard_value(&grammar, source) {
+            Ok(value) => {
+                let parse_kind = if grammar.owner() == PropertyGrammarOwner::SheetomAlias {
+                    PropertyParseKind::SheetomTyped
+                } else {
+                    PropertyParseKind::Typed
+                };
+                return Ok(SemanticDeclaration {
+                    property_name: Arc::from(grammar.canonical_name()),
+                    value: SemanticPropertyValue::Standard(value),
+                    recovered,
+                    parse_kind,
+                });
+            }
+            Err(error) => Some(error),
+        }
+    } else {
+        None
+    };
+
+    if let Some(value) =
+        parse_extension_value(grammar.extensions(), grammar.canonical_name(), source)?
+    {
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::Extension(value),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        });
+    }
+
+    Err(standard.unwrap_or_else(|| unsupported_grammar_error(&grammar, source)))
 }
 
 pub fn parse_standard_semantic_property(
@@ -114,23 +149,10 @@ pub fn parse_standard_semantic_property_with_limits(
     )))
 }
 
-fn parse_standard_with_recovered(
-    grammar: crate::catalog::PropertyGrammar,
+fn parse_standard_value(
+    grammar: &crate::catalog::PropertyGrammar,
     source: &str,
-    recovered: RecoveredValue,
-) -> Result<SemanticDeclaration, EngineError> {
-    if !grammar.has_standard_parser() {
-        let requirement = if grammar.extensions().is_empty() {
-            "an unimplemented grammar"
-        } else {
-            "a SheetOM extension grammar"
-        };
-        return Err(EngineError::Parse(format!(
-            "property requires {requirement}: {}: {source}",
-            grammar.canonical_name()
-        )));
-    }
-
+) -> Result<Property<'static>, EngineError> {
     let property = Property::parse_string(
         PropertyId::from(grammar.parser_name()),
         source,
@@ -145,19 +167,22 @@ fn parse_standard_with_recovered(
         )));
     }
 
-    let parse_kind = if grammar.owner() == PropertyGrammarOwner::SheetomAlias {
-        PropertyParseKind::SheetomTyped
-    } else {
-        PropertyParseKind::Typed
-    };
-    let property = property.into_owned();
+    Ok(property.into_owned())
+}
 
-    Ok(SemanticDeclaration {
-        property_name: Arc::from(grammar.canonical_name()),
-        value: SemanticPropertyValue::Standard(property),
-        recovered,
-        parse_kind,
-    })
+fn unsupported_grammar_error(
+    grammar: &crate::catalog::PropertyGrammar,
+    source: &str,
+) -> EngineError {
+    let requirement = if grammar.extensions().is_empty() {
+        "an unimplemented grammar"
+    } else {
+        "a SheetOM extension grammar"
+    };
+    EngineError::Parse(format!(
+        "property requires {requirement}: {}: {source}",
+        grammar.canonical_name()
+    ))
 }
 
 #[cfg(test)]
@@ -225,6 +250,29 @@ mod tests {
                 parse_standard_semantic_property("grid-template-columns", source).is_err(),
                 "{source}"
             );
+        }
+    }
+
+    #[test]
+    fn falls_back_to_owned_layout_extension_values_after_standard_parsing() {
+        for (name, source, expected) in [
+            ("z-index", "calc(1 + 1)", "calc(2)"),
+            (
+                "offset-position",
+                "top 20px left 10px",
+                "left 10px top 20px",
+            ),
+            ("offset-rotate", "10deg reverse", "reverse 10deg"),
+            ("size", "landscape A4", "a4 landscape"),
+        ] {
+            let declaration = parse_semantic_property(name, source).unwrap();
+            assert_eq!(declaration.parse_kind(), PropertyParseKind::SheetomTyped);
+            assert!(matches!(
+                declaration.value(),
+                SemanticPropertyValue::Extension(_)
+            ));
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{name}");
+            assert!(parse_standard_semantic_property(name, source).is_err());
         }
     }
 
