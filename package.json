@@ -65,6 +65,8 @@
     "generate:shorthand-capabilities": "node scripts/generate-shorthand-capabilities.mjs --check",
     "generate:shorthand-grammar": "node scripts/generate-shorthand-grammar-observations.mjs --check",
     "native:build": "napi build --platform --release --package sheetom-native --manifest-path crates/sheetom-native/Cargo.toml --output-dir native --no-js --dts sheetom-native.d.ts",
+    "native:build:target": "node scripts/build-native-target.mjs",
+    "native:collect": "node scripts/collect-native-artifacts.mjs",
     "native:check": "cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
     "native:test": "npm run native:build && node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs && node scripts/test-native-crash-safety.mjs && node scripts/test-native-operation-fixtures.mjs",
     "native:browser-differential": "npm run native:build && node scripts/native-browser-differential.mjs",

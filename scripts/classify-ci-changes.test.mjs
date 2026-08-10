@@ -16,17 +16,19 @@ test("documentation changes run only documentation validation", () => {
     assert.deepEqual(classifyPaths(["README.md", "docs/api.md"]), { ...none, docs: true });
 });
 
-test("vendored source changes run only native validation", () => {
+test("vendored source changes rebuild native validation and package artifacts", () => {
     assert.deepEqual(classifyPaths(["vendor/lightningcss/src/lib.rs", "fuzz/fuzz_targets/declaration_block.rs"]), {
         ...none,
         native: true,
+        package: true,
     });
 });
 
-test("native shadow-engine changes run only native validation", () => {
+test("native engine changes rebuild native validation and package artifacts", () => {
     assert.deepEqual(classifyPaths(["crates/sheetom-native/src/lib.rs"]), {
         ...none,
         native: true,
+        package: true,
     });
 });
 
@@ -36,8 +38,16 @@ test("the generated native property catalog does not trigger browser jobs", () =
             "scripts/generate-native-property-catalog.mjs",
             "crates/sheetom-core/src/generated/chromium_properties.rs",
         ]),
-        { ...none, native: true },
+        { ...none, native: true, package: true },
     );
+});
+
+test("native packaging scripts rebuild the native matrix and package artifact", () => {
+    assert.deepEqual(classifyPaths(["scripts/collect-native-artifacts.mjs"]), {
+        ...none,
+        native: true,
+        package: true,
+    });
 });
 
 test("browser-backed grammar generators still run browser validation", () => {

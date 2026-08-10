@@ -18,7 +18,10 @@ const isNativePath = filePath =>
     filePath.startsWith("fuzz/") ||
     filePath.startsWith("native/") ||
     filePath.startsWith("vendor/lightningcss/") ||
-    filePath === "scripts/generate-native-property-catalog.mjs";
+    filePath === "scripts/generate-native-property-catalog.mjs" ||
+    filePath.startsWith("scripts/build-native-") ||
+    filePath.startsWith("scripts/collect-native-") ||
+    filePath.startsWith("scripts/test-native-");
 
 const isAutomationPath = filePath =>
     filePath.startsWith(".github/") ||
@@ -67,7 +70,7 @@ export function classifyPaths(filePaths, { forceFull = false } = {}) {
         browser: filePaths.some(isBrowserPath),
         docs: quality || filePaths.some(isDocumentationPath),
         native,
-        package: filePaths.some(isPackagePath),
+        package: native || filePaths.some(isPackagePath),
         performance: filePaths.some(isPerformancePath),
         quality,
     };
