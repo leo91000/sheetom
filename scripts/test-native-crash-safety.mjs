@@ -74,6 +74,22 @@ const crashCases = [
         declarationCount: 100_001,
         expectError: "SHEETOM_DECLARATION_LIMIT",
     },
+    {
+        name: "rule parser image-set",
+        mode: "rule",
+        source: '.x { background: image-set(url("a.png") 1x, url("b.png") 2x) center/cover no-repeat red; }',
+    },
+    {
+        name: "rule parser recovered stylesheet",
+        mode: "rule",
+        source: "@media screen { .x { padding: 72px var(--space, var(--space,; } }",
+    },
+    {
+        name: "rule parser nesting above the supported limit",
+        mode: "rule",
+        source: `${"@media all{".repeat(4097)}.x{color:red}${"}".repeat(4097)}`,
+        expectError: "SHEETOM_NESTING_LIMIT",
+    },
 ];
 
 for (const crashCase of crashCases) {

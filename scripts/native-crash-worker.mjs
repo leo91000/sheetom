@@ -17,14 +17,18 @@ if (crashCase.oversized) {
     source = "x:;".repeat(crashCase.declarationCount);
 }
 
+const execute = crashCase.mode === "rule"
+    ? () => binding.parseStylesheetTreeJson(source, true)
+    : () => binding.canonicalizeDeclarationBlock(source);
+
 if (crashCase.expectError) {
     assert.throws(
-        () => binding.canonicalizeDeclarationBlock(source),
+        execute,
         error => error instanceof Error && error.message.includes(crashCase.expectError),
     );
 } else {
-    assert.equal(typeof binding.canonicalizeDeclarationBlock(source), "string");
+    assert.equal(typeof execute(), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.3");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.4");
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

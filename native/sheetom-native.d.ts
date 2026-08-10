@@ -26,3 +26,9 @@ export declare function canonicalizeDeclarationBlock(source: string): string
 
 /** Identifies the exact parser baseline compiled into the native addon. */
 export declare function nativeEngineRevision(): string
+
+/** Parses exactly one rule and returns an owned, parser-independent JSON DTO. */
+export declare function parseRuleTreeJson(source: string): string
+
+/** Parses a stylesheet and returns owned, parser-independent JSON DTOs. */
+export declare function parseStylesheetTreeJson(source: string, errorRecovery: boolean): string
