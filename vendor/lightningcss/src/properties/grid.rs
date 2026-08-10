@@ -36,9 +36,168 @@ use crate::serialization::ValueWrapper;
 pub enum TrackSizing<'i> {
   /// No explicit grid tracks.
   None,
+  /// A subgrid that adopts the tracks of its parent grid.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  Subgrid(Subgrid<'i>),
   /// A list of grid tracks.
   #[cfg_attr(feature = "serde", serde(borrow))]
   TrackList(TrackList<'i>),
+}
+
+/// A [`subgrid`](https://drafts.csswg.org/css-grid-2/#subgrids) track list.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct Subgrid<'i> {
+  /// Optional line-name groups and repeated line-name groups.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  pub items: Vec<SubgridItem<'i>>,
+}
+
+/// A line-name component within a [`Subgrid`].
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum SubgridItem<'i> {
+  /// A single bracketed line-name group.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  LineNames(CustomIdentList<'i>),
+  /// A repeated sequence of bracketed line-name groups.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  Repeat(SubgridRepeat<'i>),
+}
+
+/// A repeated line-name sequence within a [`Subgrid`].
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct SubgridRepeat<'i> {
+  /// A positive repeat count, or `auto-fill`.
+  pub count: SubgridRepeatCount,
+  /// One or more bracketed line-name groups.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  pub line_names: Vec<CustomIdentList<'i>>,
+}
+
+/// The repeat count accepted by a [`SubgridRepeat`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum SubgridRepeatCount {
+  /// A positive integer repeat count.
+  Number(CSSInteger),
+  /// The `auto-fill` keyword.
+  AutoFill,
+}
+
+impl<'i> Parse<'i> for Subgrid<'i> {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.expect_ident_matching("subgrid")?;
+    let mut items = Vec::new();
+    while !input.is_exhausted() {
+      if let Ok(line_names) = input.try_parse(parse_line_names) {
+        items.push(SubgridItem::LineNames(line_names));
+        continue;
+      }
+      items.push(SubgridItem::Repeat(SubgridRepeat::parse(input)?));
+    }
+    Ok(Subgrid { items })
+  }
+}
+
+impl ToCss for Subgrid<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    dest.write_str("subgrid")?;
+    for item in &self.items {
+      dest.write_char(' ')?;
+      match item {
+        SubgridItem::LineNames(names) => serialize_line_names(names, dest)?,
+        SubgridItem::Repeat(repeat) => repeat.to_css(dest)?,
+      }
+    }
+    Ok(())
+  }
+}
+
+impl<'i> Parse<'i> for SubgridRepeat<'i> {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.expect_function_matching("repeat")?;
+    input.parse_nested_block(|input| {
+      let count = SubgridRepeatCount::parse(input)?;
+      input.expect_comma()?;
+      let mut line_names = Vec::new();
+      while !input.is_exhausted() {
+        line_names.push(parse_line_names(input)?);
+      }
+      if line_names.is_empty() {
+        return Err(input.new_custom_error(ParserError::InvalidValue));
+      }
+      Ok(SubgridRepeat { count, line_names })
+    })
+  }
+}
+
+impl ToCss for SubgridRepeat<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    dest.write_str("repeat(")?;
+    self.count.to_css(dest)?;
+    dest.delim(',', false)?;
+    for (index, names) in self.line_names.iter().enumerate() {
+      if index > 0 {
+        dest.write_char(' ')?;
+      }
+      serialize_line_names(names, dest)?;
+    }
+    dest.write_char(')')
+  }
+}
+
+impl<'i> Parse<'i> for SubgridRepeatCount {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("auto-fill")).is_ok() {
+      return Ok(SubgridRepeatCount::AutoFill);
+    }
+    let location = input.current_source_location();
+    let integer = input.expect_integer()?;
+    if integer <= 0 {
+      return Err(location.new_custom_error(ParserError::InvalidValue));
+    }
+    Ok(SubgridRepeatCount::Number(integer))
+  }
+}
+
+impl ToCss for SubgridRepeatCount {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      SubgridRepeatCount::Number(number) => number.to_css(dest),
+      SubgridRepeatCount::AutoFill => dest.write_str("auto-fill"),
+    }
+  }
 }
 
 /// A [`<track-list>`](https://drafts.csswg.org/css-grid-2/#typedef-track-list) value,
@@ -371,11 +530,22 @@ fn parse_line_names<'i, 't>(
   input.expect_square_bracket_block()?;
   input.parse_nested_block(|input| {
     let mut values = SmallVec::new();
-    while let Ok(ident) = input.try_parse(CustomIdent::parse) {
+    while let Ok(ident) = input.try_parse(parse_grid_line_name) {
       values.push(ident)
     }
     Ok(values)
   })
+}
+
+fn parse_grid_line_name<'i, 't>(
+  input: &mut Parser<'i, 't>,
+) -> Result<CustomIdent<'i>, ParseError<'i, ParserError<'i>>> {
+  let location = input.current_source_location();
+  let ident = CustomIdent::parse(input)?;
+  if ident.0.eq_ignore_ascii_case("span") || ident.0.eq_ignore_ascii_case("auto") {
+    return Err(location.new_custom_error(ParserError::InvalidValue));
+  }
+  Ok(ident)
 }
 
 fn serialize_line_names<W>(names: &[CustomIdent], dest: &mut Printer<W>) -> Result<(), PrinterError>
@@ -492,6 +662,7 @@ impl<'i> TrackSizing<'i> {
   fn is_explicit(&self) -> bool {
     match self {
       TrackSizing::None => true,
+      TrackSizing::Subgrid(_) => false,
       TrackSizing::TrackList(list) => list.is_explicit(),
     }
   }
