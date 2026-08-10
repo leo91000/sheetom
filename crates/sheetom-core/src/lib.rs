@@ -8,6 +8,7 @@ compile_error!("sheetom-core must be compiled with panic=unwind");
 
 use lightningcss::{
     declaration::DeclarationBlock,
+    properties::{Property, PropertyId},
     stylesheet::{ParserOptions, PrinterOptions},
     traits::ToCss,
 };
@@ -29,6 +30,19 @@ pub enum EngineError {
     Parse(String),
     Serialize(String),
     UnexpectedPanic,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PropertyParseKind {
+    Typed,
+    Unparsed,
+    Custom,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PropertyInspection {
+    pub kind: PropertyParseKind,
+    pub canonical_value: String,
 }
 
 impl Display for EngineError {
@@ -168,6 +182,50 @@ fn canonicalize_unchecked(source: &str) -> Result<String, EngineError> {
         .map_err(|error| EngineError::Serialize(error.to_string()))
 }
 
+fn inspect_property_unchecked<'i>(
+    name: &'i str,
+    value: &'i str,
+) -> Result<PropertyInspection, EngineError> {
+    let property = Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
+        .map_err(|error| EngineError::Parse(error.to_string()))?;
+    let kind = match property {
+        Property::Unparsed(_) => PropertyParseKind::Unparsed,
+        Property::Custom(_) => PropertyParseKind::Custom,
+        _ => PropertyParseKind::Typed,
+    };
+    let canonical_value = property
+        .value_to_css_string(PrinterOptions::default())
+        .map_err(|error| EngineError::Serialize(error.to_string()))?;
+
+    Ok(PropertyInspection {
+        kind,
+        canonical_value,
+    })
+}
+
+#[doc(hidden)]
+pub fn inspect_property<'i>(
+    name: &'i str,
+    value: &'i str,
+) -> Result<PropertyInspection, EngineError> {
+    if value.len() > MAX_DECLARATION_BYTES {
+        return Err(EngineError::InputLimitExceeded {
+            actual: value.len(),
+            limit: MAX_DECLARATION_BYTES,
+        });
+    }
+
+    let metrics = scan_safety_metrics(value);
+    if metrics.maximum_depth > MAX_NESTING_DEPTH {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: metrics.maximum_depth,
+            limit: MAX_NESTING_DEPTH,
+        });
+    }
+
+    run_guarded(|| inspect_property_unchecked(name, value))
+}
+
 pub fn canonicalize_declaration_block(source: &str) -> Result<String, EngineError> {
     if source.len() > MAX_DECLARATION_BYTES {
         return Err(EngineError::InputLimitExceeded {
@@ -202,9 +260,9 @@ pub fn fuzz_declaration_block(source: &str) {
 #[cfg(test)]
 mod tests {
     use super::{
-        canonicalize_declaration_block, run_guarded, scan_safety_metrics, EngineError,
-        SafetyMetrics, ENGINE_REVISION, MAX_DECLARATIONS_PER_BLOCK, MAX_DECLARATION_BYTES,
-        MAX_NESTING_DEPTH,
+        canonicalize_declaration_block, inspect_property, run_guarded, scan_safety_metrics,
+        EngineError, PropertyInspection, PropertyParseKind, SafetyMetrics, ENGINE_REVISION,
+        MAX_DECLARATIONS_PER_BLOCK, MAX_DECLARATION_BYTES, MAX_NESTING_DEPTH,
     };
 
     #[test]
@@ -221,6 +279,29 @@ mod tests {
 
         assert!(css.contains("image-set("));
         assert!(css.contains("background:"));
+    }
+
+    #[test]
+    fn distinguishes_typed_unparsed_and_unknown_properties() {
+        assert_eq!(
+            inspect_property("background-position", "left 10px top 20px"),
+            Ok(PropertyInspection {
+                kind: PropertyParseKind::Typed,
+                canonical_value: "10px 20px".into(),
+            })
+        );
+        assert_eq!(
+            inspect_property("animation", "auto ease 1s foo")
+                .expect("known grammar should remain recoverable")
+                .kind,
+            PropertyParseKind::Unparsed,
+        );
+        assert_eq!(
+            inspect_property("row-rule", "2px dashed red")
+                .expect("unknown grammar should remain recoverable")
+                .kind,
+            PropertyParseKind::Custom,
+        );
     }
 
     #[test]
