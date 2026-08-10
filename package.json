@@ -32,6 +32,7 @@
   },
   "files": [
     "dist",
+    "native",
     "compatibility/baselines",
     "compatibility/schemas",
     "compatibility/native-grammar-inventory.json",
@@ -65,7 +66,7 @@
     "generate:shorthand-grammar": "node scripts/generate-shorthand-grammar-observations.mjs --check",
     "native:build": "napi build --platform --release --package sheetom-native --manifest-path crates/sheetom-native/Cargo.toml --output-dir native --no-js --dts sheetom-native.d.ts",
     "native:check": "cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
-    "native:test": "npm run native:build && node scripts/test-native-foundation.mjs && node scripts/test-native-crash-safety.mjs && node scripts/test-native-operation-fixtures.mjs",
+    "native:test": "npm run native:build && node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs && node scripts/test-native-crash-safety.mjs && node scripts/test-native-operation-fixtures.mjs",
     "native:browser-differential": "npm run native:build && node scripts/native-browser-differential.mjs",
     "wpt:paths": "node scripts/list-wpt-paths.mjs",
     "benchmark": "npm run build && node scripts/benchmark.mjs",
@@ -113,7 +114,11 @@
     "targets": [
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-musl",
       "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc",
+      "x86_64-apple-darwin",
       "aarch64-apple-darwin"
     ]
   }
