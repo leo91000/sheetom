@@ -51,7 +51,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.9";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.10";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -377,7 +377,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.9");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.10");
     }
 
     #[test]

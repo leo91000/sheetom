@@ -499,6 +499,26 @@ export class CSSContainerRule extends CSSConditionRule {
   set cssText(_value: string) {}
 }
 
+/** An immutable statement-form `@layer` rule. */
+export class CSSLayerStatementRule extends CSSRule {
+  readonly #names: readonly string[];
+
+  constructor(names: readonly string[]) {
+    super(0);
+    this.#names = [...names];
+  }
+
+  get nameList(): readonly string[] {
+    return Object.freeze([...this.#names]);
+  }
+
+  override get cssText(): string {
+    return `@layer ${this.#names.join(", ")};`;
+  }
+
+  set cssText(_value: string) {}
+}
+
 /** A live block-form `@layer` rule. */
 export class CSSLayerBlockRule extends CSSGroupingRule {
   readonly name: string;
@@ -599,6 +619,27 @@ export class CSSImportRule extends CSSRule {
   set cssText(_value: string) {}
 }
 
+/** An immutable `@namespace` rule. */
+export class CSSNamespaceRule extends CSSRule {
+  readonly namespaceURI: string;
+  readonly prefix: string;
+  readonly #cssText: string;
+
+  constructor(namespaceURI: string, prefix: string, cssText: string) {
+    super(CSSRule.NAMESPACE_RULE);
+    this.namespaceURI = namespaceURI;
+    this.prefix = prefix;
+    this.#cssText = cssText;
+    lockOwnProperties(this, "namespaceURI", "prefix");
+  }
+
+  override get cssText(): string {
+    return this.#cssText;
+  }
+
+  set cssText(_value: string) {}
+}
+
 class CSSGenericRule extends CSSRule {
   readonly #cssText: string;
 
@@ -641,6 +682,58 @@ export class CSSPropertyRule extends CSSRule {
   }
 
   override get cssText(): string { return this.#cssText; }
+  set cssText(_value: string) {}
+}
+
+/** An immutable `@font-palette-values` rule. */
+export class CSSFontPaletteValuesRule extends CSSRule {
+  readonly name: string;
+  readonly fontFamily: string;
+  readonly basePalette: string;
+  readonly overrideColors: string;
+  readonly #cssText: string;
+
+  constructor(
+    name: string,
+    fontFamily: string,
+    basePalette: string,
+    overrideColors: string,
+    cssText: string,
+  ) {
+    super(0);
+    this.name = name;
+    this.fontFamily = fontFamily;
+    this.basePalette = basePalette;
+    this.overrideColors = overrideColors;
+    this.#cssText = cssText;
+    lockOwnProperties(this, "name", "fontFamily", "basePalette", "overrideColors");
+  }
+
+  override get cssText(): string {
+    return this.#cssText;
+  }
+
+  set cssText(_value: string) {}
+}
+
+/** An immutable `@view-transition` rule. */
+export class CSSViewTransitionRule extends CSSRule {
+  readonly navigation: string;
+  readonly types: readonly string[];
+  readonly #cssText: string;
+
+  constructor(navigation: string, types: readonly string[], cssText: string) {
+    super(0);
+    this.navigation = navigation;
+    this.types = Object.freeze([...types]);
+    this.#cssText = cssText;
+    lockOwnProperties(this, "navigation", "types");
+  }
+
+  override get cssText(): string {
+    return this.#cssText;
+  }
+
   set cssText(_value: string) {}
 }
 
@@ -1487,17 +1580,36 @@ function createRuleFromNativeInternal(
       break;
     }
     case "property": {
-      const descriptor = (name: string): string => description.children
-        .find(candidate => candidate.kind === "property-descriptor" && candidate.prelude === name)
-        ?.declarations ?? "";
       return new CSSPropertyRule(
         description.prelude,
-        descriptor("syntax"),
-        descriptor("inherits") === "true",
-        descriptor("initial-value"),
+        nativeRuleDescriptor(description, "syntax"),
+        nativeRuleDescriptor(description, "inherits") === "true",
+        nativeRuleDescriptor(description, "initial-value"),
         description.cssText,
       );
     }
+    case "font-palette-values":
+      return new CSSFontPaletteValuesRule(
+        description.prelude,
+        nativeRuleDescriptor(description, "font-family"),
+        nativeRuleDescriptor(description, "base-palette"),
+        nativeRuleDescriptor(description, "override-colors"),
+        description.cssText,
+      );
+    case "view-transition":
+      return new CSSViewTransitionRule(
+        nativeRuleDescriptor(description, "navigation"),
+        description.children
+          .filter(candidate => candidate.kind === "view-transition-type")
+          .map(candidate => candidate.prelude),
+        description.cssText,
+      );
+    case "namespace":
+      return new CSSNamespaceRule(
+        nativeRuleDescriptor(description, "namespace-uri"),
+        nativeRuleDescriptor(description, "prefix"),
+        description.cssText,
+      );
     case "media":
       rule = new CSSMediaRule(description.prelude);
       break;
@@ -1519,13 +1631,10 @@ function createRuleFromNativeInternal(
       rule = new CSSStartingStyleRule();
       break;
     case "layer-statement": {
-      const names = description.cssText
-        .replace(/^@layer\s+/iu, "")
-        .replace(/;\s*$/u, "")
-        .split(",")
-        .map(name => name.trim())
-        .join(", ");
-      return new CSSGenericRule(0, `@layer ${names};`);
+      const names = description.children
+        .filter(candidate => candidate.kind === "layer-name")
+        .map(candidate => candidate.prelude);
+      return new CSSLayerStatementRule(names);
     }
     default:
       return new CSSGenericRule(
@@ -1547,6 +1656,12 @@ function createRuleFromNativeInternal(
     );
   }
   return rule;
+}
+
+function nativeRuleDescriptor(description: NativeRuleDescription, name: string): string {
+  return description.children
+    .find(candidate => candidate.kind === "property-descriptor" && candidate.prelude === name)
+    ?.declarations ?? "";
 }
 
 function hydrateCounterStyleDescriptors(
