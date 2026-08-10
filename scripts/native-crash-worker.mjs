@@ -26,5 +26,5 @@ if (crashCase.expectError) {
     assert.equal(typeof binding.canonicalizeDeclarationBlock(source), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.2");
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

@@ -3275,7 +3275,7 @@ export type Declaration =
     }
   | {
       property: "font";
-      value: Font;
+      value: FontShorthand;
     }
   | {
       property: "vertical-align";
@@ -3317,7 +3317,7 @@ export type Declaration =
     }
   | {
       property: "animation-duration";
-      value: Time[];
+      value: AnimationDuration[];
       vendorPrefix: VendorPrefix;
     }
   | {
@@ -5556,6 +5556,17 @@ export type AnimationIterationCount =
     }
   | {
       type: "infinite";
+    };
+/**
+ * A value for the [animation-duration](https://drafts.csswg.org/css-animations-2/#animation-duration) property.
+ */
+export type AnimationDuration =
+  | {
+      type: "auto";
+    }
+  | {
+      type: "time";
+      value: Time;
     };
 /**
  * A value for the [animation-direction](https://drafts.csswg.org/css-animations/#animation-direction) property.
@@ -8904,6 +8915,22 @@ export interface Font {
   weight: FontWeight;
 }
 /**
+ * A system font keyword accepted by the font shorthand.
+ */
+export type SystemFont = "caption" | "icon" | "menu" | "message-box" | "small-caption" | "status-bar";
+/**
+ * A value for the font shorthand.
+ */
+export type FontShorthand =
+  | {
+      type: "system";
+      value: SystemFont;
+    }
+  | {
+      type: "explicit";
+      value: Font;
+    };
+/**
  * A value for the [transition](https://www.w3.org/TR/2018/WD-css-transitions-1-20181011/#transition-shorthand-property) property.
  */
 export interface Transition {
@@ -8978,7 +9005,7 @@ export interface Animation {
   /**
    * The animation duration.
    */
-  duration: Time;
+  duration: AnimationDuration;
   /**
    * The animation fill mode.
    */

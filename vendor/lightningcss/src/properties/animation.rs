@@ -24,6 +24,62 @@ use smallvec::SmallVec;
 
 use super::{LengthPercentage, LengthPercentageOrAuto};
 
+/// A value for the [animation-duration](https://drafts.csswg.org/css-animations-2/#animation-duration)
+/// property.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum AnimationDuration {
+  /// The duration is determined by the animation timeline.
+  Auto,
+  /// An explicit time.
+  Time(Time),
+}
+
+impl Default for AnimationDuration {
+  fn default() -> Self {
+    Self::Time(Time::Seconds(0.0))
+  }
+}
+
+impl Zero for AnimationDuration {
+  fn zero() -> Self {
+    Self::default()
+  }
+
+  fn is_zero(&self) -> bool {
+    matches!(self, Self::Time(time) if time.is_zero())
+  }
+}
+
+impl<'i> Parse<'i> for AnimationDuration {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("auto")).is_ok() {
+      return Ok(Self::Auto);
+    }
+
+    Time::parse(input).map(Self::Time)
+  }
+}
+
+impl ToCss for AnimationDuration {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      Self::Auto => dest.write_str("auto"),
+      Self::Time(time) => time.to_css(dest),
+    }
+  }
+}
+
 /// A value for the [animation-name](https://drafts.csswg.org/css-animations/#animation-name) property.
 #[derive(Debug, Clone, PartialEq, Parse)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
@@ -588,7 +644,7 @@ define_list_shorthand! {
     #[cfg_attr(feature = "serde", serde(borrow))]
     name: AnimationName(AnimationName<'i>, VendorPrefix),
     /// The animation duration.
-    duration: AnimationDuration(Time, VendorPrefix),
+    duration: AnimationDuration(AnimationDuration, VendorPrefix),
     /// The easing function for the animation.
     timing_function: AnimationTimingFunction(EasingFunction, VendorPrefix),
     /// The number of times the animation will run.
@@ -630,7 +686,7 @@ impl<'i> Parse<'i> for Animation<'i> {
     }
 
     loop {
-      parse_prop!(duration, Time);
+      parse_prop!(duration, AnimationDuration);
       parse_prop!(timing_function, EasingFunction);
       parse_prop!(delay, Time);
       parse_prop!(iteration_count, AnimationIterationCount);
@@ -644,7 +700,7 @@ impl<'i> Parse<'i> for Animation<'i> {
 
     Ok(Animation {
       name: name.unwrap_or(AnimationName::None),
-      duration: duration.unwrap_or(Time::Seconds(0.0)),
+      duration: duration.unwrap_or_default(),
       timing_function: timing_function.unwrap_or(EasingFunction::Ease),
       iteration_count: iteration_count.unwrap_or(AnimationIterationCount::Number(1.0)),
       direction: direction.unwrap_or(AnimationDirection::Normal),
@@ -722,7 +778,7 @@ pub type AnimationList<'i> = SmallVec<[Animation<'i>; 1]>;
 #[derive(Default)]
 pub(crate) struct AnimationHandler<'i> {
   names: Option<(SmallVec<[AnimationName<'i>; 1]>, VendorPrefix)>,
-  durations: Option<(SmallVec<[Time; 1]>, VendorPrefix)>,
+  durations: Option<(SmallVec<[AnimationDuration; 1]>, VendorPrefix)>,
   timing_functions: Option<(SmallVec<[EasingFunction; 1]>, VendorPrefix)>,
   iteration_counts: Option<(SmallVec<[AnimationIterationCount; 1]>, VendorPrefix)>,
   directions: Option<(SmallVec<[AnimationDirection; 1]>, VendorPrefix)>,
@@ -1091,5 +1147,52 @@ fn is_animation_property(property_id: &PropertyId) -> bool {
     | PropertyId::AnimationRangeEnd
     | PropertyId::Animation(_) => true,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::AnimationDuration;
+  use crate::printer::PrinterOptions;
+  use crate::properties::{Property, PropertyId};
+  use crate::stylesheet::ParserOptions;
+
+  #[test]
+  fn parses_auto_animation_duration() {
+    let property = Property::parse_string(
+      PropertyId::from("animation-duration"),
+      "auto",
+      ParserOptions::default(),
+    )
+    .expect("animation-duration: auto should parse");
+
+    assert!(matches!(
+      property,
+      Property::AnimationDuration(ref values, _) if values.as_slice() == [AnimationDuration::Auto]
+    ));
+    assert_eq!(
+      property
+        .value_to_css_string(PrinterOptions::default())
+        .expect("animation duration should serialize"),
+      "auto"
+    );
+  }
+
+  #[test]
+  fn parses_auto_duration_in_animation_shorthand() {
+    let property = Property::parse_string(
+      PropertyId::from("animation"),
+      "auto ease 1s foo",
+      ParserOptions::default(),
+    )
+    .expect("animation shorthand should parse");
+
+    assert!(matches!(property, Property::Animation(_, _)));
+    assert_eq!(
+      property
+        .value_to_css_string(PrinterOptions::default())
+        .expect("animation shorthand should serialize"),
+      "auto 1s foo"
+    );
   }
 }
