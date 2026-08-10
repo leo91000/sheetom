@@ -21,6 +21,10 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+
 jobs:
   changes:
     runs-on: ubuntu-24.04
@@ -85,15 +89,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-release
+
       - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-            target
-          key: rust-host-${{ runner.os }}-1.88-${{ hashFiles('Cargo.lock') }}
-          restore-keys: rust-host-${{ runner.os }}-1.88-
+          key: cargo-registry-quality-v2-${{ runner.os }}-1.88-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-registry-quality-v2-${{ runner.os }}-1.88-
 
       - name: Build the host native binding
         run: npm run native:build
@@ -141,15 +149,18 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-quality
       - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-            target
-          key: rust-${{ runner.os }}-1.88-${{ hashFiles('Cargo.lock') }}
-          restore-keys: rust-${{ runner.os }}-1.88-
+          key: cargo-registry-native-quality-v2-${{ runner.os }}-1.88-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-registry-native-quality-v2-${{ runner.os }}-1.88-
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - run: npm run native:check
@@ -186,14 +197,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Set up the shared Rust compilation cache
+        if: runner.os != 'Windows'
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: ${{ matrix.target }}-release
       - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-            target/${{ matrix.target }}
-          key: native-${{ matrix.target }}-1.88-${{ hashFiles('Cargo.lock') }}
+          key: cargo-registry-target-v2-${{ matrix.target }}-1.88-${{ hashFiles('Cargo.lock') }}
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - name: Build the native target
@@ -259,6 +274,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: rustup toolchain install nightly --profile minimal
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-nightly-fuzz
       - id: cargo-fuzz-cache
         uses: actions/cache@v5
         with:
@@ -302,6 +321,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-release
 
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
@@ -372,6 +396,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-release
       - name: Install with the npm bundled with Node 22
         run: npm ci
       - run: npm run native:build
@@ -487,6 +515,10 @@ jobs:
         with:
           node-version: 26
           cache: npm
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-release
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - run: npm run native:build
@@ -505,6 +537,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: linux-x64-release
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - run: npm run native:build

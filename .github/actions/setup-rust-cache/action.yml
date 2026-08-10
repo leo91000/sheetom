@@ -1,0 +1,28 @@
+name: Set up SheetOM Rust cache
+description: Install sccache and restore one bounded compiler-object archive per Rust build cohort
+
+inputs:
+  cache-key:
+    description: Stable target and profile cohort for the compiler cache
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Restore compiled Rust objects
+      uses: actions/cache@v5
+      with:
+        path: ${{ runner.temp }}/sheetom-sccache
+        key: sheetom-sccache-v1-${{ inputs.cache-key }}-${{ hashFiles('Cargo.lock') }}
+
+    - name: Install sccache
+      uses: mozilla-actions/sccache-action@v0.0.11
+      with:
+        version: v0.16.0
+
+    - name: Use the exact cached compiler wrapper
+      shell: bash
+      run: |
+        echo "RUSTC_WRAPPER=$SCCACHE_PATH" >> "$GITHUB_ENV"
+        echo "SCCACHE_DIR=$RUNNER_TEMP/sheetom-sccache" >> "$GITHUB_ENV"
+        echo "SCCACHE_CACHE_SIZE=2G" >> "$GITHUB_ENV"
