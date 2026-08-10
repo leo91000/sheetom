@@ -198,6 +198,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Set up the shared Rust compilation cache
+        if: runner.os != 'Windows'
         uses: ./.github/actions/setup-rust-cache
         with:
           cache-key: ${{ matrix.target }}-release

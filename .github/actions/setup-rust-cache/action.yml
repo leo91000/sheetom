@@ -24,6 +24,5 @@ runs:
       shell: bash
       run: |
         echo "RUSTC_WRAPPER=$SCCACHE_PATH" >> "$GITHUB_ENV"
-        echo "CARGO_BUILD_RUSTC_WRAPPER=$SCCACHE_PATH" >> "$GITHUB_ENV"
         echo "SCCACHE_DIR=$RUNNER_TEMP/sheetom-sccache" >> "$GITHUB_ENV"
         echo "SCCACHE_CACHE_SIZE=2G" >> "$GITHUB_ENV"
