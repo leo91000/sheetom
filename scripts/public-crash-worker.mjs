@@ -44,6 +44,17 @@ if (crashCase.mode === "stylesheet-resource") {
     assert.notEqual(separator, -1, "crash case must contain a property delimiter");
     const property = crashCase.source.slice(0, separator).trim();
     const value = crashCase.source.slice(separator + 1).trim();
+    if (crashCase.expectRejected) {
+        rule.style.setProperty(property, "initial");
+        const before = rule.style.cssText;
+        rule.style.setProperty(property, value);
+        assert.equal(rule.style.cssText, before, `${property} must reject atomically`);
+        const serialized = sheet.serialize();
+        const reparsed = new CSSStyleSheet();
+        reparsed.replaceSync(serialized);
+        assert.equal(reparsed.serialize(), serialized);
+        process.exit(0);
+    }
     rule.style.setProperty(property, value);
 
     assert.notEqual(rule.style.getPropertyValue(property), "", `${property} must survive the public API`);
