@@ -22837,6 +22837,14 @@ mod tests {
       ".foo { grid-template-rows: [linename1 linename2] 100px repeat(auto-fit, [linename1] 300px) [linename3]; }",
       ".foo{grid-template-rows:[linename1 linename2]100px repeat(auto-fit,[linename1]300px)[linename3]}",
     );
+    minify_test(
+      ".foo { grid-template-columns: subgrid [a] repeat(2, [b] [c d]) [e]; }",
+      ".foo{grid-template-columns:subgrid [a] repeat(2,[b] [c d]) [e]}",
+    );
+    minify_test(
+      ".foo { grid-template-rows: subgrid repeat(auto-fill, [row]); }",
+      ".foo{grid-template-rows:subgrid repeat(auto-fill,[row])}",
+    );
 
     minify_test(".foo { grid-auto-rows: auto; }", ".foo{grid-auto-rows:auto}");
     minify_test(".foo { grid-auto-rows: 1fr; }", ".foo{grid-auto-rows:1fr}");
