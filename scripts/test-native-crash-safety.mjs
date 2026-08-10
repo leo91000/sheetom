@@ -41,6 +41,24 @@ const crashCases = [
         public: true,
     },
     {
+        name: "font stretch incompatible percentage calc",
+        source: "font-stretch: calc(1 + 1)",
+        public: true,
+        expectRejected: true,
+    },
+    {
+        name: "text size adjust incompatible percentage calc",
+        source: "text-size-adjust: calc(1 + 1)",
+        public: true,
+        expectRejected: true,
+    },
+    {
+        name: "webkit text size adjust incompatible percentage calc",
+        source: "-webkit-text-size-adjust: calc(1 + 1)",
+        public: true,
+        expectRejected: true,
+    },
+    {
         name: "malformed pending substitution",
         source: "padding: 72px var(--space, var(--space,",
         public: true,

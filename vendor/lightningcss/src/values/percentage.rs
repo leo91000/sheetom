@@ -26,8 +26,7 @@ impl<'i> Parse<'i> for Percentage {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     match input.try_parse(Calc::parse) {
       Ok(Calc::Value(v)) => return Ok(*v),
-      // Percentages are always compatible, so they will always compute to a value.
-      Ok(_) => unreachable!(),
+      Ok(_) => return Err(input.new_custom_error(ParserError::InvalidValue)),
       _ => {}
     }
 
@@ -141,6 +140,25 @@ impl_op!(Percentage, std::ops::Rem, rem);
 impl_op!(Percentage, std::ops::Add, add);
 
 impl_try_from_angle!(Percentage);
+
+#[cfg(test)]
+mod tests {
+  use super::Percentage;
+  use crate::traits::Parse;
+  use cssparser::{Parser, ParserInput};
+
+  fn parse(value: &str) -> Result<Percentage, ()> {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    Percentage::parse(&mut parser).map_err(|_| ())
+  }
+
+  #[test]
+  fn rejects_dimensionless_calculations_without_panicking() {
+    assert!(parse("calc(1 + 1)").is_err());
+    assert!(parse("calc(10%)").is_ok());
+  }
+}
 
 /// Either a `<number>` or `<percentage>`.
 #[derive(Debug, Clone, PartialEq, Parse, ToCss)]
