@@ -8,6 +8,7 @@ import { chromiumShorthandLonghands } from "../src/chromium-properties.ts";
 const capabilitiesUrl = new URL("../compatibility/shorthand-capabilities.json", import.meta.url);
 const contractsUrl = new URL("../compatibility/shorthand-grammar-contracts.json", import.meta.url);
 const manifestUrl = new URL("../src/chromium-properties.ts", import.meta.url);
+const valueCapabilitiesUrl = new URL("../compatibility/value-capabilities.json", import.meta.url);
 const outputUrl = new URL("../compatibility/native-grammar-inventory.json", import.meta.url);
 const mode = process.argv[2] ?? "--check";
 
@@ -19,14 +20,16 @@ function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-const [capabilitiesBytes, contractsBytes, manifestBytes, inventoryBytes] = await Promise.all([
+const [capabilitiesBytes, contractsBytes, manifestBytes, valueCapabilitiesBytes, inventoryBytes] = await Promise.all([
   readFile(capabilitiesUrl),
   readFile(contractsUrl),
   readFile(manifestUrl),
+  readFile(valueCapabilitiesUrl),
   readFile(outputUrl),
 ]);
 const capabilities = JSON.parse(capabilitiesBytes.toString("utf8"));
 const contracts = JSON.parse(contractsBytes.toString("utf8"));
+const valueCapabilities = JSON.parse(valueCapabilitiesBytes.toString("utf8"));
 const inventory = JSON.parse(inventoryBytes.toString("utf8"));
 
 const manifestedProperties = Object.entries(chromiumShorthandLonghands)
@@ -72,7 +75,7 @@ const browser = await chromium.launch({ headless: true });
 let browserResult;
 try {
   const page = await browser.newPage();
-  browserResult = await page.evaluate(inputs => {
+  browserResult = await page.evaluate(({ inputs, valueCases }) => {
     const observations = [];
     for (const input of inputs) {
       const style = document.createElement("div").style;
@@ -92,8 +95,17 @@ try {
         cssText: style.cssText,
       });
     }
-    return { userAgent: navigator.userAgent, observations };
-  }, reviewedPropertyBranches);
+    const valueObservations = valueCases.map(input => {
+      const style = document.createElement("div").style;
+      style.setProperty(input.property, input.input);
+      return {
+        id: input.id,
+        accepted: style.length > 0,
+        observable: style.getPropertyValue(input.property),
+      };
+    });
+    return { userAgent: navigator.userAgent, observations, valueObservations };
+  }, { inputs: reviewedPropertyBranches, valueCases: valueCapabilities.cases });
 } finally {
   await browser.close();
 }
@@ -108,6 +120,17 @@ const propertyBranches = reviewedPropertyBranches.map(branch => {
   }
   return { ...branch, chromium: chromiumObservation };
 });
+for (let index = 0; index < valueCapabilities.cases.length; index += 1) {
+  const expected = valueCapabilities.cases[index];
+  const actual = browserResult.valueObservations[index];
+  if (
+    actual?.id !== expected?.id
+    || actual.accepted !== expected.accepted
+    || (expected.accepted && actual.observable !== expected.observable)
+  ) {
+    throw new Error(`Chromium value capability drifted for ${expected?.id}`);
+  }
+}
 
 const updatedInventory = {
   ...inventory,
@@ -117,6 +140,7 @@ const updatedInventory = {
     propertyManifestSha256: sha256(manifestBytes),
     shorthandCapabilitiesSha256: sha256(capabilitiesBytes),
     shorthandGrammarContractsSha256: sha256(contractsBytes),
+    valueCapabilitiesSha256: sha256(valueCapabilitiesBytes),
   },
   propertyBranches,
 };

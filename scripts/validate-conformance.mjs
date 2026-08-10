@@ -146,6 +146,11 @@ assert.equal(
   await fileSha256(shorthandGrammarContractsFile),
   "Native Grammar Inventory is stale for shorthand-grammar-contracts.json",
 );
+assert.equal(
+  nativeGrammarInventory.baseline.valueCapabilitiesSha256,
+  await fileSha256(valueCapabilitiesFile),
+  "Native Grammar Inventory is stale for value-capabilities.json",
+);
 
 const inventoryProperties = nativeGrammarInventory.properties.map(entry => entry.property);
 const manifestedShorthands = Object.entries(chromiumShorthandLonghands)

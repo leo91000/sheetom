@@ -6,6 +6,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readNativeEngineRevision } from "./native-engine-revision.mjs";
+
 const require = createRequire(import.meta.url);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const { detectLinuxLibc, resolveTarget, SUPPORTED_TARGETS } = require(
@@ -49,7 +51,10 @@ assert.equal(
 
 const binding = require(`${repositoryRoot}/native/index.cjs`);
 assert.equal(typeof binding.NativeDeclarationState, "function");
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.11");
+assert.equal(
+  binding.nativeEngineRevision(),
+  await readNativeEngineRevision(repositoryRoot),
+);
 
 async function assertLoaderFailure(expectedCode, installBinding) {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "sheetom-loader-"));

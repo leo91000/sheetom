@@ -1,19 +1,36 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
+import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
 import { createStyleRule } from "./support/create-style-rule.js";
 import valueCapabilities from "../compatibility/value-capabilities.json" with { type: "json" };
 
 test("measured modern value families are not dropped by parser fallbacks", () => {
-  const style = createStyleRule(".x").style;
   for (const candidate of valueCapabilities.cases) {
     if (!candidate.accepted) continue;
+    const rule = createStyleRule(".x");
+    const style = rule.style;
     style.setProperty(candidate.property, candidate.input);
     assert.equal(
       style.getPropertyValue(candidate.property),
       candidate.observable,
       candidate.id,
     );
+    const sheet = rule.parentStyleSheet;
+    assert.ok(sheet);
+    const serialized = sheet.serialize();
+    const reparsed = new CSSStyleSheet();
+    reparsed.replaceSync(serialized);
+    const reparsedRule = reparsed.cssRules[0];
+    assert.ok(reparsedRule instanceof CSSStyleRule);
+    assert.ok(
+      Array.from(
+        { length: reparsedRule.style.length },
+        (_, index) => reparsedRule.style.item(index),
+      ).includes(candidate.property),
+      `${candidate.id} survives reparsing`,
+    );
+    assert.equal(reparsed.serialize(), serialized, `${candidate.id} is idempotent`);
   }
 });
 

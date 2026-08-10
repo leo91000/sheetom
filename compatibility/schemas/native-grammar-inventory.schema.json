@@ -17,6 +17,7 @@
         "propertyManifestSha256",
         "shorthandCapabilitiesSha256",
         "shorthandGrammarContractsSha256",
+        "valueCapabilitiesSha256",
         "derivation"
       ],
       "properties": {
@@ -25,6 +26,7 @@
         "propertyManifestSha256": { "$ref": "#/$defs/sha256" },
         "shorthandCapabilitiesSha256": { "$ref": "#/$defs/sha256" },
         "shorthandGrammarContractsSha256": { "$ref": "#/$defs/sha256" },
+        "valueCapabilitiesSha256": { "$ref": "#/$defs/sha256" },
         "derivation": { "const": "manifest-profile-property-branches@1" }
       }
     },

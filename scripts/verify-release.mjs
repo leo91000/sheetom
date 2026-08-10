@@ -2,6 +2,8 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
+import { nativeEngineEvidence } from "./native-engine-evidence.mjs";
+
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 if (manifest.version === "0.0.0") {
   throw new Error("Changesets must assign a release version before release verification");
@@ -11,6 +13,13 @@ const reportPath = `compatibility/baselines/${manifest.version}.json`;
 const report = JSON.parse(await readFile(reportPath, "utf8"));
 if (report.packageVersion !== manifest.version) {
   throw new Error(`${reportPath} does not describe package version ${manifest.version}`);
+}
+if (report.schemaVersion !== 5) {
+  throw new Error("RC6 releases require Compatibility Report schema version 5");
+}
+const expectedNativeEngine = await nativeEngineEvidence(process.cwd());
+if (JSON.stringify(report.baseline.nativeEngine) !== JSON.stringify(expectedNativeEngine)) {
+  throw new Error("The native engine source does not match the Compatibility Report");
 }
 if (report.summary.unexplained !== 0) {
   throw new Error("A release cannot contain unexplained compatibility outcomes");
@@ -32,24 +41,56 @@ if (report.evidence.operationFixtures.passed !== report.evidence.operationFixtur
 if (!/^[0-9a-f]{64}$/.test(report.evidence.operationFixtures.sha256 ?? "")) {
   throw new Error("Operation Fixture evidence does not identify its executed report");
 }
-const shorthandGrammar = report.evidence.shorthandGrammar;
+const nativeGrammar = report.evidence.nativeGrammar;
+const shorthandGrammar = nativeGrammar?.grammarBranches;
 if (
-  shorthandGrammar?.profiles !== 24 ||
+  nativeGrammar?.codecProfiles !== 24 ||
+  nativeGrammar?.shorthandProperties?.passed !== 129 ||
+  nativeGrammar?.shorthandProperties?.total !== 129 ||
   shorthandGrammar?.passed !== 96 ||
   shorthandGrammar?.total !== 96 ||
+  shorthandGrammar?.positive !== 72 ||
+  shorthandGrammar?.negative !== 24 ||
+  nativeGrammar?.propertyBranches?.passed !== 10 ||
+  nativeGrammar?.propertyBranches?.total !== 10 ||
+  nativeGrammar?.propertyBranches?.positive !== 5 ||
+  nativeGrammar?.propertyBranches?.negative !== 5 ||
+  nativeGrammar?.valueCapabilities?.passed !== 36 ||
+  nativeGrammar?.valueCapabilities?.total !== 36 ||
+  nativeGrammar?.valueCapabilities?.positive !== 27 ||
+  nativeGrammar?.valueCapabilities?.negative !== 9 ||
+  !/^[0-9a-f]{64}$/.test(nativeGrammar?.inventorySha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(nativeGrammar?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.contractsSha256 ?? "") ||
-  !/^[0-9a-f]{64}$/.test(shorthandGrammar?.observationsSha256 ?? "")
+  !/^[0-9a-f]{64}$/.test(shorthandGrammar?.observationsSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(nativeGrammar?.valueCapabilities?.sha256 ?? "")
 ) {
-  throw new Error("Shorthand Grammar Branch evidence is incomplete");
+  throw new Error("Native Grammar Inventory evidence is incomplete");
 }
 for (const [filename, recordedHash] of [
+  ["compatibility/native-grammar-inventory.json", nativeGrammar.inventorySha256],
   ["compatibility/shorthand-grammar-contracts.json", shorthandGrammar.contractsSha256],
   ["compatibility/shorthand-grammar-observations.json", shorthandGrammar.observationsSha256],
+  ["compatibility/value-capabilities.json", nativeGrammar.valueCapabilities.sha256],
 ]) {
   const actualHash = createHash("sha256").update(await readFile(filename)).digest("hex");
   if (actualHash !== recordedHash) {
     throw new Error(`${filename} does not match the release Compatibility Report`);
   }
+}
+const processSafety = report.evidence.processSafety;
+const processSafetyContractSha256 = createHash("sha256")
+  .update(await readFile("scripts/test-native-crash-safety.mjs"))
+  .digest("hex");
+if (
+  processSafety?.native?.passed !== processSafety?.native?.total ||
+  processSafety?.public?.passed !== processSafety?.public?.total ||
+  processSafety?.native?.total < 1 ||
+  processSafety?.public?.total < 1 ||
+  processSafety?.contractSha256 !== processSafetyContractSha256 ||
+  !/^[0-9a-f]{64}$/.test(processSafety?.executionSha256 ?? "")
+) {
+  throw new Error("Process Safety evidence is incomplete");
 }
 const operationAdapters = new Map(
   report.evidence.operationFixtures.adapters?.map(evidence => [evidence.adapter, evidence]) ?? [],

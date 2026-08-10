@@ -7,7 +7,8 @@
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
     "shorthandGrammarContractsSha256": "5d83c34686c0a5025942d5f89385e8d24d90aa5242da0c9dbbb2143e23681e31",
-    "derivation": "manifest-profile-property-branches@1"
+    "derivation": "manifest-profile-property-branches@1",
+    "valueCapabilitiesSha256": "6284579089fbcc731d685390452258f3f01be1b3899f79173ae5075c92dd81bd"
   },
   "profiles": [
     {
