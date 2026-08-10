@@ -236,6 +236,13 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
             longhands: Some(longhands),
         });
     }
+    if let Some(longhands) = expand_structural_shorthand(name, value, important) {
+        return Ok(ParsedValue {
+            observable_value: value.trim().to_owned(),
+            safe_value: value.trim().to_owned(),
+            longhands: Some(longhands),
+        });
+    }
 
     let inspection = inspect_property(name, value);
     if !inspection.as_ref().is_ok_and(|candidate| {
@@ -244,13 +251,6 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
             PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
         )
     }) {
-        if let Some(longhands) = expand_structural_shorthand(name, value, important) {
-            return Ok(ParsedValue {
-                observable_value: value.trim().to_owned(),
-                safe_value: value.trim().to_owned(),
-                longhands: Some(longhands),
-            });
-        }
         return Err(MutationOutcome::InvalidValue);
     }
     let inspection = inspection.map_err(map_engine_error)?;
@@ -266,20 +266,41 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
     let property = parse_typed_property(name, value).map_err(|_| MutationOutcome::InvalidValue)?;
     let mut longhands = Vec::with_capacity(longhand_names.len());
     for longhand_name in longhand_names {
-        let canonical_value =
+        let (observable_value, safe_value) =
             if let Some(longhand) = shorthand_longhand(&property, name, longhand_name) {
-                longhand
+                let mut safe_value = longhand
                     .value_to_css_string(PrinterOptions::default())
-                    .map_err(|_| MutationOutcome::InvalidValue)?
+                    .map_err(|_| MutationOutcome::InvalidValue)?;
+                let mut observable_value =
+                    observable_shorthand_longhand(longhand_name, &safe_value, value);
+                if let Some((observable, safe)) =
+                    observable_shorthand_override(name, longhand_name, value, &safe_value)
+                {
+                    observable_value = observable;
+                    if let Some(safe) = safe {
+                        safe_value = safe;
+                    }
+                }
+                (observable_value, safe_value)
             } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
-                initial_value.to_owned()
+                let mut observable_value = initial_value.to_owned();
+                let mut safe_value = initial_value.to_owned();
+                if let Some((observable, safe)) =
+                    observable_shorthand_override(name, longhand_name, value, &safe_value)
+                {
+                    observable_value = observable;
+                    if let Some(safe) = safe {
+                        safe_value = safe;
+                    }
+                }
+                (observable_value, safe_value)
             } else {
                 return Err(MutationOutcome::UnsupportedShorthand);
             };
         longhands.push(DeclarationRecord {
             name: (*longhand_name).to_owned(),
-            observable_value: canonical_value.clone(),
-            safe_value: canonical_value,
+            observable_value,
+            safe_value,
             important,
         });
     }
@@ -291,6 +312,204 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
     })
 }
 
+fn observable_shorthand_longhand(name: &str, safe_value: &str, shorthand_input: &str) -> String {
+    let components = split_top_level_whitespace(shorthand_input).unwrap_or_default();
+    if safe_value == "0" {
+        if let Some(component) = components
+            .iter()
+            .find(|component| is_zero_dimension(component))
+        {
+            return (*component).to_owned();
+        }
+    }
+    if safe_value.starts_with('#') || safe_value == "transparent" {
+        if let Some(component) = components
+            .iter()
+            .find(|component| typed_longhand_value("color", component).is_some())
+        {
+            return (*component).to_owned();
+        }
+    }
+    if name.ends_with("-image") {
+        if let Some(component) = components.iter().find(|component| {
+            matches!(
+                component.split_once('(').map(|(function, _)| function),
+                Some(
+                    "url"
+                        | "image"
+                        | "image-set"
+                        | "cross-fade"
+                        | "linear-gradient"
+                        | "radial-gradient"
+                        | "conic-gradient"
+                        | "repeating-linear-gradient"
+                        | "repeating-radial-gradient"
+                        | "repeating-conic-gradient"
+                )
+            )
+        }) {
+            return (*component).to_owned();
+        }
+    }
+    if name == "font-family" {
+        if let Some(component) = components
+            .iter()
+            .rev()
+            .find(|component| component.starts_with(['\'', '"']))
+        {
+            return (*component).to_owned();
+        }
+    }
+    if safe_value == "currentColor" {
+        return "currentcolor".to_owned();
+    }
+    safe_value.to_owned()
+}
+
+fn observable_shorthand_override(
+    shorthand: &str,
+    longhand: &str,
+    input: &str,
+    safe_value: &str,
+) -> Option<(String, Option<String>)> {
+    if shorthand == "background" {
+        return observable_background_longhand(longhand, input).map(|value| (value, None));
+    }
+    if matches!(shorthand, "mask" | "-webkit-mask")
+        && matches!(
+            longhand,
+            "-webkit-mask-position-x" | "-webkit-mask-position-y"
+        )
+    {
+        let positions = position_components(input);
+        let value = if longhand.ends_with("-x") {
+            positions.first().copied()
+        } else {
+            positions.get(1).or_else(|| positions.first()).copied()
+        }?;
+        return Some((value.to_owned(), Some(value.to_owned())));
+    }
+    if shorthand == "list-style" && longhand == "list-style-image" && safe_value == "none" {
+        let components = split_top_level_whitespace(input)?;
+        if !components
+            .iter()
+            .any(|component| *component == "none" || component.starts_with("url("))
+        {
+            return Some(("initial".to_owned(), None));
+        }
+    }
+    None
+}
+
+fn observable_background_longhand(longhand: &str, input: &str) -> Option<String> {
+    let components = split_top_level_whitespace(input)?;
+    let color = components
+        .iter()
+        .find(|component| typed_longhand_value("color", component).is_some())
+        .copied();
+    let image = components
+        .iter()
+        .find(|component| is_image_component(component))
+        .copied();
+    let repeats = [
+        "repeat",
+        "repeat-x",
+        "repeat-y",
+        "no-repeat",
+        "space",
+        "round",
+    ];
+    let attachments = ["scroll", "fixed", "local"];
+    let boxes = ["border-box", "padding-box", "content-box"];
+    let box_values = components
+        .iter()
+        .filter(|component| boxes.contains(component))
+        .copied()
+        .collect::<Vec<_>>();
+    let slash = components.iter().position(|component| *component == "/");
+    let positions = position_components(input);
+    let value = match longhand {
+        "background-color" => color.unwrap_or("initial"),
+        "background-image" => image.unwrap_or("initial"),
+        "background-position-x" => positions.first().copied().unwrap_or("initial"),
+        "background-position-y" => positions
+            .get(1)
+            .or_else(|| positions.first())
+            .copied()
+            .unwrap_or("initial"),
+        "background-size" => slash
+            .and_then(|index| components.get(index + 1).copied())
+            .unwrap_or("initial"),
+        "background-repeat" => components
+            .iter()
+            .find(|component| repeats.contains(component))
+            .copied()
+            .unwrap_or("initial"),
+        "background-attachment" => components
+            .iter()
+            .find(|component| attachments.contains(component))
+            .copied()
+            .unwrap_or("initial"),
+        "background-origin" => box_values.first().copied().unwrap_or("initial"),
+        "background-clip" => box_values
+            .get(1)
+            .or_else(|| box_values.first())
+            .copied()
+            .unwrap_or("initial"),
+        _ => return None,
+    };
+    Some(value.to_owned())
+}
+
+fn position_components(input: &str) -> Vec<&str> {
+    let components = split_top_level_whitespace(input).unwrap_or_default();
+    let slash = components
+        .iter()
+        .position(|component| *component == "/")
+        .unwrap_or(components.len());
+    let keywords = ["left", "right", "top", "bottom", "center"];
+    components[..slash]
+        .iter()
+        .filter(|component| {
+            keywords.contains(component)
+                || component.ends_with('%')
+                || component
+                    .find(|character: char| character.is_ascii_alphabetic())
+                    .is_some_and(|index| component[..index].parse::<f64>().is_ok())
+        })
+        .copied()
+        .collect()
+}
+
+fn is_image_component(component: &str) -> bool {
+    component == "none"
+        || [
+            "url(",
+            "image(",
+            "image-set(",
+            "cross-fade(",
+            "linear-gradient(",
+            "radial-gradient(",
+            "conic-gradient(",
+            "repeating-linear-gradient(",
+            "repeating-radial-gradient(",
+            "repeating-conic-gradient(",
+        ]
+        .iter()
+        .any(|prefix| component.starts_with(prefix))
+}
+
+fn is_zero_dimension(value: &str) -> bool {
+    let value = value.trim();
+    let split = value.find(|character: char| character.is_ascii_alphabetic() || character == '%');
+    let Some(split) = split else {
+        return false;
+    };
+    value[..split]
+        .parse::<f64>()
+        .is_ok_and(|number| number == 0.0)
+}
+
 fn expand_special_shorthand(
     name: &str,
     value: &str,
@@ -299,6 +518,26 @@ fn expand_special_shorthand(
     let components = split_top_level_whitespace(value)?;
     let values = match name {
         "columns" | "-webkit-columns" => expand_columns(&components)?,
+        "border-image" => expand_border_image(value)?,
+        "-webkit-mask-box-image" => expand_border_image(value)?
+            .into_iter()
+            .map(|(longhand, value)| {
+                let longhand = match longhand {
+                    "border-image-source" => "-webkit-mask-box-image-source",
+                    "border-image-slice" => "-webkit-mask-box-image-slice",
+                    "border-image-width" => "-webkit-mask-box-image-width",
+                    "border-image-outset" => "-webkit-mask-box-image-outset",
+                    "border-image-repeat" => "-webkit-mask-box-image-repeat",
+                    _ => longhand,
+                };
+                let value = if value != "none" && value == initial_border_image_value(longhand) {
+                    "initial".to_owned()
+                } else {
+                    value
+                };
+                (longhand, value)
+            })
+            .collect(),
         "font-synthesis" => expand_font_synthesis(&components)?,
         "font-variant" => expand_font_variant(&components)?,
         "offset" => expand_offset(value)?,
@@ -308,6 +547,7 @@ fn expand_special_shorthand(
         ],
         "scroll-timeline" => expand_scroll_timeline(value)?,
         "text-box" => expand_text_box(&components)?,
+        "text-decoration" => expand_text_decoration(&components)?,
         "text-wrap" => expand_text_wrap(&components)?,
         "transition" | "-webkit-transition" => expand_transition(value)?,
         "timeline-trigger" if value == "none" => vec![
@@ -326,6 +566,16 @@ fn expand_special_shorthand(
         _ => return None,
     };
     records_from_values(name, values, important)
+}
+
+fn initial_border_image_value(longhand: &str) -> &'static str {
+    match longhand {
+        "-webkit-mask-box-image-slice" => "100%",
+        "-webkit-mask-box-image-width" => "1",
+        "-webkit-mask-box-image-outset" => "0",
+        "-webkit-mask-box-image-repeat" => "stretch",
+        _ => "",
+    }
 }
 
 fn records_from_values(
@@ -381,7 +631,61 @@ fn expand_columns(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
     ])
 }
 
+fn expand_border_image(value: &str) -> Option<Vec<(&'static str, String)>> {
+    if value == "none" {
+        return Some(vec![
+            ("border-image-source", "none".to_owned()),
+            ("border-image-slice", "100%".to_owned()),
+            ("border-image-width", "1".to_owned()),
+            ("border-image-outset", "0".to_owned()),
+            ("border-image-repeat", "stretch".to_owned()),
+        ]);
+    }
+    let sections = split_top_level_delimiter(value, b'/')?;
+    if sections.is_empty() || sections.len() > 3 {
+        return None;
+    }
+    let mut first = split_top_level_whitespace(sections[0])?;
+    let source_index = first.iter().position(|component| {
+        *component == "none"
+            || component.starts_with("url(")
+            || component.contains("gradient(")
+            || component.starts_with("image(")
+            || component.starts_with("image-set(")
+    })?;
+    let source = first.remove(source_index);
+    if first.is_empty() || first.len() > 5 {
+        return None;
+    }
+    let slice = first.join(" ");
+    let width = sections.get(1).copied().unwrap_or("1").trim();
+    let mut outset = "0".to_owned();
+    let mut repeat = "stretch".to_owned();
+    if let Some(last) = sections.get(2) {
+        let mut components = split_top_level_whitespace(last)?;
+        if components
+            .last()
+            .is_some_and(|component| matches!(*component, "stretch" | "repeat" | "round" | "space"))
+        {
+            repeat = components.pop()?.to_owned();
+        }
+        if !components.is_empty() {
+            outset = components.join(" ");
+        }
+    }
+    Some(vec![
+        ("border-image-source", source.to_owned()),
+        ("border-image-slice", slice),
+        ("border-image-width", width.to_owned()),
+        ("border-image-outset", outset),
+        ("border-image-repeat", repeat),
+    ])
+}
+
 fn validate_column_width(value: &str) -> Option<String> {
+    if value.parse::<f64>().is_ok() && value != "0" {
+        return None;
+    }
     typed_longhand_value("width", value)
 }
 
@@ -593,6 +897,59 @@ fn expand_text_box(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
     Some(vec![
         ("text-box-trim", trim.to_owned()),
         ("text-box-edge", edges.join(" ")),
+    ])
+}
+
+fn expand_text_decoration(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
+    if components.is_empty() {
+        return None;
+    }
+    let line_keywords = ["none", "underline", "overline", "line-through", "blink"];
+    let style_keywords = ["solid", "double", "dotted", "dashed", "wavy"];
+    let mut lines = Vec::new();
+    let mut thickness = None;
+    let mut style = None;
+    let mut color = None;
+    for component in components {
+        if line_keywords.contains(component) {
+            lines.push(*component);
+        } else if style_keywords.contains(component) {
+            if style.replace(*component).is_some() {
+                return None;
+            }
+        } else if typed_longhand_value("text-decoration-thickness", component).is_some() {
+            if thickness.replace(*component).is_some() {
+                return None;
+            }
+        } else if typed_longhand_value("color", component).is_some() {
+            if color.replace(*component).is_some() {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+    Some(vec![
+        (
+            "text-decoration-line",
+            if lines.is_empty() {
+                "initial".to_owned()
+            } else {
+                lines.join(" ")
+            },
+        ),
+        (
+            "text-decoration-thickness",
+            thickness.unwrap_or("initial").to_owned(),
+        ),
+        (
+            "text-decoration-style",
+            style.unwrap_or("initial").to_owned(),
+        ),
+        (
+            "text-decoration-color",
+            color.unwrap_or("initial").to_owned(),
+        ),
     ])
 }
 
@@ -823,7 +1180,7 @@ fn expand_structural_shorthand(
         let canonical = validate_structural_longhand(longhand, component)?;
         records.push(DeclarationRecord {
             name: (*longhand).to_owned(),
-            observable_value: canonical.clone(),
+            observable_value: component.trim().to_owned(),
             safe_value: canonical,
             important,
         });
@@ -833,6 +1190,12 @@ fn expand_structural_shorthand(
 
 fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
     const TWO_VALUE: &[&str] = &[
+        "border-block-color",
+        "border-block-style",
+        "border-block-width",
+        "border-inline-color",
+        "border-inline-style",
+        "border-inline-width",
         "contain-intrinsic-size",
         "interest-delay",
         "overscroll-behavior",
@@ -1200,7 +1563,7 @@ mod tests {
         );
         assert_eq!(
             legacy_border.get_property_value("-webkit-border-after-color"),
-            "#00f"
+            "blue"
         );
 
         let mut text_stroke = DeclarationState::new();
@@ -1248,7 +1611,7 @@ mod tests {
             MutationOutcome::Applied
         );
         assert_eq!(state.get_property_value("column-rule-color"), "red");
-        assert_eq!(state.get_property_value("row-rule-color"), "#00f");
+        assert_eq!(state.get_property_value("row-rule-color"), "blue");
 
         assert_eq!(
             state.set_property("contain-intrinsic-size", "none", ""),
@@ -1290,33 +1653,30 @@ mod tests {
         let cases = fixture["cases"]
             .as_array()
             .expect("the shorthand corpus should contain cases");
-        let failures = cases
-            .iter()
-            .filter_map(|case| {
-                let property = case["property"].as_str()?;
-                let input = case["input"].as_str()?;
-                let mut state = DeclarationState::new();
-                let outcome = state.set_property(property, input, "");
-                if outcome != MutationOutcome::Applied {
-                    return Some(format!("{property}: {input} ({outcome:?})"));
+        let mut failures = Vec::new();
+        for case in cases {
+            let property = case["property"].as_str().unwrap_or_default();
+            let input = case["input"].as_str().unwrap_or_default();
+            let mut state = DeclarationState::new();
+            let outcome = state.set_property(property, input, "");
+            if outcome != MutationOutcome::Applied {
+                failures.push(format!("{property}: {input} ({outcome:?})"));
+                continue;
+            }
+            let expected = case["chromium"]["longhands"]
+                .as_array()
+                .expect("every capability should contain Chromium longhands");
+            for (actual, expected) in state.records().iter().zip(expected) {
+                let expected_name = expected["name"].as_str().unwrap_or_default();
+                let expected_value = expected["value"].as_str().unwrap_or_default();
+                if actual.name != expected_name || actual.observable_value != expected_value {
+                    failures.push(format!(
+                        "{property}: expected {expected_name}: {expected_value}, got {}: {}",
+                        actual.name, actual.observable_value
+                    ));
                 }
-                let expected_items = case["chromium"]["items"]
-                    .as_array()?
-                    .iter()
-                    .filter_map(Value::as_str)
-                    .collect::<Vec<_>>();
-                let actual_items = state
-                    .records()
-                    .iter()
-                    .map(|record| record.name.as_str())
-                    .collect::<Vec<_>>();
-                (actual_items != expected_items).then(|| {
-                    format!(
-                        "{property}: expected item order {expected_items:?}, got {actual_items:?}"
-                    )
-                })
-            })
-            .collect::<Vec<_>>();
+            }
+        }
         assert!(
             failures.is_empty(),
             "Chromium shorthands that did not expand:\n{}",
@@ -1333,22 +1693,88 @@ mod tests {
         let profiles = fixture["profiles"]
             .as_array()
             .expect("the grammar contracts should contain profiles");
-        let mut failures = Vec::new();
-        for case in profiles
+        let observations: Value = serde_json::from_str(include_str!(
+            "../../../compatibility/shorthand-grammar-observations.json"
+        ))
+        .expect("the checked-in Chromium grammar observations should be valid JSON");
+        let observations = observations["cases"]
+            .as_array()
+            .expect("the Chromium grammar observations should contain cases");
+        let contract_cases = profiles
             .iter()
             .flat_map(|profile| profile["cases"].as_array().into_iter().flatten())
-        {
+            .collect::<Vec<_>>();
+        let mut failures = Vec::new();
+        for case in &contract_cases {
             let id = case["id"].as_str().unwrap_or("missing-id");
             let property = case["property"].as_str().unwrap_or_default();
             let input = case["input"].as_str().unwrap_or_default();
             let expected = case["accepted"].as_bool().unwrap_or(false);
             let mut state = DeclarationState::new();
+            let previous = if let Some(preserves) = case["preserves"].as_str() {
+                let Some(reference) = contract_cases
+                    .iter()
+                    .find(|candidate| candidate["id"].as_str() == Some(preserves))
+                else {
+                    failures.push(format!("{id}: missing preserved case {preserves}"));
+                    continue;
+                };
+                let reference_property = reference["property"].as_str().unwrap_or_default();
+                let reference_input = reference["input"].as_str().unwrap_or_default();
+                if state.set_property(reference_property, reference_input, "")
+                    != MutationOutcome::Applied
+                {
+                    failures.push(format!("{id}: preserved case {preserves} was not accepted"));
+                    continue;
+                }
+                Some(state.records().to_vec())
+            } else {
+                None
+            };
             let outcome = state.set_property(property, input, "");
             let accepted = outcome == MutationOutcome::Applied;
             if accepted != expected {
                 failures.push(format!(
                     "{id}: expected accepted={expected}, got {outcome:?}"
                 ));
+                continue;
+            }
+            if !expected {
+                if previous
+                    .as_deref()
+                    .is_some_and(|records| records != state.records())
+                {
+                    failures.push(format!("{id}: invalid mutation changed declaration state"));
+                }
+                continue;
+            }
+            let Some(observation) = observations
+                .iter()
+                .find(|observation| observation["id"].as_str() == Some(id))
+            else {
+                failures.push(format!("{id}: missing Chromium observation"));
+                continue;
+            };
+            let expected_longhands = observation["longhands"]
+                .as_array()
+                .expect("accepted observations should contain longhands");
+            if state.len() != expected_longhands.len() {
+                failures.push(format!(
+                    "{id}: expected {} longhands, got {}",
+                    expected_longhands.len(),
+                    state.len()
+                ));
+                continue;
+            }
+            for (actual, expected) in state.records().iter().zip(expected_longhands) {
+                let expected_name = expected["name"].as_str().unwrap_or_default();
+                let expected_value = expected["value"].as_str().unwrap_or_default();
+                if actual.name != expected_name || actual.observable_value != expected_value {
+                    failures.push(format!(
+                        "{id}: expected {expected_name}: {expected_value}, got {}: {}",
+                        actual.name, actual.observable_value
+                    ));
+                }
             }
         }
         assert!(
