@@ -257,6 +257,14 @@ pub enum Calc<V> {
   /// A product of a number and another calc expression.
   #[cfg_attr(feature = "visitor", skip_type)]
   Product(CSSNumber, Box<Calc<V>>),
+  /// A product containing a number-valued expression that cannot be reduced
+  /// until computed-value time.
+  #[cfg_attr(feature = "visitor", skip_type)]
+  ProductExpression(Box<Calc<V>>, Box<Calc<V>>),
+  /// A quotient whose divisor is a number-valued expression that cannot be
+  /// reduced until computed-value time.
+  #[cfg_attr(feature = "visitor", skip_type)]
+  QuotientExpression(Box<Calc<V>>, Box<Calc<V>>),
   /// A math function, such as `calc()`, `min()`, or `max()`.
   #[cfg_attr(feature = "visitor", skip_type)]
   Function(Box<MathFunction<V>>),
@@ -275,7 +283,37 @@ impl<V> Calc<V> {
       Calc::Number(_) => false,
       Calc::Sum(a, b) => a.resolves_to_dimension() && b.resolves_to_dimension(),
       Calc::Product(_, value) => value.resolves_to_dimension(),
+      Calc::ProductExpression(left, right) => {
+        left.resolves_to_dimension() || right.resolves_to_dimension()
+      }
+      Calc::QuotientExpression(value, _) => value.resolves_to_dimension(),
       Calc::Function(function) => function.resolves_to_dimension(),
+    }
+  }
+
+  /// Returns whether this calculation resolves to a plain `<number>` rather
+  /// than to the dimension represented by `V`.
+  ///
+  /// This is useful for number-valued CSS properties that accept functions
+  /// such as `sign()` whose argument may have a different dimension. The
+  /// dimensional argument still needs to be retained until computed-value
+  /// time, even though the result of the outer calculation is a number.
+  pub fn resolves_to_number(&self) -> bool {
+    !self.resolves_to_dimension()
+  }
+
+  /// Returns whether this calculation still contains a `sign()` function that
+  /// depends on computed context.
+  pub fn contains_unresolved_sign(&self) -> bool {
+    match self {
+      Calc::Value(_) | Calc::Number(_) => false,
+      Calc::Sum(left, right)
+      | Calc::ProductExpression(left, right)
+      | Calc::QuotientExpression(left, right) => {
+        left.contains_unresolved_sign() || right.contains_unresolved_sign()
+      }
+      Calc::Product(_, value) => value.contains_unresolved_sign(),
+      Calc::Function(function) => function.contains_unresolved_sign(),
     }
   }
 }
@@ -298,6 +336,26 @@ impl<V> MathFunction<V> {
       MathFunction::Sign(_) => false,
     }
   }
+
+  fn contains_unresolved_sign(&self) -> bool {
+    match self {
+      MathFunction::Sign(_) => true,
+      MathFunction::Calc(value) | MathFunction::Abs(value) => value.contains_unresolved_sign(),
+      MathFunction::Min(values) | MathFunction::Max(values) | MathFunction::Hypot(values) => {
+        values.iter().any(Calc::contains_unresolved_sign)
+      }
+      MathFunction::Clamp(min, center, max) => {
+        min.contains_unresolved_sign()
+          || center.contains_unresolved_sign()
+          || max.contains_unresolved_sign()
+      }
+      MathFunction::Round(_, value, step)
+      | MathFunction::Rem(value, step)
+      | MathFunction::Mod(value, step) => {
+        value.contains_unresolved_sign() || step.contains_unresolved_sign()
+      }
+    }
+  }
 }
 
 impl<V: IsCompatible> IsCompatible for Calc<V> {
@@ -305,6 +363,9 @@ impl<V: IsCompatible> IsCompatible for Calc<V> {
     match self {
       Calc::Sum(a, b) => a.is_compatible(browsers) && b.is_compatible(browsers),
       Calc::Product(_, v) => v.is_compatible(browsers),
+      Calc::ProductExpression(left, right) | Calc::QuotientExpression(left, right) => {
+        left.is_compatible(browsers) && right.is_compatible(browsers)
+      }
       Calc::Function(f) => f.is_compatible(browsers),
       Calc::Value(v) => v.is_compatible(browsers),
       Calc::Number(..) => true,
@@ -570,9 +631,9 @@ impl<
             Calc::Value(v) => {
               // First map so we ignore percentages, which must be resolved to their
               // computed value in order to determine the sign.
-              if let Some(v) = v.try_map(|s| s.sign()) {
+              if let Some(sign) = v.try_map(|s| s.sign()).and_then(|v| v.try_sign()) {
                 // sign() always resolves to a number.
-                return Ok(Calc::Number(v.try_sign().unwrap()));
+                return Ok(Calc::Number(sign));
               }
             }
             _ => {}
@@ -638,6 +699,11 @@ impl<
           } else if let Calc::Number(val) = node {
             node = rhs;
             node = node * val;
+          } else if node.resolves_to_number() || rhs.resolves_to_number() {
+            if node.resolves_to_dimension() && rhs.resolves_to_dimension() {
+              return Err(input.new_unexpected_token_error(Token::Delim('*')));
+            }
+            node = Calc::multiply_expression(node, rhs);
           } else {
             return Err(input.new_unexpected_token_error(Token::Delim('*')));
           }
@@ -650,6 +716,10 @@ impl<
               continue;
             }
           }
+          if rhs.resolves_to_number() {
+            node = Calc::QuotientExpression(Box::new(node), Box::new(rhs));
+            continue;
+          }
           return Err(input.new_custom_error(ParserError::InvalidValue));
         }
         _ => {
@@ -659,6 +729,17 @@ impl<
       }
     }
     Ok(node)
+  }
+
+  fn multiply_expression(left: Calc<V>, right: Calc<V>) -> Calc<V> {
+    match right {
+      Calc::QuotientExpression(numerator, divisor)
+        if matches!(&*numerator, Calc::Number(value) if *value == 1.0) =>
+      {
+        Calc::QuotientExpression(Box::new(left), divisor)
+      }
+      right => Calc::ProductExpression(Box::new(left), Box::new(right)),
+    }
   }
 
   fn parse_value<'t, Parse: Copy + Fn(&str) -> Option<Calc<V>>>(
@@ -993,6 +1074,7 @@ impl<V: std::ops::Mul<f32, Output = V>> std::ops::Mul<f32> for Calc<V> {
         }
         Calc::Product(num, calc)
       }
+      Calc::ProductExpression(..) | Calc::QuotientExpression(..) => Calc::Product(other, Box::new(self)),
       Calc::Function(f) => match *f {
         MathFunction::Calc(c) => Calc::Function(Box::new(MathFunction::Calc(c * other))),
         _ => Calc::Product(other, Box::new(Calc::Function(f))),
@@ -1024,10 +1106,14 @@ impl<V: AddInternal + std::convert::Into<Calc<V>> + std::convert::TryFrom<Calc<V
           Calc::Sum(Box::new(Calc::Number(a)), Box::new(Calc::Sum(b, c)))
         }
       }
-      (a @ Calc::Number(_), b)
-      | (a, b @ Calc::Number(_))
-      | (a @ Calc::Product(..), b)
-      | (a, b @ Calc::Product(..)) => Calc::Sum(Box::new(a), Box::new(b)),
+      (a @ Calc::Number(_), b) => Calc::Sum(Box::new(a), Box::new(b)),
+      (a, b @ Calc::Number(_)) => Calc::Sum(Box::new(b), Box::new(a)),
+      (a @ Calc::Product(..), b)
+      | (a, b @ Calc::Product(..))
+      | (a @ Calc::ProductExpression(..), b)
+      | (a, b @ Calc::ProductExpression(..))
+      | (a @ Calc::QuotientExpression(..), b)
+      | (a, b @ Calc::QuotientExpression(..)) => Calc::Sum(Box::new(a), Box::new(b)),
       (Calc::Function(a), b) => Calc::Sum(Box::new(Calc::Function(a)), Box::new(b)),
       (a, Calc::Function(b)) => Calc::Sum(Box::new(a), Box::new(Calc::Function(b))),
       (Calc::Value(a), b) => (a.add(V::try_from(b)?)).into(),
@@ -1073,6 +1159,23 @@ impl<V: ToCss + std::ops::Mul<f32, Output = V> + TrySign + Clone + std::fmt::Deb
           calc.to_css(dest)
         }
       }
+      Calc::ProductExpression(left, right) => {
+        let (left, right) = if left.resolves_to_number() && right.resolves_to_dimension() {
+          (right, left)
+        } else {
+          (left, right)
+        };
+        left.to_css(dest)?;
+        dest.delim('*', true)?;
+        right.to_css(dest)
+      }
+      Calc::QuotientExpression(value, divisor) => {
+        value.to_css(dest)?;
+        dest.delim('*', true)?;
+        dest.write_str("(1 / ")?;
+        divisor.to_css(dest)?;
+        dest.write_char(')')
+      }
       Calc::Function(f) => f.to_css(dest),
     };
 
@@ -1087,6 +1190,12 @@ impl<V: TrySign> TrySign for Calc<V> {
       Calc::Number(v) => v.try_sign(),
       Calc::Value(v) => v.try_sign(),
       Calc::Product(c, v) => v.try_sign().map(|s| s * c.sign()),
+      Calc::ProductExpression(left, right) => {
+        Some(left.try_sign()? * right.try_sign()?)
+      }
+      Calc::QuotientExpression(value, divisor) => {
+        Some(value.try_sign()? / divisor.try_sign()?)
+      }
       Calc::Function(f) => f.try_sign(),
       _ => None,
     }
