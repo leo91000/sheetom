@@ -17,9 +17,11 @@ if (crashCase.oversized) {
     source = "x:;".repeat(crashCase.declarationCount);
 }
 
-const execute = crashCase.mode === "rule"
-    ? () => binding.parseStylesheetTreeJson(source, true)
-    : () => binding.canonicalizeDeclarationBlock(source);
+let execute = () => binding.canonicalizeDeclarationBlock(source);
+if (crashCase.mode === "rule") execute = () => binding.parseStylesheetTreeJson(source, true);
+if (crashCase.mode === "recovered-rule") {
+    execute = () => binding.parseRecoveredRuleTreeJson(source);
+}
 
 if (crashCase.expectError) {
     assert.throws(
@@ -30,5 +32,5 @@ if (crashCase.expectError) {
     assert.equal(typeof execute(), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.5");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.6");
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

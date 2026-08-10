@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.5");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.6");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
@@ -44,6 +44,22 @@ assert.throws(
     () => binding.parseRuleTreeJson(".a{} .b{}"),
     /exactly one rule/u,
 );
+
+const recoveredStyle = JSON.parse(binding.parseRecoveredRuleTreeJson(
+    ".x { padding: 72px var(--space, var(--space,; }",
+));
+assert.equal(recoveredStyle.kind, "style");
+assert.equal(recoveredStyle.prelude, ".x");
+assert.equal(recoveredStyle.declarations, "padding: 72px var(--space, var(--space,;");
+
+const recoveredGroup = JSON.parse(binding.parseRecoveredRuleTreeJson(
+    "@layer app { @media (max-width: 767px) { .x:hover { color: red; } } }",
+));
+assert.equal(recoveredGroup.kind, "layer-block");
+assert.equal(recoveredGroup.prelude, "app");
+assert.equal(recoveredGroup.children[0].kind, "media");
+assert.equal(recoveredGroup.children[0].prelude, "(max-width: 767px)");
+assert.equal(recoveredGroup.children[0].children[0].prelude, ".x:hover");
 
 const state = new binding.NativeDeclarationState();
 assert.equal(state.setProperty("color", "red", ""), "applied");

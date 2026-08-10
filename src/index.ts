@@ -3,6 +3,10 @@ import * as csstree from "css-tree";
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
+import {
+  parseNativeRule,
+  type NativeRuleDescription,
+} from "./internal/native-rule-parser.js";
 import { RuleTree } from "./internal/rule-tree.js";
 import {
   Serializer,
@@ -437,7 +441,7 @@ export class CSSGroupingRule extends CSSRule {
     }
 
     const input = `${ruleText}`;
-    if (!(this instanceof CSSPageRule) && parsedAtRuleName(input) === "import") {
+    if (!(this instanceof CSSPageRule) && parseNativeRule(input)?.kind === "import") {
       throw new DOMException(
         "@import rules cannot be inserted inside a group rule.",
         "HierarchyRequestError",
@@ -1338,17 +1342,10 @@ function parseKeyframeRule(
   ruleText: string,
   reportDiagnostic: ReportDiagnostic,
 ): CSSKeyframeRule | null {
-  try {
-    const parsed = csstree.parse(`@keyframes sheetom { ${ruleText} }`);
-    if (parsed.type !== "StyleSheet") return null;
-    const keyframes = parsed.children.first;
-    if (keyframes?.type !== "Atrule" || !keyframes.block) return null;
-    const node = keyframes.block.children.first;
-    if (node?.type !== "Rule" || keyframes.block.children.size !== 1) return null;
-    return createKeyframeRuleFromNode(node, reportDiagnostic);
-  } catch {
-    return null;
-  }
+  const keyframes = parseNativeRule(`@keyframes sheetom { ${ruleText} }`);
+  if (keyframes?.kind !== "keyframes" || keyframes.children.length !== 1) return null;
+  const frame = createRuleFromNative(keyframes.children[0]!, reportDiagnostic, false);
+  return frame instanceof CSSKeyframeRule ? frame : null;
 }
 
 function replaceKeyframeRules(rule: CSSKeyframesRule, rules: CSSKeyframeRule[]): void {
@@ -1665,51 +1662,212 @@ function createRuleFromNodeInternal(
   return rule;
 }
 
+function createRuleFromNative(
+  description: NativeRuleDescription,
+  reportDiagnostic: ReportDiagnostic,
+  preserveImports: boolean,
+): CSSRule | null {
+  return constructInternally(() =>
+    createRuleFromNativeInternal(description, reportDiagnostic, preserveImports),
+  );
+}
+
+function createRuleFromNativeInternal(
+  description: NativeRuleDescription,
+  reportDiagnostic: ReportDiagnostic,
+  preserveImports: boolean,
+): CSSRule | null {
+  let rule: CSSRule;
+  switch (description.kind) {
+    case "style": {
+      const style = new CSSStyleRule(description.prelude);
+      style.style.cssText = description.declarations;
+      replaceGroupingRules(
+        style,
+        createNativeChildren(description, reportDiagnostic, preserveImports),
+      );
+      rule = style;
+      break;
+    }
+    case "nested-declarations": {
+      const nested = new CSSNestedDeclarations();
+      nested.style.cssText = description.declarations;
+      rule = nested;
+      break;
+    }
+    case "import": {
+      if (!preserveImports) return null;
+      const prelude = description.cssText
+        .replace(/^@import\s+/iu, "")
+        .replace(/;\s*$/u, "");
+      const parsed = parseImportPrelude(prelude);
+      if (!parsed) return null;
+      rule = new CSSImportRule(parsed.href, parsed.media, parsed.layer, parsed.supports);
+      break;
+    }
+    case "font-face": {
+      const fontFace = new CSSFontFaceRule();
+      fontFace.style.cssText = description.declarations;
+      rule = fontFace;
+      break;
+    }
+    case "page": {
+      const page = new CSSPageRule(description.prelude);
+      page.style.cssText = description.declarations;
+      replaceGroupingRules(
+        page,
+        createNativeChildren(description, reportDiagnostic, preserveImports),
+      );
+      rule = page;
+      break;
+    }
+    case "margin": {
+      const margin = new CSSMarginRule(description.prelude);
+      margin.style.cssText = description.declarations;
+      rule = margin;
+      break;
+    }
+    case "position-try": {
+      const positionTry = new CSSPositionTryRule(description.prelude);
+      positionTry.style.cssText = description.declarations;
+      rule = positionTry;
+      break;
+    }
+    case "keyframes": {
+      const keyframes = new CSSKeyframesRule(description.prelude);
+      const frames = createNativeChildren(
+        description,
+        reportDiagnostic,
+        preserveImports,
+      ).filter((candidate): candidate is CSSKeyframeRule => candidate instanceof CSSKeyframeRule);
+      replaceKeyframeRules(keyframes, frames);
+      rule = keyframes;
+      break;
+    }
+    case "keyframe": {
+      const keyframe = new CSSKeyframeRule(description.prelude);
+      keyframe.style.cssText = description.declarations;
+      rule = keyframe;
+      break;
+    }
+    case "counter-style": {
+      const counterStyle = new CSSCounterStyleRule(description.prelude);
+      hydrateCounterStyleDescriptors(counterStyle, description.declarations);
+      rule = counterStyle;
+      break;
+    }
+    case "media":
+      rule = new CSSMediaRule(description.prelude);
+      break;
+    case "supports":
+      rule = new CSSSupportsRule(description.prelude);
+      break;
+    case "container":
+      rule = new CSSContainerRule(description.prelude);
+      break;
+    case "layer-block":
+      rule = new CSSLayerBlockRule(description.prelude);
+      break;
+    case "scope": {
+      const [start, end] = parseScopePrelude(description.prelude);
+      rule = new CSSScopeRule(start, end);
+      break;
+    }
+    case "starting-style":
+      rule = new CSSStartingStyleRule();
+      break;
+    case "layer-statement": {
+      const names = description.cssText
+        .replace(/^@layer\s+/iu, "")
+        .replace(/;\s*$/u, "")
+        .split(",")
+        .map(name => name.trim())
+        .join(", ");
+      return new CSSGenericRule(0, `@layer ${names};`);
+    }
+    default:
+      return createLegacyRule(description.cssText, reportDiagnostic, preserveImports);
+  }
+
+  ruleDiagnostics.set(rule, reportDiagnostic);
+  if (
+    rule instanceof CSSGroupingRule
+    && !(rule instanceof CSSStyleRule)
+    && !(rule instanceof CSSPageRule)
+    && !(rule instanceof CSSKeyframesRule)
+  ) {
+    replaceGroupingRules(
+      rule,
+      createNativeChildren(description, reportDiagnostic, preserveImports),
+    );
+  }
+  return rule;
+}
+
+function hydrateCounterStyleDescriptors(
+  rule: CSSCounterStyleRule,
+  declarations: string,
+): void {
+  try {
+    const parsed = csstree.parse(`.sheetom-counter-style { ${declarations} }`);
+    const style = parsed.type === "StyleSheet" ? parsed.children.first : null;
+    if (style?.type !== "Rule") return;
+    for (const child of style.block.children) {
+      if (child.type !== "Declaration") continue;
+      rule.setParsedDescriptor(
+        child.property.toLowerCase(),
+        generateDescriptorInput(child.value),
+      );
+    }
+  } catch {}
+}
+
+function createNativeChildren(
+  description: NativeRuleDescription,
+  reportDiagnostic: ReportDiagnostic,
+  preserveImports: boolean,
+): CSSRule[] {
+  const children: CSSRule[] = [];
+  for (const child of description.children) {
+    const rule = createRuleFromNative(child, reportDiagnostic, preserveImports);
+    if (rule) children.push(rule);
+  }
+  return children;
+}
+
+function createLegacyRule(
+  ruleText: string,
+  reportDiagnostic: ReportDiagnostic,
+  preserveImports: boolean,
+): CSSRule | null {
+  if (ruleText === "") return null;
+  try {
+    const parsed = csstree.parse(ruleText);
+    if (parsed.type !== "StyleSheet" || parsed.children.size !== 1) return null;
+    const node = parsed.children.first;
+    if (node?.type !== "Rule" && node?.type !== "Atrule") return null;
+    return createRuleFromNode(node, reportDiagnostic, preserveImports);
+  } catch {
+    return null;
+  }
+}
+
 function parseStrictRule(
   ruleText: string,
   reportDiagnostic: ReportDiagnostic,
   preserveImports = false,
   parentRule: CSSGroupingRule | null = null,
 ): CSSRule | null {
-  let parsed: csstree.CssNode;
-  try {
-    parsed = csstree.parse(ruleText);
-  } catch {
-    return null;
-  }
-
-  if (parsed.type !== "StyleSheet" || parsed.children.size !== 1) return null;
-  const node = parsed.children.first;
-  if (!node) return null;
-  if (node.type !== "Rule" && node.type !== "Atrule") return null;
   if (parentRule instanceof CSSPageRule) {
-    if (
-      node.type !== "Atrule" ||
-      !node.block ||
-      !pageMarginRuleNames.has(node.name.toLowerCase())
-    ) return null;
-    return constructInternally(() => {
-      const margin = new CSSMarginRule(node.name.toLowerCase());
-      margin.style.cssText = declarationTextFromBlock(node.block as csstree.Block);
-      ruleDiagnostics.set(margin, reportDiagnostic);
-      return margin;
-    });
+    const page = parseNativeRule(`@page { ${ruleText} }`);
+    if (page?.kind !== "page" || page.children.length !== 1) return null;
+    const child = page.children[0];
+    if (!child || child.kind !== "margin" || !pageMarginRuleNames.has(child.prelude)) return null;
+    return createRuleFromNative(child, reportDiagnostic, preserveImports);
   }
-  if (node.type === "Atrule" && node.name.toLowerCase() === "import" && !preserveImports) {
-    return null;
-  }
-  return createRuleFromNode(node, reportDiagnostic, preserveImports);
-}
-
-function parsedAtRuleName(ruleText: string): string | null {
-  try {
-    const parsed = csstree.parse(ruleText);
-    if (parsed.type !== "StyleSheet" || parsed.children.size !== 1) return null;
-    const node = parsed.children.first;
-    return node?.type === "Atrule" ? node.name.toLowerCase() : null;
-  } catch {
-    return null;
-  }
+  const description = parseNativeRule(ruleText);
+  if (!description || (description.kind === "import" && !preserveImports)) return null;
+  return createRuleFromNative(description, reportDiagnostic, preserveImports);
 }
 
 function genericRuleType(name: string): number {

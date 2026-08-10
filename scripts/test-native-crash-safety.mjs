@@ -81,8 +81,14 @@ const crashCases = [
     },
     {
         name: "rule parser recovered stylesheet",
-        mode: "rule",
+        mode: "recovered-rule",
         source: "@media screen { .x { padding: 72px var(--space, var(--space,; } }",
+    },
+    {
+        name: "recovered rule parser nesting above the supported limit",
+        mode: "recovered-rule",
+        source: `${"@media all{".repeat(257)}.x{color:red}${"}".repeat(257)}`,
+        expectError: "SHEETOM_NESTING_LIMIT",
     },
     {
         name: "rule parser nesting above the supported limit",
