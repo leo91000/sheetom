@@ -12,11 +12,16 @@ pub(crate) fn serialize_observable_value(
     safe_value: &str,
     category: ObservableCategory,
 ) -> String {
-    let recovered = recover_token_text(input.trim());
+    let input = trim_css_whitespace(input);
+    let preserve_comments = matches!(
+        category,
+        ObservableCategory::PendingSubstitution | ObservableCategory::Custom
+    );
+    let recovered = recover_token_text(input, preserve_comments);
     if !matches!(category, ObservableCategory::Typed) {
         if matches!(category, ObservableCategory::Custom)
-            && input.trim().to_ascii_lowercase().starts_with("url(")
-            && input.trim().ends_with('\\')
+            && input.to_ascii_lowercase().starts_with("url(")
+            && input.ends_with('\\')
         {
             return recovered.closed;
         }
@@ -28,7 +33,7 @@ pub(crate) fn serialize_observable_value(
     if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
         && !recovered.recovered
     {
-        return input.trim().to_owned();
+        return input.to_owned();
     }
     if name == "color" || name.ends_with("-color") {
         return serialize_color(&recovered.closed, safe_value);
@@ -94,7 +99,7 @@ struct RecoveredTokenText {
     single_string: Option<String>,
 }
 
-fn recover_token_text(input: &str) -> RecoveredTokenText {
+fn recover_token_text(input: &str, preserve_comments: bool) -> RecoveredTokenText {
     let bytes = input.as_bytes();
     let mut retained = String::with_capacity(input.len());
     let mut closings = Vec::new();
@@ -110,6 +115,7 @@ fn recover_token_text(input: &str) -> RecoveredTokenText {
             continue;
         }
         if bytes[index] == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            let start = index;
             recovered = true;
             index += 2;
             while index < bytes.len()
@@ -117,7 +123,11 @@ fn recover_token_text(input: &str) -> RecoveredTokenText {
             {
                 index += 1;
             }
+            let closed = index < bytes.len();
             index = (index + 2).min(bytes.len());
+            if preserve_comments && closed {
+                retained.push_str(&input[start..index]);
+            }
             continue;
         }
         if matches!(bytes[index], b'\'' | b'"') {
@@ -183,16 +193,49 @@ fn recover_token_text(input: &str) -> RecoveredTokenText {
     if !closings.is_empty() {
         recovered = true;
     }
-    let mut closed = retained.trim().to_owned();
+    let retained = if preserve_comments {
+        trim_token_stream_trivia(&retained)
+    } else {
+        trim_css_whitespace(&retained)
+    };
+    let mut closed = retained.to_owned();
     for closing in closings.iter().rev() {
         closed.push(*closing);
     }
     RecoveredTokenText {
         closed,
         recovered,
-        retained: retained.trim().to_owned(),
+        retained: retained.to_owned(),
         single_string: (significant == 1).then_some(single_string).flatten(),
     }
+}
+
+fn trim_token_stream_trivia(mut value: &str) -> &str {
+    loop {
+        value = trim_css_whitespace(value);
+        let Some(comment) = value.strip_prefix("/*") else {
+            break;
+        };
+        let Some(end) = comment.find("*/") else {
+            break;
+        };
+        value = &comment[end + 2..];
+    }
+    loop {
+        value = trim_css_whitespace(value);
+        let Some(comment_body) = value.strip_suffix("*/") else {
+            break;
+        };
+        let Some(start) = comment_body.rfind("/*") else {
+            break;
+        };
+        value = &comment_body[..start];
+    }
+    trim_css_whitespace(value)
+}
+
+fn trim_css_whitespace(value: &str) -> &str {
+    value.trim_matches(|character| matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{000c}'))
 }
 
 fn serialize_font_family(input: &str, safe_value: &str, recovered: &RecoveredTokenText) -> String {
@@ -398,6 +441,45 @@ mod tests {
             serialize_observable_value("width", "calc(1px", "1px", ObservableCategory::Typed),
             "calc(1px)"
         );
+    }
+
+    #[test]
+    fn preserves_internal_comments_for_custom_and_pending_token_streams() {
+        for (category, input, expected) in [
+            (ObservableCategory::Custom, "a/*c*/b", "a/*c*/b"),
+            (
+                ObservableCategory::Custom,
+                "\u{00a0}red\u{00a0}",
+                "\u{00a0}red\u{00a0}",
+            ),
+            (ObservableCategory::Custom, "/*c*/a/*tail*/", "a"),
+            (
+                ObservableCategory::PendingSubstitution,
+                "calc(var(--x)/*c*/ + 1px)",
+                "calc(var(--x)/*c*/ + 1px)",
+            ),
+            (
+                ObservableCategory::PendingSubstitution,
+                "--f(a/*c*/,b)",
+                "--f(a/*c*/,b)",
+            ),
+            (
+                ObservableCategory::PendingSubstitution,
+                "--f(a)/*c*/",
+                "--f(a)",
+            ),
+            (
+                ObservableCategory::PendingSubstitution,
+                "--f(a/*c)",
+                "--f(a",
+            ),
+        ] {
+            assert_eq!(
+                serialize_observable_value("width", input, input, category),
+                expected,
+                "{input}"
+            );
+        }
     }
 
     #[test]

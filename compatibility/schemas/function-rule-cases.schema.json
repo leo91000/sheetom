@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/function-rule-cases.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "baseline", "cases"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["browser", "version", "wptCommit", "sources"],
+      "properties": {
+        "browser": { "const": "chromium" },
+        "version": { "type": "string" },
+        "wptCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "blobSha"],
+            "properties": {
+              "path": { "type": "string" },
+              "blobSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+            }
+          }
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 80,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "branch", "prelude", "accepted"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "branch": { "type": "string", "minLength": 1 },
+          "prelude": { "type": "string", "pattern": "^@function " },
+          "accepted": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

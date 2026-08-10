@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.10");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.11");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
@@ -60,6 +60,18 @@ assert.equal(recoveredGroup.prelude, "app");
 assert.equal(recoveredGroup.children[0].kind, "media");
 assert.equal(recoveredGroup.children[0].prelude, "(max-width: 767px)");
 assert.equal(recoveredGroup.children[0].children[0].prelude, ".x:hover");
+
+const customFunction = JSON.parse(binding.parseRecoveredRuleTreeJson(
+    "@function --mix(--x <number>: 1, --rest type(*)) returns <number> { --local: foo(a;b); result: calc(var(--x) * 2); @supports (width: 100px) { result: 100px; } }",
+));
+assert.equal(customFunction.kind, "function");
+assert.equal(customFunction.prelude, "--mix");
+assert.equal(customFunction.declarations, "<number>");
+assert.equal(customFunction.children[0].kind, "function-parameter");
+assert.equal(customFunction.children[0].children[0].declarations, "1");
+assert.equal(customFunction.children[2].kind, "function-declarations");
+assert.equal(customFunction.children[3].kind, "supports");
+assert.equal(customFunction.children[3].children[0].kind, "function-declarations");
 
 assert.equal(binding.normalizeSelector(":is(.a,.b)>.child"), ":is(.a, .b) > .child");
 assert.equal(

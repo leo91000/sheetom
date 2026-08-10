@@ -11,6 +11,8 @@ class. `options` accepts `baseURL`, `media`, `disabled`, and the SheetOM-only
 `diagnostics` flag. `parseStyleSheet(cssText, options?)` is a SheetOM extension
 for existing regular sheets; it preserves valid `@import` rules without loading
 them and accepts `href` as source metadata.
+Rules rejected by the constructed CSSOM parser are retained as immutable opaque
+rules so a regular-sheet round trip does not silently delete authored source.
 
 All exported rule, rule-list, declaration, media-list, and feature-map classes
 exist for `instanceof` and typing. Direct construction throws `TypeError`, as it
@@ -97,6 +99,14 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
   same-object `types` list.
 - `CSSPropertyRule` exposes immutable `name`, `syntax`, `inherits`, and
   `initialValue` descriptors.
+- `CSSFunctionRule` exposes immutable `name` and `returnType`, returns fresh
+  parameter records from `getParameters()`, and owns a live grouping list.
+  Declaration runs are `CSSFunctionDeclarations` rules whose
+  `CSSFunctionDescriptors` retain only custom properties and `result`.
+  Conditional rules in the body recursively expose the same descriptor
+  semantics. As in Chromium 151, assigning `result` through its named setter
+  or `setProperty()` is a no-op; `cssText` replacement and `removeProperty()`
+  remain live.
 
 Unknown metadata and future rules can be retained and serialized, but are
 read-only until a standards-defined mutable interface is implemented.

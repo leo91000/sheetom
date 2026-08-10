@@ -1,12 +1,13 @@
 {
   "repository": "https://github.com/web-platform-tests/wpt.git",
   "commit": "54f8f933629e7c010ae98a246729af01f8abcda5",
-  "auditDate": "2026-08-08",
+  "auditDate": "2026-08-10",
   "paths": [
     "css/cssom",
     "css/css-syntax",
     "css/css-variables",
     "css/css-cascade",
-    "css/css-conditional"
+    "css/css-conditional",
+    "css/css-mixins/functions"
   ]
 }

@@ -3,12 +3,12 @@ import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
 import {
   parseNativeRule,
+  parseNativeRuleWithErrorRecovery,
   type NativeRuleDescription,
 } from "./internal/native-rule-parser.js";
 import {
   normalizeNativeMedia,
   normalizeNativeSelector,
-  normalizeNativeSupports,
   parseNativeContainerPrelude,
   parseNativeScopePrelude,
 } from "./internal/native-rule-syntax.js";
@@ -40,6 +40,7 @@ const ruleParentage = new WeakMap<
   object,
   { parentRule: CSSRule | null; parentStyleSheet: CSSStyleSheet | null }
 >();
+const functionRuleHeaders = new WeakMap<object, string>();
 const unsignedLongRange = 2 ** 32;
 const pageMarginRuleNames = new Set([
   "top-left-corner",
@@ -82,6 +83,13 @@ export interface CSSStyleSheetOptions {
 /** Options for forgiving parsing of an existing regular stylesheet. */
 export interface ParseStyleSheetOptions extends CSSStyleSheetOptions {
   href?: string;
+}
+
+/** One parsed parameter exposed by `CSSFunctionRule.getParameters()`. */
+export interface FunctionParameter {
+  name: string;
+  type: string;
+  defaultValue?: string;
 }
 
 type ReportDiagnostic = (diagnostic: SheetOMDiagnostic) => void;
@@ -127,6 +135,11 @@ function requireArguments(
   throw new TypeError(
     `Failed to execute '${operation}' on '${interfaceName}': ${required} ${noun} required, but only ${actual} present.`,
   );
+}
+
+function proxyMember(target: object, property: PropertyKey, value: unknown): unknown {
+  if (property === "constructor" || typeof value !== "function") return value;
+  return value.bind(target);
 }
 
 function lockOwnProperties(target: object, ...properties: string[]): void {
@@ -232,7 +245,7 @@ export class CSSRuleList {
       get(target, property) {
         if (typeof property !== "string" || !arrayIndexPattern.test(property)) {
           const result = Reflect.get(target, property, target);
-          return typeof result === "function" ? result.bind(target) : result;
+          return proxyMember(target, property, result);
         }
 
         return target.#rules[Number(property)];
@@ -256,10 +269,6 @@ export class CSSRuleList {
 
 function normalizeMediaText(value: string): string | null {
   return normalizeNativeMedia(value);
-}
-
-function normalizeConditionalPrelude(name: "supports", value: string): string {
-  return name === "supports" ? normalizeNativeSupports(value) ?? value : value;
 }
 
 interface ContainerPrelude {
@@ -303,7 +312,7 @@ export class MediaList {
       get(target, property) {
         if (typeof property !== "string" || !arrayIndexPattern.test(property)) {
           const result = Reflect.get(target, property, target);
-          return typeof result === "function" ? result.bind(target) : result;
+          return proxyMember(target, property, result);
         }
         return target.item(Number(property)) || undefined;
       },
@@ -424,7 +433,7 @@ export class CSSGroupingRule extends CSSRule {
 
   protected serializeGroup(header: string): string {
     const rules = ruleTree.children(this);
-    if (rules.length === 0) return `${header} { }`;
+    if (rules.length === 0) return `${header} {\n}`;
     return `${header} {\n${rules.map(rule => indentRuleText(rule.cssText)).join("\n")}\n}`;
   }
 }
@@ -441,6 +450,65 @@ export class CSSConditionRule extends CSSGroupingRule {
   get conditionText(): string {
     return this.#conditionText;
   }
+}
+
+/** A live custom `@function` rule. */
+export class CSSFunctionRule extends CSSGroupingRule {
+  readonly name: string;
+  readonly returnType: string;
+  readonly #parameters: readonly FunctionParameter[];
+
+  constructor(
+    name: string,
+    parameters: readonly FunctionParameter[],
+    returnType: string,
+  ) {
+    super(0);
+    this.name = name;
+    this.returnType = returnType;
+    this.#parameters = parameters.map(parameter => ({ ...parameter }));
+    functionRuleHeaders.set(
+      this,
+      serializeFunctionHeader(this.name, this.#parameters, this.returnType),
+    );
+    lockOwnProperties(this, "name", "returnType");
+  }
+
+  getParameters(): FunctionParameter[] {
+    return this.#parameters.map(parameter => ({ ...parameter }));
+  }
+
+  override get cssText(): string {
+    const header = functionRuleHeaders.get(this) ?? "@function";
+    const children = ruleTree.children(this);
+    if (children.length === 0) return `${header} { }`;
+    return `${header} { ${children.map(child => child.cssText).join(" ")} }`;
+  }
+
+  set cssText(_value: string) {}
+}
+
+function serializeFunctionHeader(
+  name: string,
+  parameters: readonly FunctionParameter[],
+  returnType: string,
+): string {
+  const serializedParameters = parameters.map(parameter => {
+    const type = serializeFunctionType(parameter.type);
+    const defaultValue = Object.hasOwn(parameter, "defaultValue")
+      ? `: ${parameter.defaultValue}`
+      : "";
+    return `${serializeNativeIdentifier(parameter.name)}${type}${defaultValue}`;
+  }).join(", ");
+  const serializedReturnType = returnType === "*"
+    ? ""
+    : ` returns${serializeFunctionType(returnType)}`;
+  return `@function ${serializeNativeIdentifier(name)}(${serializedParameters})${serializedReturnType}`;
+}
+
+function serializeFunctionType(type: string): string {
+  if (type === "*") return "";
+  return type.includes(" | ") ? ` type(${type})` : ` ${type}`;
 }
 
 /** A live `@media` rule. */
@@ -468,7 +536,7 @@ export class CSSMediaRule extends CSSConditionRule {
 /** A live `@supports` rule. */
 export class CSSSupportsRule extends CSSConditionRule {
   constructor(conditionText: string) {
-    super(CSSRule.SUPPORTS_RULE, normalizeConditionalPrelude("supports", conditionText));
+    super(CSSRule.SUPPORTS_RULE, conditionText.trim());
   }
 
   override get cssText(): string {
@@ -771,7 +839,11 @@ export class CSSStyleDeclaration {
     };
     this.#block = new NativeDeclarationBlock(
       reportDeclarationDiagnostic,
-      parentRule instanceof CSSFontFaceRule ? "font-face" : "style",
+      parentRule instanceof CSSFontFaceRule
+        ? "font-face"
+        : parentRule instanceof CSSFunctionDeclarations
+          ? "function"
+          : "style",
     );
 
     return new Proxy(this, {
@@ -785,7 +857,7 @@ export class CSSStyleDeclaration {
         }
 
         const result = Reflect.get(target, property, target);
-        return typeof result === "function" ? result.bind(target) : result;
+        return proxyMember(target, property, result);
       },
       set(target, property, value) {
         if (typeof property === "string" && !Reflect.has(target, property)) {
@@ -884,6 +956,39 @@ export class CSSNestedDeclarations extends CSSRule {
   }
 
   set cssText(_value: string) {}
+}
+
+/** A run of live descriptors inside a custom function. */
+export class CSSFunctionDeclarations extends CSSRule {
+  readonly #style: CSSFunctionDescriptors;
+
+  constructor() {
+    super(0);
+    this.#style = new CSSFunctionDescriptors(this);
+  }
+
+  get style(): CSSFunctionDescriptors {
+    return this.#style;
+  }
+
+  set style(cssText: string) {
+    this.#style.cssText = `${cssText}`;
+  }
+
+  override get cssText(): string {
+    return this.style.cssText;
+  }
+
+  set cssText(_value: string) {}
+}
+
+/** The declaration interface used by `CSSFunctionDeclarations`. */
+export class CSSFunctionDescriptors extends CSSStyleDeclaration {
+  get result(): string {
+    return this.getPropertyValue("result");
+  }
+
+  set result(_value: string | null) {}
 }
 
 /** A page-margin rule nested inside `CSSPageRule`. */
@@ -1381,7 +1486,7 @@ function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
       children: ruleTree.children(rule),
     };
   }
-  if (rule instanceof CSSNestedDeclarations) {
+  if (rule instanceof CSSNestedDeclarations || rule instanceof CSSFunctionDeclarations) {
     return { kind: "declarations", declarations: rule.style.serializeSafe("") };
   }
   if (
@@ -1418,9 +1523,32 @@ function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
     return { kind: "raw", cssText: rule.cssText };
   }
 
+  return {
+    kind: "block",
+    header: groupingRuleHeader(rule),
+    children: ruleTree.children(rule),
+  };
+}
+
+function groupingRuleHeader(rule: CSSGroupingRule): string {
+  if (rule instanceof CSSFunctionRule) {
+    return functionRuleHeaders.get(rule) ?? "@function";
+  }
+  if (rule instanceof CSSMediaRule) return `@media ${rule.media.mediaText}`;
+  if (rule instanceof CSSSupportsRule) return `@supports ${rule.conditionText}`;
+  if (rule instanceof CSSContainerRule) return `@container ${rule.conditionText}`;
+  if (rule instanceof CSSLayerBlockRule) {
+    return `@layer${rule.name === "" ? "" : ` ${rule.name}`}`;
+  }
+  if (rule instanceof CSSScopeRule) {
+    const start = rule.start === null ? "" : ` (${rule.start})`;
+    const end = rule.end === null ? "" : ` to (${rule.end})`;
+    return `@scope${start}${end}`;
+  }
+  if (rule instanceof CSSStartingStyleRule) return "@starting-style";
+
   const blockIndex = rule.cssText.indexOf("{");
-  const header = blockIndex === -1 ? rule.cssText : rule.cssText.slice(0, blockIndex).trimEnd();
-  return { kind: "block", header, children: ruleTree.children(rule) };
+  return blockIndex === -1 ? rule.cssText : rule.cssText.slice(0, blockIndex).trimEnd();
 }
 
 function parseScopePrelude(prelude: string): [string | null, string | null] {
@@ -1499,6 +1627,12 @@ function createRuleFromNativeInternal(
       const nested = new CSSNestedDeclarations();
       nested.style.cssText = description.declarations;
       rule = nested;
+      break;
+    }
+    case "function-declarations": {
+      const declarations = new CSSFunctionDeclarations();
+      declarations.style.cssText = description.declarations;
+      rule = declarations;
       break;
     }
     case "import": {
@@ -1604,6 +1738,31 @@ function createRuleFromNativeInternal(
           .map(candidate => candidate.prelude),
         description.cssText,
       );
+    case "function": {
+      const parameters = description.children
+        .filter(candidate => candidate.kind === "function-parameter")
+        .map(candidate => {
+          const defaultValue = candidate.children.find(
+            child => child.kind === "property-descriptor" && child.prelude === "default-value",
+          );
+          return defaultValue
+            ? {
+                defaultValue: defaultValue.declarations,
+                name: candidate.prelude,
+                type: candidate.declarations,
+              }
+            : {
+                name: candidate.prelude,
+                type: candidate.declarations,
+              };
+        });
+      rule = new CSSFunctionRule(
+        description.prelude,
+        parameters,
+        description.declarations,
+      );
+      break;
+    }
     case "namespace":
       return new CSSNamespaceRule(
         nativeRuleDescriptor(description, "namespace-uri"),
@@ -1680,7 +1839,14 @@ function createNativeChildren(
 ): CSSRule[] {
   const children: CSSRule[] = [];
   for (const child of description.children) {
+    if (
+      child.kind === "function-parameter"
+      || child.kind === "property-descriptor"
+      || child.kind === "view-transition-type"
+      || child.kind === "layer-name"
+    ) continue;
     const rule = createRuleFromNative(child, reportDiagnostic, preserveImports);
+    if (rule instanceof CSSFunctionDeclarations && rule.style.length === 0) continue;
     if (rule) children.push(rule);
   }
   return children;
@@ -1699,9 +1865,21 @@ function parseStrictRule(
     if (!child || child.kind !== "margin" || !pageMarginRuleNames.has(child.prelude)) return null;
     return createRuleFromNative(child, reportDiagnostic, preserveImports);
   }
-  const description = parseNativeRule(ruleText);
+  const description = parseNativeRule(ruleText)
+    ?? (parentRule && hasFunctionAncestor(parentRule)
+      ? parseNativeRuleWithErrorRecovery(ruleText)
+      : null);
   if (!description || (description.kind === "import" && !preserveImports)) return null;
   return createRuleFromNative(description, reportDiagnostic, preserveImports);
+}
+
+function hasFunctionAncestor(rule: CSSRule): boolean {
+  let current: CSSRule | null = rule;
+  while (current) {
+    if (current instanceof CSSFunctionRule) return true;
+    current = current.parentRule;
+  }
+  return false;
 }
 
 function genericRuleType(name: string): number {

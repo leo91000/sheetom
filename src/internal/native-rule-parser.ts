@@ -17,6 +17,17 @@ export function parseNativeRule(source: string): NativeRuleDescription | null {
   }
 }
 
+export function parseNativeRuleWithErrorRecovery(source: string): NativeRuleDescription | null {
+  try {
+    const parsed: unknown = JSON.parse(
+      nativeBinding.parseRecoveredSingleRuleTreeJson(source),
+    );
+    return isNativeRuleDescription(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function isNativeRuleDescription(value: unknown): value is NativeRuleDescription {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as Partial<NativeRuleDescription>;

@@ -48,7 +48,88 @@ const cases = [
         operations: [["set", "--foo:bar", "red", ""]],
         probes: ["--foo:bar"],
     },
+    {
+        id: "css-whitespace-does-not-strip-nbsp",
+        operations: [[
+            "replace",
+            "--x: red ; width: 10px; width: 1px ; font-family: A ;",
+        ]],
+        probes: ["--x", "width", "font-family"],
+    },
+    {
+        id: "custom-function-substitution",
+        operations: [["set", "width", "calc(--double(1px) + 1px)", ""]],
+        probes: ["width"],
+    },
+    {
+        id: "custom-function-pending-shorthand",
+        operations: [["set", "padding", "--spacing(1px, 2px)", "important"]],
+        probes: ["padding", "padding-top", "padding-left"],
+    },
+    {
+        id: "invalid-custom-function-is-atomic",
+        operations: [
+            ["set", "width", "10px", ""],
+            ["set", "width", "--double(1px; 2px)", ""],
+        ],
+        probes: ["width"],
+    },
 ];
+
+const customFunctionNames = ["--f", "---f", "--\\66", "--"];
+const customFunctionArguments = [
+    "",
+    "a",
+    ",a",
+    "a,b",
+    "{a,b}",
+    "[a,b]",
+    "foo(a;b)",
+    "foo(!)",
+    "a,,b",
+    "a,",
+    "a;",
+    "!",
+    '"a;b"',
+    "a/*x*/,b",
+];
+const customFunctionContexts = [
+    value => value,
+    value => `calc(${value} + 1px)`,
+    value => `min(${value}, 1px)`,
+];
+for (const name of customFunctionNames) {
+    for (const argument of customFunctionArguments) {
+        for (const context of customFunctionContexts) {
+            const value = context(`${name}(${argument})`);
+            cases.push({
+                id: `custom-function-call:${value}`,
+                operations: [
+                    ["set", "width", "10px", ""],
+                    ["set", "width", value, ""],
+                ],
+                probes: ["width"],
+            });
+        }
+    }
+}
+
+for (const value of [
+    "a/*c*/b",
+    "/*c*/a",
+    "a/*c*/",
+    "var(--x/*c*/)",
+    "foo(a/*c*/b)",
+    "a/*c",
+    " red ",
+    " ",
+]) {
+    cases.push({
+        id: `custom-property-comment:${value}`,
+        operations: [["set", "--x", value, ""]],
+        probes: ["--x"],
+    });
+}
 
 function applyNative(state, operation) {
     const [kind, ...args] = operation;

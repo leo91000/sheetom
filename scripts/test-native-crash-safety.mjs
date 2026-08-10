@@ -85,6 +85,32 @@ const crashCases = [
         source: "@media screen { .x { padding: 72px var(--space, var(--space,; } }",
     },
     {
+        name: "custom function image-set parameter and result",
+        mode: "recovered-rule",
+        source: "@function --image(--value <image>: image-set(url(a.png) 1x, url(b.png) 2x)) returns <image> { --local: foo(a;b); result: var(--value); }",
+    },
+    {
+        name: "custom function nested component blocks",
+        mode: "recovered-rule",
+        source: "@function --blocks() { --fn: foo(a;b); --square: [a;b]; --curly: {a;b} tail; --choice: if(style(--x: 1): red; else: blue); result: ok; }",
+    },
+    {
+        name: "custom function conditional nesting below the rule limit",
+        mode: "recovered-rule",
+        source: `@function --nested() { ${"@supports (display:grid) {".repeat(64)}result: 1;${"}".repeat(64)} }`,
+    },
+    {
+        name: "single recovered function group keeps native values process-safe",
+        mode: "recovered-single-rule",
+        source: "@media(width:1px){result:image-set(url(a.png) 1x, url(b.png) 2x);}",
+    },
+    {
+        name: "single recovered function group rejects trailing tokens safely",
+        mode: "recovered-single-rule",
+        source: "@media(width:1px){result:1px;} color:red",
+        expectError: "SHEETOM_PARSE_ERROR",
+    },
+    {
         name: "recovered rule parser nesting above the supported limit",
         mode: "recovered-rule",
         source: `${"@media all{".repeat(257)}.x{color:red}${"}".repeat(257)}`,

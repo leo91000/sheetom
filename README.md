@@ -140,6 +140,8 @@ authority.
 - import, font-face, page/margin, nested-declaration, and position-try rules
 - keyframes and mutable keyframe rules
 - counter-style descriptors and font-feature-value maps
+- custom `@function` parameters, return types, conditional groups, and live
+  function descriptors
 - live indexed and named `CSSStyleDeclaration`
 - `insertRule`, `deleteRule`, `replace`, and `replaceSync`
 - `parseStyleSheet` for forgiving regular-sheet parsing

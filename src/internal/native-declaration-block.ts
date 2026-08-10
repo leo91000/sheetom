@@ -19,7 +19,7 @@ export class NativeDeclarationBlock {
 
   constructor(
     reportDiagnostic: ReportDeclarationDiagnostic,
-    context: "style" | "font-face" = "style",
+    context: "style" | "font-face" | "function" = "style",
   ) {
     this.#reportDiagnostic = reportDiagnostic;
     this.#state = new nativeBinding.NativeDeclarationState(context);

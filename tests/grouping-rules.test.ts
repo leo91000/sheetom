@@ -74,7 +74,7 @@ test("condition and structural grouping rules expose specialized interfaces", ()
 
   const supports = sheet.cssRules[0];
   assert.ok(supports instanceof CSSSupportsRule);
-  assert.equal(supports.conditionText, "(display:grid)");
+  assert.equal(supports.conditionText, "(display: grid)");
 
   const container = sheet.cssRules[1];
   assert.ok(container instanceof CSSContainerRule);
@@ -120,7 +120,7 @@ test("container rules preserve legacy and functional query syntax", () => {
     assert.equal(container.conditionText, condition);
     assert.equal(container.containerName, candidate.name);
     assert.equal(container.containerQuery, candidate.query);
-    assert.equal(container.cssText, `@container ${condition} { }`);
+    assert.equal(container.cssText, `@container ${condition} {\n}`);
     assert.match(sheet.serialize(), new RegExp(candidate.query.replace(/[()]/g, "\\$&")));
   }
 });

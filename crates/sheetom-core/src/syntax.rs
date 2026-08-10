@@ -103,7 +103,110 @@ pub(crate) fn analyze_substitutions(value: &str) -> SubstitutionAnalysis {
         index += 1;
     }
 
-    SubstitutionAnalysis { found, valid: true }
+    if !value.contains("--") && !value.contains('\\') {
+        return SubstitutionAnalysis { found, valid: true };
+    }
+    let dashed = analyze_dashed_substitutions(value);
+    SubstitutionAnalysis {
+        found: found || dashed.found,
+        valid: dashed.valid,
+    }
+}
+
+fn analyze_dashed_substitutions(value: &str) -> SubstitutionAnalysis {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    analyze_component_values(&mut parser).unwrap_or(SubstitutionAnalysis {
+        found: false,
+        valid: false,
+    })
+}
+
+fn analyze_component_values<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<SubstitutionAnalysis, ParseError<'i, ()>> {
+    let mut analysis = SubstitutionAnalysis {
+        found: false,
+        valid: true,
+    };
+    while let Ok(token) = input.next_including_whitespace_and_comments() {
+        let token = token.clone();
+        match token {
+            Token::Function(name) => {
+                let dashed = name.starts_with("--");
+                if dashed && name.len() <= 2 {
+                    return Ok(SubstitutionAnalysis {
+                        found: true,
+                        valid: false,
+                    });
+                }
+                let nested = if dashed {
+                    input.parse_nested_block(analyze_dashed_arguments)?
+                } else {
+                    input.parse_nested_block(analyze_component_values)?
+                };
+                analysis.found |= dashed || nested.found;
+                analysis.valid &= nested.valid;
+            }
+            Token::ParenthesisBlock | Token::SquareBracketBlock | Token::CurlyBracketBlock => {
+                let nested = input.parse_nested_block(analyze_component_values)?;
+                analysis.found |= nested.found;
+                analysis.valid &= nested.valid;
+            }
+            _ => {}
+        }
+    }
+    Ok(analysis)
+}
+
+fn analyze_dashed_arguments<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<SubstitutionAnalysis, ParseError<'i, ()>> {
+    let mut analysis = SubstitutionAnalysis {
+        found: true,
+        valid: true,
+    };
+    let mut comma_count = 0usize;
+    let mut segment_has_value = false;
+    while let Ok(token) = input.next_including_whitespace_and_comments() {
+        let token = token.clone();
+        match token {
+            Token::WhiteSpace(_) | Token::Comment(_) => {}
+            Token::Comma => {
+                if comma_count > 0 && !segment_has_value {
+                    analysis.valid = false;
+                }
+                comma_count += 1;
+                segment_has_value = false;
+            }
+            Token::Semicolon | Token::Delim('!') => analysis.valid = false,
+            Token::Function(name) => {
+                let dashed = name.starts_with("--");
+                if dashed && name.len() <= 2 {
+                    analysis.valid = false;
+                }
+                let nested = if dashed {
+                    input.parse_nested_block(analyze_dashed_arguments)?
+                } else {
+                    input.parse_nested_block(analyze_component_values)?
+                };
+                analysis.found |= dashed || nested.found;
+                analysis.valid &= nested.valid;
+                segment_has_value = true;
+            }
+            Token::ParenthesisBlock | Token::SquareBracketBlock | Token::CurlyBracketBlock => {
+                let nested = input.parse_nested_block(analyze_component_values)?;
+                analysis.found |= nested.found;
+                analysis.valid &= nested.valid;
+                segment_has_value = true;
+            }
+            _ => segment_has_value = true,
+        }
+    }
+    if comma_count > 0 && !segment_has_value {
+        analysis.valid = false;
+    }
+    Ok(analysis)
 }
 
 fn is_name_start(byte: u8) -> bool {
@@ -145,10 +248,11 @@ fn function_arguments(value: &str, start: usize) -> &str {
 }
 
 fn valid_substitution_function(name: &str, arguments: &str) -> bool {
-    let first = arguments
-        .split_once(',')
-        .map_or(arguments, |(first, _)| first)
-        .trim();
+    let first = trim_css_whitespace(
+        arguments
+            .split_once(',')
+            .map_or(arguments, |(first, _)| first),
+    );
     match name {
         "var" => first.starts_with("--") && first.len() > 2,
         "env" | "attr" => !first.is_empty(),
@@ -329,13 +433,13 @@ fn split_priority(source: &str) -> (&str, bool) {
         index += 1;
     }
     let Some(bang) = bang else {
-        return (source.trim(), false);
+        return (trim_css_whitespace(source), false);
     };
     let priority = remove_comments(&source[bang + 1..]);
-    if priority.trim().eq_ignore_ascii_case("important") {
-        (source[..bang].trim(), true)
+    if trim_css_whitespace(&priority).eq_ignore_ascii_case("important") {
+        (trim_css_whitespace(&source[..bang]), true)
     } else {
-        (source.trim(), false)
+        (trim_css_whitespace(source), false)
     }
 }
 
@@ -428,7 +532,7 @@ fn split_top_level(
         if byte == b'/' && bytes.get(index + 1) == Some(&b'*') {
             if depth == 0 && is_separator(b' ') {
                 if let Some(component_start) = start.take() {
-                    let component = value[component_start..index].trim();
+                    let component = trim_css_whitespace(&value[component_start..index]);
                     if !component.is_empty() {
                         components.push(component);
                     }
@@ -460,7 +564,7 @@ fn split_top_level(
         }
         if depth == 0 && is_separator(byte) {
             if let Some(component_start) = start.take() {
-                let component = value[component_start..index].trim();
+                let component = trim_css_whitespace(&value[component_start..index]);
                 if !component.is_empty() {
                     components.push(component);
                 }
@@ -477,7 +581,7 @@ fn split_top_level(
         return None;
     }
     if let Some(component_start) = start {
-        let component = value[component_start..].trim();
+        let component = trim_css_whitespace(&value[component_start..]);
         if !component.is_empty() {
             components.push(component);
         }
@@ -485,6 +589,10 @@ fn split_top_level(
         return None;
     }
     Some(components)
+}
+
+fn trim_css_whitespace(value: &str) -> &str {
+    value.trim_matches(|character| matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{000c}'))
 }
 
 #[cfg(test)]
@@ -515,6 +623,37 @@ mod tests {
     }
 
     #[test]
+    fn validates_custom_dashed_substitution_functions() {
+        for valid in [
+            "--f()",
+            "--f(1px)",
+            "calc(--f() + 1px)",
+            "--f(,a)",
+            "--f({a,b})",
+            "--f(foo(a;b))",
+            "--f(foo(!))",
+            "--f(a",
+            "--\\66()",
+        ] {
+            let analysis = analyze_substitutions(valid);
+            assert!(analysis.found, "{valid}");
+            assert!(analysis.valid, "{valid}");
+        }
+        for invalid in [
+            "--()",
+            "--f(,)",
+            "--f(a,)",
+            "--f(a,,b)",
+            "--f(a;b)",
+            "--f(!)",
+        ] {
+            let analysis = analyze_substitutions(invalid);
+            assert!(analysis.found, "{invalid}");
+            assert!(!analysis.valid, "{invalid}");
+        }
+    }
+
+    #[test]
     fn parses_declaration_boundaries_priorities_and_escaped_names() {
         let declarations = parse_declaration_list(
             "--foo\\:bar: red; width: calc(1px; 2px); color: blue ! /**/ IMPORTANT;",
@@ -526,6 +665,11 @@ mod tests {
         assert_eq!(declarations[1].value, "calc(1px; 2px)");
         assert_eq!(declarations[2].value, "blue");
         assert!(declarations[2].important);
+
+        let non_css_whitespace =
+            parse_declaration_list("--x:\u{00a0}red\u{00a0}; width:\u{00a0}1px\u{00a0};");
+        assert_eq!(non_css_whitespace[0].value, "\u{00a0}red\u{00a0}");
+        assert_eq!(non_css_whitespace[1].value, "\u{00a0}1px\u{00a0}");
     }
 
     #[test]
@@ -535,7 +679,7 @@ mod tests {
         assert_eq!(serialize_identifier("--é"), "--é");
     }
 }
-use cssparser::{Parser, ParserInput};
+use cssparser::{ParseError, Parser, ParserInput, Token};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SourceDeclaration {
