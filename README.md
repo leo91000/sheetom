@@ -170,6 +170,16 @@ percentage, angle, and time contexts. It locks dimensional rejection,
 mixed-unit ordering, non-finite constants, function arity, CSSOM observable
 serialization, and atomic failure to Chromium 151.
 
+Computed-context number results are covered separately by the checked-in
+[`Number Result Math Corpus`](./compatibility/number-result-math-capabilities.json).
+It records 840 batched Chromium observations across all 70 accepting
+properties, including relative lengths, percentages, dynamic products and
+quotients, dimension-result neighbors, invalid dimensional multiplication,
+CSSOM expansion, and declaration serialization. Direct numeric properties use
+the typed runtime codec; composite properties remain explicitly classified for
+their shorthand or property-specific codecs rather than being counted as
+implicitly supported.
+
 The corresponding shorthand depth evidence is split between the reviewed
 [`Grammar Branch Contracts`](./compatibility/shorthand-grammar-contracts.json)
 and the generated

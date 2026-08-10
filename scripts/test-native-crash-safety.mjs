@@ -75,6 +75,27 @@ const crashCases = [
         public: true,
     },
     {
+        name: "context-dependent sign calculation",
+        source: "opacity: sign(calc(1px - 2em))",
+        public: true,
+    },
+    {
+        name: "context-dependent dynamic product",
+        source: "opacity: calc(sign(1em) * sign(1rem))",
+        public: true,
+    },
+    {
+        name: "context-dependent dynamic quotient",
+        source: "opacity: calc(sign(1em) / sign(1rem))",
+        public: true,
+    },
+    {
+        name: "invalid dimension product",
+        source: "opacity: calc(1px * 1em)",
+        public: true,
+        expectRejected: true,
+    },
+    {
         name: "mixed word spacing calculation",
         source: "word-spacing: min(1px, 2%)",
         public: true,

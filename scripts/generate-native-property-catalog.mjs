@@ -86,6 +86,9 @@ const initialValues = [...initialLonghandValues].sort(([left], [right]) =>
 const extensionVariants = new Map([
   ["content", "Content"],
   ["integer-calculation", "IntegerCalculation"],
+  ["length-number-calculation", "LengthNumberCalculation"],
+  ["length-percentage-number-calculation", "LengthPercentageNumberCalculation"],
+  ["length-percentage-or-number-calculation", "LengthPercentageOrNumberCalculation"],
   ["offset-position", "OffsetPosition"],
   ["offset-rotate", "OffsetRotate"],
   ["page-size", "PageSize"],

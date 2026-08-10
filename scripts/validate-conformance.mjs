@@ -52,6 +52,7 @@ const nativeGrammarInventorySchema = await readJson(path.join(compatibilityRoot,
 const functionRuleCasesSchema = await readJson(path.join(compatibilityRoot, "schemas/function-rule-cases.schema.json"));
 const propertyGrammarExtensionsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-grammar-extensions.schema.json"));
 const relativeColorCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/relative-color-corpus.schema.json"));
+const numberResultMathCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/number-result-math-corpus.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -64,6 +65,47 @@ const validateNativeGrammarInventory = ajv.compile(nativeGrammarInventorySchema)
 const validateFunctionRuleCases = ajv.compile(functionRuleCasesSchema);
 const validatePropertyGrammarExtensions = ajv.compile(propertyGrammarExtensionsSchema);
 const validateRelativeColorCorpus = ajv.compile(relativeColorCorpusSchema);
+const validateNumberResultMathCorpus = ajv.compile(numberResultMathCorpusSchema);
+
+const numberResultMathCorpusFile = path.join(
+  compatibilityRoot,
+  "number-result-math-capabilities.json",
+);
+const numberResultMathCorpus = await readJson(numberResultMathCorpusFile);
+validateOrThrow(
+  validateNumberResultMathCorpus,
+  numberResultMathCorpus,
+  numberResultMathCorpusFile,
+);
+assert.equal(
+  new Set(numberResultMathCorpus.cases.map(candidate => candidate.id)).size,
+  numberResultMathCorpus.cases.length,
+  "Number Result Math case IDs must be unique",
+);
+const numberResultProbeByBranch = new Map(
+  numberResultMathCorpus.probes.map(probe => [probe.branch, probe.input]),
+);
+assert.equal(
+  numberResultProbeByBranch.size,
+  numberResultMathCorpus.probes.length,
+  "Number Result Math probe branches must be unique",
+);
+for (const candidate of numberResultMathCorpus.cases) {
+  assert.equal(
+    candidate.input,
+    numberResultProbeByBranch.get(candidate.branch),
+    `${candidate.id} drifted from its declared probe`,
+  );
+  if (candidate.accepted) {
+    assert.equal(typeof candidate.observable, "string", `${candidate.id} needs an observable`);
+    assert.ok(Array.isArray(candidate.items), `${candidate.id} needs expanded items`);
+    assert.equal(typeof candidate.cssText, "string", `${candidate.id} needs cssText`);
+    continue;
+  }
+  assert.equal(candidate.observable, undefined, `${candidate.id} must omit its observable`);
+  assert.equal(candidate.items, undefined, `${candidate.id} must omit expanded items`);
+  assert.equal(candidate.cssText, undefined, `${candidate.id} must omit cssText`);
+}
 
 const relativeColorCorpusFile = path.join(
   compatibilityRoot,
@@ -112,6 +154,71 @@ assert.equal(
   new Set(propertyGrammarExtensions.families.map(family => family.id)).size,
   propertyGrammarExtensions.families.length,
   "Property Grammar Extension family IDs must be unique",
+);
+assert.equal(
+  numberResultMathCorpus.baseline.userAgent,
+  propertyGrammarExtensions.baseline,
+  "Number Result Math and Property Grammar Extension baselines must match",
+);
+assert.equal(
+  numberResultMathCorpus.baseline.propertyManifestSha256,
+  createHash("sha256")
+    .update(await readFile(path.join(repositoryRoot, "src/chromium-properties.ts")))
+    .digest("hex"),
+  "Number Result Math Corpus is stale for chromium-properties.ts",
+);
+const numberResultProperties = branch => numberResultMathCorpus.cases
+  .filter(candidate =>
+    candidate.branch === branch &&
+    candidate.accepted &&
+    candidate.integration === "direct-number")
+  .map(candidate => candidate.property)
+  .sort();
+const relativeLengthProperties = numberResultProperties("relative-length");
+const percentageProperties = numberResultProperties("percentage");
+const lengthPercentageOrNumberProperties = numberResultProperties(
+  "dimension-result-neighbor",
+);
+const lengthPercentageOrNumberPropertySet = new Set(
+  lengthPercentageOrNumberProperties,
+);
+const percentagePropertySet = new Set(percentageProperties);
+const lengthOnlyProperties = relativeLengthProperties
+  .filter(property => !percentagePropertySet.has(property));
+const numberOnlyLengthPercentageProperties = percentageProperties
+  .filter(property => !lengthPercentageOrNumberPropertySet.has(property));
+const extensionFamilyProperties = id => propertyGrammarExtensions.families
+  .find(family => family.id === id)?.properties?.slice().sort() ?? [];
+assert.deepEqual(
+  extensionFamilyProperties("length-number-calculation"),
+  lengthOnlyProperties,
+  "Length-only number-result runtime grammar drifted from Chromium evidence",
+);
+assert.deepEqual(
+  extensionFamilyProperties("length-percentage-number-calculation"),
+  numberOnlyLengthPercentageProperties,
+  "Length-percentage number-result runtime grammar drifted from Chromium evidence",
+);
+assert.deepEqual(
+  extensionFamilyProperties("length-percentage-or-number-calculation"),
+  lengthPercentageOrNumberProperties,
+  "Length-percentage-or-number runtime grammar drifted from Chromium evidence",
+);
+assert.equal(
+  numberResultMathCorpus.cases.some(candidate =>
+    candidate.branch === "invalid-relative-sine" && candidate.accepted),
+  false,
+  "The invalid neighboring sine branch must remain rejected",
+);
+const compositeNumberResultProperties = new Set(
+  numberResultMathCorpus.cases
+    .filter(candidate => candidate.integration === "composite-property")
+    .map(candidate => candidate.property),
+);
+assert.equal(
+  compositeNumberResultProperties.size,
+  13,
+  "Every composite number-result property must remain visible for the CSSOM-state tranche",
 );
 
 const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");

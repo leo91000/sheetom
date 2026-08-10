@@ -120,6 +120,7 @@ pub struct RecoveredComponentValue {
 pub struct RecoveredValue {
     source: Arc<str>,
     values: Arc<[RecoveredComponentValue]>,
+    contains_context_dependent_sign: bool,
 }
 
 impl RecoveredValue {
@@ -133,6 +134,10 @@ impl RecoveredValue {
 
     pub fn slice(&self, span: SourceSpan) -> Option<&str> {
         self.source.get(span.range())
+    }
+
+    pub(crate) fn contains_context_dependent_sign(&self) -> bool {
+        self.contains_context_dependent_sign
     }
 
     pub fn reparsable_css(&self) -> Result<String, EngineError> {
@@ -302,20 +307,24 @@ pub fn recover_component_values_with_limits(
     let mut tokenizer = TokenizerWithSpans::new(source);
     let mut roots = Vec::new();
     let mut open = Vec::new();
+    let mut contains_context_dependent_sign = false;
 
     while let Ok(token) = tokenizer.next_token() {
         let span = SourceSpan::from_token(&token);
         match token.token {
-            Token::Function(name) => push_open(
-                &mut open,
-                OpenComponent {
-                    start: span.start,
-                    opening: span,
-                    kind: OpenComponentKind::Function(name.to_string()),
-                    values: Vec::new(),
-                },
-                limits.max_nesting_depth,
-            )?,
+            Token::Function(name) => {
+                contains_context_dependent_sign |= name.eq_ignore_ascii_case("sign");
+                push_open(
+                    &mut open,
+                    OpenComponent {
+                        start: span.start,
+                        opening: span,
+                        kind: OpenComponentKind::Function(name.to_string()),
+                        values: Vec::new(),
+                    },
+                    limits.max_nesting_depth,
+                )?;
+            }
             Token::ParenthesisBlock => push_simple_block(
                 &mut open,
                 span,
@@ -368,6 +377,7 @@ pub fn recover_component_values_with_limits(
     Ok(RecoveredValue {
         source: Arc::from(source),
         values: roots.into(),
+        contains_context_dependent_sign,
     })
 }
 
@@ -630,6 +640,15 @@ mod tests {
             token(&values[0]).termination,
             RecoveredTokenTermination::ImplicitEof
         );
+    }
+
+    #[test]
+    fn identifies_context_dependent_sign_from_function_tokens() {
+        let recovered = recover_component_values("calc(1 + SIGN(1em)) 'sign(2em)'").unwrap();
+        assert!(recovered.contains_context_dependent_sign());
+
+        let string_only = recover_component_values("'sign(2em)'").unwrap();
+        assert!(!string_only.contains_context_dependent_sign());
     }
 
     #[test]
