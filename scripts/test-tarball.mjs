@@ -74,7 +74,14 @@ try {
     case "deno":
       execFileSync(
         "deno",
-        ["run", "--node-modules-dir=manual", "--allow-ffi", "--allow-sys", "probe.mjs"],
+        [
+          "run",
+          "--node-modules-dir=manual",
+          "--allow-ffi",
+          "--allow-read",
+          "--allow-sys",
+          "probe.mjs",
+        ],
         { cwd: packageDirectory, stdio: "inherit" },
       );
       break;
