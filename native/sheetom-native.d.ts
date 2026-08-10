@@ -32,3 +32,6 @@ export declare function parseRuleTreeJson(source: string): string
 
 /** Parses a stylesheet and returns owned, parser-independent JSON DTOs. */
 export declare function parseStylesheetTreeJson(source: string, errorRecovery: boolean): string
+
+/** Scans exact top-level CSS rule source without exposing native parser nodes. */
+export declare function scanTopLevelRulesJson(source: string): string
