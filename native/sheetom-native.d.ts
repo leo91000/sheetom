@@ -9,6 +9,10 @@ export declare class NativeDeclarationState {
   setProperty(name: string, value: string, priority: string): string
   removeProperty(name: string): string
   serializeLonghands(): string
+  replaceCssText(source: string): void
+  clear(): void
+  get cssText(): string
+  serializeSafe(): string
 }
 
 /**

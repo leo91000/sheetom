@@ -12,7 +12,10 @@ pub use catalog::{
     CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256,
     SOURCE_SHA256 as PROPERTY_CATALOG_SOURCE_SHA256,
 };
-pub use declaration_state::{DeclarationRecord, DeclarationState, MutationOutcome};
+pub use declaration_state::{
+    DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
+    PendingSubstitutionGroup,
+};
 
 #[cfg(panic = "abort")]
 compile_error!("sheetom-core must be compiled with panic=unwind");

@@ -38,4 +38,28 @@ assert.equal(state.getPropertyValue("color"), "red");
 assert.equal(state.removeProperty("overflow"), "hidden auto");
 assert.equal(state.serializeLonghands(), "color: red;");
 
+state.replaceCssText(
+    "width: 1px !important; color: red; width: 2px; height: 3px !important;",
+);
+assert.deepEqual(
+    Array.from({ length: state.length }, (_, index) => state.item(index)),
+    ["color", "width", "height"],
+);
+assert.equal(state.cssText, "color: red; width: 1px !important; height: 3px !important;");
+
+state.replaceCssText("padding: var(--space) !important;");
+assert.equal(state.getPropertyValue("padding"), "var(--space)");
+assert.equal(state.getPropertyValue("padding-top"), "");
+assert.equal(state.getPropertyPriority("padding"), "important");
+assert.equal(state.cssText, "padding: var(--space) !important;");
+assert.equal(state.serializeSafe(), "padding: var(--space) !important;");
+
+state.clear();
+assert.equal(
+    state.setProperty("padding", "72px var(--space, var(--space,", ""),
+    "applied",
+);
+assert.equal(state.getPropertyValue("padding"), "72px var(--space, var(--space,");
+assert.match(state.serializeSafe(), /^padding: .*\)\);$/u);
+
 console.log(`Native foundation loaded ${nativeArtifacts[0]} successfully.`);

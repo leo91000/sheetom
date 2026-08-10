@@ -141,6 +141,10 @@ jobs:
       - run: npm ci
       - run: npm run native:check
       - run: npm run native:test
+      - name: Install the Chromium oracle
+        run: npx playwright install chromium
+      - name: Compare native declaration sequences with Chromium
+        run: npm run native:browser-differential
 
   native-fuzz-smoke:
     needs: changes
