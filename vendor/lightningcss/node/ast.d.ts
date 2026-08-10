@@ -3317,7 +3317,7 @@ export type Declaration =
     }
   | {
       property: "animation-duration";
-      value: Time[];
+      value: AnimationDuration[];
       vendorPrefix: VendorPrefix;
     }
   | {
@@ -5556,6 +5556,17 @@ export type AnimationIterationCount =
     }
   | {
       type: "infinite";
+    };
+/**
+ * A value for the [animation-duration](https://drafts.csswg.org/css-animations-2/#animation-duration) property.
+ */
+export type AnimationDuration =
+  | {
+      type: "auto";
+    }
+  | {
+      type: "time";
+      value: Time;
     };
 /**
  * A value for the [animation-direction](https://drafts.csswg.org/css-animations/#animation-direction) property.
@@ -8978,7 +8989,7 @@ export interface Animation {
   /**
    * The animation duration.
    */
-  duration: Time;
+  duration: AnimationDuration;
   /**
    * The animation fill mode.
    */

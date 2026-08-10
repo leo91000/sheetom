@@ -1455,7 +1455,7 @@ define_properties! {
   "transition": Transition(SmallVec<[Transition<'i>; 1]>, VendorPrefix) / WebKit / Moz / Ms shorthand: true,
 
   "animation-name": AnimationName(AnimationNameList<'i>, VendorPrefix) / WebKit / Moz / O,
-  "animation-duration": AnimationDuration(SmallVec<[Time; 1]>, VendorPrefix) / WebKit / Moz / O,
+  "animation-duration": AnimationDuration(SmallVec<[AnimationDuration; 1]>, VendorPrefix) / WebKit / Moz / O,
   "animation-timing-function": AnimationTimingFunction(SmallVec<[EasingFunction; 1]>, VendorPrefix) / WebKit / Moz / O,
   "animation-iteration-count": AnimationIterationCount(SmallVec<[AnimationIterationCount; 1]>, VendorPrefix) / WebKit / Moz / O,
   "animation-direction": AnimationDirection(SmallVec<[AnimationDirection; 1]>, VendorPrefix) / WebKit / Moz / O,
