@@ -13,6 +13,7 @@ mod recovered_value;
 mod rules;
 mod semantic_value;
 mod shorthand;
+mod substitution_value;
 mod syntax;
 mod value_grammar;
 
@@ -49,8 +50,13 @@ pub use rules::{
 };
 #[doc(hidden)]
 pub use semantic_value::{
-    parse_standard_semantic_property, parse_standard_semantic_property_with_limits,
-    SemanticDeclaration, SemanticPropertyValue,
+    parse_semantic_property, parse_semantic_property_with_limits, parse_standard_semantic_property,
+    parse_standard_semantic_property_with_limits, SemanticDeclaration, SemanticPropertyValue,
+};
+#[doc(hidden)]
+pub use substitution_value::{
+    analyze_recovered_substitutions, SemanticSubstitutionFunction, SemanticSubstitutionValue,
+    SubstitutionFunctionKind,
 };
 
 #[doc(hidden)]
@@ -72,7 +78,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.16";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.17";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -413,7 +419,11 @@ pub fn fuzz_declaration_block(source: &str) {
 
 #[doc(hidden)]
 pub fn fuzz_recovered_component_values(source: &str) {
-    let _ = recover_component_values(source);
+    let Ok(recovered) = recover_component_values(source) else {
+        return;
+    };
+    let _ = recovered.reparsable_css();
+    let _ = analyze_recovered_substitutions(&recovered);
 }
 
 #[cfg(test)]
@@ -429,7 +439,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.16");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.17");
     }
 
     #[test]

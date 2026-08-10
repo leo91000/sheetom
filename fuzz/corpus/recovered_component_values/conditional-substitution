@@ -1,0 +1,1 @@
+if(style(--theme: dark): white; else: black)
