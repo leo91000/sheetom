@@ -7,12 +7,25 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const compatibilityRoot = path.join(repositoryRoot, "compatibility");
 const lock = JSON.parse(await readFile(path.join(compatibilityRoot, "wpt.lock.json"), "utf8"));
 const manifest = JSON.parse(await readFile(path.join(compatibilityRoot, "wpt-mappings.json"), "utf8"));
+const functionRuleCorpus = JSON.parse(await readFile(
+  path.join(compatibilityRoot, "function-rule-cases.json"),
+  "utf8",
+));
 const mappingsByPath = new Map();
 
 for (const mapping of manifest.mappings) {
   const mappings = mappingsByPath.get(mapping.path) ?? [];
   mappings.push(mapping);
   mappingsByPath.set(mapping.path, mappings);
+}
+for (const source of functionRuleCorpus.baseline.sources) {
+  const mappings = mappingsByPath.get(source.path) ?? [];
+  mappings.push({
+    id: `function-rule-corpus:${source.path}`,
+    blobSha: source.blobSha,
+    subtest: null,
+  });
+  mappingsByPath.set(source.path, mappings);
 }
 
 function gitBlobSha(content) {
@@ -32,10 +45,12 @@ for (const [sourcePath, mappings] of mappingsByPath) {
     if (mapping.blobSha !== blobSha) {
       throw new Error(`${mapping.id} is stale: expected blob ${mapping.blobSha}, received ${blobSha}`);
     }
-    if (!source.includes(mapping.subtest)) {
+    if (mapping.subtest !== null && !source.includes(mapping.subtest)) {
       throw new Error(`${mapping.id} subtest title is absent from ${sourcePath}`);
     }
   }
 }
 
-console.log(`Verified ${manifest.mappings.length} WPT mappings at ${lock.commit}.`);
+console.log(
+  `Verified ${manifest.mappings.length} WPT mappings and ${functionRuleCorpus.baseline.sources.length} Function Rule source blobs at ${lock.commit}.`,
+);

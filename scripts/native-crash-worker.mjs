@@ -22,6 +22,9 @@ if (crashCase.mode === "rule") execute = () => binding.parseStylesheetTreeJson(s
 if (crashCase.mode === "recovered-rule") {
     execute = () => binding.parseRecoveredRuleTreeJson(source);
 }
+if (crashCase.mode === "recovered-single-rule") {
+    execute = () => binding.parseRecoveredSingleRuleTreeJson(source);
+}
 if (crashCase.mode === "selector") execute = () => binding.normalizeSelector(source);
 if (crashCase.mode === "media") execute = () => binding.normalizeMedia(source);
 if (crashCase.mode === "supports") execute = () => binding.normalizeSupports(source);
@@ -50,5 +53,5 @@ if (crashCase.expectError) {
     assert.equal(typeof execute(), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.10");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.11");
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

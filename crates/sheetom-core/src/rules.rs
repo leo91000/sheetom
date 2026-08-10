@@ -1,4 +1,5 @@
 use crate::{
+    function_rule::{parse_function_prelude, ParsedFunctionParameter, ParsedFunctionPrelude},
     observable::{serialize_observable_value, ObservableCategory},
     scan_safety_metrics,
     syntax::{parse_declaration_list, serialize_identifier, split_top_level_whitespace},
@@ -66,7 +67,7 @@ pub fn normalize_selector_text(source: &str) -> Result<String, EngineError> {
 }
 
 pub fn normalize_media_text(source: &str) -> Result<String, EngineError> {
-    if source.trim().is_empty() {
+    if trim_css_whitespace(source).is_empty() {
         return Ok(String::new());
     }
     let parsed = parse_rule_tree(&format!("@media {source}{{}}"))?;
@@ -92,8 +93,8 @@ pub fn parse_container_prelude(source: &str) -> Result<ParsedContainerPrelude, E
     let condition_text = format_condition_text(source);
     let query_start = container_query_start(&condition_text);
     let (name, query) = condition_text.split_at(query_start);
-    let name = name.trim().to_owned();
-    let query = query.trim().to_owned();
+    let name = trim_css_whitespace(name).to_owned();
+    let query = trim_css_whitespace(query).to_owned();
     if query.is_empty() {
         return Err(EngineError::Parse("container query is empty".to_owned()));
     }
@@ -109,7 +110,7 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
     if parsed.kind != "scope" {
         return Err(EngineError::Parse("invalid scope prelude".to_owned()));
     }
-    let text = source.trim();
+    let text = trim_css_whitespace(source);
     if text.is_empty() {
         return Ok(ParsedScopePrelude {
             start: None,
@@ -119,7 +120,7 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
     let Some((start, remainder)) = consume_parenthesized(text) else {
         return Err(EngineError::Parse("invalid scope start".to_owned()));
     };
-    let remainder = remainder.trim();
+    let remainder = trim_css_whitespace(remainder);
     if remainder.is_empty() {
         return Ok(ParsedScopePrelude {
             start: Some(normalize_selector_text(start)?),
@@ -129,10 +130,10 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
     let Some(after_to) = remainder.strip_prefix("to") else {
         return Err(EngineError::Parse("invalid scope boundary".to_owned()));
     };
-    let Some((end, trailing)) = consume_parenthesized(after_to.trim()) else {
+    let Some((end, trailing)) = consume_parenthesized(trim_css_whitespace(after_to)) else {
         return Err(EngineError::Parse("invalid scope end".to_owned()));
     };
-    if !trailing.trim().is_empty() {
+    if !trim_css_whitespace(trailing).is_empty() {
         return Err(EngineError::Parse(
             "invalid scope trailing input".to_owned(),
         ));
@@ -146,7 +147,7 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
 pub fn serialize_font_family_setter(value: &str) -> String {
     value
         .split(',')
-        .map(str::trim)
+        .map(trim_css_whitespace)
         .filter(|family| !family.is_empty())
         .map(|family| {
             if valid_unquoted_font_family(family) {
@@ -200,7 +201,7 @@ fn container_query_start(source: &str) -> usize {
     {
         return 0;
     }
-    source.find(char::is_whitespace).unwrap_or(source.len())
+    source.find(is_css_whitespace).unwrap_or(source.len())
 }
 
 fn consume_parenthesized(source: &str) -> Option<(&str, &str)> {
@@ -292,7 +293,7 @@ fn format_condition_text(source: &str) -> String {
             index += 1;
             continue;
         }
-        if character.is_whitespace() {
+        if is_css_whitespace(character) {
             pending_space = true;
             index += 1;
             continue;
@@ -332,7 +333,7 @@ fn format_condition_text(source: &str) -> String {
         }
         index += 1;
     }
-    output.trim().to_owned()
+    trim_css_whitespace(&output).to_owned()
 }
 
 fn push_pending_space(output: &mut String, pending: &mut bool) {
@@ -346,6 +347,18 @@ fn trim_trailing_space(output: &mut String) {
     while output.ends_with(' ') {
         output.pop();
     }
+}
+
+fn trim_css_whitespace(value: &str) -> &str {
+    value.trim_matches(is_css_whitespace)
+}
+
+fn trim_start_css_whitespace(value: &str) -> &str {
+    value.trim_start_matches(is_css_whitespace)
+}
+
+fn is_css_whitespace(character: char) -> bool {
+    matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{000c}')
 }
 
 /// Consumes top-level CSS Syntax rules while preserving their exact source.
@@ -445,7 +458,7 @@ fn consume_nested_block<'i>(parser: &mut Parser<'i, '_>) -> Result<(), EngineErr
 }
 
 fn push_source_slice(parser: &Parser<'_, '_>, start: SourcePosition, output: &mut Vec<String>) {
-    let source = parser.slice(start..parser.position()).trim();
+    let source = trim_css_whitespace(parser.slice(start..parser.position()));
     if !source.is_empty() {
         output.push(source.to_owned());
     }
@@ -463,7 +476,7 @@ fn split_outer_block(source: &str) -> Option<(String, String)> {
             .clone();
         match token {
             Token::CurlyBracketBlock => {
-                let header = parser.slice(start..token_start).trim().to_owned();
+                let header = trim_css_whitespace(parser.slice(start..token_start)).to_owned();
                 let body_start = parser.position();
                 consume_nested_block(&mut parser).ok()?;
                 let mut body = parser.slice(body_start..parser.position());
@@ -502,9 +515,81 @@ pub fn parse_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
 pub fn parse_recovered_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
     catch_unwind(AssertUnwindSafe(|| {
         validate_stylesheet_budget(source)?;
-        parse_recovered_rule_tree_inner(source, 0)
+        let parsed = parse_recovered_rule_tree_inner(source, 0)?;
+        let count = parsed_rule_node_count(&parsed);
+        if count > MAX_RULES {
+            return Err(EngineError::RuleLimitExceeded {
+                actual: count,
+                limit: MAX_RULES,
+            });
+        }
+        Ok(parsed)
     }))
     .unwrap_or(Err(EngineError::UnexpectedPanic))
+}
+
+/// Parses exactly one outer rule while allowing browser-style recovery inside
+/// its block. Unlike full stylesheet error recovery, trailing invalid tokens
+/// cannot disappear and make an `insertRule()` mutation look successful.
+pub fn parse_recovered_single_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
+    catch_unwind(AssertUnwindSafe(|| {
+        validate_stylesheet_budget(source)?;
+        if !contains_exactly_one_rule(source)? {
+            return Err(EngineError::Parse(
+                "a recovered rule mutation must contain exactly one rule".to_owned(),
+            ));
+        }
+        let mut rules = parse_stylesheet_tree_inner(source, true)?;
+        if rules.len() != 1 {
+            return Err(EngineError::Parse(
+                "a recovered rule mutation must produce exactly one rule".to_owned(),
+            ));
+        }
+        rules
+            .pop()
+            .ok_or_else(|| EngineError::Parse("the recovered rule is empty".to_owned()))
+    }))
+    .unwrap_or(Err(EngineError::UnexpectedPanic))
+}
+
+fn contains_exactly_one_rule(source: &str) -> Result<bool, EngineError> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let mut token = loop {
+        let Ok(token) = parser.next_including_whitespace_and_comments() else {
+            return Ok(false);
+        };
+        if matches!(token, Token::WhiteSpace(_) | Token::Comment(_)) {
+            continue;
+        }
+        break token.clone();
+    };
+
+    loop {
+        match token {
+            Token::CurlyBracketBlock => {
+                consume_nested_block(&mut parser)?;
+                break;
+            }
+            Token::Function(_) | Token::ParenthesisBlock | Token::SquareBracketBlock => {
+                consume_nested_block(&mut parser)?;
+            }
+            Token::Semicolon => break,
+            Token::CloseCurlyBracket | Token::CDO | Token::CDC => return Ok(false),
+            _ => {}
+        }
+        token = match parser.next_including_whitespace_and_comments() {
+            Ok(token) => token.clone(),
+            Err(_) => return Ok(false),
+        };
+    }
+
+    while let Ok(token) = parser.next_including_whitespace_and_comments() {
+        if !matches!(token, Token::WhiteSpace(_) | Token::Comment(_)) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedRule, EngineError> {
@@ -514,8 +599,14 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             limit: MAX_RULE_NESTING_DEPTH,
         });
     }
-    let strict = parse_rule_tree(source).ok();
+    let function_rule = is_function_rule_header(source);
     let Some((header, body)) = split_outer_block(source) else {
+        if function_rule {
+            return Err(EngineError::Parse(
+                "invalid @function rule block".to_owned(),
+            ));
+        }
+        let strict = parse_rule_tree(source).ok();
         return strict
             .map(|mut parsed| {
                 preserve_source_text(&mut parsed, source);
@@ -523,6 +614,12 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             })
             .ok_or_else(|| EngineError::Parse("the rule has no recoverable block".to_owned()));
     };
+    if function_rule {
+        let prelude = parse_function_prelude(&header)
+            .ok_or_else(|| EngineError::Parse("invalid @function prelude".to_owned()))?;
+        return parse_function_rule(prelude, &body, depth);
+    }
+    let strict = parse_rule_tree(source).ok();
     if let Some(parsed) = strict.as_ref() {
         if parsed.kind == "property" {
             let mut parsed = parsed.clone();
@@ -570,6 +667,169 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
     recover_block_rule(probe, &body, depth)
 }
 
+fn parse_function_rule(
+    prelude: ParsedFunctionPrelude,
+    body: &str,
+    depth: usize,
+) -> Result<ParsedRule, EngineError> {
+    let mut children = prelude
+        .parameters
+        .iter()
+        .map(function_parameter_metadata)
+        .collect::<Vec<_>>();
+    children.extend(parse_function_body(body, depth + 1)?);
+    Ok(ParsedRule {
+        kind: "function".to_owned(),
+        prelude: prelude.name,
+        declarations: prelude.return_type,
+        children,
+        css_text: String::new(),
+    })
+}
+
+fn is_function_rule_header(header: &str) -> bool {
+    let mut input = ParserInput::new(header);
+    let mut parser = Parser::new(&mut input);
+    matches!(
+        parser.next().ok(),
+        Some(Token::AtKeyword(name)) if name.eq_ignore_ascii_case("function")
+    )
+}
+
+fn function_parameter_metadata(parameter: &ParsedFunctionParameter) -> ParsedRule {
+    let children = parameter
+        .default_value
+        .as_ref()
+        .map(|value| vec![property_descriptor("default-value", value)])
+        .unwrap_or_default();
+    ParsedRule {
+        kind: "function-parameter".to_owned(),
+        prelude: parameter.name.clone(),
+        declarations: parameter.value_type.clone(),
+        children,
+        css_text: String::new(),
+    }
+}
+
+fn parse_function_body(body: &str, depth: usize) -> Result<Vec<ParsedRule>, EngineError> {
+    if depth > MAX_RULE_NESTING_DEPTH {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: depth,
+            limit: MAX_RULE_NESTING_DEPTH,
+        });
+    }
+    let mut children = Vec::new();
+    let mut declarations = Vec::new();
+    for fragment in scan_function_block_items(body)? {
+        if let Some(rule) = parse_function_conditional_rule(&fragment, depth)? {
+            flush_function_declarations(&mut children, &mut declarations);
+            children.push(rule);
+        } else if !is_at_rule_source(&fragment) {
+            declarations.push(fragment);
+        }
+    }
+    flush_function_declarations(&mut children, &mut declarations);
+    Ok(children)
+}
+
+fn is_at_rule_source(source: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    matches!(parser.next().ok(), Some(Token::AtKeyword(_)))
+}
+
+fn parse_function_conditional_rule(
+    source: &str,
+    depth: usize,
+) -> Result<Option<ParsedRule>, EngineError> {
+    let Some((header, body)) = split_outer_block(source) else {
+        return Ok(None);
+    };
+    let probe_source = format!("{header}{{}}");
+    let Ok(mut probe) = parse_rule_tree(&probe_source) else {
+        return Ok(None);
+    };
+    if !matches!(probe.kind.as_str(), "media" | "supports" | "container") {
+        return Ok(None);
+    }
+    preserve_source_prelude(&mut probe, &header);
+    probe.declarations.clear();
+    probe.children = parse_function_body(&body, depth + 1)?;
+    probe.css_text.clear();
+    Ok(Some(probe))
+}
+
+fn flush_function_declarations(children: &mut Vec<ParsedRule>, declarations: &mut Vec<String>) {
+    if declarations.is_empty() {
+        return;
+    }
+    let source = declarations.join(" ");
+    declarations.clear();
+    children.push(ParsedRule {
+        kind: "function-declarations".to_owned(),
+        prelude: String::new(),
+        declarations: source,
+        children: Vec::new(),
+        css_text: String::new(),
+    });
+}
+
+/// Splits a custom-function body according to the CSS Syntax block structure.
+///
+/// A function body mixes declaration runs with conditional rules. Semicolons
+/// inside component-value blocks (including `if()`, arbitrary functions,
+/// square blocks, and curly blocks) belong to the declaration value rather
+/// than terminating it. Keeping this scanner function-specific avoids
+/// weakening nested-style-rule recovery, where a top-level curly block has a
+/// different meaning.
+fn scan_function_block_items(source: &str) -> Result<Vec<String>, EngineError> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let mut output = Vec::new();
+
+    while !parser.is_exhausted() {
+        let start = parser.position();
+        let first = match parser.next_including_whitespace_and_comments() {
+            Ok(token) => token.clone(),
+            Err(_) => break,
+        };
+        if is_rule_trivia(&first) {
+            continue;
+        }
+        let at_rule = matches!(first, Token::AtKeyword(_));
+        let mut token = first;
+        loop {
+            let boundary = match token {
+                Token::CurlyBracketBlock => {
+                    consume_nested_block(&mut parser)?;
+                    at_rule
+                }
+                Token::Function(_) | Token::ParenthesisBlock | Token::SquareBracketBlock => {
+                    consume_nested_block(&mut parser)?;
+                    false
+                }
+                Token::Semicolon => true,
+                _ => false,
+            };
+            if boundary {
+                break;
+            }
+            token = match parser.next_including_whitespace_and_comments() {
+                Ok(token) => token.clone(),
+                Err(_) => break,
+            };
+        }
+        push_source_slice(&parser, start, &mut output);
+        if output.len() > MAX_RULES {
+            return Err(EngineError::RuleLimitExceeded {
+                actual: output.len(),
+                limit: MAX_RULES,
+            });
+        }
+    }
+    Ok(output)
+}
+
 fn preserve_property_descriptor_values(rule: &mut ParsedRule, body: &str) {
     let declarations = parse_declaration_list(body);
     let last_value = |name: &str| {
@@ -577,7 +837,7 @@ fn preserve_property_descriptor_values(rule: &mut ParsedRule, body: &str) {
             .iter()
             .rev()
             .find(|declaration| declaration.name.eq_ignore_ascii_case(name))
-            .map(|declaration| declaration.value.trim())
+            .map(|declaration| trim_css_whitespace(&declaration.value))
     };
     let Some(syntax) = last_value("syntax") else {
         return;
@@ -637,7 +897,7 @@ fn parse_css_string(value: &str) -> Option<String> {
 
 fn preserve_source_text(rule: &mut ParsedRule, source: &str) {
     if matches!(rule.kind.as_str(), "generic" | "font-feature-values") {
-        rule.css_text = source.trim().to_owned();
+        rule.css_text = trim_css_whitespace(source).to_owned();
     }
 }
 
@@ -651,8 +911,7 @@ fn preserve_source_prelude(rule: &mut ParsedRule, header: &str) {
         "page" => "@page",
         "position-try" => "@position-try",
         "keyframes" => {
-            if header
-                .trim_start()
+            if trim_start_css_whitespace(header)
                 .to_ascii_lowercase()
                 .starts_with("@-webkit-keyframes")
             {
@@ -665,11 +924,11 @@ fn preserve_source_prelude(rule: &mut ParsedRule, header: &str) {
         "font-feature-values" => "@font-feature-values",
         _ => return,
     };
-    if let Some(prelude) = header.trim().get(prefix.len()..) {
+    if let Some(prelude) = trim_css_whitespace(header).get(prefix.len()..) {
         rule.prelude = if rule.kind == "font-feature-values" {
             format_condition_text(prelude)
         } else {
-            prelude.trim().to_owned()
+            trim_css_whitespace(prelude).to_owned()
         };
     }
 }
@@ -686,7 +945,7 @@ fn recover_block_rule(
             probe.children = recover_child_rules(body, depth + 1)?;
         }
         "font-face" | "position-try" | "counter-style" => {
-            probe.declarations = body.trim().to_owned();
+            probe.declarations = trim_css_whitespace(body).to_owned();
         }
         "font-feature-values" => recover_font_feature_values_body(&mut probe, body),
         "page" => recover_page_body(&mut probe, body, depth)?,
@@ -853,22 +1112,21 @@ fn recover_child_rules(body: &str, depth: usize) -> Result<Vec<ParsedRule>, Engi
 fn recover_page_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result<(), EngineError> {
     let mut declarations = Vec::new();
     for fragment in scan_recovered_block_items(body) {
-        if fragment.trim_start().starts_with('@') {
+        if trim_start_css_whitespace(&fragment).starts_with('@') {
             let (_, margin_body) = split_outer_block(&fragment)
                 .ok_or_else(|| EngineError::Parse("invalid page margin rule".to_owned()))?;
-            let name = fragment
-                .trim_start()
+            let name = trim_start_css_whitespace(&fragment)
                 .strip_prefix('@')
                 .and_then(|value| {
                     value
-                        .split(|character: char| character.is_whitespace() || character == '{')
+                        .split(|character: char| is_css_whitespace(character) || character == '{')
                         .next()
                 })
                 .unwrap_or_default();
             probe.children.push(ParsedRule {
                 kind: "margin".to_owned(),
                 prelude: name.to_ascii_lowercase(),
-                declarations: margin_body.trim().to_owned(),
+                declarations: trim_css_whitespace(&margin_body).to_owned(),
                 children: Vec::new(),
                 css_text: String::new(),
             });
@@ -902,7 +1160,7 @@ fn recover_keyframes_body(
             .next()
             .ok_or_else(|| EngineError::Parse("invalid keyframe selector".to_owned()))?;
         probe.children.push(ParsedRule {
-            declarations: declarations.trim().to_owned(),
+            declarations: trim_css_whitespace(&declarations).to_owned(),
             css_text: String::new(),
             ..keyframe
         });
@@ -994,7 +1252,7 @@ fn push_recovered_item(source: &str, start: Option<usize>, end: usize, output: &
     let Some(start) = start else {
         return;
     };
-    let item = source[start..end].trim();
+    let item = trim_css_whitespace(&source[start..end]);
     if !item.is_empty() {
         output.push(item.to_owned());
     }
@@ -1399,9 +1657,59 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
             css_text,
         },
         CssRule::Ignored => return Ok(None),
-        _ => leaf("generic", &css_text),
+        _ => {
+            if let Some((header, body)) = split_outer_block(&css_text) {
+                if is_function_rule_header(&header) {
+                    let Some(prelude) = parse_function_prelude(&header) else {
+                        return Ok(None);
+                    };
+                    let parsed_function = parse_function_rule(prelude, &body, 0)?;
+                    add_parsed_descendant_count(&parsed_function, count)?;
+                    parsed_function
+                } else {
+                    leaf("generic", &css_text)
+                }
+            } else if is_function_rule_header(&css_text) {
+                return Ok(None);
+            } else {
+                leaf("generic", &css_text)
+            }
+        }
     };
     Ok(Some(parsed))
+}
+
+fn add_parsed_descendant_count(rule: &ParsedRule, count: &mut usize) -> Result<(), EngineError> {
+    let descendants = rule
+        .children
+        .iter()
+        .map(parsed_rule_node_count)
+        .sum::<usize>();
+    *count = count.saturating_add(descendants);
+    if *count > MAX_RULES {
+        return Err(EngineError::RuleLimitExceeded {
+            actual: *count,
+            limit: MAX_RULES,
+        });
+    }
+    Ok(())
+}
+
+fn parsed_rule_node_count(rule: &ParsedRule) -> usize {
+    let own = if matches!(
+        rule.kind.as_str(),
+        "function-parameter" | "property-descriptor" | "view-transition-type" | "layer-name"
+    ) {
+        0usize
+    } else {
+        1usize
+    };
+    own.saturating_add(
+        rule.children
+            .iter()
+            .map(parsed_rule_node_count)
+            .sum::<usize>(),
+    )
 }
 
 fn serialize<T: ToCss + ?Sized>(value: &T) -> Result<String, EngineError> {
@@ -1437,11 +1745,12 @@ fn block_prelude(css_text: &str, prefix: &str) -> String {
     let Some(block) = css_text.find('{') else {
         return String::new();
     };
-    css_text[..block]
-        .strip_prefix(prefix)
-        .unwrap_or(&css_text[..block])
-        .trim()
-        .to_owned()
+    trim_css_whitespace(
+        css_text[..block]
+            .strip_prefix(prefix)
+            .unwrap_or(&css_text[..block]),
+    )
+    .to_owned()
 }
 
 fn block_contents(css_text: &str) -> String {
@@ -1454,7 +1763,7 @@ fn block_contents(css_text: &str) -> String {
     if end <= start {
         return String::new();
     }
-    css_text[start + 1..end].trim().to_owned()
+    trim_css_whitespace(&css_text[start + 1..end]).to_owned()
 }
 
 #[cfg(test)]
@@ -1582,6 +1891,90 @@ mod tests {
             "@view-transition { navigation: none; types: none; }"
         );
         assert_eq!(view_transition.children.len(), 2);
+    }
+
+    #[test]
+    fn parses_custom_functions_into_parameters_and_declaration_runs() {
+        let parsed = parse_recovered_rule_tree(
+            "@function --mix(--x <number>: 1, --color <color>, --rest type(*)) returns <number> { --local: if(style(--x: 1): red; else: blue); result: calc(var(--x) * 2); @supports (width: 100px) { result: 100px; } --tail: 2; }",
+        )
+        .unwrap();
+        assert_eq!(parsed.kind, "function");
+        assert_eq!(parsed.prelude, "--mix");
+        assert_eq!(parsed.declarations, "<number>");
+        assert_eq!(parsed.children[0].kind, "function-parameter");
+        assert_eq!(parsed.children[0].prelude, "--x");
+        assert_eq!(parsed.children[0].declarations, "<number>");
+        assert_eq!(parsed.children[0].children[0].declarations, "1");
+        assert_eq!(parsed.children[2].declarations, "*");
+        assert_eq!(parsed.children[3].kind, "function-declarations");
+        assert!(parsed.children[3].declarations.contains("else: blue"));
+        assert_eq!(parsed.children[4].kind, "supports");
+        assert_eq!(parsed.children[4].children[0].kind, "function-declarations");
+        assert_eq!(parsed.children[5].kind, "function-declarations");
+    }
+
+    #[test]
+    fn function_body_scanner_preserves_nested_component_value_semicolons() {
+        let parsed = parse_recovered_rule_tree(
+            "@function --tokens() { --fn: foo(a;b); --square: [a;b]; --curly: {a;b} tail; --choice: if(style(--theme: dark): red; else: blue); result: ok; }",
+        )
+        .unwrap();
+        assert_eq!(parsed.children.len(), 1);
+        let declarations = &parsed.children[0].declarations;
+        assert!(declarations.contains("foo(a;b)"));
+        assert!(declarations.contains("[a;b]"));
+        assert!(declarations.contains("{a;b} tail"));
+        assert!(declarations.contains("else: blue"));
+        assert!(declarations.contains("result: ok"));
+    }
+
+    #[test]
+    fn strict_stylesheet_parser_classifies_custom_functions() {
+        let parsed = parse_stylesheet_tree(
+            "@function --value(--x <length>: 1px) returns <length> { result: var(--x); }",
+            false,
+        )
+        .unwrap();
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].kind, "function");
+        assert_eq!(parsed[0].prelude, "--value");
+        assert_eq!(parsed[0].children[0].kind, "function-parameter");
+        assert_eq!(parsed[0].children[1].kind, "function-declarations");
+    }
+
+    #[test]
+    fn recovered_single_rule_parser_rejects_trailing_stylesheet_recovery() {
+        let valid = parse_recovered_single_rule_tree(
+            "/* before */ @media (width:1px){result:3px;} /* recovered EOF",
+        )
+        .unwrap();
+        assert_eq!(valid.kind, "media");
+        assert!(valid.children.is_empty());
+
+        for trailing in ["junk", ";", "color:red", ".x{}", "@unknown"] {
+            let source = format!("@media(width:1px){{result:3px;}} {trailing}");
+            assert!(
+                parse_recovered_single_rule_tree(&source).is_err(),
+                "{trailing}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_known_function_rules_are_not_retained_as_generic_rules() {
+        for source in [
+            "@function --value () {}",
+            "@function --value(--x <dino>) {}",
+            "@function --value(--x <length>: 10deg) {}",
+            "@function --value(--x) returns * {}",
+        ] {
+            assert!(
+                parse_stylesheet_tree(source, false).unwrap().is_empty(),
+                "{source}"
+            );
+            assert!(parse_recovered_rule_tree(source).is_err(), "{source}");
+        }
     }
 
     #[test]

@@ -44,6 +44,9 @@ export declare function parseCounterStyleNameJson(source: string): string | null
 /** Parses exactly one rule with browser-style declaration recovery. */
 export declare function parseRecoveredRuleTreeJson(source: string): string
 
+/** Parses one exact outer rule with browser-style recovery inside its block. */
+export declare function parseRecoveredSingleRuleTreeJson(source: string): string
+
 /** Parses exactly one rule and returns an owned, parser-independent JSON DTO. */
 export declare function parseRuleTreeJson(source: string): string
 

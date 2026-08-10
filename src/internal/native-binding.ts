@@ -32,9 +32,11 @@ interface NativeBinding {
   serializeIdentifierValue(value: string): string;
   serializeFontFamilyValue(value: string): string;
   NativeDeclarationState: new (
-    context?: "style" | "font-face",
+    context?: "style" | "font-face" | "function",
   ) => NativeDeclarationStateHandle;
   parseRecoveredRuleTreeJson(source: string): string;
+  parseRecoveredSingleRuleTreeJson(source: string): string;
+  parseStylesheetTreeJson(source: string, errorRecovery: boolean): string;
   parseScopePreludeJson(source: string): string;
   scanTopLevelRulesJson(source: string): string;
 }

@@ -49,6 +49,7 @@ const shorthandCapabilitiesSchema = await readJson(path.join(compatibilityRoot, 
 const shorthandGrammarContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-contracts.schema.json"));
 const shorthandGrammarObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-observations.schema.json"));
 const nativeGrammarInventorySchema = await readJson(path.join(compatibilityRoot, "schemas/native-grammar-inventory.schema.json"));
+const functionRuleCasesSchema = await readJson(path.join(compatibilityRoot, "schemas/function-rule-cases.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -58,6 +59,7 @@ const validateShorthandCapabilities = ajv.compile(shorthandCapabilitiesSchema);
 const validateShorthandGrammarContracts = ajv.compile(shorthandGrammarContractsSchema);
 const validateShorthandGrammarObservations = ajv.compile(shorthandGrammarObservationsSchema);
 const validateNativeGrammarInventory = ajv.compile(nativeGrammarInventorySchema);
+const validateFunctionRuleCases = ajv.compile(functionRuleCasesSchema);
 
 const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");
 validateOrThrow(
@@ -198,6 +200,20 @@ const lock = await readJson(path.join(compatibilityRoot, "wpt.lock.json"));
 if (mappings.wptCommit !== lock.commit) {
   throw new Error("WPT mappings and lock file must reference the same commit");
 }
+
+const functionRuleCasesFile = path.join(compatibilityRoot, "function-rule-cases.json");
+const functionRuleCases = await readJson(functionRuleCasesFile);
+validateOrThrow(validateFunctionRuleCases, functionRuleCases, functionRuleCasesFile);
+assert.equal(
+  functionRuleCases.baseline.wptCommit,
+  lock.commit,
+  "Function Rule corpus and WPT lock file must reference the same commit",
+);
+assert.equal(
+  new Set(functionRuleCases.cases.map(testCase => testCase.id)).size,
+  functionRuleCases.cases.length,
+  "Function Rule case IDs must be unique",
+);
 
 const fixtureDirectory = path.join(compatibilityRoot, "fixtures");
 const fixtureIds = new Set();

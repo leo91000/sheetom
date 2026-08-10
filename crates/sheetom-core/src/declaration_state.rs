@@ -1,3 +1,4 @@
+use crate::function_rule::{canonical_function_descriptor_name, parse_function_descriptor_value};
 use crate::{
     catalog::{
         canonical_property_name as canonical_style_property_name,
@@ -48,6 +49,7 @@ pub enum DeclarationContext {
     #[default]
     Style,
     FontFace,
+    Function,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -144,6 +146,9 @@ impl DeclarationState {
             self.remove_property(&name);
             return MutationOutcome::Applied;
         }
+        if self.context == DeclarationContext::Function && name == "result" {
+            return MutationOutcome::Applied;
+        }
 
         let important = priority == "important";
         let mut parsed = match self.parse_value(&name, value, important) {
@@ -196,6 +201,9 @@ impl DeclarationState {
         let mut winners = HashMap::<String, (DeclarationRecord, usize, usize)>::new();
 
         for (source_index, declaration) in declarations.iter().enumerate() {
+            if self.context == DeclarationContext::Function && declaration.important {
+                continue;
+            }
             let Some(name) = self.canonical_name(&declaration.name) else {
                 continue;
             };
@@ -289,6 +297,7 @@ impl DeclarationState {
         match self.context {
             DeclarationContext::Style => canonical_style_property_name(name),
             DeclarationContext::FontFace => canonical_descriptor_name(name),
+            DeclarationContext::Function => canonical_function_descriptor_name(name),
         }
     }
 
@@ -308,6 +317,9 @@ impl DeclarationState {
             DeclarationContext::Style => parse_value(name, value, important),
             DeclarationContext::FontFace => {
                 parse_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
+            }
+            DeclarationContext::Function => {
+                parse_function_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
             }
         }
     }
@@ -447,7 +459,10 @@ impl DeclarationState {
     }
 
     fn serialized_declarations(&self, safe: bool) -> Vec<String> {
-        if self.context == DeclarationContext::FontFace {
+        if matches!(
+            self.context,
+            DeclarationContext::FontFace | DeclarationContext::Function
+        ) {
             return self
                 .records
                 .iter()
@@ -457,7 +472,10 @@ impl DeclarationState {
                     } else {
                         record.name.clone()
                     };
-                    let value = if safe || record.name == "font-variant" {
+                    let value = if safe
+                        || self.context == DeclarationContext::FontFace
+                            && record.name == "font-variant"
+                    {
                         &record.safe_value
                     } else {
                         &record.observable_value
@@ -641,7 +659,7 @@ fn format_declaration(name: &str, value: &str, important: bool) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{DeclarationState, MutationOutcome, ParsedDeclaration};
+    use super::{DeclarationContext, DeclarationState, MutationOutcome, ParsedDeclaration};
     use serde_json::Value;
 
     #[test]
@@ -741,6 +759,30 @@ mod tests {
         state.set_property("padding-left", "3px", "");
         assert_eq!(state.get_property_value("padding"), "");
         assert_eq!(state.get_property_value("padding-left"), "3px");
+    }
+
+    #[test]
+    fn custom_functions_are_pending_substitutions_with_atomic_argument_validation() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("width", "calc(--double(1px) + 1px)", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.get_property_value("width"),
+            "calc(--double(1px) + 1px)"
+        );
+        for invalid in ["--()", "--double(,)", "--double(1px,)", "--double(1px;2px)"] {
+            assert_eq!(
+                state.set_property("width", invalid, ""),
+                MutationOutcome::InvalidValue,
+                "{invalid}"
+            );
+            assert_eq!(
+                state.get_property_value("width"),
+                "calc(--double(1px) + 1px)"
+            );
+        }
     }
 
     #[test]
@@ -940,6 +982,43 @@ mod tests {
             state.get_property_value("corner-bottom-left-shape"),
             "notch"
         );
+    }
+
+    #[test]
+    fn function_descriptors_keep_locals_and_result_only() {
+        let mut state = DeclarationState::new_with_context(DeclarationContext::Function);
+        state.replace_css_text(
+            "--x: 1px; color: red; result: 2px; --x: 3px; unknown: value; result: ;",
+        );
+        assert_eq!(state.len(), 2);
+        assert_eq!(state.item(0), "--x");
+        assert_eq!(state.item(1), "result");
+        assert_eq!(state.get_property_value("--x"), "3px");
+        assert_eq!(state.get_property_value("result"), "");
+        assert_eq!(state.css_text(), "--x: 3px; result: ;");
+
+        assert_eq!(
+            state.set_property("result", "red", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("result"), "");
+        assert_eq!(state.remove_property("result"), "");
+        assert_eq!(state.css_text(), "--x: 3px;");
+
+        state.replace_css_text(
+            "--x: 1px !important; --x: 2px; result: 3px !important; result: 4px;",
+        );
+        assert_eq!(state.css_text(), "--x: 2px; result: 4px;");
+        assert_eq!(
+            state.set_property("--x", "5px", "important"),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.css_text(), "--x: 5px !important; result: 4px;");
+        assert_eq!(
+            state.set_property("result", "", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.css_text(), "--x: 5px !important;");
     }
 
     #[test]

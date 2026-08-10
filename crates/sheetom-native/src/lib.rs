@@ -8,9 +8,10 @@ use sheetom_core::{
     canonicalize_declaration_block as canonicalize, inspect_property, normalize_media_text,
     normalize_selector_text, normalize_supports_text, parse_container_prelude,
     parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
-    parse_recovered_rule_tree, parse_rule_tree, parse_scope_prelude, parse_stylesheet_tree,
-    scan_top_level_rules, serialize_css_identifier, serialize_font_family_setter,
-    DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
+    parse_recovered_rule_tree, parse_recovered_single_rule_tree, parse_rule_tree,
+    parse_scope_prelude, parse_stylesheet_tree, scan_top_level_rules, serialize_css_identifier,
+    serialize_font_family_setter, DeclarationContext, DeclarationState, MutationOutcome,
+    ENGINE_REVISION,
 };
 
 #[napi]
@@ -33,6 +34,7 @@ impl NativeDeclarationState {
         let context = match context.as_deref() {
             None | Some("style") => DeclarationContext::Style,
             Some("font-face") => DeclarationContext::FontFace,
+            Some("function") => DeclarationContext::Function,
             Some(context) => {
                 return Err(napi::Error::from_reason(format!(
                     "SHEETOM_DECLARATION_CONTEXT: unsupported declaration context {context}"
@@ -135,6 +137,14 @@ pub fn canonicalize_declaration_block(source: String) -> napi::Result<String> {
 pub fn parse_rule_tree_json(source: String) -> napi::Result<String> {
     let parsed =
         parse_rule_tree(&source).map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+/// Parses one exact outer rule with browser-style recovery inside its block.
+#[napi]
+pub fn parse_recovered_single_rule_tree_json(source: String) -> napi::Result<String> {
+    let parsed = parse_recovered_single_rule_tree(&source)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 

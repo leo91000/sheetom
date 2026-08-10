@@ -49,11 +49,11 @@ try {
   const esmProbe = `
     import { createRequire } from "node:module";
     import path from "node:path";
-    import { CSSStyleRule, CSSMediaRule, parseStyleSheet } from "sheetom";
+    import { CSSFunctionRule, CSSStyleRule, CSSMediaRule, parseStyleSheet } from "sheetom";
     const require = createRequire(import.meta.url);
     const packageRoot = path.resolve(path.dirname(require.resolve("sheetom")), "..");
     const native = require(path.join(packageRoot, "native/index.cjs"));
-    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.10") {
+    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.11") {
       throw new Error("native engine revision mismatch");
     }
     const nativeTree = JSON.parse(native.parseRuleTreeJson("@media screen {.x {width:1px;}}"));
@@ -67,6 +67,12 @@ try {
     if (!(rule instanceof CSSStyleRule)) throw new Error("style rule missing");
     rule.style.setProperty("padding", "2px");
     if (!sheet.serialize().includes("padding: 2px")) throw new Error("mutation failed");
+    const functionSheet = parseStyleSheet("@function --double(--x <number>: 1) returns <number> { result: calc(var(--x) * 2); }");
+    const functionRule = functionSheet.cssRules[0];
+    if (!(functionRule instanceof CSSFunctionRule)) throw new Error("custom function rule missing");
+    if (functionRule.getParameters()[0]?.defaultValue !== "1") {
+      throw new Error("custom function parameter missing");
+    }
   `;
   await writeFile(path.join(packageDirectory, "probe.mjs"), esmProbe);
 
@@ -76,13 +82,17 @@ try {
       await writeFile(
         path.join(packageDirectory, "probe.cjs"),
         `
-          const { CSSStyleRule, CSSStyleSheet } = require("sheetom");
+          const { CSSFunctionRule, CSSStyleRule, CSSStyleSheet, parseStyleSheet } = require("sheetom");
           const sheet = new CSSStyleSheet();
           sheet.insertRule(".x {}");
           const rule = sheet.cssRules[0];
           if (!(rule instanceof CSSStyleRule)) throw new Error("CJS style rule missing");
           rule.style.setProperty("background", "image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red");
           if (!sheet.serialize().includes("image-set(")) throw new Error("CJS native mutation failed");
+          const functionSheet = parseStyleSheet("@function --f() { result: 1; }");
+          if (!(functionSheet.cssRules[0] instanceof CSSFunctionRule)) {
+            throw new Error("CJS custom function rule missing");
+          }
         `,
       );
       execFileSync(process.execPath, ["probe.cjs"], { cwd: packageDirectory, stdio: "inherit" });

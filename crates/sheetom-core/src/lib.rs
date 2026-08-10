@@ -7,6 +7,7 @@ mod catalog;
 mod counter_style;
 mod declaration_state;
 mod font_face;
+mod function_rule;
 mod observable;
 mod rules;
 mod shorthand;
@@ -27,9 +28,9 @@ pub use declaration_state::{
 };
 pub use rules::{
     normalize_media_text, normalize_selector_text, normalize_supports_text,
-    parse_container_prelude, parse_recovered_rule_tree, parse_rule_tree, parse_scope_prelude,
-    parse_stylesheet_tree, scan_top_level_rules, serialize_font_family_setter,
-    ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
+    parse_container_prelude, parse_recovered_rule_tree, parse_recovered_single_rule_tree,
+    parse_rule_tree, parse_scope_prelude, parse_stylesheet_tree, scan_top_level_rules,
+    serialize_font_family_setter, ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
 };
 
 #[doc(hidden)]
@@ -51,7 +52,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.10";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.11";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -377,7 +378,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.10");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.11");
     }
 
     #[test]
