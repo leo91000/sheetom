@@ -188,6 +188,47 @@ mod tests {
     }
 
     #[test]
+    fn parses_subgrid_through_the_vendored_standard_property_ast() {
+        for (source, expected) in [
+            ("subgrid", "subgrid"),
+            ("SUBGRID", "subgrid"),
+            ("subgrid []", "subgrid []"),
+            ("subgrid [a b] [c]", "subgrid [a b] [c]"),
+            (
+                "subgrid [a] repeat(2, [b] [c d]) [e]",
+                "subgrid [a] repeat(2, [b] [c d]) [e]",
+            ),
+            (
+                "subgrid repeat(auto-fill, [column])",
+                "subgrid repeat(auto-fill, [column])",
+            ),
+        ] {
+            let declaration =
+                parse_standard_semantic_property("grid-template-columns", source).unwrap();
+            assert!(matches!(
+                declaration.value(),
+                SemanticPropertyValue::Standard(Property::GridTemplateColumns(_))
+            ));
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
+        }
+
+        for source in [
+            "subgrid [span]",
+            "subgrid [auto]",
+            "subgrid [initial]",
+            "subgrid repeat(auto-fit, [a])",
+            "subgrid repeat(0, [a])",
+            "subgrid repeat(2, 1fr)",
+            "subgrid repeat(2, [span])",
+        ] {
+            assert!(
+                parse_standard_semantic_property("grid-template-columns", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
     fn retains_recovery_evidence_beside_the_semantic_value() {
         let declaration = parse_standard_semantic_property("font-family", "\"Gotham").unwrap();
         let token = &declaration.recovered().values()[0];
