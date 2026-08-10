@@ -1,9 +1,9 @@
 # SheetOM
 
 SheetOM is a mutable, browser-shaped CSS authoring object model for Node.js,
-Bun, and Deno. It uses a pinned set of CSS syntax engines, including Lightning
-CSS, for property parsing and canonicalization while keeping declaration state
-and CSSOM serialization under its own control.
+Bun, and Deno. Its repository-owned Rust engine handles parsing,
+canonicalization, declaration state, and safe CSS serialization; JavaScript
+only owns the public WebIDL-shaped facade and live object identity.
 
 It is intended for server-side stylesheet editing and serialization. It does
 not implement the DOM, cascade, selector matching, layout, or computed styles.
@@ -20,14 +20,15 @@ After the first stable release, use `npm install sheetom@next` to opt into an
 active prerelease. Until then, the `latest` and `next` dist-tags both identify
 the active release candidate.
 
-`lightningcss`, `css-tree`, and `@csstools/css-tokenizer` are pinned regular
-dependencies; consumers do not need to install peer dependencies or globals.
+The package has no JavaScript runtime or peer dependencies. Its native engine
+includes a pinned, locally maintained Lightning CSS source snapshot; consumers
+do not install a second parser, provide globals, or select a fallback engine.
 SheetOM owns observable-value serialization and shorthand expansion rather
 than delegating CSSOM state to a browser-DOM emulation package.
 
 Node.js 22 and 24 are tested on Linux x64, Windows x64, and macOS arm64. Bun
 1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
-`node_modules` directory and grant the native Lightning CSS binding FFI and
+`node_modules` directory and grant SheetOM's native binding FFI and
 system-information permissions:
 
 ```sh

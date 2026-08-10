@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import contracts from "../compatibility/shorthand-grammar-contracts.json" with { type: "json" };
+import inventory from "../compatibility/native-grammar-inventory.json" with { type: "json" };
 import observations from "../compatibility/shorthand-grammar-observations.json" with { type: "json" };
 import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
-import { getStaticShorthandDefinitions } from "../src/internal/shorthand-registry.js";
 
 function createRule(): CSSStyleRule {
   const sheet = new CSSStyleSheet();
@@ -14,15 +14,12 @@ function createRule(): CSSStyleRule {
   return rule;
 }
 
-test("every runtime codec has four to eight reviewed grammar branches", () => {
-  const runtimeCodecs = new Set(
-    getStaticShorthandDefinitions()
-      .map(definition => definition.codec)
-  );
-  assert.equal(runtimeCodecs.size, 24);
+test("every native coverage profile has four to eight reviewed grammar branches", () => {
+  const coverageProfiles = new Set(inventory.properties.map(property => property.codec));
+  assert.equal(coverageProfiles.size, 24);
   assert.deepEqual(
     new Set(contracts.profiles.map(profile => profile.codec)),
-    runtimeCodecs,
+    coverageProfiles,
   );
   for (const profile of contracts.profiles) {
     assert.ok(profile.cases.length >= 4 && profile.cases.length <= 8, profile.codec);

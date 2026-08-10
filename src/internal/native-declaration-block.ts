@@ -1,9 +1,14 @@
 import type { SheetOMDiagnosticCode } from "../diagnostics.js";
-import type { ReportDeclarationDiagnostic } from "./declaration-block.js";
 import {
   nativeBinding,
   type NativeDeclarationStateHandle,
 } from "./native-binding.js";
+
+type ReportDeclarationDiagnostic = (
+  code: SheetOMDiagnosticCode,
+  property: string,
+  input: string,
+) => void;
 
 /** Thin JS ownership boundary around the Rust declaration state machine. */
 export class NativeDeclarationBlock {

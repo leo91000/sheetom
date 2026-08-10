@@ -377,24 +377,6 @@ jobs:
       - run: npm run native:build
       - run: npm run test:unit
 
-  syntax-engine-future-signal:
-    if: github.event_name == 'schedule'
-    continue-on-error: true
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm install --global npm@11.16.0
-      - run: npm ci
-      - run: npm install --no-save lightningcss@latest css-tree@latest @csstools/css-tokenizer@latest
-      - run: npm run native:build
-      - run: npm run test:unit
-      - run: npm run build
-
   package-consumer:
     needs: package-artifact
     timeout-minutes: 15

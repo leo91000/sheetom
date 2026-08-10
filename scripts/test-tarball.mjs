@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtemp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -38,6 +38,13 @@ try {
     cwd: packageDirectory,
     stdio: "inherit",
   });
+  const installedManifest = JSON.parse(await readFile(
+    path.join(packageDirectory, "node_modules/sheetom/package.json"),
+    "utf8",
+  ));
+  if (Object.keys(installedManifest.dependencies ?? {}).length > 0) {
+    throw new Error("published SheetOM package must not install JavaScript runtime dependencies");
+  }
 
   const esmProbe = `
     import { createRequire } from "node:module";

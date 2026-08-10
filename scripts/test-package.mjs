@@ -24,6 +24,13 @@ try {
     cwd: packageDirectory,
     stdio: "inherit",
   });
+  const installedManifest = JSON.parse(await readFile(
+    path.join(packageDirectory, "node_modules/sheetom/package.json"),
+    "utf8",
+  ));
+  if (Object.keys(installedManifest.dependencies ?? {}).length > 0) {
+    throw new Error("published SheetOM package must not install JavaScript runtime dependencies");
+  }
 
   const esmProbe = `
     import { createRequire } from "node:module";

@@ -5,8 +5,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
-import * as csstree from "css-tree";
-import { transformStyleAttribute } from "lightningcss";
 
 import { chromiumShorthandLonghands } from "../src/chromium-properties.ts";
 
@@ -191,65 +189,6 @@ for (const branch of nativeGrammarInventory.propertyBranches) {
     assert.equal(preserved?.accepted, true, branch.id);
   }
 }
-
-const runtimeOverridesFile = path.join(
-  repositoryRoot,
-  "src/internal/shorthand-runtime-overrides.json",
-);
-const runtimeOverrides = await readJson(runtimeOverridesFile);
-if (runtimeOverrides.schemaVersion !== 1) {
-  throw new Error("Unsupported shorthand runtime override schema");
-}
-
-function sortedPairs(values) {
-  return [...values].sort((left, right) =>
-    left[0].localeCompare(right[0]) || left[1].localeCompare(right[1])
-  );
-}
-
-function usesGeneralValueParser(property, input) {
-  let declaration;
-  let declarationCount = 0;
-  try {
-    transformStyleAttribute({
-      code: new TextEncoder().encode(`${property}: ${input}`),
-      visitor: {
-        Declaration(candidate) {
-          declaration = candidate;
-          declarationCount += 1;
-        },
-      },
-    });
-  } catch {
-    return false;
-  }
-  const typed = declarationCount === 1 &&
-    declaration &&
-    declaration.property !== "unparsed" &&
-    declaration.property !== "custom";
-  return typed || csstree.lexer.matchProperty(property, input).matched !== null;
-}
-
-const requiredLiteralOverrides = shorthandCapabilities.cases
-  .filter(capability => !usesGeneralValueParser(capability.property, capability.input))
-  .map(capability => [capability.property, capability.input]);
-assert.deepEqual(
-  sortedPairs(runtimeOverrides.literal),
-  sortedPairs(requiredLiteralOverrides),
-  "Measured Literal Overrides must equal the shorthand seeds not covered by general parsers",
-);
-
-const requiredLonghandOrders = {};
-for (const capability of shorthandCapabilities.cases) {
-  const manifestOrder = chromiumShorthandLonghands[capability.property];
-  if (JSON.stringify(manifestOrder) === JSON.stringify(capability.chromium.items)) continue;
-  requiredLonghandOrders[capability.property] = capability.chromium.items;
-}
-assert.deepEqual(
-  runtimeOverrides.longhandOrders,
-  requiredLonghandOrders,
-  "Measured shorthand longhand orders must equal Chromium corpus divergences",
-);
 
 const mappingsFile = path.join(compatibilityRoot, "wpt-mappings.json");
 const mappings = await readJson(mappingsFile);

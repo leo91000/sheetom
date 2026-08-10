@@ -4,7 +4,6 @@ import { test } from "vitest";
 import shorthandCapabilities from "../compatibility/shorthand-capabilities.json" with { type: "json" };
 import { chromiumShorthandLonghands } from "../src/chromium-properties.js";
 import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
-import { getStaticShorthandDefinitions } from "../src/internal/shorthand-registry.js";
 
 const cssWideKeywords = new Set([
   "initial",
@@ -22,13 +21,9 @@ test("the shorthand capability corpus covers every manifested multi-longhand pro
   const corpusProperties = shorthandCapabilities.cases
     .map(capability => capability.property)
     .sort();
-  const registered = getStaticShorthandDefinitions()
-    .map(definition => definition.name)
-    .sort();
 
   assert.equal(manifested.length, 129);
   assert.deepEqual(corpusProperties, manifested);
-  assert.deepEqual(registered, manifested);
   assert.equal(new Set(corpusProperties).size, corpusProperties.length);
 });
 
