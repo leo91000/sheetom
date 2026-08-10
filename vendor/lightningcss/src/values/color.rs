@@ -64,6 +64,14 @@ pub enum CssColor {
   #[cfg_attr(feature = "visitor", skip_type)]
   #[cfg_attr(feature = "serde", serde(with = "LightDark"))]
   LightDark(Box<CssColor>, Box<CssColor>),
+  /// The [`contrast-color()`](https://drafts.csswg.org/css-color-6/#contrast-color) function.
+  #[cfg_attr(feature = "visitor", skip_type)]
+  #[cfg_attr(feature = "serde", serde(with = "ContrastColor"))]
+  ContrastColor(Box<CssColor>),
+  /// A `color-mix()` function that cannot be reduced before computed-value time.
+  #[cfg_attr(feature = "visitor", skip_type)]
+  #[cfg_attr(feature = "serde", serde(with = "ColorMixSchema"))]
+  ColorMix(Box<ColorMix>),
   /// A [system color](https://drafts.csswg.org/css-color/#css-system-colors) keyword.
   System(SystemColor),
 }
@@ -153,6 +161,110 @@ impl<'de> LightDark {
     let v: LightDark = serde::Deserialize::deserialize(deserializer)?;
     match v {
       LightDark::LightDark { light, dark } => Ok((Box::new(light), Box::new(dark))),
+    }
+  }
+}
+
+// For AST serialization.
+#[cfg(feature = "serde")]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+enum ContrastColor {
+  ContrastColor { color: CssColor },
+}
+
+#[cfg(feature = "serde")]
+impl<'de> ContrastColor {
+  pub fn serialize<S>(color: &Box<CssColor>, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serde::Serialize::serialize(
+      &ContrastColor::ContrastColor {
+        color: (**color).clone(),
+      },
+      serializer,
+    )
+  }
+
+  pub fn deserialize<D>(deserializer: D) -> Result<Box<CssColor>, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    match serde::Deserialize::deserialize(deserializer)? {
+      ContrastColor::ContrastColor { color } => Ok(Box::new(color)),
+    }
+  }
+}
+
+/// A `color-mix()` function whose colors depend on computed-value context.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct ColorMix {
+  color_space: ColorSpaceName,
+  hue_interpolation_method: HueInterpolationMethod,
+  first: CssColor,
+  first_percentage: Option<f32>,
+  second: CssColor,
+  second_percentage: Option<f32>,
+}
+
+// For AST serialization.
+#[cfg(feature = "serde")]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+enum ColorMixSchema {
+  ColorMix {
+    color_space: ColorSpaceName,
+    hue_interpolation_method: HueInterpolationMethod,
+    first: CssColor,
+    first_percentage: Option<f32>,
+    second: CssColor,
+    second_percentage: Option<f32>,
+  },
+}
+
+#[cfg(feature = "serde")]
+impl<'de> ColorMixSchema {
+  pub fn serialize<S>(value: &Box<ColorMix>, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serde::Serialize::serialize(
+      &ColorMixSchema::ColorMix {
+        color_space: value.color_space,
+        hue_interpolation_method: value.hue_interpolation_method,
+        first: value.first.clone(),
+        first_percentage: value.first_percentage,
+        second: value.second.clone(),
+        second_percentage: value.second_percentage,
+      },
+      serializer,
+    )
+  }
+
+  pub fn deserialize<D>(deserializer: D) -> Result<Box<ColorMix>, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    match serde::Deserialize::deserialize(deserializer)? {
+      ColorMixSchema::ColorMix {
+        color_space,
+        hue_interpolation_method,
+        first,
+        first_percentage,
+        second,
+        second_percentage,
+      } => Ok(Box::new(ColorMix {
+        color_space,
+        hue_interpolation_method,
+        first,
+        first_percentage,
+        second,
+        second_percentage,
+      })),
     }
   }
 }
@@ -352,7 +464,11 @@ impl CssColor {
         FloatColor::HSL(hsl) => hsl.alpha,
         FloatColor::HWB(hwb) => hwb.alpha,
       },
-      CssColor::LightDark(..) | CssColor::CurrentColor | CssColor::System(..) => return Err(()),
+      CssColor::LightDark(..)
+      | CssColor::ContrastColor(..)
+      | CssColor::ColorMix(..)
+      | CssColor::CurrentColor
+      | CssColor::System(..) => return Err(()),
     })
   }
 
@@ -439,9 +555,12 @@ impl CssColor {
     // below and including the authored color space, and remove the ones that aren't
     // compatible with our browser targets.
     let mut fallbacks = match self {
-      CssColor::CurrentColor | CssColor::RGBA(_) | CssColor::Float(..) | CssColor::System(..) => {
-        return ColorFallbackKind::empty()
-      }
+      CssColor::CurrentColor
+      | CssColor::RGBA(_)
+      | CssColor::Float(..)
+      | CssColor::ContrastColor(..)
+      | CssColor::ColorMix(..)
+      | CssColor::System(..) => return ColorFallbackKind::empty(),
       CssColor::LAB(lab) => match &**lab {
         LABColor::LAB(..) | LABColor::LCH(..) if should_compile!(targets, LabColors) => {
           ColorFallbackKind::LAB.and_below()
@@ -549,6 +668,13 @@ impl CssColor {
         features |= light.get_features();
         features |= dark.get_features();
       }
+      CssColor::ContrastColor(color) => {
+        features |= color.get_features();
+      }
+      CssColor::ColorMix(mix) => {
+        features |= mix.first.get_features();
+        features |= mix.second.get_features();
+      }
       _ => {}
     }
 
@@ -571,6 +697,8 @@ impl IsCompatible for CssColor {
       CssColor::LightDark(light, dark) => {
         Feature::LightDark.is_compatible(browsers) && light.is_compatible(browsers) && dark.is_compatible(browsers)
       }
+      CssColor::ContrastColor(_) => false,
+      CssColor::ColorMix(_) => false,
       CssColor::System(system) => system.is_compatible(browsers),
     }
   }
@@ -723,8 +851,42 @@ impl ToCss for CssColor {
         dark.to_css(dest)?;
         dest.write_char(')')
       }
+      CssColor::ContrastColor(color) => {
+        dest.write_str("contrast-color(")?;
+        color.to_css(dest)?;
+        dest.write_char(')')
+      }
+      CssColor::ColorMix(mix) => mix.to_css(dest),
       CssColor::System(system) => system.to_css(dest),
     }
+  }
+}
+
+impl ToCss for ColorMix {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    dest.write_str("color-mix(in ")?;
+    self.color_space.to_css(dest)?;
+    if self.hue_interpolation_method != HueInterpolationMethod::Shorter {
+      dest.write_char(' ')?;
+      self.hue_interpolation_method.to_css(dest)?;
+      dest.write_str(" hue")?;
+    }
+    dest.delim(',', false)?;
+    self.first.to_css(dest)?;
+    if let Some(percentage) = self.first_percentage {
+      dest.write_char(' ')?;
+      Percentage(percentage).to_css(dest)?;
+    }
+    dest.delim(',', false)?;
+    self.second.to_css(dest)?;
+    if let Some(percentage) = self.second_percentage {
+      dest.write_char(' ')?;
+      Percentage(percentage).to_css(dest)?;
+    }
+    dest.write_char(')')
   }
 }
 
@@ -1135,6 +1297,9 @@ fn parse_color_function<'i, 't>(
       let predefined = parse_predefined(input, &mut parser)?;
       Ok(predefined)
     },
+    "contrast-color" => input.parse_nested_block(|input| {
+      CssColor::parse(input).map(|color| CssColor::ContrastColor(Box::new(color)))
+    }),
     "hsl" | "hsla" => {
       parse_hsl_hwb::<HSL, _>(input, &mut parser, true, |h, s, l, a| {
         let hsl = HSL { h, s, l, alpha: a };
@@ -3104,6 +3269,8 @@ macro_rules! color_space {
           CssColor::Float(float) => (**float).into(),
           CssColor::CurrentColor => return Err(()),
           CssColor::LightDark(..) => return Err(()),
+          CssColor::ContrastColor(..) => return Err(()),
+          CssColor::ColorMix(..) => return Err(()),
           CssColor::System(..) => return Err(()),
         })
       }
@@ -3119,6 +3286,8 @@ macro_rules! color_space {
           CssColor::Float(float) => (*float).into(),
           CssColor::CurrentColor => return Err(()),
           CssColor::LightDark(..) => return Err(()),
+          CssColor::ContrastColor(..) => return Err(()),
+          CssColor::ColorMix(..) => return Err(()),
           CssColor::System(..) => return Err(()),
         })
       }
@@ -3423,7 +3592,7 @@ fn parse_color_mix<'i, 't>(input: &mut Parser<'i, 't>) -> Result<CssColor, Parse
     return Err(input.new_custom_error(ParserError::InvalidValue));
   }
 
-  match method {
+  let resolved = match method {
     ColorSpaceName::SRGB => first_color.interpolate::<SRGB>(p1, &second_color, p2, hue_method),
     ColorSpaceName::SRGBLinear => first_color.interpolate::<SRGBLinear>(p1, &second_color, p2, hue_method),
     ColorSpaceName::Hsl => first_color.interpolate::<HSL>(p1, &second_color, p2, hue_method),
@@ -3436,8 +3605,19 @@ fn parse_color_mix<'i, 't>(input: &mut Parser<'i, 't>) -> Result<CssColor, Parse
       first_color.interpolate::<XYZd65>(p1, &second_color, p2, hue_method)
     }
     ColorSpaceName::XYZd50 => first_color.interpolate::<XYZd50>(p1, &second_color, p2, hue_method),
+  };
+
+  match resolved {
+    Ok(color) => Ok(color),
+    Err(()) => Ok(CssColor::ColorMix(Box::new(ColorMix {
+      color_space: method,
+      hue_interpolation_method: hue_method,
+      first: first_color,
+      first_percentage: first_percent,
+      second: second_color,
+      second_percentage: second_percent,
+    }))),
   }
-  .map_err(|_| input.new_custom_error(ParserError::InvalidValue))
 }
 
 impl CssColor {
@@ -3496,9 +3676,13 @@ impl CssColor {
       + From<OKLCH>
       + Copy,
   {
-    if matches!(self, CssColor::CurrentColor | CssColor::System(..))
-      || matches!(other, CssColor::CurrentColor | CssColor::System(..))
-    {
+    if matches!(
+      self,
+      CssColor::CurrentColor | CssColor::ContrastColor(..) | CssColor::ColorMix(..) | CssColor::System(..)
+    ) || matches!(
+      other,
+      CssColor::CurrentColor | CssColor::ContrastColor(..) | CssColor::ColorMix(..) | CssColor::System(..)
+    ) {
       return Err(());
     }
 
@@ -3931,6 +4115,83 @@ impl IsCompatible for SystemColor {
     match self {
       AccentColor | AccentColorText => Feature::AccentSystemColor.is_compatible(browsers),
       _ => true,
+    }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::CssColor;
+  use crate::{
+    printer::PrinterOptions,
+    traits::{Parse, ToCss},
+  };
+  use cssparser::{Parser, ParserInput};
+
+  fn parse(source: &str) -> Result<CssColor, ()> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser.parse_entirely(CssColor::parse).map_err(|_| ())
+  }
+
+  #[test]
+  fn parses_single_color_contrast_functions() {
+    for (source, prefix) in [
+      ("contrast-color(red)", "contrast-color("),
+      ("contrast-color(#ff0000)", "contrast-color("),
+      ("contrast-color(rgb(255 0 0))", "contrast-color("),
+      ("contrast-color(currentColor)", "contrast-color("),
+      ("contrast-color(transparent)", "contrast-color("),
+      ("contrast-color(light-dark(red, blue))", "contrast-color("),
+      ("contrast-color(color-mix(in srgb, red, blue))", "contrast-color("),
+      ("contrast-color(contrast-color(red))", "contrast-color("),
+      ("color-mix(in srgb, contrast-color(red), blue)", "color-mix("),
+      ("light-dark(contrast-color(red), blue)", "light-dark("),
+    ] {
+      let value = parse(source).unwrap();
+      let serialized = value.to_css_string(PrinterOptions::default()).unwrap();
+      assert!(serialized.starts_with(prefix), "{source}: {serialized}");
+    }
+  }
+
+  #[test]
+  fn preserves_dynamic_color_mix_as_typed_ast() {
+    for source in [
+      "color-mix(in srgb, currentColor, blue)",
+      "color-mix(in oklch longer hue, contrast-color(red) 25%, blue)",
+      "color-mix(in srgb, color-mix(in srgb, contrast-color(red), blue), white)",
+    ] {
+      let value = parse(source).unwrap();
+      assert!(matches!(value, CssColor::ColorMix(_)), "{source}");
+      let serialized = value.to_css_string(PrinterOptions::default()).unwrap();
+      assert!(serialized.starts_with("color-mix("), "{source}: {serialized}");
+      assert!(parse(&serialized).is_ok(), "{source}: {serialized}");
+    }
+  }
+
+  #[test]
+  fn rejects_invalid_contrast_function_neighbors() {
+    for source in [
+      "contrast-color()",
+      "contrast-color(red blue)",
+      "contrast-color(red, blue)",
+      "contrast-color(foo)",
+    ] {
+      assert!(parse(source).is_err(), "{source}");
+    }
+  }
+
+  #[cfg(feature = "serde")]
+  #[test]
+  fn round_trips_contrast_color_through_the_ast_schema() {
+    for source in [
+      "contrast-color(light-dark(red, blue))",
+      "color-mix(in srgb, contrast-color(red), blue)",
+    ] {
+      let value = parse(source).unwrap();
+      let json = serde_json::to_string(&value).unwrap();
+      let reparsed: CssColor = serde_json::from_str(&json).unwrap();
+      assert_eq!(reparsed, value, "{source}: {json}");
     }
   }
 }

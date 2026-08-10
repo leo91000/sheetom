@@ -222,6 +222,57 @@ impl IsCompatible for ColorOrAuto {
   }
 }
 
+/// A value for the [`scrollbar-color`](https://drafts.csswg.org/css-scrollbars/#scrollbar-color) property.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum ScrollbarColor {
+  /// Let the user agent choose the scrollbar colors.
+  Auto,
+  /// Explicit thumb and track colors.
+  Colors {
+    /// The scrollbar thumb color.
+    thumb: CssColor,
+    /// The scrollbar track color.
+    track: CssColor,
+  },
+}
+
+impl<'i> Parse<'i> for ScrollbarColor {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("auto")).is_ok() {
+      return Ok(Self::Auto);
+    }
+
+    Ok(Self::Colors {
+      thumb: CssColor::parse(input)?,
+      track: CssColor::parse(input)?,
+    })
+  }
+}
+
+impl ToCss for ScrollbarColor {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      Self::Auto => dest.write_str("auto"),
+      Self::Colors { thumb, track } => {
+        thumb.to_css(dest)?;
+        dest.write_char(' ')?;
+        track.to_css(dest)
+      }
+    }
+  }
+}
+
 enum_property! {
   /// A value for the [caret-shape](https://www.w3.org/TR/2021/WD-css-ui-4-20210316/#caret-shape) property.
   pub enum CaretShape {
@@ -602,4 +653,35 @@ fn define_var<'i>(name: &'static str, value: Token<'static>) -> Property<'i> {
     name: CustomPropertyName::Custom(name.into()),
     value: TokenList(vec![TokenOrValue::Token(value)]),
   })
+}
+
+#[cfg(test)]
+mod tests {
+  use super::ScrollbarColor;
+  use crate::{stylesheet::PrinterOptions, traits::{Parse, ToCss}};
+  use cssparser::{Parser, ParserInput};
+
+  fn parse(source: &str) -> Result<ScrollbarColor, ()> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser.parse_entirely(ScrollbarColor::parse).map_err(|_| ())
+  }
+
+  #[test]
+  fn parses_scrollbar_color_as_exactly_two_colors() {
+    for source in [
+      "auto",
+      "red blue",
+      "contrast-color(red) blue",
+      "red color-mix(in srgb, contrast-color(blue), currentColor)",
+    ] {
+      let value = parse(source).unwrap();
+      let serialized = value.to_css_string(PrinterOptions::default()).unwrap();
+      assert!(parse(&serialized).is_ok(), "{source}: {serialized}");
+    }
+
+    for source in ["red", "red blue green", "red, blue", "auto red"] {
+      assert!(parse(source).is_err(), "{source}");
+    }
+  }
 }
