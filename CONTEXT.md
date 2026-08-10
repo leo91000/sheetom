@@ -8,6 +8,46 @@ This context models browser-compatible stylesheet authoring outside a browser. I
 The browser-compatible object model for parsing, inspecting, mutating, and serializing a stylesheet without a DOM or rendering engine.
 _Avoid_: Full CSSOM, virtual DOM, CSS compiler
 
+**Rust CSS Engine**:
+The repository-owned Rust module that parses and recovers CSS syntax, validates property grammars, expands and synthesizes shorthands, owns ordered declaration state, and produces reparsable syntax for the JavaScript Authoring CSSOM facade.
+_Avoid_: Native helper, Lightning CSS wrapper, JavaScript parser
+
+**JavaScript CSSOM Facade**:
+The public JavaScript classes and proxies that own WebIDL coercion, indexed access, live rule identity, detachment, and runtime ergonomics while delegating syntax and declaration semantics to the Rust CSS Engine.
+_Avoid_: CSS engine, parser binding, generated N-API classes
+
+**Vendored Lightning Source**:
+The complete upstream Lightning CSS source snapshot imported as ordinary repository files in one isolated commit, built through local Cargo paths and modified in later focused commits. Its recorded upstream revision and MPL notices make local changes reproducible and extractable for upstream contribution.
+_Avoid_: npm lightningcss, Git dependency, subtree, submodule, opaque vendor binary
+
+**Native Data Boundary**:
+The narrow N-API contract between the JavaScript CSSOM Facade and Rust CSS Engine. It accepts strings and validated primitive inputs and returns owned domain DTOs; arbitrary JavaScript or Lightning AST objects never cross it.
+_Avoid_: Visitor API, AST roundtrip, generic object bridge
+
+**Process Safety Contract**:
+The release-blocking invariant that every finite public CSS input within documented resource limits completes with a result, an atomic no-op, or a controlled JavaScript error without terminating the host process. It is enforced structurally at the Native Data Boundary and empirically by subprocess crash tests and grammar-oriented fuzzing.
+_Avoid_: Panic catch, no known crashes, memory safety claim
+
+**Resource Budget**:
+The per-sheet, explicitly configurable upper bounds checked before native mutation for source bytes, declaration-value bytes, syntax depth, rule count, and declarations per block. RC6 defaults are 64 MiB, 1 MiB, 4,096, 1,000,000, and 100,000 respectively; exceeding a budget raises a controlled `RangeError` before state changes.
+_Avoid_: Global limit, parser timeout, silent truncation
+
+**Native Platform Package**:
+An exact-version optional npm package containing one prebuilt Rust CSS Engine binary for a single supported operating-system, CPU, and libc target. The root `sheetom` package selects it locally and never downloads executable code during installation.
+_Avoid_: Universal binary, postinstall download, optional engine
+
+**Supported Native Matrix**:
+The release-blocking set of real consumer environments for RC6: Linux x64 GNU, Linux ARM64 GNU, Windows x64, and macOS ARM64 for Node.js 22 and 24, with Bun and Deno additionally exercised on Linux x64. A platform outside this matrix fails explicitly instead of selecting a second syntax engine.
+_Avoid_: Node-API compatible platforms, best-effort architecture, WASM fallback
+
+**Shadow Engine Run**:
+A test-only execution that applies the same operation to the incumbent TypeScript declaration engine and the candidate Rust CSS Engine, compares complete observable state and reparsable output, and has no authority to choose a result at runtime.
+_Avoid_: Runtime fallback, dual implementation, differential fixture
+
+**Observable Fidelity Gate**:
+The release check requiring every supported Authoring CSSOM operation to match its Compatibility Resolution for getter text, `cssText`, declaration length and item order, priorities, atomicity, live identity and mutation sequences even when both implementations would render equivalently.
+_Avoid_: Rendering equivalence, serialization safety, known P2 divergence
+
 **CSSOM Surface Serialization**:
 The browser-compatible text exposed by declaration and rule getters such as `cssText`. It may retain browser quirks and is not guaranteed to be safe stylesheet input.
 _Avoid_: Final output, source text
@@ -65,7 +105,7 @@ Provenance connecting expanded Declaration Records to one shorthand mutation con
 _Avoid_: Static shorthand state, serialized shorthand, original declaration
 
 **Shorthand Coverage Gate**:
-The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec, one pinned non-CSS-wide Chromium breadth case, one standard property mutation, and complete shared evidence for its Shorthand Codec Profile's reviewed Grammar Branch Contract. Structure-changing branches add dedicated mutation scenarios, while the gate proves exhaustive property breadth and reviewed branch depth without claiming complete CSS grammar coverage.
+The release check requiring every multi-longhand property in the Supported Property Manifest to have an atomic Static Shorthand Codec, complete positive and neighboring negative evidence for every production branch in the Versioned Grammar Inventory, longhand mutation and removal sequences, and reparsable round-trip evidence. A canonical or literal value alone can never establish support.
 _Avoid_: Best-effort expansion, supported examples, cssstyle coverage
 
 **Shorthand Capability Corpus**:
@@ -73,15 +113,19 @@ The versioned, manifest-bound browser evidence containing concrete breadth cases
 _Avoid_: Runtime allowlist, initial-value smoke test, exhaustive grammar, one fixture file per property
 
 **Grammar Branch Contract**:
-The finite, reviewed inventory of representative positive and negative forms that every registered Shorthand Codec Profile must recognize and measure, including relevant arities, separators, lists, optional components, and substitutions. Specification productions identify candidate forms, the pinned Engine Oracle determines baseline applicability, and the contract bounds the compatibility claim without pretending to enumerate every possible CSS value.
+The finite, reviewed inventory of positive and neighboring negative forms that every registered Shorthand Codec Profile must recognize and measure, including every relevant arity, separator, list form, optional component, ordering alternative, CSS-wide value, substitution, and recovery form from the Versioned Grammar Inventory. It exhausts the named baseline inventory rather than claiming compatibility with unversioned future CSS.
 _Avoid_: Complete CSS grammar, examples list, parser implementation branches
+
+**Versioned Grammar Inventory**:
+The release-pinned inventory of property and shorthand productions supported by the named Chromium baseline, derived jointly from CSSWG/Webref productions, the measured browser property manifest, applicable WPT, relevant Chromium tests, systematic oracle probes, and reviewed dispositions for grammar defined in prose. It is the exhaustive semantic compatibility boundary for one release and is revised explicitly when the browser baseline changes.
+_Avoid_: Every future CSS value, curated examples, parser feature list
 
 **Grammar Branch Case**:
 A browser-observed positive or negative shorthand mutation assigned to one named branch of a Grammar Branch Contract and required to pass that branch's expansion, observation, mutation, and round-trip checks. Its evidence includes the semantic branch actually selected by the codec, not only a curated label, and a negative case names the positive state against which rejection must be atomic.
 _Avoid_: Unit-test example, literal runtime override, breadth seed
 
 **Measured Literal Override**:
-A narrowly reviewed runtime exception for one exact property-value form that the pinned browser accepts but the general parser stack cannot yet validate. It preserves measured compatibility but cannot satisfy a Grammar Branch Contract, and the release gate flags it when the parser stack makes it redundant.
+A temporary shadow-migration exception for one exact property-value form that the pinned browser accepts but the Rust CSS Engine cannot yet validate. It can localize a known gap while implementing a grammar correction, but cannot satisfy a Grammar Branch Contract or exist in an RC6 runtime artifact.
 _Avoid_: Grammar validator, corpus case, permissive fallback
 
 **Authoring Roundtrip Witness**:
@@ -109,8 +153,8 @@ The internal structured result transported from the Value Gate to mutation codec
 _Avoid_: Reparsed value string, public value object, raw input
 
 **Syntax Engine Set**:
-The exact, release-versioned combination of parser and tokenizer dependencies whose joint behavior underpins a Compatibility Baseline.
-_Avoid_: Compatible dependency range, lockfile snapshot, Lightning CSS version
+The exact, release-versioned Rust CSS Engine source revision, Vendored Lightning Source snapshot and local patch set, plus any remaining parser or tokenizer dependencies whose joint behavior underpins a Compatibility Baseline.
+_Avoid_: Compatible dependency range, lockfile snapshot, npm Lightning CSS version
 
 **Live CSSOM Object**:
 A stable JavaScript object whose reads and writes reflect the current shared stylesheet state, including after related objects mutate that state.
@@ -159,6 +203,10 @@ _Avoid_: Browser snapshot, flaky expectation
 **Compatibility Baseline**:
 The named browser-engine and dependency versions against which a package release's measured behavior is reported.
 _Avoid_: Universal CSSOM compatibility, latest browsers
+
+**Pinned Browser Baseline**:
+The exact Playwright Chromium, Firefox, and WebKit builds recorded for one release candidate and used throughout its oracle recording, differential tests, and compatibility report. Updating any build creates a new baseline review rather than silently changing expected behavior.
+_Avoid_: System Chrome, current stable, reusable previous-release baseline
 
 **Compatibility Report**:
 The immutable, schema-validated release artifact containing a Compatibility Baseline, WPT Dispositions, Oracle Observations, Compatibility Resolutions, shorthand corpus and branch-model hashes, exact gate outcomes, and their summary counts.
@@ -216,6 +264,10 @@ _Avoid_: Deleted fixture, ignored upstream change
 The complete set of Applicable Conformance Tests and Divergence Fixtures that a release must pass or explicitly classify against its Compatibility Baseline.
 _Avoid_: Test suite, coverage target
 
+**Acceptance Candidate Gate**:
+The final prerelease gate requiring the Process Safety Contract, Conformance Gate, Observable Fidelity Gate, complete Versioned Grammar Inventory, Supported Native Matrix, package-consumer tests, Performance Regression Gate, and seven consecutive scheduled validation runs to pass before RC6 is published.
+_Avoid_: Release checklist, first green CI run, external beta testing
+
 **Engine Oracle**:
 A pinned browser build that executes an Authoring CSSOM scenario to provide empirical behavior for differential comparison; it informs compatibility but does not override specifications or Web Platform Tests by itself.
 _Avoid_: Source of truth, browser profile
@@ -227,3 +279,7 @@ _Avoid_: SheetOM computed style, conformance API, rendering engine
 **Reference Workload**:
 The server and build-time authoring scales used to evaluate SheetOM performance: both a large single sheet with concentrated mutations and a publisher-shaped set of shared and page sheets with distributed rules, declarations, grouping, mutations, and final serialization.
 _Avoid_: Animation workload, stress maximum
+
+**Performance Regression Gate**:
+The same-runner comparison of warmed, repeated median measurements for the Reference Workload across Linux x64 and ARM64, covering native cold import, parse, distributed mutation, deletion, first and second serialization, peak RSS, and installed package size. A regression above 15% requires explicit review and cannot be hidden by a permissive absolute ceiling.
+_Avoid_: One-shot benchmark, microbenchmark, fixed wall-clock SLO
