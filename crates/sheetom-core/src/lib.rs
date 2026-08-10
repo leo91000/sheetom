@@ -5,8 +5,10 @@
 
 mod catalog;
 mod declaration_state;
+mod observable;
 mod shorthand;
 mod syntax;
+mod value_grammar;
 
 pub use catalog::{
     CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256,
