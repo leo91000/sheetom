@@ -1,8 +1,11 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFile, mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { appendFile, mkdtemp, mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { assertCompleteNativeTarballEntries } from "./native-artifact-contract.mjs";
 
 const registryOrigin = "https://registry.npmjs.org";
 
@@ -28,6 +31,25 @@ export function parsePackResult(output) {
     throw new Error("npm pack did not produce exactly one package artifact");
   }
   return result[0];
+}
+
+export async function packMetadataForTarball(tarball) {
+  const bytes = await readFile(tarball);
+  return {
+    filename: path.basename(tarball),
+    integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
+    size: bytes.length,
+  };
+}
+
+export async function resolveSingleTarball(input) {
+  const resolved = path.resolve(input);
+  if ((await stat(resolved)).isFile()) return resolved;
+  const entries = (await readdir(resolved)).filter(entry => entry.endsWith(".tgz"));
+  if (entries.length !== 1) {
+    throw new Error(`Expected one release tarball in ${resolved}, found ${entries.length}`);
+  }
+  return path.join(resolved, entries[0]);
 }
 
 export function assessReleaseChannels(packageMetadata, version) {
@@ -87,6 +109,21 @@ function runInherited(command, arguments_, options = {}) {
     stdio: "inherit",
     ...options,
   });
+}
+
+function verifyReleaseTarball(tarball, manifest) {
+  const entries = run("tar", ["-tzf", tarball]).trim().split("\n").filter(Boolean);
+  assertCompleteNativeTarballEntries(entries);
+  const packedManifest = JSON.parse(run("tar", ["-xOzf", tarball, "package/package.json"]));
+  if (packedManifest.name !== manifest.name || packedManifest.version !== manifest.version) {
+    throw new Error(
+      `Release tarball contains ${packedManifest.name}@${packedManifest.version}, expected ` +
+        `${manifest.name}@${manifest.version}`,
+    );
+  }
+  if (Object.keys(packedManifest.dependencies ?? {}).length > 0) {
+    throw new Error("Release tarball must not contain JavaScript runtime dependencies");
+  }
 }
 
 function readRelease(tag) {
@@ -239,14 +276,20 @@ async function main() {
   const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-release-"));
 
   try {
-    const packOutput = run("npm", [
-      "pack",
-      "--json",
-      "--pack-destination",
-      temporaryRoot,
-    ]);
-    const pack = parsePackResult(packOutput);
-    const tarball = path.join(temporaryRoot, pack.filename);
+    const suppliedTarball = process.env.SHEETOM_RELEASE_TARBALL;
+    const generatedPack = suppliedTarball
+      ? null
+      : parsePackResult(run("npm", [
+        "pack",
+        "--json",
+        "--pack-destination",
+        temporaryRoot,
+      ]));
+    const tarball = suppliedTarball
+      ? await resolveSingleTarball(suppliedTarball)
+      : path.join(temporaryRoot, generatedPack.filename);
+    const pack = generatedPack ?? await packMetadataForTarball(tarball);
+    verifyReleaseTarball(tarball, manifest);
     const runtimes = (process.env.SHEETOM_RELEASE_RUNTIMES ?? "node")
       .split(",")
       .filter(Boolean);

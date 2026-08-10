@@ -2,19 +2,15 @@ import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  assertCompleteNativeArtifactNames,
+  expectedNativeArtifacts,
+} from "./native-artifact-contract.mjs";
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceDirectory = path.resolve(process.argv[2] ?? "native-artifacts");
 const nativeDirectory = path.join(repositoryRoot, "native");
-const expected = new Set([
-  "sheetom-native.darwin-arm64.node",
-  "sheetom-native.darwin-x64.node",
-  "sheetom-native.linux-arm64-gnu.node",
-  "sheetom-native.linux-arm64-musl.node",
-  "sheetom-native.linux-x64-gnu.node",
-  "sheetom-native.linux-x64-musl.node",
-  "sheetom-native.win32-arm64-msvc.node",
-  "sheetom-native.win32-x64-msvc.node",
-]);
+const expected = new Set(expectedNativeArtifacts);
 
 async function discover(directory) {
   const artifacts = [];
@@ -41,8 +37,7 @@ for (const artifact of artifacts) {
   byName.set(filename, artifact);
 }
 
-const missing = [...expected].filter(filename => !byName.has(filename));
-if (missing.length > 0) throw new Error(`Missing native artifacts: ${missing.join(", ")}`);
+assertCompleteNativeArtifactNames(byName.keys());
 
 await mkdir(nativeDirectory, { recursive: true });
 for (const entry of await readdir(nativeDirectory)) {

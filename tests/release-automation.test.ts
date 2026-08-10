@@ -3,10 +3,20 @@ import {
   assessReleaseChannels,
   extractReleaseNotes,
   npmTagForVersion,
+  packMetadataForTarball,
   parsePackResult,
+  resolveSingleTarball,
   waitForDistTag,
 } from "../scripts/publish-release.mjs";
 import { hasReleaseVersionChange } from "../scripts/detect-release-version-change.mjs";
+import {
+  assertCompleteNativeArtifactNames,
+  assertCompleteNativeTarballEntries,
+  expectedNativeArtifacts,
+} from "../scripts/native-artifact-contract.mjs";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 describe("release automation", () => {
   it("publishes only when the package version changed", () => {
@@ -95,6 +105,33 @@ describe("release automation", () => {
       filename: "sheetom-0.1.0.tgz",
     });
     expect(() => parsePackResult("[]")).toThrow(/exactly one/);
+  });
+
+  it("requires every supported native binary in a release tarball", () => {
+    expect(() => assertCompleteNativeArtifactNames(expectedNativeArtifacts)).not.toThrow();
+    expect(() => assertCompleteNativeArtifactNames(expectedNativeArtifacts.slice(1)))
+      .toThrow(/incomplete/);
+    expect(() => assertCompleteNativeTarballEntries(
+      expectedNativeArtifacts.map(name => `package/native/${name}`),
+    )).not.toThrow();
+  });
+
+  it("uses the exact prebuilt release tarball and computes npm integrity", async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "sheetom-release-test-"));
+    try {
+      const artifactDirectory = path.join(directory, "artifact");
+      await mkdir(artifactDirectory);
+      const tarball = path.join(artifactDirectory, "sheetom-0.1.0-rc.6.tgz");
+      await writeFile(tarball, "verified artifact");
+      await expect(resolveSingleTarball(artifactDirectory)).resolves.toBe(tarball);
+      await expect(packMetadataForTarball(tarball)).resolves.toMatchObject({
+        filename: "sheetom-0.1.0-rc.6.tgz",
+        integrity: expect.stringMatching(/^sha512-/u),
+        size: 17,
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it("waits for an npm dist-tag to propagate", async () => {
