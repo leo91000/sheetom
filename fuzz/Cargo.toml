@@ -18,10 +18,20 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "recovered_component_values"
+path = "fuzz_targets/recovered_component_values.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]
 
 [patch.crates-io]
+cssparser = { path = "../vendor/cssparser" }
+cssparser-color = { path = "../vendor/cssparser/color" }
+cssparser-macros = { path = "../vendor/cssparser/macros" }
 lightningcss = { path = "../vendor/lightningcss" }
 lightningcss-derive = { path = "../vendor/lightningcss/derive" }
 parcel_selectors = { path = "../vendor/lightningcss/selectors" }

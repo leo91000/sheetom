@@ -433,6 +433,11 @@ pub fn fuzz_declaration_block(source: &str) {
     let _ = canonicalize_declaration_block(source);
 }
 
+#[doc(hidden)]
+pub fn fuzz_recovered_component_values(source: &str) {
+    let _ = recover_component_values(source);
+}
+
 #[cfg(test)]
 mod tests {
     use super::{

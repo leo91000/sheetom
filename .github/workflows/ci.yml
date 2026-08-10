@@ -285,14 +285,18 @@ jobs:
           key: cargo-fuzz-${{ runner.os }}-${{ env.CARGO_FUZZ_VERSION }}
       - if: steps.cargo-fuzz-cache.outputs.cache-hit != 'true'
         run: cargo +nightly install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked
-      - name: Verify the fuzz target uses vendored Lightning CSS
+      - name: Verify the fuzz targets use vendored CSS sources
         run: |
           lightning_manifest=$(cargo +nightly metadata --manifest-path fuzz/Cargo.toml --format-version 1 | jq -r '.packages[] | select(.name == "lightningcss") | .manifest_path')
+          cssparser_manifest=$(cargo +nightly metadata --manifest-path fuzz/Cargo.toml --format-version 1 | jq -r '.packages[] | select(.name == "cssparser") | .manifest_path')
           test "$lightning_manifest" = "$GITHUB_WORKSPACE/vendor/lightningcss/Cargo.toml"
+          test "$cssparser_manifest" = "$GITHUB_WORKSPACE/vendor/cssparser/Cargo.toml"
       - name: Run the native fuzz smoke corpus
         run: |
           cp -R fuzz/corpus/declaration_block "$RUNNER_TEMP/sheetom-fuzz-corpus"
           cargo +nightly fuzz run declaration_block "$RUNNER_TEMP/sheetom-fuzz-corpus" -- -runs=10000 -max_len=1048577
+          cp -R fuzz/corpus/recovered_component_values "$RUNNER_TEMP/sheetom-recovered-value-corpus"
+          cargo +nightly fuzz run recovered_component_values "$RUNNER_TEMP/sheetom-recovered-value-corpus" -- -runs=10000 -max_len=1048576
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
