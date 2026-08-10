@@ -48,13 +48,48 @@ pub struct FontPaletteValuesRule<'i> {
 pub enum FontPaletteValuesProperty<'i> {
   /// The `font-family` property.
   #[cfg_attr(feature = "serde", serde(borrow))]
-  FontFamily(FontFamily<'i>),
+  FontFamily(Vec<FontPaletteFamily<'i>>),
   /// The `base-palette` property.
   BasePalette(BasePalette),
   /// The `override-colors` property.
   OverrideColors(Vec<OverrideColors>),
   /// An unknown or unsupported property.
   Custom(CustomProperty<'i>),
+}
+
+/// A font family descriptor item, including whether it was authored as a string.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct FontPaletteFamily<'i> {
+  /// The parsed font family.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  pub family: FontFamily<'i>,
+  /// Whether the family name was authored as a quoted string.
+  pub quoted: bool,
+}
+
+impl<'i> Parse<'i> for FontPaletteFamily<'i> {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let start = input.position();
+    let family = FontFamily::parse(input)?;
+    let quoted = input.slice_from(start).trim_start().starts_with(['\'', '"']);
+    Ok(Self { family, quoted })
+  }
+}
+
+impl ToCss for FontPaletteFamily<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    if self.quoted {
+      return self.family.to_css_as_string(dest);
+    }
+    self.family.to_css(dest)
+  }
 }
 
 /// A value for the [base-palette](https://drafts.csswg.org/css-fonts-4/#base-palette-desc)
@@ -107,11 +142,14 @@ impl<'i> cssparser::DeclarationParser<'i> for FontPaletteValuesDeclarationParser
     match_ignore_ascii_case! { &name,
       "font-family" => {
         // https://drafts.csswg.org/css-fonts-4/#font-family-2-desc
-        if let Ok(font_family) = FontFamily::parse(input) {
-          return match font_family {
-            FontFamily::Generic(_) => Err(input.new_custom_error(ParserError::InvalidDeclaration)),
-            _ => Ok(FontPaletteValuesProperty::FontFamily(font_family))
+        if let Ok(font_families) = input.parse_comma_separated(FontPaletteFamily::parse) {
+          if font_families
+            .iter()
+            .any(|family| matches!(family.family, FontFamily::Generic(_)))
+          {
+            return Err(input.new_custom_error(ParserError::InvalidDeclaration));
           }
+          return Ok(FontPaletteValuesProperty::FontFamily(font_families));
         }
       },
       "base-palette" => {

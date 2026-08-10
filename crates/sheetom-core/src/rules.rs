@@ -1,13 +1,18 @@
 use crate::{
+    observable::{serialize_observable_value, ObservableCategory},
     scan_safety_metrics,
     syntax::{parse_declaration_list, serialize_identifier, split_top_level_whitespace},
     EngineError, MAX_NESTING_DEPTH,
 };
 use cssparser::{serialize_string, Parser, ParserInput, SourcePosition, Token};
 use lightningcss::{
-    rules::{CssRule, CssRuleList},
+    rules::{
+        font_palette_values::FontPaletteValuesProperty, view_transition::ViewTransitionProperty,
+        CssRule, CssRuleList,
+    },
     stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
     traits::ToCss,
+    values::ident::NoneOrCustomIdentList,
 };
 use serde::Serialize;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -610,6 +615,16 @@ fn property_descriptor(name: &str, value: &str) -> ParsedRule {
     }
 }
 
+fn metadata_item(kind: &str, value: &str) -> ParsedRule {
+    ParsedRule {
+        kind: kind.to_owned(),
+        prelude: value.to_owned(),
+        declarations: String::new(),
+        children: Vec::new(),
+        css_text: String::new(),
+    }
+}
+
 fn parse_css_string(value: &str) -> Option<String> {
     let mut input = ParserInput::new(value);
     let mut parser = Parser::new(&mut input);
@@ -1079,7 +1094,23 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
             children: convert_rule_list(&rule.rules, count)?,
             css_text,
         },
-        CssRule::LayerStatement(_) => leaf("layer-statement", &css_text),
+        CssRule::LayerStatement(rule) => {
+            let names = rule
+                .names
+                .iter()
+                .map(serialize)
+                .collect::<Result<Vec<_>, _>>()?;
+            ParsedRule {
+                kind: "layer-statement".to_owned(),
+                prelude: String::new(),
+                declarations: String::new(),
+                children: names
+                    .iter()
+                    .map(|name| metadata_item("layer-name", name))
+                    .collect(),
+                css_text: format!("@layer {};", names.join(", ")),
+            }
+        }
         CssRule::Scope(rule) => ParsedRule {
             kind: "scope".to_owned(),
             prelude: block_prelude(&css_text, "@scope"),
@@ -1095,6 +1126,33 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
             css_text,
         },
         CssRule::Import(_) => leaf("import", &css_text),
+        CssRule::Namespace(rule) => {
+            let prefix = rule
+                .prefix
+                .as_ref()
+                .map(|prefix| prefix.0.as_ref())
+                .unwrap_or_default();
+            let namespace_uri = rule.url.0.as_ref();
+            let mut serialized_uri = String::new();
+            serialize_string(namespace_uri, &mut serialized_uri)
+                .map_err(|error| EngineError::Serialize(error.to_string()))?;
+            let serialized_prefix = rule
+                .prefix
+                .as_ref()
+                .map(serialize)
+                .transpose()?
+                .map_or_else(String::new, |value| format!("{value} "));
+            ParsedRule {
+                kind: "namespace".to_owned(),
+                prelude: String::new(),
+                declarations: String::new(),
+                children: vec![
+                    property_descriptor("prefix", prefix),
+                    property_descriptor("namespace-uri", namespace_uri),
+                ],
+                css_text: format!("@namespace {serialized_prefix}url({serialized_uri});"),
+            }
+        }
         CssRule::FontFace(_) => block_leaf("font-face", "@font-face", &css_text),
         CssRule::Page(rule) => {
             let mut children = Vec::with_capacity(rule.rules.len());
@@ -1188,6 +1246,124 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
                 declarations: String::new(),
                 children,
                 css_text,
+            }
+        }
+        CssRule::FontPaletteValues(rule) => {
+            let mut font_family = None;
+            let mut base_palette = None;
+            let mut override_colors = None;
+            for property in &rule.properties {
+                match property {
+                    FontPaletteValuesProperty::FontFamily(value) => {
+                        font_family = Some(
+                            value
+                                .iter()
+                                .map(serialize)
+                                .collect::<Result<Vec<_>, _>>()?
+                                .join(", "),
+                        );
+                    }
+                    FontPaletteValuesProperty::BasePalette(value) => {
+                        base_palette = Some(serialize(value)?);
+                    }
+                    FontPaletteValuesProperty::OverrideColors(values) => {
+                        let mut serialized_values = Vec::with_capacity(values.len());
+                        for value in values {
+                            let serialized = serialize(value)?;
+                            let parts = split_top_level_whitespace(&serialized)
+                                .unwrap_or_else(|| vec![serialized.as_str()]);
+                            let Some((index, color_parts)) = parts.split_first() else {
+                                continue;
+                            };
+                            let color = color_parts.join(" ");
+                            let observable_color = serialize_observable_value(
+                                "color",
+                                &color,
+                                &color,
+                                ObservableCategory::Typed,
+                            );
+                            serialized_values.push(format!("{index} {observable_color}"));
+                        }
+                        override_colors = Some(serialized_values.join(", "));
+                    }
+                    FontPaletteValuesProperty::Custom(_) => {}
+                }
+            }
+            let mut descriptors = Vec::new();
+            let mut children = Vec::new();
+            for (name, value) in [
+                ("font-family", font_family),
+                ("base-palette", base_palette),
+                ("override-colors", override_colors),
+            ] {
+                let Some(value) = value else {
+                    continue;
+                };
+                descriptors.push(format!("{name}: {value};"));
+                children.push(property_descriptor(name, &value));
+            }
+            let name = serialize(&rule.name)?;
+            let contents = if descriptors.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", descriptors.join(" "))
+            };
+            ParsedRule {
+                kind: "font-palette-values".to_owned(),
+                prelude: name.clone(),
+                declarations: descriptors.join(" "),
+                children,
+                css_text: format!("@font-palette-values {name} {{{contents} }}"),
+            }
+        }
+        CssRule::ViewTransition(rule) => {
+            let mut navigation = None;
+            let mut types = None;
+            let mut type_names = Vec::new();
+            for property in &rule.properties {
+                match property {
+                    ViewTransitionProperty::Navigation(value) => {
+                        navigation = Some(serialize(value)?);
+                    }
+                    ViewTransitionProperty::Types(value) => {
+                        types = Some(serialize(value)?);
+                        type_names = match value {
+                            NoneOrCustomIdentList::None => Vec::new(),
+                            NoneOrCustomIdentList::Idents(values) => values
+                                .iter()
+                                .map(|value| value.0.as_ref().to_owned())
+                                .collect(),
+                        };
+                    }
+                    ViewTransitionProperty::Custom(_) => {}
+                }
+            }
+            let mut descriptors = Vec::new();
+            let mut children = Vec::new();
+            if let Some(value) = navigation {
+                descriptors.push(format!("navigation: {value};"));
+                children.push(property_descriptor("navigation", &value));
+            }
+            if let Some(value) = types {
+                descriptors.push(format!("types: {value};"));
+                children.push(property_descriptor("types", &value));
+                children.extend(
+                    type_names
+                        .iter()
+                        .map(|name| metadata_item("view-transition-type", name)),
+                );
+            }
+            let contents = if descriptors.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", descriptors.join(" "))
+            };
+            ParsedRule {
+                kind: "view-transition".to_owned(),
+                prelude: String::new(),
+                declarations: descriptors.join(" "),
+                children,
+                css_text: format!("@view-transition {{{contents} }}"),
             }
         }
         CssRule::Property(rule) => {
@@ -1321,6 +1497,7 @@ mod tests {
     fn classifies_the_public_authoring_rule_surface() {
         let source = r#"
             @import "theme.css" layer(theme) screen;
+            @namespace svg url("urn:svg");
             @font-face { font-family: Test; src: local(Test); }
             @page :first { margin: 1cm; @top-left { content: "x"; } }
             @position-try --fallback { top: 1px; }
@@ -1332,6 +1509,8 @@ mod tests {
             @container card (width > 1px) { .container { color: red; } }
             @layer reset, theme;
             @layer theme { .layer { color: red; } }
+            @font-palette-values --brand { font-family: "A B", Test; base-palette: 2; override-colors: 0 red, 3 #00ff00; }
+            @view-transition { navigation: auto; types: slide fade; }
             @scope (.start) to (.end) { .scope { color: red; } }
             @starting-style { .starting { opacity: 0; } }
             @property --space { syntax: "<length>"; inherits: false; initial-value: 0px; }
@@ -1345,6 +1524,7 @@ mod tests {
             kinds,
             [
                 "import",
+                "namespace",
                 "font-face",
                 "page",
                 "position-try",
@@ -1356,19 +1536,52 @@ mod tests {
                 "container",
                 "layer-statement",
                 "layer-block",
+                "font-palette-values",
+                "view-transition",
                 "scope",
                 "starting-style",
                 "property",
             ]
         );
-        assert_eq!(parsed[2].children[0].kind, "margin");
-        assert_eq!(parsed[4].children.len(), 2);
-        assert_eq!(parsed[6].prelude, "Test");
-        assert_eq!(parsed[6].children[0].kind, "font-feature-map");
-        assert_eq!(parsed[6].children[0].prelude, "styleset");
-        assert_eq!(parsed[6].children[0].children[0].prelude, "nice");
-        assert_eq!(parsed[6].children[0].children[0].declarations, "1");
-        assert_eq!(parsed[11].children[0].kind, "style");
+        assert_eq!(parsed[1].css_text, "@namespace svg url(\"urn:svg\");");
+        assert_eq!(parsed[3].children[0].kind, "margin");
+        assert_eq!(parsed[5].children.len(), 2);
+        assert_eq!(parsed[7].prelude, "Test");
+        assert_eq!(parsed[7].children[0].kind, "font-feature-map");
+        assert_eq!(parsed[7].children[0].prelude, "styleset");
+        assert_eq!(parsed[7].children[0].children[0].prelude, "nice");
+        assert_eq!(parsed[7].children[0].children[0].declarations, "1");
+        assert_eq!(parsed[12].children[0].kind, "style");
+        assert_eq!(parsed[13].prelude, "--brand");
+        assert_eq!(parsed[13].children[0].declarations, "\"A B\", Test");
+        assert_eq!(
+            parsed[13].children[2].declarations,
+            "0 red, 3 rgb(0, 255, 0)"
+        );
+        assert_eq!(parsed[14].children[0].declarations, "auto");
+        assert_eq!(parsed[14].children[2].prelude, "slide");
+    }
+
+    #[test]
+    fn applies_browser_descriptor_winners_and_drops_invalid_descriptors() {
+        let font_palette = parse_rule_tree(
+            "@font-palette-values --brand { font-family: Test; font-family: serif; base-palette: invalid; base-palette: dark; override-colors: 1 hsl(120 100% 50%); unknown: x; }",
+        )
+        .unwrap();
+        assert_eq!(
+            font_palette.css_text,
+            "@font-palette-values --brand { font-family: Test; base-palette: dark; override-colors: 1 rgb(0, 255, 0); }"
+        );
+
+        let view_transition = parse_rule_tree(
+            "@view-transition { navigation: bad; navigation: none; types: first; types: none; unknown: x; }",
+        )
+        .unwrap();
+        assert_eq!(
+            view_transition.css_text,
+            "@view-transition { navigation: none; types: none; }"
+        );
+        assert_eq!(view_transition.children.len(), 2);
     }
 
     #[test]

@@ -65,6 +65,22 @@ const cases = [
     id: "property-rule-descriptors",
     source: '@property --dynamic-width { syntax: "<length>"; inherits: false; initial-value: 0px; }',
   },
+  {
+    id: "layer-statement-interface",
+    source: "@layer reset, theme.components;",
+  },
+  {
+    id: "namespace-interface",
+    source: '@namespace \\73 vg "urn:svg";',
+  },
+  {
+    id: "font-palette-values-interface",
+    source: '@font-palette-values --brand { font-family: "A B", Test; base-palette: invalid; base-palette: 2; override-colors: 0 red, 3 #00ff00; unknown: x; }',
+  },
+  {
+    id: "view-transition-interface",
+    source: "@view-transition { navigation: bad; navigation: auto; types: old; types: foo\\ bar \\62 az; unknown: x; }",
+  },
 ];
 
 const counterStyleFields = [
@@ -131,6 +147,26 @@ function ruleSnapshot(rule) {
     for (const field of ["name", "syntax", "inherits", "initialValue"]) {
       snapshot[field] = rule[field];
     }
+  }
+  if (rule.constructor.name === "CSSLayerStatementRule") {
+    snapshot.cssText = rule.cssText;
+    snapshot.nameList = [...rule.nameList];
+  }
+  if (rule.constructor.name === "CSSNamespaceRule") {
+    snapshot.cssText = rule.cssText;
+    snapshot.namespaceURI = rule.namespaceURI;
+    snapshot.prefix = rule.prefix;
+  }
+  if (rule.constructor.name === "CSSFontPaletteValuesRule") {
+    snapshot.cssText = rule.cssText;
+    for (const field of ["name", "fontFamily", "basePalette", "overrideColors"]) {
+      snapshot[field] = rule[field];
+    }
+  }
+  if (rule.constructor.name === "CSSViewTransitionRule") {
+    snapshot.cssText = rule.cssText;
+    snapshot.navigation = rule.navigation;
+    snapshot.types = [...rule.types];
   }
   return snapshot;
 }
@@ -200,6 +236,26 @@ try {
         for (const field of ["name", "syntax", "inherits", "initialValue"]) {
           snapshot[field] = rule[field];
         }
+      }
+      if (rule.constructor.name === "CSSLayerStatementRule") {
+        snapshot.cssText = rule.cssText;
+        snapshot.nameList = [...rule.nameList];
+      }
+      if (rule.constructor.name === "CSSNamespaceRule") {
+        snapshot.cssText = rule.cssText;
+        snapshot.namespaceURI = rule.namespaceURI;
+        snapshot.prefix = rule.prefix;
+      }
+      if (rule.constructor.name === "CSSFontPaletteValuesRule") {
+        snapshot.cssText = rule.cssText;
+        for (const field of ["name", "fontFamily", "basePalette", "overrideColors"]) {
+          snapshot[field] = rule[field];
+        }
+      }
+      if (rule.constructor.name === "CSSViewTransitionRule") {
+        snapshot.cssText = rule.cssText;
+        snapshot.navigation = rule.navigation;
+        snapshot.types = [...rule.types];
       }
       return snapshot;
     };

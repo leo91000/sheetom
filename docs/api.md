@@ -80,6 +80,8 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
 - `CSSStyleRule` combines `style`, nested `cssRules`, and selector mutation.
 - `CSSMediaRule`, `CSSSupportsRule`, `CSSContainerRule`, `CSSLayerBlockRule`,
   `CSSScopeRule`, and `CSSStartingStyleRule` expose live grouping lists.
+- `CSSLayerStatementRule` exposes a fresh frozen `nameList` snapshot;
+  `CSSNamespaceRule` exposes immutable `namespaceURI` and `prefix` values.
 - `CSSImportRule` never fetches; `media` is live and `href` resolves against the
   sheet base URL.
 - `CSSFontFaceRule`, `CSSPageRule`/`CSSMarginRule`, `CSSPositionTryRule`, and
@@ -89,6 +91,10 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
 - `CSSCounterStyleRule` validates mutable descriptors.
 - `CSSFontFeatureValuesRule` exposes six live map-like categories with WebIDL
   `unsigned long` value conversion.
+- `CSSFontPaletteValuesRule` exposes immutable `name`, `fontFamily`,
+  `basePalette`, and `overrideColors` descriptors.
+- `CSSViewTransitionRule` exposes immutable `navigation` and a frozen,
+  same-object `types` list.
 - `CSSPropertyRule` exposes immutable `name`, `syntax`, `inherits`, and
   `initialValue` descriptors.
 
