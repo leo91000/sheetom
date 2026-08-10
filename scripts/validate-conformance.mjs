@@ -50,6 +50,7 @@ const valueCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "sch
 const shorthandCapabilitiesSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-capability-corpus.schema.json"));
 const shorthandGrammarContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-contracts.schema.json"));
 const shorthandGrammarObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-observations.schema.json"));
+const nativeGrammarInventorySchema = await readJson(path.join(compatibilityRoot, "schemas/native-grammar-inventory.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -58,6 +59,7 @@ const validateValueCapabilities = ajv.compile(valueCapabilitiesSchema);
 const validateShorthandCapabilities = ajv.compile(shorthandCapabilitiesSchema);
 const validateShorthandGrammarContracts = ajv.compile(shorthandGrammarContractsSchema);
 const validateShorthandGrammarObservations = ajv.compile(shorthandGrammarObservationsSchema);
+const validateNativeGrammarInventory = ajv.compile(nativeGrammarInventorySchema);
 
 const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");
 validateOrThrow(
@@ -109,12 +111,85 @@ for (let index = 0; index < grammarCases.length; index += 1) {
     `${grammarCases[index]?.id} Chromium acceptance drifted`,
   );
 }
+const nativeGrammarInventoryFile = path.join(
+  compatibilityRoot,
+  "native-grammar-inventory.json",
+);
+const nativeGrammarInventory = await readJson(nativeGrammarInventoryFile);
+validateOrThrow(
+  validateNativeGrammarInventory,
+  nativeGrammarInventory,
+  nativeGrammarInventoryFile,
+);
 const propertyManifestFile = path.join(repositoryRoot, "src/chromium-properties.ts");
 const propertyManifestSha256 = createHash("sha256")
   .update(await readFile(propertyManifestFile))
   .digest("hex");
 if (shorthandCapabilities.baseline.propertyManifestSha256 !== propertyManifestSha256) {
   throw new Error("Shorthand Capability Corpus is stale for chromium-properties.ts");
+}
+const fileSha256 = async file => createHash("sha256")
+  .update(await readFile(file))
+  .digest("hex");
+assert.equal(
+  nativeGrammarInventory.baseline.propertyManifestSha256,
+  propertyManifestSha256,
+  "Native Grammar Inventory is stale for chromium-properties.ts",
+);
+assert.equal(
+  nativeGrammarInventory.baseline.shorthandCapabilitiesSha256,
+  await fileSha256(shorthandCapabilitiesFile),
+  "Native Grammar Inventory is stale for shorthand-capabilities.json",
+);
+assert.equal(
+  nativeGrammarInventory.baseline.shorthandGrammarContractsSha256,
+  await fileSha256(shorthandGrammarContractsFile),
+  "Native Grammar Inventory is stale for shorthand-grammar-contracts.json",
+);
+
+const inventoryProperties = nativeGrammarInventory.properties.map(entry => entry.property);
+const manifestedShorthands = Object.entries(chromiumShorthandLonghands)
+  .filter(([, longhands]) => longhands.length > 1)
+  .map(([property]) => property)
+  .sort();
+assert.deepEqual(inventoryProperties, manifestedShorthands);
+assert.equal(new Set(inventoryProperties).size, 129);
+const inventoryProfileByCodec = new Map(
+  nativeGrammarInventory.profiles.map(profile => [profile.codec, profile]),
+);
+assert.equal(inventoryProfileByCodec.size, 24);
+for (const profile of shorthandGrammarContracts.profiles) {
+  const inventoryProfile = inventoryProfileByCodec.get(profile.codec);
+  assert.ok(inventoryProfile, `Missing native grammar profile ${profile.codec}`);
+  assert.deepEqual(
+    inventoryProfile.contractCaseIds,
+    profile.cases.map(grammarCase => grammarCase.id),
+    `Native grammar profile ${profile.codec} is stale`,
+  );
+}
+const breadthCaseIds = new Set(shorthandCapabilities.cases.map(capability => capability.id));
+const propertyBranchIds = new Set(
+  nativeGrammarInventory.propertyBranches.map(branch => branch.id),
+);
+assert.equal(propertyBranchIds.size, nativeGrammarInventory.propertyBranches.length);
+for (const property of nativeGrammarInventory.properties) {
+  assert.ok(breadthCaseIds.has(property.breadthCaseId), property.property);
+  const profile = inventoryProfileByCodec.get(property.codec);
+  assert.ok(profile?.properties.includes(property.property), property.property);
+  for (const branchId of property.propertyBranchIds) {
+    assert.ok(propertyBranchIds.has(branchId), branchId);
+  }
+}
+for (const branch of nativeGrammarInventory.propertyBranches) {
+  assert.equal(branch.chromium.id, branch.id, branch.id);
+  assert.equal(branch.chromium.accepted, branch.accepted, branch.id);
+  if (!branch.accepted) {
+    const preserved = nativeGrammarInventory.propertyBranches.find(
+      candidate => candidate.id === branch.preserves,
+    );
+    assert.equal(preserved?.property, branch.property, branch.id);
+    assert.equal(preserved?.accepted, true, branch.id);
+  }
 }
 
 const runtimeOverridesFile = path.join(

@@ -203,7 +203,7 @@ jobs:
         run: npm run test:browser:matrix
 
       - name: Reprobe reviewed shorthand grammar branches
-        run: npm run generate:shorthand-grammar
+        run: npm run generate:shorthand-grammar && npm run generate:native-grammar
 
       - name: Run browser differential and native reparsing evidence
         run: npm run test:differential
