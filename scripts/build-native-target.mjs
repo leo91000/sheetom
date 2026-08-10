@@ -27,8 +27,12 @@ if (process.platform !== configuration.platform || process.arch !== configuratio
       `not ${process.platform}/${process.arch}`,
   );
 }
-
-execFileSync("rustup", ["target", "add", target], { cwd: repositoryRoot, stdio: "inherit" });
+if (
+  configuration.suffix.endsWith("-musl") &&
+  process.report?.getReport?.()?.header?.glibcVersionRuntime
+) {
+  throw new Error(`Target ${target} must be built inside a musl runtime`);
+}
 
 const arguments_ = [
   path.join(repositoryRoot, "node_modules", "@napi-rs", "cli", "cli.mjs"),

@@ -156,28 +156,16 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-24.04
-            musl: false
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
-            musl: false
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-24.04
-            musl: true
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-24.04-arm
-            musl: true
           - target: x86_64-pc-windows-msvc
             os: windows-2025
-            musl: false
           - target: aarch64-pc-windows-msvc
             os: windows-11-vs2026-arm
-            musl: false
           - target: x86_64-apple-darwin
             os: macos-15-intel
-            musl: false
           - target: aarch64-apple-darwin
             os: macos-15
-            musl: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -193,24 +181,55 @@ jobs:
             ~/.cargo/git/db
             target/${{ matrix.target }}
           key: native-${{ matrix.target }}-1.88-${{ hashFiles('Cargo.lock') }}
-      - name: Install the musl linker
-        if: matrix.musl
-        run: sudo apt-get update && sudo apt-get install --yes musl-tools
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - name: Build the native target
         run: npm run native:build:target -- ${{ matrix.target }}
       - name: Load and exercise the native target
-        if: matrix.musl == false
         run: node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs
-      - name: Load and exercise the musl target in Alpine
-        if: matrix.musl
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sheetom-native-${{ matrix.target }}
+          path: native/*.node
+          if-no-files-found: error
+
+  native-musl-bindings:
+    needs: changes
+    if: needs.changes.outputs.native == 'true' || needs.changes.outputs.package == 'true'
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-24.04
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target/${{ matrix.target }}
+          key: native-${{ matrix.target }}-1.88-${{ hashFiles('Cargo.lock') }}
+      - name: Build the pinned musl toolchain image
+        run: docker build --file .github/native-musl.Dockerfile --tag sheetom-musl-builder .github
+      - name: Build and exercise the native target in musl
         run: >-
           docker run --rm
+          --user "$(id -u):$(id -g)"
+          --env HOME=/tmp
+          --env CARGO_HOME=/cargo
+          --env RUSTUP_HOME=/usr/local/rustup
+          --volume "${HOME}/.cargo:/cargo"
           --volume "${{ github.workspace }}:/workspace"
           --workdir /workspace
-          node:22-alpine
-          sh -c "node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs"
+          sheetom-musl-builder
+          sh -c "npm ci && node scripts/build-native-target.mjs ${{ matrix.target }} && node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs"
       - uses: actions/upload-artifact@v7
         with:
           name: sheetom-native-${{ matrix.target }}
@@ -284,7 +303,7 @@ jobs:
         run: npm run test:differential
 
   package-artifact:
-    needs: [changes, native-bindings]
+    needs: [changes, native-bindings, native-musl-bindings]
     if: needs.changes.outputs.package == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
