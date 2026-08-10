@@ -7,8 +7,9 @@ use lightningcss::{
 };
 
 use crate::{
-    catalog::canonical_property_name, recover_component_values_with_limits,
-    sheetom_parser_property_name, EngineError, PropertyParseKind, RecoveredValue, ResourceLimits,
+    catalog::{property_grammar, PropertyGrammarOwner},
+    recover_component_values_with_limits, EngineError, PropertyParseKind, RecoveredValue,
+    ResourceLimits,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -62,18 +63,27 @@ pub fn parse_standard_semantic_property_with_limits(
     source: &str,
     limits: ResourceLimits,
 ) -> Result<SemanticDeclaration, EngineError> {
-    let property_name = canonical_property_name(name)
+    let grammar = property_grammar(name)
         .ok_or_else(|| EngineError::Parse(format!("unsupported property: {name}")))?;
-    if property_name.starts_with("--") {
+    if grammar.owner() == PropertyGrammarOwner::CustomTokenStream {
         return Err(EngineError::Parse(format!(
             "custom property requires token-stream semantics: {name}"
         )));
     }
+    if !grammar.has_standard_parser() {
+        let requirement = if grammar.extensions().is_empty() {
+            "an unimplemented grammar"
+        } else {
+            "a SheetOM extension grammar"
+        };
+        return Err(EngineError::Parse(format!(
+            "property requires {requirement}: {name}: {source}"
+        )));
+    }
 
     let recovered = recover_component_values_with_limits(source, limits)?;
-    let parser_name = sheetom_parser_property_name(&property_name).unwrap_or(&property_name);
     let property = Property::parse_string(
-        PropertyId::from(parser_name),
+        PropertyId::from(grammar.parser_name()),
         source,
         ParserOptions::default(),
     )
@@ -81,19 +91,20 @@ pub fn parse_standard_semantic_property_with_limits(
 
     if matches!(property, Property::Unparsed(_) | Property::Custom(_)) {
         return Err(EngineError::Parse(format!(
-            "property requires a non-standard or pending grammar: {property_name}: {source}"
+            "property requires a non-standard or pending grammar: {}: {source}",
+            grammar.canonical_name()
         )));
     }
 
-    let parse_kind = if parser_name == property_name {
-        PropertyParseKind::Typed
-    } else {
+    let parse_kind = if grammar.owner() == PropertyGrammarOwner::SheetomAlias {
         PropertyParseKind::SheetomTyped
+    } else {
+        PropertyParseKind::Typed
     };
     let property = property.into_owned();
 
     Ok(SemanticDeclaration {
-        property_name: Arc::from(property_name),
+        property_name: Arc::from(grammar.canonical_name()),
         value: SemanticPropertyValue::Standard(property),
         recovered,
         parse_kind,

@@ -16,6 +16,8 @@ mod shorthand;
 mod syntax;
 mod value_grammar;
 
+pub(crate) use catalog::sheetom_parser_property_name;
+
 pub use catalog::{
     CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256,
     SOURCE_SHA256 as PROPERTY_CATALOG_SOURCE_SHA256,
@@ -70,7 +72,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.15";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.16";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -353,36 +355,6 @@ fn inspect_property_unchecked<'i>(
     })
 }
 
-pub(crate) fn sheetom_parser_property_name(name: &str) -> Option<&'static str> {
-    if matches!(
-        name,
-        "-webkit-border-after"
-            | "-webkit-border-before"
-            | "-webkit-border-end"
-            | "-webkit-border-start"
-            | "-webkit-column-rule"
-            | "-webkit-text-stroke"
-            | "column-rule"
-            | "row-rule"
-            | "rule"
-    ) {
-        return Some("border");
-    }
-    if name == "grid-gap" {
-        return Some("gap");
-    }
-    if name.ends_with("rule-width") || name == "-webkit-text-stroke-width" {
-        return Some("border-top-width");
-    }
-    if name.ends_with("rule-style") {
-        return Some("border-top-style");
-    }
-    if name.ends_with("rule-color") || name == "-webkit-text-stroke-color" {
-        return Some("border-top-color");
-    }
-    None
-}
-
 #[doc(hidden)]
 pub fn inspect_property<'i>(
     name: &'i str,
@@ -457,7 +429,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.15");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.16");
     }
 
     #[test]
