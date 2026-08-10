@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
 import { chromium } from "playwright";
-import { createServer } from "vite";
+
+import { chromiumShorthandLonghands } from "../src/chromium-properties.ts";
 
 const capabilitiesUrl = new URL("../compatibility/shorthand-capabilities.json", import.meta.url);
 const contractsUrl = new URL("../compatibility/shorthand-grammar-contracts.json", import.meta.url);
@@ -14,151 +15,59 @@ if (!["--check", "--record"].includes(mode)) {
   throw new Error("Usage: generate-native-grammar-inventory.mjs [--check|--record]");
 }
 
-const reviewedPropertyBranches = [
-  {
-    id: "native.animation.auto-duration",
-    property: "animation",
-    branch: "auto duration",
-    input: "auto ease 1s foo",
-    accepted: true,
-  },
-  {
-    id: "native.animation.duplicate-auto-invalid",
-    property: "animation",
-    branch: "duplicate auto",
-    input: "auto auto foo",
-    accepted: false,
-    preserves: "native.animation.auto-duration",
-  },
-  {
-    id: "native.font.system-font",
-    property: "font",
-    branch: "system font",
-    input: "caption",
-    accepted: true,
-  },
-  {
-    id: "native.font.system-font-tail-invalid",
-    property: "font",
-    branch: "system font with trailing family",
-    input: "caption serif",
-    accepted: false,
-    preserves: "native.font.system-font",
-  },
-  {
-    id: "native.background-position.four-components",
-    property: "background-position",
-    branch: "four edge-offset components",
-    input: "left 10px top 20px",
-    accepted: true,
-  },
-  {
-    id: "native.background-position.five-components-invalid",
-    property: "background-position",
-    branch: "extra position component",
-    input: "left 10px top 20px center",
-    accepted: false,
-    preserves: "native.background-position.four-components",
-  },
-  {
-    id: "native.row-rule.full",
-    property: "row-rule",
-    branch: "width style and color",
-    input: "2px dashed red",
-    accepted: true,
-  },
-  {
-    id: "native.row-rule.duplicate-style-invalid",
-    property: "row-rule",
-    branch: "duplicate style",
-    input: "2px dashed solid red",
-    accepted: false,
-    preserves: "native.row-rule.full",
-  },
-  {
-    id: "native.rule.full",
-    property: "rule",
-    branch: "shared column and row rule",
-    input: "2px dashed red",
-    accepted: true,
-  },
-  {
-    id: "native.rule.duplicate-style-invalid",
-    property: "rule",
-    branch: "duplicate style",
-    input: "2px dashed solid red",
-    accepted: false,
-    preserves: "native.rule.full",
-  },
-];
-
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-const [capabilitiesBytes, contractsBytes, manifestBytes] = await Promise.all([
+const [capabilitiesBytes, contractsBytes, manifestBytes, inventoryBytes] = await Promise.all([
   readFile(capabilitiesUrl),
   readFile(contractsUrl),
   readFile(manifestUrl),
+  readFile(outputUrl),
 ]);
 const capabilities = JSON.parse(capabilitiesBytes.toString("utf8"));
 const contracts = JSON.parse(contractsBytes.toString("utf8"));
+const inventory = JSON.parse(inventoryBytes.toString("utf8"));
 
-const vite = await createServer({
-  appType: "custom",
-  configFile: false,
-  logLevel: "error",
-  optimizeDeps: { noDiscovery: true },
-  server: { middlewareMode: true },
-});
-
-let definitions;
-try {
-  const module = await vite.ssrLoadModule("/src/internal/shorthand-registry.ts");
-  definitions = module.getStaticShorthandDefinitions();
-} finally {
-  await vite.close();
+const manifestedProperties = Object.entries(chromiumShorthandLonghands)
+  .filter(([, longhands]) => longhands.length > 1)
+  .map(([property]) => property)
+  .sort();
+const inventoryProperties = inventory.properties
+  .map(property => property.property)
+  .sort();
+if (JSON.stringify(inventoryProperties) !== JSON.stringify(manifestedProperties)) {
+  throw new Error("Native Grammar Inventory does not cover the Chromium shorthand manifest");
 }
 
-const propertiesByCodec = new Map();
-for (const definition of definitions) {
-  const properties = propertiesByCodec.get(definition.codec) ?? [];
-  properties.push(definition.name);
-  propertiesByCodec.set(definition.codec, properties);
-}
-
+const breadthCases = new Set(capabilities.cases.map(capability => capability.id));
 const profileContracts = new Map(
   contracts.profiles.map(profile => [
     profile.codec,
     profile.cases.map(grammarCase => grammarCase.id),
   ]),
 );
-const breadthCases = new Map(
-  capabilities.cases.map(capability => [capability.property, capability.id]),
-);
+const propertiesByProfile = new Map();
+for (const property of inventory.properties) {
+  if (!breadthCases.has(property.breadthCaseId)) {
+    throw new Error(`Missing shorthand breadth case ${property.breadthCaseId}`);
+  }
+  const properties = propertiesByProfile.get(property.codec) ?? [];
+  properties.push(property.property);
+  propertiesByProfile.set(property.codec, properties);
+}
+for (const profile of inventory.profiles) {
+  const contractCaseIds = profileContracts.get(profile.codec);
+  if (JSON.stringify(profile.contractCaseIds) !== JSON.stringify(contractCaseIds)) {
+    throw new Error(`Native grammar contract drifted for ${profile.codec}`);
+  }
+  const properties = (propertiesByProfile.get(profile.codec) ?? []).sort();
+  if (JSON.stringify(profile.properties) !== JSON.stringify(properties)) {
+    throw new Error(`Native grammar property coverage drifted for ${profile.codec}`);
+  }
+}
 
-const profiles = [...propertiesByCodec]
-  .sort(([left], [right]) => left.localeCompare(right))
-  .map(([codec, properties]) => {
-    const contractCaseIds = profileContracts.get(codec);
-    if (!contractCaseIds) throw new Error(`Missing Grammar Branch Contract for ${codec}`);
-    return { codec, properties: [...properties].sort(), contractCaseIds };
-  });
-const properties = definitions
-  .map(definition => {
-    const breadthCaseId = breadthCases.get(definition.name);
-    if (!breadthCaseId) throw new Error(`Missing breadth case for ${definition.name}`);
-    return {
-      property: definition.name,
-      codec: definition.codec,
-      breadthCaseId,
-      propertyBranchIds: reviewedPropertyBranches
-        .filter(branch => branch.property === definition.name)
-        .map(branch => branch.id),
-    };
-  })
-  .sort((left, right) => left.property.localeCompare(right.property));
-
+const reviewedPropertyBranches = inventory.propertyBranches.map(({ chromium: _, ...branch }) => branch);
 const browser = await chromium.launch({ headless: true });
 let browserResult;
 try {
@@ -200,39 +109,35 @@ const propertyBranches = reviewedPropertyBranches.map(branch => {
   return { ...branch, chromium: chromiumObservation };
 });
 
-const inventory = {
-  $schema: "./schemas/native-grammar-inventory.schema.json",
-  schemaVersion: 1,
+const updatedInventory = {
+  ...inventory,
   baseline: {
-    browser: "chromium",
+    ...inventory.baseline,
     userAgent: browserResult.userAgent,
     propertyManifestSha256: sha256(manifestBytes),
     shorthandCapabilitiesSha256: sha256(capabilitiesBytes),
     shorthandGrammarContractsSha256: sha256(contractsBytes),
-    derivation: "manifest-profile-property-branches@1",
   },
-  profiles,
-  properties,
   propertyBranches,
 };
-const serialized = `${JSON.stringify(inventory, null, 2)}\n`;
+const serialized = `${JSON.stringify(updatedInventory, null, 2)}\n`;
 
 if (mode === "--record") {
   await writeFile(outputUrl, serialized);
   console.log(
-    `Recorded ${properties.length} shorthand properties, ${profiles.length} profiles, and ` +
-    `${propertyBranches.length} property-specific branches.`,
+    `Recorded ${inventory.properties.length} shorthand properties, ` +
+    `${inventory.profiles.length} profiles, and ${propertyBranches.length} ` +
+    "property-specific branches.",
   );
 } else {
-  const current = await readFile(outputUrl, "utf8");
-  if (current !== serialized) {
+  if (inventoryBytes.toString("utf8") !== serialized) {
     throw new Error(
       "Native Grammar Inventory drifted; review the diff and run " +
       "npm run record:native-grammar to accept it",
     );
   }
   console.log(
-    `Verified ${properties.length} shorthand properties and ` +
+    `Verified ${inventory.properties.length} shorthand properties and ` +
     `${propertyBranches.length} property-specific branches.`,
   );
 }

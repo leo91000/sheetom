@@ -14,8 +14,11 @@ const bundlePaths = [
   path.join(repositoryRoot, "dist/index.cjs"),
 ];
 
-if (Object.hasOwn(packageManifest.dependencies ?? {}, "cssstyle")) {
-  throw new Error("cssstyle must not be a SheetOM runtime dependency");
+const runtimeDependencies = Object.keys(packageManifest.dependencies ?? {});
+if (runtimeDependencies.length > 0) {
+  throw new Error(
+    `SheetOM must not have JavaScript runtime dependencies: ${runtimeDependencies.join(", ")}`,
+  );
 }
 
 async function sourceFiles(directory) {
