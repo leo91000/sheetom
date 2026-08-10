@@ -5,6 +5,8 @@
 
 mod catalog;
 mod declaration_state;
+mod shorthand;
+mod syntax;
 
 pub use catalog::{
     CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256,
