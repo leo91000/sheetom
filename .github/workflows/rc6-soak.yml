@@ -1,0 +1,128 @@
+name: RC6 Soak
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: rc6-soak
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      eligible: ${{ steps.release.outputs.eligible }}
+      head-ref: ${{ steps.release.outputs.head_ref }}
+      head-sha: ${{ steps.release.outputs.head_sha }}
+      base-sha: ${{ steps.release.outputs.base_sha }}
+      context: ${{ steps.release.outputs.context }}
+    steps:
+      - name: Resolve the Changesets release pull request
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --base main \
+            --json headRefName,headRefOid,baseRefOid \
+            --jq '[.[] | select(.headRefName == "changeset-release/main")]')
+          if [ "$(jq length <<<"$release")" -eq 0 ]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "No open Changesets release pull request; there is nothing to soak."
+            exit 0
+          fi
+          test "$(jq length <<<"$release")" -eq 1
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$(jq -r '.[0].headRefName' <<<"$release")" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(jq -r '.[0].headRefOid' <<<"$release")" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$(jq -r '.[0].baseRefOid' <<<"$release")" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            echo "context=sheetom/rc6-soak/$(date -u +%F)" >> "$GITHUB_OUTPUT"
+          else
+            echo "context=sheetom/rc6-soak-manual/$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          fi
+
+  validate:
+    needs: resolve
+    if: needs.resolve.outputs.eligible == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      ci-run-id: ${{ steps.ci.outputs.run_id }}
+      ci-run-url: ${{ steps.ci.outputs.run_url }}
+    steps:
+      - name: Dispatch the complete CI matrix for the exact release SHA
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ needs.resolve.outputs.head-ref }}
+          HEAD_SHA: ${{ needs.resolve.outputs.head-sha }}
+          BASE_SHA: ${{ needs.resolve.outputs.base-sha }}
+        run: |
+          dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run ci.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$HEAD_REF" \
+            -f "base_sha=$BASE_SHA"
+          run_id=""
+          for attempt in $(seq 1 30); do
+            run_id=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow ci.yml \
+              --branch "$HEAD_REF" \
+              --event workflow_dispatch \
+              --limit 20 \
+              --json databaseId,createdAt,headSha \
+              --jq ".[] | select(.headSha == \"$HEAD_SHA\" and .createdAt >= \"$dispatched_at\") | .databaseId" \
+              | head -n 1)
+            if [ -n "$run_id" ]; then break; fi
+            sleep 2
+          done
+          if [ -z "$run_id" ]; then
+            echo "Unable to resolve the dispatched CI run" >&2
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$run_id" >> "$GITHUB_OUTPUT"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status
+
+  record:
+    needs: [resolve, validate]
+    if: always() && needs.resolve.outputs.eligible == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Record the scheduled result on the tested release SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ needs.resolve.outputs.head-sha }}
+          CONTEXT: ${{ needs.resolve.outputs.context }}
+          VALIDATION_RESULT: ${{ needs.validate.result }}
+          CI_RUN_URL: ${{ needs.validate.outputs.ci-run-url }}
+        run: |
+          state=failure
+          description="RC6 full-matrix soak failed"
+          if [ "$VALIDATION_RESULT" = "success" ]; then
+            state=success
+            description="RC6 full-matrix soak passed"
+          fi
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" \
+            -f "state=$state" \
+            -f "context=$CONTEXT" \
+            -f "description=$description" \
+            -f "target_url=${CI_RUN_URL:-https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID}"
+          test "$state" = success

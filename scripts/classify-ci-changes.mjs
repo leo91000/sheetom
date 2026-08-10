@@ -22,6 +22,7 @@ const isNativePath = filePath =>
     filePath === "scripts/generate-native-property-catalog.mjs" ||
     filePath === "scripts/native-crash-worker.mjs" ||
     filePath === "scripts/public-crash-worker.mjs" ||
+    filePath.startsWith("scripts/sync-cargo-version") ||
     filePath.startsWith("scripts/build-native-") ||
     filePath.startsWith("scripts/collect-native-") ||
     filePath.startsWith("scripts/test-native-");
@@ -45,6 +46,7 @@ const isBrowserPath = filePath =>
 
 const isPackagePath = filePath =>
     filePath.startsWith("src/") ||
+    filePath === "scripts/verify-release.mjs" ||
     filePath.startsWith("scripts/test-package") ||
     filePath.startsWith("scripts/test-tarball") ||
     ["package.json", "package-lock.json", "tsdown.config.ts", "tsconfig.json"].includes(filePath);

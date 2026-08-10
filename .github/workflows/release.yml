@@ -217,8 +217,52 @@ jobs:
           base_sha=$(gh pr view "$RELEASE_PR" --json baseRefOid --jq .baseRefOid)
           gh workflow run ci.yml --ref "$HEAD_REF" -f "base_sha=$base_sha"
 
-  publish:
+  soak-gate:
     needs: changesets
+    if: >-
+      needs.changesets.outputs.has-changesets == 'false' &&
+      needs.changesets.outputs.version-changed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: read
+    steps:
+      - name: Check out the successful release commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Require the seven-night RC6 soak on the release pull request SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$version" != "0.1.0-rc.6" ]; then
+            echo "The seven-night RC6 gate does not apply to $version."
+            exit 0
+          fi
+          pulls=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/pulls")
+          soak_sha=$(jq -r \
+            '[.[] | select(.head.ref == "changeset-release/main")][0].head.sha // empty' \
+            <<<"$pulls")
+          if [ -z "$soak_sha" ]; then
+            echo "Unable to identify the merged Changesets release pull request" >&2
+            exit 1
+          fi
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/commits/$soak_sha/statuses?per_page=100" \
+            > "$RUNNER_TEMP/soak-statuses.json"
+          node scripts/verify-rc6-soak.mjs \
+            --statuses="$RUNNER_TEMP/soak-statuses.json"
+
+  publish:
+    needs: [changesets, soak-gate]
     if: >-
       needs.changesets.outputs.has-changesets == 'false' &&
       needs.changesets.outputs.version-changed == 'true'

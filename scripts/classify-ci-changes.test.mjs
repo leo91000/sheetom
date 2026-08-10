@@ -50,6 +50,14 @@ test("native packaging scripts rebuild the native matrix and package artifact", 
     });
 });
 
+test("release version synchronization rebuilds native package evidence", () => {
+    assert.deepEqual(classifyPaths(["scripts/sync-cargo-version.mjs"]), {
+        ...none,
+        native: true,
+        package: true,
+    });
+});
+
 test("native and public crash workers run the subprocess safety gate", () => {
     assert.deepEqual(
         classifyPaths(["scripts/native-crash-worker.mjs", "scripts/public-crash-worker.mjs"]),
