@@ -245,6 +245,24 @@ pub fn inspect_property<'i>(
     run_guarded(|| inspect_property_unchecked(name, value))
 }
 
+#[doc(hidden)]
+pub fn validate_static_property<'i>(
+    name: &'i str,
+    value: &'i str,
+) -> Result<PropertyInspection, EngineError> {
+    let inspection = inspect_property(name, value)?;
+    if matches!(
+        inspection.kind,
+        PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
+    ) {
+        return Ok(inspection);
+    }
+
+    Err(EngineError::Parse(format!(
+        "invalid static value for {name}: {value}"
+    )))
+}
+
 pub fn canonicalize_declaration_block(source: &str) -> Result<String, EngineError> {
     if source.len() > MAX_DECLARATION_BYTES {
         return Err(EngineError::InputLimitExceeded {
@@ -280,8 +298,9 @@ pub fn fuzz_declaration_block(source: &str) {
 mod tests {
     use super::{
         canonicalize_declaration_block, inspect_property, run_guarded, scan_safety_metrics,
-        EngineError, PropertyInspection, PropertyParseKind, SafetyMetrics, ENGINE_REVISION,
-        MAX_DECLARATIONS_PER_BLOCK, MAX_DECLARATION_BYTES, MAX_NESTING_DEPTH,
+        validate_static_property, EngineError, PropertyInspection, PropertyParseKind,
+        SafetyMetrics, ENGINE_REVISION, MAX_DECLARATIONS_PER_BLOCK, MAX_DECLARATION_BYTES,
+        MAX_NESTING_DEPTH,
     };
 
     #[test]
@@ -345,6 +364,33 @@ mod tests {
             inspect_property("rule", "2px dashed solid red"),
             Err(EngineError::Parse(_))
         ));
+    }
+
+    #[test]
+    fn satisfies_every_property_specific_native_grammar_branch() {
+        let inventory: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../compatibility/native-grammar-inventory.json"
+        ))
+        .expect("native grammar inventory should be valid JSON");
+        let branches = inventory["propertyBranches"]
+            .as_array()
+            .expect("native grammar inventory should contain branches");
+
+        for branch in branches {
+            let id = branch["id"].as_str().expect("branch should have an id");
+            let property = branch["property"]
+                .as_str()
+                .expect("branch should have a property");
+            let input = branch["input"]
+                .as_str()
+                .expect("branch should have an input");
+            let accepted = branch["accepted"]
+                .as_bool()
+                .expect("branch should have an acceptance decision");
+            let result = validate_static_property(property, input);
+
+            assert_eq!(result.is_ok(), accepted, "{id}");
+        }
     }
 
     #[test]
