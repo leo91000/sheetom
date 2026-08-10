@@ -6,6 +6,7 @@
 mod catalog;
 mod counter_style;
 mod declaration_state;
+mod extension_value;
 mod font_face;
 mod function_rule;
 mod observable;
@@ -30,6 +31,11 @@ pub use counter_style::{
 pub use declaration_state::{
     DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
     PendingSubstitutionGroup,
+};
+#[doc(hidden)]
+pub use extension_value::{
+    IntegerCalculationValue, NamedPageSize, OffsetPositionValue, OffsetRotateDirection,
+    OffsetRotateValue, PageLength, PageOrientation, PageSizeValue, SemanticExtensionValue,
 };
 #[doc(hidden)]
 pub use recovered_value::{
@@ -78,7 +84,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.18";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.19";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -424,6 +430,15 @@ pub fn fuzz_recovered_component_values(source: &str) {
     };
     let _ = recovered.reparsable_css();
     let _ = analyze_recovered_substitutions(&recovered);
+    for property in [
+        "z-index",
+        "offset-anchor",
+        "offset-position",
+        "offset-rotate",
+        "size",
+    ] {
+        let _ = parse_semantic_property(property, source);
+    }
 }
 
 #[cfg(test)]
@@ -439,7 +454,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.18");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.19");
     }
 
     #[test]
