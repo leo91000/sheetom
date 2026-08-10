@@ -313,7 +313,6 @@ mod tests {
     fn rejects_unparsed_and_custom_candidates_in_the_standard_path() {
         for (name, source) in [
             ("width", "var(--width)"),
-            ("width", "anchor-size(width)"),
             ("content", "leader(.)"),
             ("--theme", "red"),
         ] {
@@ -321,6 +320,30 @@ mod tests {
                 parse_standard_semantic_property(name, source).is_err(),
                 "{name}: {source}"
             );
+        }
+    }
+
+    #[test]
+    fn parses_anchor_size_through_the_vendored_standard_ast() {
+        for (source, expected) in [
+            ("anchor-size()", "anchor-size()"),
+            ("anchor-size(width --card)", "anchor-size(--card width)"),
+            (
+                "calc(anchor-size(width) * 2)",
+                "calc(2 * anchor-size(width))",
+            ),
+            (
+                "min(anchor-size(width), 10px)",
+                "min(anchor-size(width), 10px)",
+            ),
+        ] {
+            let declaration = parse_standard_semantic_property("width", source).unwrap();
+            assert_eq!(declaration.parse_kind(), PropertyParseKind::Typed);
+            assert!(matches!(
+                declaration.value(),
+                SemanticPropertyValue::Standard(_)
+            ));
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
         }
     }
 
