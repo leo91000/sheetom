@@ -1,6 +1,6 @@
 //! CSS length values.
 
-use super::angle::impl_try_from_angle;
+use super::angle::{impl_try_from_angle, Angle};
 use super::calc::{Calc, MathFunction};
 use super::number::CSSNumber;
 use super::percentage::DimensionPercentage;
@@ -645,8 +645,8 @@ impl Length {
   }
 
   fn add(self, other: Length) -> Length {
-    let mut a = self;
-    let mut b = other;
+    let a = self;
+    let b = other;
 
     if a.is_zero() {
       return b;
@@ -656,8 +656,8 @@ impl Length {
       return a;
     }
 
-    if a.is_sign_negative() && b.is_sign_positive() {
-      std::mem::swap(&mut a, &mut b);
+    if let Some(sum) = canonical_length_sum(&a, &b) {
+      return Length::Calc(Box::new(sum));
     }
 
     match (a, b) {
@@ -678,6 +678,49 @@ impl Length {
       }
       (a, b) => Length::Calc(Box::new(Calc::Sum(Box::new(a.into()), Box::new(b.into())))),
     }
+  }
+}
+
+fn canonical_length_sum(left: &Length, right: &Length) -> Option<Calc<Length>> {
+  let mut terms = Vec::new();
+  collect_simple_length_terms(left.clone().into(), &mut terms)?;
+  collect_simple_length_terms(right.clone().into(), &mut terms)?;
+  terms.sort_by(|left, right| length_term_unit(left).cmp(&length_term_unit(right)));
+
+  let mut terms = terms.into_iter();
+  let mut sum = terms.next()?;
+  for term in terms {
+    sum = Calc::Sum(Box::new(sum), Box::new(term));
+  }
+  Some(sum)
+}
+
+fn collect_simple_length_terms(calc: Calc<Length>, terms: &mut Vec<Calc<Length>>) -> Option<()> {
+  match calc {
+    Calc::Sum(left, right) => {
+      collect_simple_length_terms(*left, terms)?;
+      collect_simple_length_terms(*right, terms)
+    }
+    term if length_term_unit(&term).is_some() => {
+      terms.push(term);
+      Some(())
+    }
+    _ => None,
+  }
+}
+
+fn length_term_unit(calc: &Calc<Length>) -> Option<&str> {
+  match calc {
+    Calc::Value(value) => match &**value {
+      Length::Value(value) => Some(value.to_unit_value().1),
+      Length::Calc(_) => None,
+    },
+    Calc::Product(_, value) => length_term_unit(value),
+    Calc::ProductExpression(left, right) => {
+      length_term_unit(left).or_else(|| length_term_unit(right))
+    }
+    Calc::QuotientExpression(value, _) => length_term_unit(value),
+    _ => None,
   }
 }
 
@@ -790,7 +833,9 @@ impl TryOp for Length {
 impl TryMap for Length {
   fn try_map<F: FnOnce(f32) -> f32>(&self, op: F) -> Option<Self> {
     match self {
-      Length::Value(v) => v.try_map(op).map(Length::Value),
+      // Relative lengths depend on computed context. Preserve functions such
+      // as sign(1em) rather than applying them while parsing a specified value.
+      Length::Value(v) if v.to_px().is_some() => v.try_map(op).map(Length::Value),
       _ => None,
     }
   }
@@ -805,11 +850,177 @@ impl TrySign for Length {
   }
 }
 
+/// A `<length-percentage>` used while parsing a calculation whose outer
+/// result has a different type.
+///
+/// Relative dimensions and percentages are intentionally not mapped before
+/// computed-value time. This lets callers retain expressions such as
+/// `sign(1em)` even though the outer function resolves to a `<number>`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PreservedLengthPercentage(pub LengthPercentage);
+
+impl<'i> Parse<'i> for PreservedLengthPercentage {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    LengthPercentage::parse(input).map(PreservedLengthPercentage)
+  }
+}
+
+impl ToCss for PreservedLengthPercentage {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    self.0.to_css(dest)
+  }
+}
+
+impl std::ops::Mul<CSSNumber> for PreservedLengthPercentage {
+  type Output = Self;
+
+  fn mul(self, other: CSSNumber) -> Self {
+    PreservedLengthPercentage(self.0 * other)
+  }
+}
+
+impl AddInternal for PreservedLengthPercentage {
+  fn add(self, other: Self) -> Self {
+    let value = AddInternal::add(self.0, other.0);
+    PreservedLengthPercentage(canonical_length_percentage_sum(value))
+  }
+}
+
+fn canonical_length_percentage_sum(value: LengthPercentage) -> LengthPercentage {
+  let DimensionPercentage::Calc(calc) = value else {
+    return value;
+  };
+  let mut terms = Vec::new();
+  if collect_simple_length_percentage_terms(*calc.clone(), &mut terms).is_none() {
+    return DimensionPercentage::Calc(calc);
+  }
+  terms.sort_by(|left, right| length_percentage_term_key(left).cmp(&length_percentage_term_key(right)));
+
+  let mut terms = terms.into_iter();
+  let Some(mut sum) = terms.next() else {
+    return DimensionPercentage::Calc(calc);
+  };
+  for term in terms {
+    sum = Calc::Sum(Box::new(sum), Box::new(term));
+  }
+  DimensionPercentage::Calc(Box::new(sum))
+}
+
+fn collect_simple_length_percentage_terms(
+  calc: Calc<LengthPercentage>,
+  terms: &mut Vec<Calc<LengthPercentage>>,
+) -> Option<()> {
+  match calc {
+    Calc::Sum(left, right) => {
+      collect_simple_length_percentage_terms(*left, terms)?;
+      collect_simple_length_percentage_terms(*right, terms)
+    }
+    term if length_percentage_term_key(&term).is_some() => {
+      terms.push(term);
+      Some(())
+    }
+    _ => None,
+  }
+}
+
+fn length_percentage_term_key(calc: &Calc<LengthPercentage>) -> Option<(u8, &str)> {
+  match calc {
+    Calc::Value(value) => match &**value {
+      DimensionPercentage::Percentage(_) => Some((0, "%")),
+      DimensionPercentage::Dimension(value) => Some((1, value.to_unit_value().1)),
+      DimensionPercentage::Calc(_) => None,
+    },
+    Calc::Product(_, value) => length_percentage_term_key(value),
+    Calc::ProductExpression(left, right) => {
+      length_percentage_term_key(left).or_else(|| length_percentage_term_key(right))
+    }
+    Calc::QuotientExpression(value, _) => length_percentage_term_key(value),
+    _ => None,
+  }
+}
+
+impl TryOp for PreservedLengthPercentage {
+  fn try_op<F: FnOnce(f32, f32) -> f32>(&self, rhs: &Self, op: F) -> Option<Self> {
+    self
+      .0
+      .try_op(&rhs.0, op)
+      .map(PreservedLengthPercentage)
+  }
+
+  fn try_op_to<T, F: FnOnce(f32, f32) -> T>(&self, rhs: &Self, op: F) -> Option<T> {
+    self.0.try_op_to(&rhs.0, op)
+  }
+}
+
+impl TryMap for PreservedLengthPercentage {
+  fn try_map<F: FnOnce(f32) -> f32>(&self, op: F) -> Option<Self> {
+    let DimensionPercentage::Dimension(value) = &self.0 else {
+      return None;
+    };
+    if value.to_px().is_none() {
+      return None;
+    }
+    value
+      .try_map(op)
+      .map(DimensionPercentage::Dimension)
+      .map(PreservedLengthPercentage)
+  }
+}
+
+impl TrySign for PreservedLengthPercentage {
+  fn try_sign(&self) -> Option<f32> {
+    self.0.try_sign()
+  }
+}
+
+impl std::cmp::PartialOrd for PreservedLengthPercentage {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    self.0.partial_cmp(&other.0)
+  }
+}
+
+impl Into<Calc<PreservedLengthPercentage>> for PreservedLengthPercentage {
+  fn into(self) -> Calc<PreservedLengthPercentage> {
+    Calc::Value(Box::new(self))
+  }
+}
+
+impl TryFrom<Calc<PreservedLengthPercentage>> for PreservedLengthPercentage {
+  type Error = ();
+
+  fn try_from(calc: Calc<PreservedLengthPercentage>) -> Result<Self, Self::Error> {
+    match calc {
+      Calc::Value(value) => Ok(*value),
+      _ => Err(()),
+    }
+  }
+}
+
+impl TryFrom<Angle> for PreservedLengthPercentage {
+  type Error = ();
+
+  fn try_from(angle: Angle) -> Result<Self, Self::Error> {
+    LengthPercentage::try_from(angle).map(PreservedLengthPercentage)
+  }
+}
+
+impl TryInto<Angle> for PreservedLengthPercentage {
+  type Error = ();
+
+  fn try_into(self) -> Result<Angle, Self::Error> {
+    self.0.try_into()
+  }
+}
+
 impl_try_from_angle!(Length);
 
 #[cfg(test)]
 mod tests {
-  use super::{Length, LengthPercentage};
+  use super::{Length, LengthPercentage, PreservedLengthPercentage};
+  use crate::values::calc::Calc;
   use crate::{printer::PrinterOptions, traits::{Parse, ToCss}};
   use cssparser::{Parser, ParserInput};
 
@@ -869,6 +1080,38 @@ mod tests {
       let mut parser = Parser::new(&mut input);
       let parsed = parser.parse_entirely(LengthPercentage::parse).unwrap();
       assert_eq!(parsed.to_css_string(PrinterOptions::default()).unwrap(), value);
+    }
+  }
+
+  #[test]
+  fn preserves_context_dependent_number_results() {
+    for (value, expected) in [
+      ("sign(1em)", "sign(1em)"),
+      ("sign(calc(1px - 2em))", "sign(-2em + 1px)"),
+      ("calc(sign(1em) * 2)", "calc(2 * sign(1em))"),
+      (
+        "calc(sign(1em) * sign(1rem))",
+        "calc(sign(1em) * sign(1rem))",
+      ),
+      (
+        "calc(sign(1em) / sign(1rem))",
+        "calc(sign(1em) * (1 / sign(1rem)))",
+      ),
+      (
+        "calc(sign(1em) * 1px)",
+        "calc(1px * sign(1em))",
+      ),
+    ] {
+      let mut input = ParserInput::new(value);
+      let mut parser = Parser::new(&mut input);
+      let parsed = parser
+        .parse_entirely(Calc::<PreservedLengthPercentage>::parse)
+        .unwrap();
+      assert_eq!(
+        parsed.to_css_string(PrinterOptions::default()).unwrap(),
+        expected,
+        "{value}"
+      );
     }
   }
 }
