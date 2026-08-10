@@ -348,6 +348,61 @@ mod tests {
     }
 
     #[test]
+    fn parses_contrast_color_in_every_standard_color_slot() {
+        for (name, source) in [
+            ("-webkit-tap-highlight-color", "contrast-color(red)"),
+            (
+                "-webkit-text-fill-color",
+                "light-dark(contrast-color(red), blue)",
+            ),
+            ("color", "contrast-color(red)"),
+            (
+                "color",
+                "color-mix(in srgb, contrast-color(red), currentColor)",
+            ),
+            ("background-color", "contrast-color(light-dark(red, blue))"),
+            (
+                "background-image",
+                "linear-gradient(contrast-color(red), blue)",
+            ),
+            ("border-color", "red contrast-color(blue) green"),
+            ("box-shadow", "0 0 contrast-color(red)"),
+            (
+                "flood-color",
+                "color-mix(in srgb, contrast-color(red), currentColor)",
+            ),
+            ("lighting-color", "contrast-color(red)"),
+            ("scrollbar-color", "contrast-color(red) blue"),
+            ("stop-color", "contrast-color(red)"),
+        ] {
+            let declaration = parse_standard_semantic_property(name, source).unwrap();
+            assert_eq!(declaration.parse_kind(), PropertyParseKind::Typed);
+            assert!(matches!(
+                declaration.value(),
+                SemanticPropertyValue::Standard(_)
+            ));
+            assert!(
+                declaration
+                    .canonical_value()
+                    .unwrap()
+                    .contains("contrast-color("),
+                "{name}: {source}"
+            );
+        }
+
+        for source in [
+            "contrast-color()",
+            "contrast-color(red blue)",
+            "contrast-color(red, blue)",
+        ] {
+            assert!(
+                parse_standard_semantic_property("color", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
     fn owns_pending_substitutions_without_using_the_lightning_unparsed_variant() {
         let declaration =
             parse_semantic_property("padding", "72px var(--space, var(--space,").unwrap();

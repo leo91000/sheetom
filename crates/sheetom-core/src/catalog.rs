@@ -3,7 +3,6 @@ use lightningcss::properties::PropertyId;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PropertyGrammarExtension {
     Content,
-    ContrastColor,
     IntegerCalculation,
     OffsetPosition,
     OffsetRotate,
@@ -274,7 +273,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 423, 19, 12, 257]);
+        assert_eq!(owner_counts, [0, 429, 19, 6, 257]);
     }
 
     #[test]
@@ -283,6 +282,20 @@ mod tests {
         assert_eq!(width.owner(), PropertyGrammarOwner::Lightning);
         assert_eq!(width.extensions(), &[]);
         assert!(width.has_standard_parser());
+
+        for name in [
+            "-webkit-tap-highlight-color",
+            "-webkit-text-fill-color",
+            "flood-color",
+            "lighting-color",
+            "scrollbar-color",
+            "stop-color",
+        ] {
+            let color = property_grammar(name).unwrap();
+            assert_eq!(color.owner(), PropertyGrammarOwner::Lightning, "{name}");
+            assert_eq!(color.extensions(), &[], "{name}");
+            assert!(color.has_standard_parser(), "{name}");
+        }
 
         let alias = property_grammar("row-rule").unwrap();
         assert_eq!(alias.owner(), PropertyGrammarOwner::SheetomAlias);

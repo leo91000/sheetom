@@ -3072,98 +3072,17 @@ pub static INITIAL_LONGHAND_VALUES: &[(&str, &str)] = &[
 ];
 
 pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtension])] = &[
-    ("-webkit-border-after-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-border-before-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-border-end-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-border-start-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
     ("-webkit-box-reflect", &[
         super::PropertyGrammarExtension::WebkitBoxReflect,
     ]),
-    ("-webkit-column-rule-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-tap-highlight-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-text-emphasis-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-text-fill-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("-webkit-text-stroke-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("accent-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("background-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-block-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-block-end-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-block-start-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-bottom-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-inline-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-inline-end-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-inline-start-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-left-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-right-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("border-top-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("caret-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("column-rule-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
     ("content", &[
         super::PropertyGrammarExtension::Content,
-    ]),
-    ("flood-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
     ]),
     ("grid-template-columns", &[
         super::PropertyGrammarExtension::Subgrid,
     ]),
     ("grid-template-rows", &[
         super::PropertyGrammarExtension::Subgrid,
-    ]),
-    ("lighting-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
     ]),
     ("offset-anchor", &[
         super::PropertyGrammarExtension::OffsetPosition,
@@ -3174,29 +3093,8 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("offset-rotate", &[
         super::PropertyGrammarExtension::OffsetRotate,
     ]),
-    ("outline-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("row-rule-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("rule-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("scrollbar-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
     ("size", &[
         super::PropertyGrammarExtension::PageSize,
-    ]),
-    ("stop-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("text-decoration-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("text-emphasis-color", &[
-        super::PropertyGrammarExtension::ContrastColor,
     ]),
     ("z-index", &[
         super::PropertyGrammarExtension::IntegerCalculation,

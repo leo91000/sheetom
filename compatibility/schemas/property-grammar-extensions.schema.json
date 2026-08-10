@@ -18,7 +18,6 @@
           "id": {
             "enum": [
               "content",
-              "contrast-color",
               "integer-calculation",
               "offset-position",
               "offset-rotate",

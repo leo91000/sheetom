@@ -72,10 +72,10 @@ if (
   nativeGrammar?.propertyBranches?.total !== 10 ||
   nativeGrammar?.propertyBranches?.positive !== 5 ||
   nativeGrammar?.propertyBranches?.negative !== 5 ||
-  nativeGrammar?.valueCapabilities?.passed !== 36 ||
-  nativeGrammar?.valueCapabilities?.total !== 36 ||
-  nativeGrammar?.valueCapabilities?.positive !== 27 ||
-  nativeGrammar?.valueCapabilities?.negative !== 9 ||
+  nativeGrammar?.valueCapabilities?.passed !== 41 ||
+  nativeGrammar?.valueCapabilities?.total !== 41 ||
+  nativeGrammar?.valueCapabilities?.positive !== 31 ||
+  nativeGrammar?.valueCapabilities?.negative !== 10 ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.inventorySha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.contractsSha256 ?? "") ||
