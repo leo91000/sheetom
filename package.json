@@ -51,7 +51,7 @@
     "build": "tsdown",
     "changeset": "changeset",
     "changeset:check": "node scripts/check-changeset.mjs",
-    "ci:classifier:test": "node --test scripts/classify-ci-changes.test.mjs",
+    "ci:scripts:test": "node --test scripts/*.test.mjs",
     "check": "npm run typecheck && npm run test:unit && npm run conformance:validate && npm run generate:native-properties && npm run docs:check && npm run build && npm run runtime:check && npm run pack:test",
     "conformance:validate": "node scripts/validate-conformance.mjs",
     "conformance:drift": "node scripts/check-wpt-drift.mjs",

@@ -3,10 +3,27 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { nativeEngineEvidence } from "./native-engine-evidence.mjs";
+import {
+  replaceCargoLockVersions,
+  replaceCargoPackageVersion,
+} from "./sync-cargo-version.mjs";
 
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 if (manifest.version === "0.0.0") {
   throw new Error("Changesets must assign a release version before release verification");
+}
+for (const filename of [
+  "crates/sheetom-core/Cargo.toml",
+  "crates/sheetom-native/Cargo.toml",
+]) {
+  const source = await readFile(filename, "utf8");
+  if (replaceCargoPackageVersion(source, manifest.version) !== source) {
+    throw new Error(`${filename} does not match package version ${manifest.version}`);
+  }
+}
+const cargoLock = await readFile("Cargo.lock", "utf8");
+if (replaceCargoLockVersions(cargoLock, manifest.version) !== cargoLock) {
+  throw new Error(`Cargo.lock does not match package version ${manifest.version}`);
 }
 
 const reportPath = `compatibility/baselines/${manifest.version}.json`;
