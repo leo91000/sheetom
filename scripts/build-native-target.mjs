@@ -28,13 +28,10 @@ if (process.platform !== configuration.platform || process.arch !== configuratio
   );
 }
 
-const executable = process.platform === "win32" ? "npm.cmd" : "npm";
 execFileSync("rustup", ["target", "add", target], { cwd: repositoryRoot, stdio: "inherit" });
 
 const arguments_ = [
-  "exec",
-  "--",
-  "napi",
+  path.join(repositoryRoot, "node_modules", "@napi-rs", "cli", "cli.mjs"),
   "build",
   "--platform",
   "--release",
@@ -52,7 +49,7 @@ const arguments_ = [
 ];
 if (configuration.napiCross) arguments_.push("--use-napi-cross");
 
-execFileSync(executable, arguments_, { cwd: repositoryRoot, stdio: "inherit" });
+execFileSync(process.execPath, arguments_, { cwd: repositoryRoot, stdio: "inherit" });
 
 const artifact = path.join(
   repositoryRoot,
