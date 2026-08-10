@@ -2,7 +2,7 @@ use crate::{
     catalog::{initial_longhand_value, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
     inspect_property, sheetom_parser_property_name,
-    syntax::{split_top_level_delimiter, split_top_level_whitespace},
+    syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
     EngineError, PropertyParseKind,
 };
 use lightningcss::{
@@ -15,9 +15,14 @@ pub(crate) struct ParsedValue {
     pub(crate) observable_value: String,
     pub(crate) safe_value: String,
     pub(crate) longhands: Option<Vec<DeclarationRecord>>,
+    pub(crate) pending_substitution: bool,
 }
 
-pub(crate) fn synthesize_shorthand(records: &[DeclarationRecord], name: &str) -> Option<String> {
+pub(crate) fn synthesize_shorthand(
+    records: &[DeclarationRecord],
+    name: &str,
+    safe: bool,
+) -> Option<String> {
     let longhands = shorthand_longhands(name)?;
     let records = longhands
         .iter()
@@ -29,6 +34,46 @@ pub(crate) fn synthesize_shorthand(records: &[DeclarationRecord], name: &str) ->
         .any(|record| record.important != first.important)
     {
         return None;
+    }
+
+    if let Some(group) = &first.pending_group {
+        if group.shorthand == name
+            && records.iter().all(|record| {
+                record
+                    .pending_group
+                    .as_ref()
+                    .is_some_and(|other| other.id == group.id)
+            })
+        {
+            return Some(if safe {
+                group.safe_value.clone()
+            } else {
+                group.observable_value.clone()
+            });
+        }
+    }
+    if records.iter().any(|record| record.pending_group.is_some()) {
+        return None;
+    }
+
+    let values = records
+        .iter()
+        .map(|record| {
+            if safe {
+                &record.safe_value
+            } else {
+                &record.observable_value
+            }
+        })
+        .collect::<Vec<_>>();
+    if let Some(first_value) = values.first() {
+        if matches!(
+            first_value.as_str(),
+            "initial" | "inherit" | "unset" | "revert" | "revert-layer"
+        ) && values.iter().all(|value| *value == *first_value)
+        {
+            return Some((*first_value).clone());
+        }
     }
 
     let mut declarations = DeclarationBlock::new();
@@ -46,6 +91,10 @@ pub(crate) fn parse_value(
     value: &str,
     important: bool,
 ) -> Result<ParsedValue, MutationOutcome> {
+    let substitutions = analyze_substitutions(value);
+    if !substitutions.valid {
+        return Err(MutationOutcome::InvalidValue);
+    }
     if name.starts_with("--") {
         let property =
             Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
@@ -57,6 +106,22 @@ pub(crate) fn parse_value(
             observable_value: value.trim().to_owned(),
             safe_value,
             longhands: None,
+            pending_substitution: substitutions.found,
+        });
+    }
+
+    if substitutions.found {
+        let property =
+            Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
+                .map_err(|_| MutationOutcome::InvalidValue)?;
+        let safe_value = property
+            .value_to_css_string(PrinterOptions::default())
+            .map_err(|_| MutationOutcome::InvalidValue)?;
+        return Ok(ParsedValue {
+            observable_value: recover_pending_observable(value),
+            safe_value,
+            longhands: None,
+            pending_substitution: true,
         });
     }
 
@@ -69,6 +134,7 @@ pub(crate) fn parse_value(
             observable_value: value.trim().to_owned(),
             safe_value: value.trim().to_owned(),
             longhands: Some(longhands),
+            pending_substitution: false,
         });
     }
     if let Some(longhands) = expand_structural_shorthand(name, value, important) {
@@ -76,6 +142,7 @@ pub(crate) fn parse_value(
             observable_value: value.trim().to_owned(),
             safe_value: value.trim().to_owned(),
             longhands: Some(longhands),
+            pending_substitution: false,
         });
     }
 
@@ -95,6 +162,7 @@ pub(crate) fn parse_value(
             observable_value: inspection.canonical_value.clone(),
             safe_value: inspection.canonical_value,
             longhands: None,
+            pending_substitution: false,
         });
     };
 
@@ -137,6 +205,8 @@ pub(crate) fn parse_value(
             observable_value,
             safe_value,
             important,
+            pending_substitution: false,
+            pending_group: None,
         });
     }
 
@@ -144,7 +214,23 @@ pub(crate) fn parse_value(
         observable_value: inspection.canonical_value.clone(),
         safe_value: inspection.canonical_value,
         longhands: Some(longhands),
+        pending_substitution: false,
     })
+}
+
+fn recover_pending_observable(value: &str) -> String {
+    let mut recovered = value.trim().to_owned();
+    if let Some(comment) = recovered.rfind("/*") {
+        if !recovered[comment + 2..].contains("*/") {
+            recovered.truncate(comment);
+            recovered = recovered.trim_end().to_owned();
+        }
+    }
+    if recovered.ends_with('\\') {
+        recovered.pop();
+        recovered.push('\u{fffd}');
+    }
+    recovered
 }
 
 fn observable_shorthand_longhand(name: &str, safe_value: &str, shorthand_input: &str) -> String {
@@ -433,6 +519,8 @@ fn records_from_values(
                 observable_value: value.clone(),
                 safe_value: value.clone(),
                 important,
+                pending_substitution: false,
+                pending_group: None,
             })
         })
         .collect()
@@ -1018,6 +1106,8 @@ fn expand_structural_shorthand(
             observable_value: component.trim().to_owned(),
             safe_value: canonical,
             important,
+            pending_substitution: false,
+            pending_group: None,
         });
     }
     Some(records)

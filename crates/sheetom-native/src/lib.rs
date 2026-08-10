@@ -63,6 +63,26 @@ impl NativeDeclarationState {
     pub fn serialize_longhands(&self) -> String {
         self.state.serialize_longhands()
     }
+
+    #[napi]
+    pub fn replace_css_text(&mut self, source: String) {
+        self.state.replace_css_text(&source);
+    }
+
+    #[napi]
+    pub fn clear(&mut self) {
+        self.state.clear();
+    }
+
+    #[napi(getter)]
+    pub fn css_text(&self) -> String {
+        self.state.css_text()
+    }
+
+    #[napi]
+    pub fn serialize_safe(&self) -> String {
+        self.state.serialize_safe()
+    }
 }
 
 fn mutation_outcome_name(outcome: MutationOutcome) -> &'static str {

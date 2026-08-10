@@ -28,6 +28,12 @@ pub(crate) fn shorthand_longhands(name: &str) -> Option<&'static [&'static str]>
     Some(generated::SHORTHAND_LONGHANDS[index].1)
 }
 
+pub(crate) fn shorthand_names() -> impl Iterator<Item = &'static str> {
+    generated::SHORTHAND_LONGHANDS
+        .iter()
+        .map(|(shorthand, _)| *shorthand)
+}
+
 pub(crate) fn initial_longhand_value(name: &str) -> Option<&'static str> {
     let index = generated::INITIAL_LONGHAND_VALUES
         .binary_search_by_key(&name, |(longhand, _)| *longhand)

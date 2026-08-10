@@ -7,6 +7,7 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
+cssparser = "=0.37.0"
 lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
 
 [dev-dependencies]
