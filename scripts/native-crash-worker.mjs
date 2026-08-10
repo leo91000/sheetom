@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 const binding = require(artifactPath);
 let source = crashCase.source;
 if (crashCase.oversized) {
-    source = `--x: ${"x".repeat(1024 * 1024)}`;
+    source = "x".repeat((1024 * 1024) + 1);
 } else if (crashCase.nestingDepth) {
     source = `--x: ${"fn(".repeat(crashCase.nestingDepth)}value`;
 } else if (crashCase.declarationCount) {
@@ -18,6 +18,12 @@ if (crashCase.oversized) {
 }
 
 let execute = () => binding.canonicalizeDeclarationBlock(source);
+if (crashCase.mode === "declaration-state") {
+    execute = () => {
+        const state = new binding.NativeDeclarationState("style");
+        return state.setProperty("--x", source, "");
+    };
+}
 if (crashCase.mode === "rule") execute = () => binding.parseStylesheetTreeJson(source, true);
 if (crashCase.mode === "recovered-rule") {
     execute = () => binding.parseRecoveredRuleTreeJson(source);

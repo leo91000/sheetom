@@ -56,6 +56,7 @@ const crashCases = [
     },
     {
         name: "declaration input budget",
+        mode: "declaration-state",
         oversized: true,
         expectError: "SHEETOM_INPUT_LIMIT",
     },
@@ -111,10 +112,14 @@ const crashCases = [
         expectError: "SHEETOM_PARSE_ERROR",
     },
     {
-        name: "recovered rule parser nesting above the supported limit",
+        name: "recovered rule parser nesting formerly below the RC5 implementation cap",
         mode: "recovered-rule",
         source: `${"@media all{".repeat(257)}.x{color:red}${"}".repeat(257)}`,
-        expectError: "SHEETOM_NESTING_LIMIT",
+    },
+    {
+        name: "recovered rule parser at the resource boundary",
+        mode: "recovered-rule",
+        source: `${"@media all{".repeat(4095)}.x{color:red}${"}".repeat(4095)}`,
     },
     {
         name: "selector normalization",

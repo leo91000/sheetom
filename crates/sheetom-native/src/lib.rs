@@ -5,13 +5,15 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 
 use napi_derive::napi;
 use sheetom_core::{
-    canonicalize_declaration_block as canonicalize, inspect_property, normalize_media_text,
-    normalize_selector_text, normalize_supports_text, parse_container_prelude,
+    canonicalize_declaration_block_with_limits as canonicalize, inspect_property_with_limits,
+    normalize_media_text_with_limits, normalize_selector_text_with_limits,
+    normalize_supports_text_with_limits, parse_container_prelude_with_limits,
     parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
-    parse_recovered_rule_tree, parse_recovered_single_rule_tree, parse_rule_tree,
-    parse_scope_prelude, parse_stylesheet_tree, scan_top_level_rules, serialize_css_identifier,
+    parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree_with_limits,
+    parse_rule_tree_with_limits, parse_scope_prelude_with_limits,
+    parse_stylesheet_tree_with_limits, scan_top_level_rules_with_limits, serialize_css_identifier,
     serialize_font_family_setter, DeclarationContext, DeclarationState, MutationOutcome,
-    ENGINE_REVISION,
+    ResourceLimits, ENGINE_REVISION,
 };
 
 #[napi]
@@ -30,7 +32,14 @@ impl Default for NativeDeclarationState {
 #[napi]
 impl NativeDeclarationState {
     #[napi(constructor)]
-    pub fn new(context: Option<String>) -> napi::Result<Self> {
+    pub fn new(
+        context: Option<String>,
+        max_stylesheet_bytes: Option<u32>,
+        max_declaration_value_bytes: Option<u32>,
+        max_nesting_depth: Option<u32>,
+        max_rules: Option<u32>,
+        max_declarations_per_block: Option<u32>,
+    ) -> napi::Result<Self> {
         let context = match context.as_deref() {
             None | Some("style") => DeclarationContext::Style,
             Some("font-face") => DeclarationContext::FontFace,
@@ -41,8 +50,15 @@ impl NativeDeclarationState {
                 )))
             }
         };
+        let limits = resource_limits(
+            max_stylesheet_bytes,
+            max_declaration_value_bytes,
+            max_nesting_depth,
+            max_rules,
+            max_declarations_per_block,
+        );
         Ok(Self {
-            state: DeclarationState::new_with_context(context),
+            state: DeclarationState::new_with_context_and_limits(context, limits),
         })
     }
 
@@ -67,8 +83,16 @@ impl NativeDeclarationState {
     }
 
     #[napi]
-    pub fn set_property(&mut self, name: String, value: String, priority: String) -> String {
-        mutation_outcome_name(self.state.set_property(&name, &value, &priority)).to_owned()
+    pub fn set_property(
+        &mut self,
+        name: String,
+        value: String,
+        priority: String,
+    ) -> napi::Result<String> {
+        self.state
+            .set_property_checked(&name, &value, &priority)
+            .map(|outcome| mutation_outcome_name(outcome).to_owned())
+            .map_err(|error| napi::Error::from_reason(error.to_string()))
     }
 
     #[napi]
@@ -82,8 +106,10 @@ impl NativeDeclarationState {
     }
 
     #[napi]
-    pub fn replace_css_text(&mut self, source: String) {
-        self.state.replace_css_text(&source);
+    pub fn replace_css_text(&mut self, source: String) -> napi::Result<()> {
+        self.state
+            .replace_css_text_checked(&source)
+            .map_err(|error| napi::Error::from_reason(error.to_string()))
     }
 
     #[napi]
@@ -104,6 +130,27 @@ impl NativeDeclarationState {
     #[napi]
     pub fn serialize_formatted(&self, safe: bool, indent: String, separator: String) -> String {
         self.state.serialize_formatted(safe, &indent, &separator)
+    }
+}
+
+fn resource_limits(
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> ResourceLimits {
+    let defaults = ResourceLimits::default();
+    ResourceLimits {
+        max_stylesheet_bytes: max_stylesheet_bytes
+            .map_or(defaults.max_stylesheet_bytes, |value| value as usize),
+        max_declaration_value_bytes: max_declaration_value_bytes
+            .map_or(defaults.max_declaration_value_bytes, |value| value as usize),
+        max_nesting_depth: max_nesting_depth
+            .map_or(defaults.max_nesting_depth, |value| value as usize),
+        max_rules: max_rules.map_or(defaults.max_rules, |value| value as usize),
+        max_declarations_per_block: max_declarations_per_block
+            .map_or(defaults.max_declarations_per_block, |value| value as usize),
     }
 }
 
@@ -128,59 +175,188 @@ pub fn native_engine_revision() -> &'static str {
 /// This deliberately accepts and returns owned strings. Lightning CSS AST nodes
 /// never cross Node-API and therefore cannot be deserialized back into Rust.
 #[napi]
-pub fn canonicalize_declaration_block(source: String) -> napi::Result<String> {
-    canonicalize(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+pub fn canonicalize_declaration_block(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    canonicalize(&source, limits).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Parses exactly one rule and returns an owned, parser-independent JSON DTO.
 #[napi]
-pub fn parse_rule_tree_json(source: String) -> napi::Result<String> {
-    let parsed =
-        parse_rule_tree(&source).map_err(|error| napi::Error::from_reason(error.to_string()))?;
+pub fn parse_rule_tree_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let parsed = parse_rule_tree_with_limits(&source, limits)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Parses one exact outer rule with browser-style recovery inside its block.
 #[napi]
-pub fn parse_recovered_single_rule_tree_json(source: String) -> napi::Result<String> {
-    let parsed = parse_recovered_single_rule_tree(&source)
+pub fn parse_recovered_single_rule_tree_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let parsed = parse_recovered_single_rule_tree_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Parses exactly one rule with browser-style declaration recovery.
 #[napi]
-pub fn parse_recovered_rule_tree_json(source: String) -> napi::Result<String> {
-    let parsed = parse_recovered_rule_tree(&source)
+pub fn parse_recovered_rule_tree_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let parsed = parse_recovered_rule_tree_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
-pub fn normalize_selector(source: String) -> napi::Result<String> {
-    normalize_selector_text(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+pub fn normalize_selector(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    normalize_selector_text_with_limits(&source, limits)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
-pub fn normalize_media(source: String) -> napi::Result<String> {
-    normalize_media_text(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+pub fn normalize_media(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    normalize_media_text_with_limits(&source, limits)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
-pub fn normalize_supports(source: String) -> napi::Result<String> {
-    normalize_supports_text(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+pub fn normalize_supports(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    normalize_supports_text_with_limits(&source, limits)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
-pub fn parse_container_prelude_json(source: String) -> napi::Result<String> {
-    let parsed = parse_container_prelude(&source)
+pub fn parse_container_prelude_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let parsed = parse_container_prelude_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
-pub fn parse_scope_prelude_json(source: String) -> napi::Result<String> {
-    let parsed = parse_scope_prelude(&source)
+pub fn parse_scope_prelude_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let parsed = parse_scope_prelude_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
@@ -189,22 +365,62 @@ pub fn parse_scope_prelude_json(source: String) -> napi::Result<String> {
 pub fn parse_counter_style_descriptor_value(
     name: String,
     value: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
 ) -> napi::Result<Option<String>> {
-    inspect_property("--sheetom-counter-style", &value)
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    inspect_property_with_limits("--sheetom-counter-style", &value, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     Ok(parse_counter_style_descriptor(&name, &value))
 }
 
 #[napi]
-pub fn parse_counter_style_descriptors_json(source: String) -> napi::Result<String> {
-    canonicalize(&source).map_err(|error| napi::Error::from_reason(error.to_string()))?;
+pub fn parse_counter_style_descriptors_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    canonicalize(&source, limits).map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parse_counter_style_descriptors(&source))
         .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
-pub fn parse_counter_style_name_json(source: String) -> napi::Result<Option<String>> {
-    inspect_property("--sheetom-counter-style-name", &source)
+pub fn parse_counter_style_name_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<Option<String>> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    inspect_property_with_limits("--sheetom-counter-style-name", &source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     parse_counter_style_name(&source)
         .map(|parsed| serde_json::to_string(&parsed))
@@ -224,16 +440,45 @@ pub fn serialize_font_family_value(value: String) -> String {
 
 /// Parses a stylesheet and returns owned, parser-independent JSON DTOs.
 #[napi]
-pub fn parse_stylesheet_tree_json(source: String, error_recovery: bool) -> napi::Result<String> {
-    let parsed = parse_stylesheet_tree(&source, error_recovery)
+pub fn parse_stylesheet_tree_json(
+    source: String,
+    error_recovery: bool,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let parsed = parse_stylesheet_tree_with_limits(&source, error_recovery, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Scans exact top-level CSS rule source without exposing native parser nodes.
 #[napi]
-pub fn scan_top_level_rules_json(source: String) -> napi::Result<String> {
-    let rules = scan_top_level_rules(&source)
+pub fn scan_top_level_rules_json(
+    source: String,
+    max_stylesheet_bytes: Option<u32>,
+    max_declaration_value_bytes: Option<u32>,
+    max_nesting_depth: Option<u32>,
+    max_rules: Option<u32>,
+    max_declarations_per_block: Option<u32>,
+) -> napi::Result<String> {
+    let limits = resource_limits(
+        max_stylesheet_bytes,
+        max_declaration_value_bytes,
+        max_nesting_depth,
+        max_rules,
+        max_declarations_per_block,
+    );
+    let rules = scan_top_level_rules_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&rules).map_err(|error| napi::Error::from_reason(error.to_string()))
 }

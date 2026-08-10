@@ -2,6 +2,8 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+type NativeBudgetArguments = [number, number, number, number, number];
+
 export type NativeMutationOutcome =
   | "applied"
   | "invalid-name"
@@ -22,23 +24,32 @@ export interface NativeDeclarationStateHandle {
 }
 
 interface NativeBinding {
-  normalizeMedia(source: string): string;
-  normalizeSelector(source: string): string;
-  normalizeSupports(source: string): string;
-  parseContainerPreludeJson(source: string): string;
-  parseCounterStyleDescriptorValue(name: string, value: string): string | null;
-  parseCounterStyleDescriptorsJson(source: string): string;
-  parseCounterStyleNameJson(source: string): string | null;
+  normalizeMedia(source: string, ...budget: NativeBudgetArguments): string;
+  normalizeSelector(source: string, ...budget: NativeBudgetArguments): string;
+  normalizeSupports(source: string, ...budget: NativeBudgetArguments): string;
+  parseContainerPreludeJson(source: string, ...budget: NativeBudgetArguments): string;
+  parseCounterStyleDescriptorValue(
+    name: string,
+    value: string,
+    ...budget: NativeBudgetArguments
+  ): string | null;
+  parseCounterStyleDescriptorsJson(source: string, ...budget: NativeBudgetArguments): string;
+  parseCounterStyleNameJson(source: string, ...budget: NativeBudgetArguments): string | null;
   serializeIdentifierValue(value: string): string;
   serializeFontFamilyValue(value: string): string;
   NativeDeclarationState: new (
     context?: "style" | "font-face" | "function",
+    ...budget: NativeBudgetArguments
   ) => NativeDeclarationStateHandle;
-  parseRecoveredRuleTreeJson(source: string): string;
-  parseRecoveredSingleRuleTreeJson(source: string): string;
-  parseStylesheetTreeJson(source: string, errorRecovery: boolean): string;
-  parseScopePreludeJson(source: string): string;
-  scanTopLevelRulesJson(source: string): string;
+  parseRecoveredRuleTreeJson(source: string, ...budget: NativeBudgetArguments): string;
+  parseRecoveredSingleRuleTreeJson(source: string, ...budget: NativeBudgetArguments): string;
+  parseStylesheetTreeJson(
+    source: string,
+    errorRecovery: boolean,
+    ...budget: NativeBudgetArguments
+  ): string;
+  parseScopePreludeJson(source: string, ...budget: NativeBudgetArguments): string;
+  scanTopLevelRulesJson(source: string, ...budget: NativeBudgetArguments): string;
 }
 
 function loadBinding(): NativeBinding {

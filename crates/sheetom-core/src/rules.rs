@@ -3,7 +3,7 @@ use crate::{
     observable::{serialize_observable_value, ObservableCategory},
     scan_safety_metrics,
     syntax::{parse_declaration_list, serialize_identifier, split_top_level_whitespace},
-    EngineError, MAX_NESTING_DEPTH,
+    EngineError, ResourceLimits,
 };
 use cssparser::{serialize_string, Parser, ParserInput, SourcePosition, Token};
 use lightningcss::{
@@ -16,11 +16,83 @@ use lightningcss::{
     values::ident::NoneOrCustomIdentList,
 };
 use serde::Serialize;
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::{
+    cell::Cell,
+    panic::{catch_unwind, AssertUnwindSafe},
+    thread::{self, Builder},
+};
 
-const MAX_STYLESHEET_BYTES: usize = 16 * 1024 * 1024;
-const MAX_RULES: usize = 100_000;
-const MAX_RULE_NESTING_DEPTH: usize = 256;
+thread_local! {
+    static ACTIVE_RESOURCE_LIMITS: Cell<ResourceLimits> = Cell::new(ResourceLimits::default());
+    static ACTIVE_LARGE_STACK: Cell<bool> = const { Cell::new(false) };
+}
+
+const LARGE_STACK_DEPTH_THRESHOLD: usize = 256;
+const MINIMUM_PARSER_STACK_BYTES: usize = 32 * 1024 * 1024;
+const PARSER_STACK_BYTES_PER_LEVEL: usize = 32 * 1024;
+
+fn current_resource_limits() -> ResourceLimits {
+    ACTIVE_RESOURCE_LIMITS.with(Cell::get)
+}
+
+fn with_resource_limits<T>(limits: ResourceLimits, operation: impl FnOnce() -> T) -> T {
+    ACTIVE_RESOURCE_LIMITS.with(|active| {
+        let previous = active.replace(limits);
+        struct Reset<'a> {
+            active: &'a Cell<ResourceLimits>,
+            previous: ResourceLimits,
+        }
+        impl Drop for Reset<'_> {
+            fn drop(&mut self) {
+                self.active.set(self.previous);
+            }
+        }
+        let _reset = Reset { active, previous };
+        operation()
+    })
+}
+
+fn run_parser_operation<T: Send>(
+    source: &str,
+    operation: impl FnOnce() -> Result<T, EngineError> + Send,
+) -> Result<T, EngineError> {
+    validate_stylesheet_budget(source)?;
+    let depth = scan_safety_metrics(source).maximum_depth;
+    let already_on_large_stack = ACTIVE_LARGE_STACK.with(Cell::get);
+    if depth <= LARGE_STACK_DEPTH_THRESHOLD || already_on_large_stack {
+        return run_caught(operation);
+    }
+
+    let limits = current_resource_limits();
+    let stack_size = MINIMUM_PARSER_STACK_BYTES.max(
+        depth
+            .saturating_add(1)
+            .saturating_mul(PARSER_STACK_BYTES_PER_LEVEL),
+    );
+    thread::scope(|scope| {
+        let worker = Builder::new()
+            .name("sheetom-css-parser".to_owned())
+            .stack_size(stack_size)
+            .spawn_scoped(scope, move || {
+                with_resource_limits(limits, || {
+                    ACTIVE_LARGE_STACK.with(|active| {
+                        let previous = active.replace(true);
+                        let result = run_caught(operation);
+                        active.set(previous);
+                        result
+                    })
+                })
+            })
+            .map_err(|error| {
+                EngineError::Parse(format!("could not allocate the parser stack: {error}"))
+            })?;
+        worker.join().unwrap_or(Err(EngineError::UnexpectedPanic))
+    })
+}
+
+fn run_caught<T>(operation: impl FnOnce() -> Result<T, EngineError>) -> Result<T, EngineError> {
+    catch_unwind(AssertUnwindSafe(operation)).unwrap_or(Err(EngineError::UnexpectedPanic))
+}
 
 /// An owned, parser-independent description of one CSS rule.
 ///
@@ -51,26 +123,50 @@ pub struct ParsedScopePrelude {
 }
 
 pub fn normalize_selector_text(source: &str) -> Result<String, EngineError> {
-    catch_unwind(AssertUnwindSafe(|| {
-        let rule_source = format!("{source}{{}} ");
-        validate_stylesheet_budget(&rule_source)?;
-        let sheet = StyleSheet::parse(&rule_source, ParserOptions::default())
-            .map_err(|error| EngineError::Parse(error.to_string()))?;
-        let Some(CssRule::Style(rule)) = sheet.rules.0.first() else {
-            return Err(EngineError::Parse("invalid selector list".to_owned()));
-        };
-        rule.selectors
-            .to_css_string(PrinterOptions::default())
-            .map_err(|error| EngineError::Serialize(error.to_string()))
-    }))
-    .unwrap_or(Err(EngineError::UnexpectedPanic))
+    normalize_selector_text_with_limits(source, ResourceLimits::default())
+}
+
+pub fn normalize_selector_text_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<String, EngineError> {
+    with_resource_limits(limits, || normalize_selector_text_active(source))
+}
+
+fn normalize_selector_text_active(source: &str) -> Result<String, EngineError> {
+    let rule_source = format!("{source}{{}} ");
+    with_internal_wrapper_budget(source, &rule_source, || {
+        run_parser_operation(&rule_source, || {
+            let sheet = StyleSheet::parse(&rule_source, ParserOptions::default())
+                .map_err(|error| EngineError::Parse(error.to_string()))?;
+            let Some(CssRule::Style(rule)) = sheet.rules.0.first() else {
+                return Err(EngineError::Parse("invalid selector list".to_owned()));
+            };
+            rule.selectors
+                .to_css_string(PrinterOptions::default())
+                .map_err(|error| EngineError::Serialize(error.to_string()))
+        })
+    })
 }
 
 pub fn normalize_media_text(source: &str) -> Result<String, EngineError> {
+    normalize_media_text_with_limits(source, ResourceLimits::default())
+}
+
+pub fn normalize_media_text_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<String, EngineError> {
+    with_resource_limits(limits, || normalize_media_text_active(source))
+}
+
+fn normalize_media_text_active(source: &str) -> Result<String, EngineError> {
     if trim_css_whitespace(source).is_empty() {
         return Ok(String::new());
     }
-    let parsed = parse_rule_tree(&format!("@media {source}{{}}"))?;
+    let wrapper = format!("@media {source}{{}}");
+    let parsed =
+        with_internal_wrapper_budget(source, &wrapper, || parse_rule_tree_active(&wrapper))?;
     if parsed.kind != "media" {
         return Err(EngineError::Parse("invalid media query list".to_owned()));
     }
@@ -78,7 +174,20 @@ pub fn normalize_media_text(source: &str) -> Result<String, EngineError> {
 }
 
 pub fn normalize_supports_text(source: &str) -> Result<String, EngineError> {
-    let parsed = parse_rule_tree(&format!("@supports {source}{{}}"))?;
+    normalize_supports_text_with_limits(source, ResourceLimits::default())
+}
+
+pub fn normalize_supports_text_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<String, EngineError> {
+    with_resource_limits(limits, || normalize_supports_text_active(source))
+}
+
+fn normalize_supports_text_active(source: &str) -> Result<String, EngineError> {
+    let wrapper = format!("@supports {source}{{}}");
+    let parsed =
+        with_internal_wrapper_budget(source, &wrapper, || parse_rule_tree_active(&wrapper))?;
     if parsed.kind != "supports" {
         return Err(EngineError::Parse("invalid supports condition".to_owned()));
     }
@@ -86,7 +195,20 @@ pub fn normalize_supports_text(source: &str) -> Result<String, EngineError> {
 }
 
 pub fn parse_container_prelude(source: &str) -> Result<ParsedContainerPrelude, EngineError> {
-    let parsed = parse_rule_tree(&format!("@container {source}{{}}"))?;
+    parse_container_prelude_with_limits(source, ResourceLimits::default())
+}
+
+pub fn parse_container_prelude_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<ParsedContainerPrelude, EngineError> {
+    with_resource_limits(limits, || parse_container_prelude_active(source))
+}
+
+fn parse_container_prelude_active(source: &str) -> Result<ParsedContainerPrelude, EngineError> {
+    let wrapper = format!("@container {source}{{}}");
+    let parsed =
+        with_internal_wrapper_budget(source, &wrapper, || parse_rule_tree_active(&wrapper))?;
     if parsed.kind != "container" {
         return Err(EngineError::Parse("invalid container query".to_owned()));
     }
@@ -106,7 +228,20 @@ pub fn parse_container_prelude(source: &str) -> Result<ParsedContainerPrelude, E
 }
 
 pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineError> {
-    let parsed = parse_rule_tree(&format!("@scope {source}{{}}"))?;
+    parse_scope_prelude_with_limits(source, ResourceLimits::default())
+}
+
+pub fn parse_scope_prelude_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<ParsedScopePrelude, EngineError> {
+    with_resource_limits(limits, || parse_scope_prelude_active(source))
+}
+
+fn parse_scope_prelude_active(source: &str) -> Result<ParsedScopePrelude, EngineError> {
+    let wrapper = format!("@scope {source}{{}}");
+    let parsed =
+        with_internal_wrapper_budget(source, &wrapper, || parse_rule_tree_active(&wrapper))?;
     if parsed.kind != "scope" {
         return Err(EngineError::Parse("invalid scope prelude".to_owned()));
     }
@@ -123,7 +258,7 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
     let remainder = trim_css_whitespace(remainder);
     if remainder.is_empty() {
         return Ok(ParsedScopePrelude {
-            start: Some(normalize_selector_text(start)?),
+            start: Some(normalize_selector_text_active(start)?),
             end: None,
         });
     }
@@ -139,8 +274,8 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
         ));
     }
     Ok(ParsedScopePrelude {
-        start: Some(normalize_selector_text(start)?),
-        end: Some(normalize_selector_text(end)?),
+        start: Some(normalize_selector_text_active(start)?),
+        end: Some(normalize_selector_text_active(end)?),
     })
 }
 
@@ -363,8 +498,18 @@ fn is_css_whitespace(character: char) -> bool {
 
 /// Consumes top-level CSS Syntax rules while preserving their exact source.
 pub fn scan_top_level_rules(source: &str) -> Result<Vec<String>, EngineError> {
-    catch_unwind(AssertUnwindSafe(|| scan_top_level_rules_inner(source)))
-        .unwrap_or(Err(EngineError::UnexpectedPanic))
+    scan_top_level_rules_with_limits(source, ResourceLimits::default())
+}
+
+pub fn scan_top_level_rules_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<Vec<String>, EngineError> {
+    with_resource_limits(limits, || scan_top_level_rules_active(source))
+}
+
+fn scan_top_level_rules_active(source: &str) -> Result<Vec<String>, EngineError> {
+    run_parser_operation(source, || scan_top_level_rules_inner(source))
 }
 
 fn scan_top_level_rules_inner(source: &str) -> Result<Vec<String>, EngineError> {
@@ -408,10 +553,11 @@ fn scan_top_level_rules_inner(source: &str) -> Result<Vec<String>, EngineError> 
         }
 
         push_source_slice(&parser, start, &mut output);
-        if output.len() > MAX_RULES {
+        let limits = current_resource_limits();
+        if output.len() > limits.max_rules {
             return Err(EngineError::RuleLimitExceeded {
                 actual: output.len(),
-                limit: MAX_RULES,
+                limit: limits.max_rules,
             });
         }
     }
@@ -420,20 +566,37 @@ fn scan_top_level_rules_inner(source: &str) -> Result<Vec<String>, EngineError> 
 }
 
 fn validate_stylesheet_budget(source: &str) -> Result<(), EngineError> {
-    if source.len() > MAX_STYLESHEET_BYTES {
+    let limits = current_resource_limits();
+    if source.len() > limits.max_stylesheet_bytes {
         return Err(EngineError::InputLimitExceeded {
             actual: source.len(),
-            limit: MAX_STYLESHEET_BYTES,
+            limit: limits.max_stylesheet_bytes,
         });
     }
     let metrics = scan_safety_metrics(source);
-    if metrics.maximum_depth > MAX_NESTING_DEPTH {
+    if metrics.maximum_depth > limits.max_nesting_depth {
         return Err(EngineError::NestingLimitExceeded {
             actual: metrics.maximum_depth,
-            limit: MAX_NESTING_DEPTH,
+            limit: limits.max_nesting_depth,
         });
     }
     Ok(())
+}
+
+fn with_internal_wrapper_budget<T>(
+    source: &str,
+    wrapper: &str,
+    operation: impl FnOnce() -> Result<T, EngineError>,
+) -> Result<T, EngineError> {
+    validate_stylesheet_budget(source)?;
+    let limits = current_resource_limits();
+    let wrapper_depth = scan_safety_metrics(wrapper).maximum_depth;
+    let internal_limits = ResourceLimits {
+        max_stylesheet_bytes: limits.max_stylesheet_bytes.max(wrapper.len()),
+        max_nesting_depth: limits.max_nesting_depth.max(wrapper_depth),
+        ..limits
+    };
+    with_resource_limits(internal_limits, operation)
 }
 
 fn is_rule_trivia(token: &Token<'_>) -> bool {
@@ -464,7 +627,7 @@ fn push_source_slice(parser: &Parser<'_, '_>, start: SourcePosition, output: &mu
     }
 }
 
-fn split_outer_block(source: &str) -> Option<(String, String)> {
+fn split_outer_block(source: &str) -> Option<(&str, &str)> {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     let start = parser.position();
@@ -476,7 +639,7 @@ fn split_outer_block(source: &str) -> Option<(String, String)> {
             .clone();
         match token {
             Token::CurlyBracketBlock => {
-                let header = trim_css_whitespace(parser.slice(start..token_start)).to_owned();
+                let header = trim_css_whitespace(parser.slice(start..token_start));
                 let body_start = parser.position();
                 consume_nested_block(&mut parser).ok()?;
                 let mut body = parser.slice(body_start..parser.position());
@@ -488,7 +651,7 @@ fn split_outer_block(source: &str) -> Option<(String, String)> {
                         return None;
                     }
                 }
-                return Some((header, body.to_owned()));
+                return Some((header, body));
             }
             Token::Function(_) | Token::ParenthesisBlock | Token::SquareBracketBlock => {
                 consume_nested_block(&mut parser).ok()?;
@@ -500,7 +663,18 @@ fn split_outer_block(source: &str) -> Option<(String, String)> {
 }
 
 pub fn parse_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
-    let mut rules = parse_stylesheet_tree(source, false)?;
+    parse_rule_tree_with_limits(source, ResourceLimits::default())
+}
+
+pub fn parse_rule_tree_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<ParsedRule, EngineError> {
+    with_resource_limits(limits, || parse_rule_tree_active(source))
+}
+
+fn parse_rule_tree_active(source: &str) -> Result<ParsedRule, EngineError> {
+    let mut rules = parse_stylesheet_tree_active(source, false)?;
     if rules.len() != 1 {
         return Err(EngineError::Parse(
             "a rule mutation must contain exactly one rule".to_owned(),
@@ -513,27 +687,47 @@ pub fn parse_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
 
 /// Parses one rule with browser-style declaration recovery.
 pub fn parse_recovered_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
-    catch_unwind(AssertUnwindSafe(|| {
-        validate_stylesheet_budget(source)?;
+    parse_recovered_rule_tree_with_limits(source, ResourceLimits::default())
+}
+
+pub fn parse_recovered_rule_tree_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<ParsedRule, EngineError> {
+    with_resource_limits(limits, || parse_recovered_rule_tree_active(source))
+}
+
+fn parse_recovered_rule_tree_active(source: &str) -> Result<ParsedRule, EngineError> {
+    run_parser_operation(source, || {
         let parsed = parse_recovered_rule_tree_inner(source, 0)?;
         let count = parsed_rule_node_count(&parsed);
-        if count > MAX_RULES {
+        let limits = current_resource_limits();
+        if count > limits.max_rules {
             return Err(EngineError::RuleLimitExceeded {
                 actual: count,
-                limit: MAX_RULES,
+                limit: limits.max_rules,
             });
         }
         Ok(parsed)
-    }))
-    .unwrap_or(Err(EngineError::UnexpectedPanic))
+    })
 }
 
 /// Parses exactly one outer rule while allowing browser-style recovery inside
 /// its block. Unlike full stylesheet error recovery, trailing invalid tokens
 /// cannot disappear and make an `insertRule()` mutation look successful.
 pub fn parse_recovered_single_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
-    catch_unwind(AssertUnwindSafe(|| {
-        validate_stylesheet_budget(source)?;
+    parse_recovered_single_rule_tree_with_limits(source, ResourceLimits::default())
+}
+
+pub fn parse_recovered_single_rule_tree_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<ParsedRule, EngineError> {
+    with_resource_limits(limits, || parse_recovered_single_rule_tree_active(source))
+}
+
+fn parse_recovered_single_rule_tree_active(source: &str) -> Result<ParsedRule, EngineError> {
+    run_parser_operation(source, || {
         if !contains_exactly_one_rule(source)? {
             return Err(EngineError::Parse(
                 "a recovered rule mutation must contain exactly one rule".to_owned(),
@@ -548,8 +742,7 @@ pub fn parse_recovered_single_rule_tree(source: &str) -> Result<ParsedRule, Engi
         rules
             .pop()
             .ok_or_else(|| EngineError::Parse("the recovered rule is empty".to_owned()))
-    }))
-    .unwrap_or(Err(EngineError::UnexpectedPanic))
+    })
 }
 
 fn contains_exactly_one_rule(source: &str) -> Result<bool, EngineError> {
@@ -593,10 +786,11 @@ fn contains_exactly_one_rule(source: &str) -> Result<bool, EngineError> {
 }
 
 fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedRule, EngineError> {
-    if depth > MAX_RULE_NESTING_DEPTH {
+    let limits = current_resource_limits();
+    if depth > limits.max_nesting_depth {
         return Err(EngineError::NestingLimitExceeded {
             actual: depth,
-            limit: MAX_RULE_NESTING_DEPTH,
+            limit: limits.max_nesting_depth,
         });
     }
     let function_rule = is_function_rule_header(source);
@@ -606,7 +800,7 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
                 "invalid @function rule block".to_owned(),
             ));
         }
-        let strict = parse_rule_tree(source).ok();
+        let strict = parse_rule_tree_active(source).ok();
         return strict
             .map(|mut parsed| {
                 preserve_source_text(&mut parsed, source);
@@ -619,12 +813,15 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             .ok_or_else(|| EngineError::Parse("invalid @function prelude".to_owned()))?;
         return parse_function_rule(prelude, &body, depth);
     }
-    let strict = parse_rule_tree(source).ok();
+    let strict = parse_rule_tree_active(source).ok();
     if let Some(parsed) = strict.as_ref() {
         if parsed.kind == "property" {
             let mut parsed = parsed.clone();
             preserve_property_descriptor_values(&mut parsed, &body);
             return Ok(parsed);
+        }
+        if let Some(recovered) = recover_single_child_group_chain(parsed.clone(), source, depth) {
+            return recovered;
         }
         let raw_items = scan_recovered_block_items(&body).len();
         let recover_from_source = matches!(
@@ -662,9 +859,118 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
     }
 
     let probe_source = format!("{header}{{}}");
-    let mut probe = parse_rule_tree(&probe_source)?;
+    let mut probe = parse_rule_tree_active(&probe_source)?;
     preserve_source_prelude(&mut probe, &header);
     recover_block_rule(probe, &body, depth)
+}
+
+/// Recovers a valid, deeply nested grouping-rule chain without reparsing every
+/// suffix of the same source. The general recovery path remains responsible
+/// for branching or structurally ambiguous blocks; this fast path only applies
+/// while the strict parser and the source both describe exactly one child.
+fn recover_single_child_group_chain(
+    mut parsed: ParsedRule,
+    source: &str,
+    depth: usize,
+) -> Option<Result<ParsedRule, EngineError>> {
+    let mut current = &mut parsed;
+    let mut current_source = trim_css_whitespace(source);
+    let mut current_depth = depth;
+    let mut traversed = 0usize;
+
+    while is_single_child_group(current) {
+        let (header, body) = split_single_rule_block(current_source)?;
+        preserve_source_prelude(current, header);
+        current.css_text.clear();
+        current.declarations.clear();
+
+        let child_source = trim_css_whitespace(body);
+        if child_source.is_empty() {
+            return None;
+        }
+        let child = current.children.first_mut()?;
+        current = child;
+        current_source = child_source;
+        current_depth = current_depth.saturating_add(1);
+        traversed = traversed.saturating_add(1);
+    }
+
+    if traversed < 2 {
+        return None;
+    }
+    match parse_recovered_rule_tree_inner(current_source, current_depth) {
+        Ok(leaf) => {
+            *current = leaf;
+            Some(Ok(parsed))
+        }
+        Err(error) => Some(Err(error)),
+    }
+}
+
+fn is_single_child_group(rule: &ParsedRule) -> bool {
+    matches!(
+        rule.kind.as_str(),
+        "media" | "supports" | "container" | "layer-block" | "scope" | "starting-style"
+    ) && rule.children.len() == 1
+}
+
+fn split_single_rule_block(source: &str) -> Option<(&str, &str)> {
+    let source = trim_css_whitespace(source);
+    let bytes = source.as_bytes();
+    let mut index = 0usize;
+    let mut quote = None;
+    let mut in_comment = false;
+    let mut component_depth = 0usize;
+
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if in_comment {
+            if byte == b'*' && bytes.get(index + 1) == Some(&b'/') {
+                in_comment = false;
+                index += 2;
+                continue;
+            }
+            index += 1;
+            continue;
+        }
+        if let Some(delimiter) = quote {
+            if byte == b'\\' {
+                index = (index + 2).min(bytes.len());
+                continue;
+            }
+            if byte == delimiter {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if byte == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            in_comment = true;
+            index += 2;
+            continue;
+        }
+        if matches!(byte, b'\'' | b'"') {
+            quote = Some(byte);
+            index += 1;
+            continue;
+        }
+        if byte == b'\\' {
+            index = (index + 2).min(bytes.len());
+            continue;
+        }
+        match byte {
+            b'(' | b'[' => component_depth = component_depth.saturating_add(1),
+            b')' | b']' => component_depth = component_depth.saturating_sub(1),
+            b'{' if component_depth == 0 => {
+                let body_with_close = source.get(index + 1..)?.strip_suffix('}')?;
+                return Some((trim_css_whitespace(&source[..index]), body_with_close));
+            }
+            b';' if component_depth == 0 => return None,
+            _ => {}
+        }
+        index += 1;
+    }
+    None
 }
 
 fn parse_function_rule(
@@ -712,10 +1018,11 @@ fn function_parameter_metadata(parameter: &ParsedFunctionParameter) -> ParsedRul
 }
 
 fn parse_function_body(body: &str, depth: usize) -> Result<Vec<ParsedRule>, EngineError> {
-    if depth > MAX_RULE_NESTING_DEPTH {
+    let limits = current_resource_limits();
+    if depth > limits.max_nesting_depth {
         return Err(EngineError::NestingLimitExceeded {
             actual: depth,
-            limit: MAX_RULE_NESTING_DEPTH,
+            limit: limits.max_nesting_depth,
         });
     }
     let mut children = Vec::new();
@@ -746,7 +1053,7 @@ fn parse_function_conditional_rule(
         return Ok(None);
     };
     let probe_source = format!("{header}{{}}");
-    let Ok(mut probe) = parse_rule_tree(&probe_source) else {
+    let Ok(mut probe) = parse_rule_tree_active(&probe_source) else {
         return Ok(None);
     };
     if !matches!(probe.kind.as_str(), "media" | "supports" | "container") {
@@ -820,10 +1127,11 @@ fn scan_function_block_items(source: &str) -> Result<Vec<String>, EngineError> {
             };
         }
         push_source_slice(&parser, start, &mut output);
-        if output.len() > MAX_RULES {
+        let limits = current_resource_limits();
+        if output.len() > limits.max_rules {
             return Err(EngineError::RuleLimitExceeded {
                 actual: output.len(),
-                limit: MAX_RULES,
+                limit: limits.max_rules,
             });
         }
     }
@@ -1082,7 +1390,7 @@ fn recover_style_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Resul
     Ok(())
 }
 
-fn flush_nested_declarations(probe: &mut ParsedRule, declarations: &mut Vec<String>, nested: bool) {
+fn flush_nested_declarations(probe: &mut ParsedRule, declarations: &mut Vec<&str>, nested: bool) {
     if declarations.is_empty() {
         return;
     }
@@ -1135,10 +1443,11 @@ fn recover_page_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result
         }
     }
     probe.declarations = declarations.join(" ");
-    if depth > MAX_RULE_NESTING_DEPTH {
+    let limits = current_resource_limits();
+    if depth > limits.max_nesting_depth {
         return Err(EngineError::NestingLimitExceeded {
             actual: depth,
-            limit: MAX_RULE_NESTING_DEPTH,
+            limit: limits.max_nesting_depth,
         });
     }
     Ok(())
@@ -1153,7 +1462,7 @@ fn recover_keyframes_body(
         let (header, declarations) = split_outer_block(&fragment)
             .ok_or_else(|| EngineError::Parse("invalid keyframe rule".to_owned()))?;
         let wrapper = format!("@keyframes sheetom{{{header}{{}}}}");
-        let parsed = parse_rule_tree(&wrapper)?;
+        let parsed = parse_rule_tree_active(&wrapper)?;
         let keyframe = parsed
             .children
             .into_iter()
@@ -1165,16 +1474,17 @@ fn recover_keyframes_body(
             ..keyframe
         });
     }
-    if depth > MAX_RULE_NESTING_DEPTH {
+    let limits = current_resource_limits();
+    if depth > limits.max_nesting_depth {
         return Err(EngineError::NestingLimitExceeded {
             actual: depth,
-            limit: MAX_RULE_NESTING_DEPTH,
+            limit: limits.max_nesting_depth,
         });
     }
     Ok(())
 }
 
-fn scan_recovered_block_items(source: &str) -> Vec<String> {
+fn scan_recovered_block_items(source: &str) -> Vec<&str> {
     let bytes = source.as_bytes();
     let mut output = Vec::new();
     let mut start = None;
@@ -1248,13 +1558,18 @@ fn scan_recovered_block_items(source: &str) -> Vec<String> {
     output
 }
 
-fn push_recovered_item(source: &str, start: Option<usize>, end: usize, output: &mut Vec<String>) {
+fn push_recovered_item<'a>(
+    source: &'a str,
+    start: Option<usize>,
+    end: usize,
+    output: &mut Vec<&'a str>,
+) {
     let Some(start) = start else {
         return;
     };
     let item = trim_css_whitespace(&source[start..end]);
     if !item.is_empty() {
-        output.push(item.to_owned());
+        output.push(item);
     }
 }
 
@@ -1262,10 +1577,26 @@ pub fn parse_stylesheet_tree(
     source: &str,
     error_recovery: bool,
 ) -> Result<Vec<ParsedRule>, EngineError> {
-    catch_unwind(AssertUnwindSafe(|| {
+    parse_stylesheet_tree_with_limits(source, error_recovery, ResourceLimits::default())
+}
+
+pub fn parse_stylesheet_tree_with_limits(
+    source: &str,
+    error_recovery: bool,
+    limits: ResourceLimits,
+) -> Result<Vec<ParsedRule>, EngineError> {
+    with_resource_limits(limits, || {
+        parse_stylesheet_tree_active(source, error_recovery)
+    })
+}
+
+fn parse_stylesheet_tree_active(
+    source: &str,
+    error_recovery: bool,
+) -> Result<Vec<ParsedRule>, EngineError> {
+    run_parser_operation(source, || {
         parse_stylesheet_tree_inner(source, error_recovery)
-    }))
-    .unwrap_or(Err(EngineError::UnexpectedPanic))
+    })
 }
 
 fn parse_stylesheet_tree_inner(
@@ -1285,10 +1616,11 @@ fn parse_stylesheet_tree_inner(
 
     let mut count = 0usize;
     let rules = convert_rule_list(&sheet.rules, &mut count)?;
-    if count > MAX_RULES {
+    let limits = current_resource_limits();
+    if count > limits.max_rules {
         return Err(EngineError::RuleLimitExceeded {
             actual: count,
-            limit: MAX_RULES,
+            limit: limits.max_rules,
         });
     }
     Ok(rules)
@@ -1301,10 +1633,11 @@ fn convert_rule_list(
     let mut output = Vec::with_capacity(rules.0.len());
     for rule in &rules.0 {
         *count = count.saturating_add(1);
-        if *count > MAX_RULES {
+        let limits = current_resource_limits();
+        if *count > limits.max_rules {
             return Err(EngineError::RuleLimitExceeded {
                 actual: *count,
-                limit: MAX_RULES,
+                limit: limits.max_rules,
             });
         }
         if let Some(rule) = convert_rule(rule, count)? {
@@ -1686,10 +2019,11 @@ fn add_parsed_descendant_count(rule: &ParsedRule, count: &mut usize) -> Result<(
         .map(parsed_rule_node_count)
         .sum::<usize>();
     *count = count.saturating_add(descendants);
-    if *count > MAX_RULES {
+    let limits = current_resource_limits();
+    if *count > limits.max_rules {
         return Err(EngineError::RuleLimitExceeded {
             actual: *count,
-            limit: MAX_RULES,
+            limit: limits.max_rules,
         });
     }
     Ok(())
@@ -2035,6 +2369,26 @@ mod tests {
             scan_top_level_rules(&source),
             Err(EngineError::NestingLimitExceeded { .. })
         ));
+    }
+
+    #[test]
+    fn recovers_a_grouping_chain_at_the_default_nesting_boundary() {
+        let group_depth = crate::DEFAULT_MAX_NESTING_DEPTH - 1;
+        let source = format!(
+            "{}.x{{color:red}}{}",
+            "@media all{".repeat(group_depth),
+            "}".repeat(group_depth)
+        );
+        let mut parsed = parse_recovered_rule_tree(&source).unwrap();
+        let mut recovered_depth = 0usize;
+        while parsed.kind == "media" {
+            assert_eq!(parsed.children.len(), 1);
+            parsed = parsed.children.pop().unwrap();
+            recovered_depth += 1;
+        }
+        assert_eq!(recovered_depth, group_depth);
+        assert_eq!(parsed.kind, "style");
+        assert_eq!(parsed.declarations, "color:red");
     }
 
     #[test]

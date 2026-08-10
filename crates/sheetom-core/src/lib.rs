@@ -27,9 +27,14 @@ pub use declaration_state::{
     PendingSubstitutionGroup,
 };
 pub use rules::{
-    normalize_media_text, normalize_selector_text, normalize_supports_text,
-    parse_container_prelude, parse_recovered_rule_tree, parse_recovered_single_rule_tree,
-    parse_rule_tree, parse_scope_prelude, parse_stylesheet_tree, scan_top_level_rules,
+    normalize_media_text, normalize_media_text_with_limits, normalize_selector_text,
+    normalize_selector_text_with_limits, normalize_supports_text,
+    normalize_supports_text_with_limits, parse_container_prelude,
+    parse_container_prelude_with_limits, parse_recovered_rule_tree,
+    parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree,
+    parse_recovered_single_rule_tree_with_limits, parse_rule_tree, parse_rule_tree_with_limits,
+    parse_scope_prelude, parse_scope_prelude_with_limits, parse_stylesheet_tree,
+    parse_stylesheet_tree_with_limits, scan_top_level_rules, scan_top_level_rules_with_limits,
     serialize_font_family_setter, ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
 };
 
@@ -53,9 +58,33 @@ use std::{
 };
 
 pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.11";
-const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
-const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
-const MAX_NESTING_DEPTH: usize = 4096;
+pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
+pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
+pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
+pub const DEFAULT_MAX_RULES: usize = 1_000_000;
+pub const DEFAULT_MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
+
+/// Per-sheet limits checked before parser allocation or CSSOM state mutation.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ResourceLimits {
+    pub max_stylesheet_bytes: usize,
+    pub max_declaration_value_bytes: usize,
+    pub max_nesting_depth: usize,
+    pub max_rules: usize,
+    pub max_declarations_per_block: usize,
+}
+
+impl Default for ResourceLimits {
+    fn default() -> Self {
+        Self {
+            max_stylesheet_bytes: DEFAULT_MAX_STYLESHEET_BYTES,
+            max_declaration_value_bytes: DEFAULT_MAX_DECLARATION_VALUE_BYTES,
+            max_nesting_depth: DEFAULT_MAX_NESTING_DEPTH,
+            max_rules: DEFAULT_MAX_RULES,
+            max_declarations_per_block: DEFAULT_MAX_DECLARATIONS_PER_BLOCK,
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum EngineError {
@@ -87,7 +116,7 @@ impl Display for EngineError {
         match self {
             Self::InputLimitExceeded { actual, limit } => write!(
                 formatter,
-                "SHEETOM_INPUT_LIMIT: declaration block is {actual} bytes; the limit is {limit} bytes"
+                "SHEETOM_INPUT_LIMIT: CSS input is {actual} bytes; the limit is {limit} bytes"
             ),
             Self::DeclarationLimitExceeded { actual, limit } => write!(
                 formatter,
@@ -207,6 +236,52 @@ fn scan_safety_metrics(source: &str) -> SafetyMetrics {
     metrics
 }
 
+pub(crate) fn validate_declaration_value_input(
+    value: &str,
+    limits: ResourceLimits,
+) -> Result<(), EngineError> {
+    if value.len() > limits.max_declaration_value_bytes {
+        return Err(EngineError::InputLimitExceeded {
+            actual: value.len(),
+            limit: limits.max_declaration_value_bytes,
+        });
+    }
+    let metrics = scan_safety_metrics(value);
+    if metrics.maximum_depth > limits.max_nesting_depth {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: metrics.maximum_depth,
+            limit: limits.max_nesting_depth,
+        });
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_declaration_block_input(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<(), EngineError> {
+    if source.len() > limits.max_stylesheet_bytes {
+        return Err(EngineError::InputLimitExceeded {
+            actual: source.len(),
+            limit: limits.max_stylesheet_bytes,
+        });
+    }
+    let metrics = scan_safety_metrics(source);
+    if metrics.maximum_depth > limits.max_nesting_depth {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: metrics.maximum_depth,
+            limit: limits.max_nesting_depth,
+        });
+    }
+    if metrics.declaration_count > limits.max_declarations_per_block {
+        return Err(EngineError::DeclarationLimitExceeded {
+            actual: metrics.declaration_count,
+            limit: limits.max_declarations_per_block,
+        });
+    }
+    Ok(())
+}
+
 fn run_guarded<T>(operation: impl FnOnce() -> Result<T, EngineError>) -> Result<T, EngineError> {
     match catch_unwind(AssertUnwindSafe(operation)) {
         Ok(result) => result,
@@ -300,20 +375,16 @@ pub fn inspect_property<'i>(
     name: &'i str,
     value: &'i str,
 ) -> Result<PropertyInspection, EngineError> {
-    if value.len() > MAX_DECLARATION_BYTES {
-        return Err(EngineError::InputLimitExceeded {
-            actual: value.len(),
-            limit: MAX_DECLARATION_BYTES,
-        });
-    }
+    inspect_property_with_limits(name, value, ResourceLimits::default())
+}
 
-    let metrics = scan_safety_metrics(value);
-    if metrics.maximum_depth > MAX_NESTING_DEPTH {
-        return Err(EngineError::NestingLimitExceeded {
-            actual: metrics.maximum_depth,
-            limit: MAX_NESTING_DEPTH,
-        });
-    }
+#[doc(hidden)]
+pub fn inspect_property_with_limits<'i>(
+    name: &'i str,
+    value: &'i str,
+    limits: ResourceLimits,
+) -> Result<PropertyInspection, EngineError> {
+    validate_declaration_value_input(value, limits)?;
 
     run_guarded(|| inspect_property_unchecked(name, value))
 }
@@ -337,27 +408,15 @@ pub fn validate_static_property<'i>(
 }
 
 pub fn canonicalize_declaration_block(source: &str) -> Result<String, EngineError> {
-    if source.len() > MAX_DECLARATION_BYTES {
-        return Err(EngineError::InputLimitExceeded {
-            actual: source.len(),
-            limit: MAX_DECLARATION_BYTES,
-        });
-    }
+    canonicalize_declaration_block_with_limits(source, ResourceLimits::default())
+}
 
-    let metrics = scan_safety_metrics(source);
-    if metrics.maximum_depth > MAX_NESTING_DEPTH {
-        return Err(EngineError::NestingLimitExceeded {
-            actual: metrics.maximum_depth,
-            limit: MAX_NESTING_DEPTH,
-        });
-    }
-
-    if metrics.declaration_count > MAX_DECLARATIONS_PER_BLOCK {
-        return Err(EngineError::DeclarationLimitExceeded {
-            actual: metrics.declaration_count,
-            limit: MAX_DECLARATIONS_PER_BLOCK,
-        });
-    }
+#[doc(hidden)]
+pub fn canonicalize_declaration_block_with_limits(
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<String, EngineError> {
+    validate_declaration_block_input(source, limits)?;
 
     run_guarded(|| canonicalize_unchecked(source))
 }
@@ -370,10 +429,12 @@ pub fn fuzz_declaration_block(source: &str) {
 #[cfg(test)]
 mod tests {
     use super::{
-        canonicalize_declaration_block, inspect_property, run_guarded, scan_safety_metrics,
+        canonicalize_declaration_block, canonicalize_declaration_block_with_limits,
+        inspect_property, inspect_property_with_limits, run_guarded, scan_safety_metrics,
         validate_static_property, EngineError, PropertyInspection, PropertyParseKind,
-        SafetyMetrics, ENGINE_REVISION, MAX_DECLARATIONS_PER_BLOCK, MAX_DECLARATION_BYTES,
-        MAX_NESTING_DEPTH,
+        ResourceLimits, SafetyMetrics, DEFAULT_MAX_DECLARATIONS_PER_BLOCK,
+        DEFAULT_MAX_DECLARATION_VALUE_BYTES, DEFAULT_MAX_NESTING_DEPTH, DEFAULT_MAX_RULES,
+        DEFAULT_MAX_STYLESHEET_BYTES, ENGINE_REVISION,
     };
 
     #[test]
@@ -495,23 +556,47 @@ mod tests {
     }
 
     #[test]
+    fn defaults_match_the_rc6_resource_contract() {
+        assert_eq!(DEFAULT_MAX_STYLESHEET_BYTES, 64 * 1024 * 1024);
+        assert_eq!(DEFAULT_MAX_DECLARATION_VALUE_BYTES, 1024 * 1024);
+        assert_eq!(DEFAULT_MAX_NESTING_DEPTH, 4096);
+        assert_eq!(DEFAULT_MAX_RULES, 1_000_000);
+        assert_eq!(DEFAULT_MAX_DECLARATIONS_PER_BLOCK, 100_000);
+    }
+
+    #[test]
     fn rejects_oversized_inputs_before_parsing() {
-        let source = "x".repeat(MAX_DECLARATION_BYTES + 1);
+        let limits = ResourceLimits {
+            max_stylesheet_bytes: 8,
+            ..ResourceLimits::default()
+        };
+        let source = "x".repeat(limits.max_stylesheet_bytes + 1);
 
         assert_eq!(
-            canonicalize_declaration_block(&source),
+            canonicalize_declaration_block_with_limits(&source, limits),
             Err(EngineError::InputLimitExceeded {
-                actual: MAX_DECLARATION_BYTES + 1,
-                limit: MAX_DECLARATION_BYTES,
+                actual: limits.max_stylesheet_bytes + 1,
+                limit: limits.max_stylesheet_bytes,
             })
         );
     }
 
     #[test]
     fn accepts_the_exact_declaration_budget() {
-        let source = format!("--x: {}", "x".repeat(MAX_DECLARATION_BYTES - 5));
+        let limits = ResourceLimits {
+            max_declaration_value_bytes: 16,
+            ..ResourceLimits::default()
+        };
+        let source = "x".repeat(limits.max_declaration_value_bytes);
 
-        assert!(canonicalize_declaration_block(&source).is_ok());
+        assert!(inspect_property_with_limits("--x", &source, limits).is_ok());
+        assert_eq!(
+            inspect_property_with_limits("--x", &format!("{source}x"), limits),
+            Err(EngineError::InputLimitExceeded {
+                actual: limits.max_declaration_value_bytes + 1,
+                limit: limits.max_declaration_value_bytes,
+            })
+        );
     }
 
     #[test]
@@ -534,26 +619,34 @@ mod tests {
 
     #[test]
     fn rejects_excessive_nesting_before_parsing() {
-        let source = format!("--x: {}value", "fn(".repeat(MAX_NESTING_DEPTH + 1));
+        let limits = ResourceLimits {
+            max_nesting_depth: 8,
+            ..ResourceLimits::default()
+        };
+        let source = format!("--x: {}value", "fn(".repeat(limits.max_nesting_depth + 1));
 
         assert_eq!(
-            canonicalize_declaration_block(&source),
+            canonicalize_declaration_block_with_limits(&source, limits),
             Err(EngineError::NestingLimitExceeded {
-                actual: MAX_NESTING_DEPTH + 1,
-                limit: MAX_NESTING_DEPTH,
+                actual: limits.max_nesting_depth + 1,
+                limit: limits.max_nesting_depth,
             })
         );
     }
 
     #[test]
     fn rejects_too_many_declarations_before_parsing() {
-        let source = "x:;".repeat(MAX_DECLARATIONS_PER_BLOCK + 1);
+        let limits = ResourceLimits {
+            max_declarations_per_block: 2,
+            ..ResourceLimits::default()
+        };
+        let source = "x:;".repeat(limits.max_declarations_per_block + 1);
 
         assert_eq!(
-            canonicalize_declaration_block(&source),
+            canonicalize_declaration_block_with_limits(&source, limits),
             Err(EngineError::DeclarationLimitExceeded {
-                actual: MAX_DECLARATIONS_PER_BLOCK + 1,
-                limit: MAX_DECLARATIONS_PER_BLOCK,
+                actual: limits.max_declarations_per_block + 1,
+                limit: limits.max_declarations_per_block,
             })
         );
     }

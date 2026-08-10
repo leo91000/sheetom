@@ -5,8 +5,10 @@ use crate::{
         shorthand_longhands as style_shorthand_longhands, shorthand_names,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
-    shorthand::{parse_value, synthesize_shorthand},
+    shorthand::{parse_value_with_limits, synthesize_shorthand},
     syntax::{parse_declaration_list, serialize_identifier},
+    validate_declaration_block_input, validate_declaration_value_input, EngineError,
+    ResourceLimits,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -52,11 +54,23 @@ pub enum DeclarationContext {
     Function,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct DeclarationState {
     records: Vec<DeclarationRecord>,
     next_pending_group_id: u64,
     context: DeclarationContext,
+    limits: ResourceLimits,
+}
+
+impl Default for DeclarationState {
+    fn default() -> Self {
+        Self {
+            records: Vec::new(),
+            next_pending_group_id: 0,
+            context: DeclarationContext::default(),
+            limits: ResourceLimits::default(),
+        }
+    }
 }
 
 impl DeclarationState {
@@ -65,8 +79,16 @@ impl DeclarationState {
     }
 
     pub fn new_with_context(context: DeclarationContext) -> Self {
+        Self::new_with_context_and_limits(context, ResourceLimits::default())
+    }
+
+    pub fn new_with_context_and_limits(
+        context: DeclarationContext,
+        limits: ResourceLimits,
+    ) -> Self {
         Self {
             context,
+            limits,
             ..Self::default()
         }
     }
@@ -135,29 +157,40 @@ impl DeclarationState {
     }
 
     pub fn set_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
+        self.set_property_checked(name, value, priority)
+            .unwrap_or(MutationOutcome::InvalidValue)
+    }
+
+    pub fn set_property_checked(
+        &mut self,
+        name: &str,
+        value: &str,
+        priority: &str,
+    ) -> Result<MutationOutcome, EngineError> {
+        validate_declaration_value_input(value, self.limits)?;
         let Some(name) = self.canonical_name(name) else {
-            return MutationOutcome::InvalidName;
+            return Ok(MutationOutcome::InvalidName);
         };
         let priority = priority.to_ascii_lowercase();
         if !matches!(priority.as_str(), "" | "important") {
-            return MutationOutcome::InvalidPriority;
+            return Ok(MutationOutcome::InvalidPriority);
         }
         if value.is_empty() {
             self.remove_property(&name);
-            return MutationOutcome::Applied;
+            return Ok(MutationOutcome::Applied);
         }
         if self.context == DeclarationContext::Function && name == "result" {
-            return MutationOutcome::Applied;
+            return Ok(MutationOutcome::Applied);
         }
 
         let important = priority == "important";
         let mut parsed = match self.parse_value(&name, value, important) {
             Ok(parsed) => parsed,
-            Err(MutationOutcome::InvalidValue) => return MutationOutcome::InvalidValue,
+            Err(MutationOutcome::InvalidValue) => return Ok(MutationOutcome::InvalidValue),
             Err(MutationOutcome::UnsupportedShorthand) => {
-                return MutationOutcome::UnsupportedShorthand;
+                return Ok(MutationOutcome::UnsupportedShorthand);
             }
-            Err(outcome) => return outcome,
+            Err(outcome) => return Ok(outcome),
         };
 
         if parsed.pending_substitution {
@@ -174,7 +207,7 @@ impl DeclarationState {
                         pending_group: Some(group.clone()),
                     });
                 }
-                return MutationOutcome::Applied;
+                return Ok(MutationOutcome::Applied);
             }
         }
 
@@ -183,7 +216,7 @@ impl DeclarationState {
             for record in longhands {
                 self.commit(record);
             }
-            return MutationOutcome::Applied;
+            return Ok(MutationOutcome::Applied);
         }
 
         self.commit(DeclarationRecord {
@@ -194,7 +227,7 @@ impl DeclarationState {
             pending_substitution: parsed.pending_substitution,
             pending_group: None,
         });
-        MutationOutcome::Applied
+        Ok(MutationOutcome::Applied)
     }
 
     pub fn replace_declarations(&mut self, declarations: &[ParsedDeclaration]) {
@@ -231,6 +264,11 @@ impl DeclarationState {
     }
 
     pub fn replace_css_text(&mut self, source: &str) {
+        let _ = self.replace_css_text_checked(source);
+    }
+
+    pub fn replace_css_text_checked(&mut self, source: &str) -> Result<(), EngineError> {
+        validate_declaration_block_input(source, self.limits)?;
         let declarations = parse_declaration_list(source)
             .into_iter()
             .map(|declaration| ParsedDeclaration {
@@ -239,7 +277,11 @@ impl DeclarationState {
                 important: declaration.important,
             })
             .collect::<Vec<_>>();
+        for declaration in &declarations {
+            validate_declaration_value_input(&declaration.value, self.limits)?;
+        }
         self.replace_declarations(&declarations);
+        Ok(())
     }
 
     pub fn clear(&mut self) {
@@ -314,7 +356,9 @@ impl DeclarationState {
         important: bool,
     ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
         match self.context {
-            DeclarationContext::Style => parse_value(name, value, important),
+            DeclarationContext::Style => {
+                parse_value_with_limits(name, value, important, self.limits)
+            }
             DeclarationContext::FontFace => {
                 parse_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
             }

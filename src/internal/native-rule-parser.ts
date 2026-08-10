@@ -1,4 +1,10 @@
 import { nativeBinding } from "./native-binding.js";
+import {
+  defaultResourceBudget,
+  nativeBudgetArguments,
+  rethrowResourceBudgetError,
+  type NativeResourceBudget,
+} from "./resource-budget.js";
 
 export interface NativeRuleDescription {
   kind: string;
@@ -8,24 +14,56 @@ export interface NativeRuleDescription {
   cssText: string;
 }
 
-export function parseNativeRule(source: string): NativeRuleDescription | null {
+export function parseNativeRule(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): NativeRuleDescription | null {
+  return parseNativeRulePayload(() => nativeBinding.parseRecoveredRuleTreeJson(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
+}
+
+export function parseNativeRuleWithErrorRecovery(
+  source: string,
+  resourceBudget: NativeResourceBudget = defaultResourceBudget,
+): NativeRuleDescription | null {
+  return parseNativeRulePayload(() => nativeBinding.parseRecoveredSingleRuleTreeJson(
+    source,
+    ...nativeBudgetArguments(resourceBudget),
+  ));
+}
+
+/*
+ * Keep native parse failures as CSS parse failures, but never reinterpret a
+ * transport/validation failure as an empty or invalid rule. Doing so would
+ * silently drop valid deeply nested CSS during replaceSync().
+ */
+function parseNativeRulePayload(readPayload: () => string): NativeRuleDescription | null {
+  let payload: string;
   try {
-    const parsed: unknown = JSON.parse(nativeBinding.parseRecoveredRuleTreeJson(source));
-    return isNativeRuleDescription(parsed) ? parsed : null;
-  } catch {
+    payload = readPayload();
+  } catch (error) {
+    rethrowResourceBudgetError(error);
     return null;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(payload);
+  } catch (error) {
+    throw nativeProtocolError("could not decode the owned rule tree", error);
+  }
+
+  try {
+    return isNativeRuleDescription(parsed) ? parsed : null;
+  } catch (error) {
+    throw nativeProtocolError("could not validate the owned rule tree", error);
   }
 }
 
-export function parseNativeRuleWithErrorRecovery(source: string): NativeRuleDescription | null {
-  try {
-    const parsed: unknown = JSON.parse(
-      nativeBinding.parseRecoveredSingleRuleTreeJson(source),
-    );
-    return isNativeRuleDescription(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+function nativeProtocolError(message: string, cause: unknown): Error {
+  return new Error(`SHEETOM_NATIVE_PROTOCOL_ERROR: ${message}`, { cause });
 }
 
 function isNativeRuleDescription(value: unknown): value is NativeRuleDescription {
