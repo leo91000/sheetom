@@ -1,4 +1,5 @@
 use crate::catalog::shorthand_longhands;
+use cssparser::{Token, TokenizerWithSpans};
 
 pub(crate) enum ObservableCategory {
     Typed,
@@ -301,7 +302,34 @@ fn serialize_color(value: &str, safe_value: &str) -> String {
     {
         return serialize_hex_color(safe_value).unwrap_or_else(|| value.to_owned());
     }
-    value.to_owned()
+    canonicalize_color_identifiers(value)
+}
+
+fn canonicalize_color_identifiers(value: &str) -> String {
+    let mut tokenizer = TokenizerWithSpans::new(value);
+    let mut output = String::with_capacity(value.len());
+    let mut cursor = 0usize;
+    while let Ok(token) = tokenizer.next_token() {
+        let Token::Ident(identifier) = token.token else {
+            continue;
+        };
+        if !identifier.eq_ignore_ascii_case("currentcolor") {
+            continue;
+        }
+        let start = token.start.byte_index();
+        let end = token.end.byte_index();
+        let Some(prefix) = value.get(cursor..start) else {
+            return value.to_owned();
+        };
+        output.push_str(prefix);
+        output.push_str("currentcolor");
+        cursor = end;
+    }
+    let Some(suffix) = value.get(cursor..) else {
+        return value.to_owned();
+    };
+    output.push_str(suffix);
+    output
 }
 
 fn serialize_hex_color(value: &str) -> Option<String> {
@@ -496,6 +524,24 @@ mod tests {
         assert_eq!(
             serialize_observable_value("color", "white", "#fff", ObservableCategory::Typed),
             "white"
+        );
+        assert_eq!(
+            serialize_observable_value(
+                "color",
+                "color-mix(in srgb, contrast-color(red), currentColor)",
+                "color-mix(in srgb, contrast-color(red), currentColor)",
+                ObservableCategory::Typed,
+            ),
+            "color-mix(in srgb, contrast-color(red), currentcolor)"
+        );
+        assert_eq!(
+            serialize_observable_value(
+                "color",
+                "contrast-color(current\\43 olor)",
+                "contrast-color(currentColor)",
+                ObservableCategory::Typed,
+            ),
+            "contrast-color(currentcolor)"
         );
     }
 }

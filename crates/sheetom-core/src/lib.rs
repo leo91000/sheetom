@@ -84,7 +84,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.20";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.21";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -431,11 +431,14 @@ pub fn fuzz_recovered_component_values(source: &str) {
     let _ = recovered.reparsable_css();
     let _ = analyze_recovered_substitutions(&recovered);
     for property in [
+        "border-color",
+        "color",
         "z-index",
         "offset-anchor",
         "offset-position",
         "offset-rotate",
         "size",
+        "scrollbar-color",
         "width",
     ] {
         let _ = parse_semantic_property(property, source);
@@ -455,7 +458,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.20");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.21");
     }
 
     #[test]

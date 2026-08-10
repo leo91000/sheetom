@@ -7,11 +7,6 @@
       "properties": ["content"]
     },
     {
-      "id": "contrast-color",
-      "properties": ["color"],
-      "propertySuffixes": ["-color"]
-    },
-    {
       "id": "integer-calculation",
       "properties": ["z-index"]
     },
