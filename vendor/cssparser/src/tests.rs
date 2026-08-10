@@ -18,7 +18,7 @@ use super::{
     AtRuleParser, BasicParseError, BasicParseErrorKind, CowRcStr, DeclarationParser, Delimiter,
     EncodingSupport, ParseError, ParseErrorKind, Parser, ParserInput, ParserState,
     QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation, StyleSheetParser,
-    ToCss, Token, TokenSerializationType, UnicodeRange,
+    ToCss, Token, TokenCompletion, TokenSerializationType, TokenizerWithSpans, UnicodeRange,
 };
 
 macro_rules! JArray {
@@ -1357,4 +1357,25 @@ fn servo_define_css_keyword_enum() {
     }
 
     assert_eq!(UserZoom::from_ident("fixed"), Ok(UserZoom::Fixed));
+}
+
+#[test]
+fn tokenizer_reports_eof_completion_with_exact_spans() {
+    let cases = [
+        ("\"closed\"", TokenCompletion::Complete),
+        ("\"open", TokenCompletion::ImplicitEof),
+        ("\"escaped\\\"", TokenCompletion::ImplicitEof),
+        ("url(image.png)", TokenCompletion::Complete),
+        ("url(image.png", TokenCompletion::ImplicitEof),
+        ("/* closed */", TokenCompletion::Complete),
+        ("/* open", TokenCompletion::ImplicitEof),
+        ("identifier", TokenCompletion::Complete),
+    ];
+
+    for (source, expected_completion) in cases {
+        let token = TokenizerWithSpans::new(source).next_token().unwrap();
+        assert_eq!(token.start.byte_index(), 0, "{source}");
+        assert_eq!(token.end.byte_index(), source.len(), "{source}");
+        assert_eq!(token.completion, expected_completion, "{source}");
+    }
 }

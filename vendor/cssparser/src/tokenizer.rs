@@ -179,6 +179,51 @@ pub enum Token<'a> {
     CloseCurlyBracket,
 }
 
+/// Whether a token construct was completed by its closing syntax or recovered
+/// at the end of the input.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TokenCompletion {
+    /// The token did not require end-of-input recovery.
+    #[default]
+    Complete,
+    /// The tokenizer implicitly closed the token at the end of the input.
+    ImplicitEof,
+}
+
+/// A token together with its exact source span and completion evidence.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TokenWithSpan<'a> {
+    /// The parsed token.
+    pub token: Token<'a>,
+    /// The token's first byte in the original input.
+    pub start: SourcePosition,
+    /// The first byte after the token in the original input.
+    pub end: SourcePosition,
+    /// Whether this token required implicit end-of-input closure.
+    pub completion: TokenCompletion,
+}
+
+/// A lossless tokenizer that returns source spans and EOF-recovery evidence.
+pub struct TokenizerWithSpans<'a> {
+    tokenizer: Tokenizer<'a>,
+}
+
+impl<'a> TokenizerWithSpans<'a> {
+    /// Create a tokenizer for `input`.
+    #[inline]
+    pub fn new(input: &'a str) -> Self {
+        Self {
+            tokenizer: Tokenizer::new(input),
+        }
+    }
+
+    /// Return the next token, or `Err(())` at the end of the input.
+    #[inline]
+    pub fn next_token(&mut self) -> Result<TokenWithSpan<'a>, ()> {
+        self.tokenizer.next_with_span()
+    }
+}
+
 impl Token<'_> {
     /// Return whether this token represents a parse error.
     ///
@@ -207,6 +252,7 @@ pub struct Tokenizer<'a> {
     arbitrary_substitution_functions: SeenStatus<'a>,
     source_map_url: Option<&'a str>,
     source_url: Option<&'a str>,
+    current_token_completion: TokenCompletion,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -227,6 +273,7 @@ impl<'a> Tokenizer<'a> {
             arbitrary_substitution_functions: SeenStatus::DontCare,
             source_map_url: None,
             source_url: None,
+            current_token_completion: TokenCompletion::Complete,
         }
     }
 
@@ -256,7 +303,27 @@ impl<'a> Tokenizer<'a> {
 
     #[inline]
     pub fn next(&mut self) -> Result<Token<'a>, ()> {
+        self.current_token_completion = TokenCompletion::Complete;
         next_token(self)
+    }
+
+    /// Return the next token with byte-accurate source and EOF-recovery
+    /// evidence.
+    #[inline]
+    pub fn next_with_span(&mut self) -> Result<TokenWithSpan<'a>, ()> {
+        let start = self.position();
+        let token = self.next()?;
+        Ok(TokenWithSpan {
+            token,
+            start,
+            end: self.position(),
+            completion: self.current_token_completion,
+        })
+    }
+
+    #[inline]
+    fn mark_current_token_implicitly_closed(&mut self) {
+        self.current_token_completion = TokenCompletion::ImplicitEof;
     }
 
     #[inline]
@@ -757,6 +824,7 @@ fn consume_comment<'a>(tokenizer: &mut Tokenizer<'a>) -> &'a str {
             }
         }
     }
+    tokenizer.mark_current_token_implicitly_closed();
     let contents = tokenizer.slice_from(start_position);
     check_for_source_map(tokenizer, contents);
     contents
@@ -780,6 +848,7 @@ fn consume_quoted_string<'a>(
     let mut string_bytes;
     loop {
         if tokenizer.is_eof() {
+            tokenizer.mark_current_token_implicitly_closed();
             return Ok(tokenizer.slice_from(start_pos).into());
         }
         match_byte! { tokenizer.next_byte_unchecked(),
@@ -820,6 +889,7 @@ fn consume_quoted_string<'a>(
         }
     }
 
+    let mut explicitly_closed = false;
     while !tokenizer.is_eof() {
         let b = tokenizer.next_byte_unchecked();
         match_byte! { b,
@@ -834,12 +904,14 @@ fn consume_quoted_string<'a>(
             b'"' => {
                 tokenizer.advance(1);
                 if !single_quote {
+                    explicitly_closed = true;
                     break;
                 }
             }
             b'\'' => {
                 tokenizer.advance(1);
                 if single_quote {
+                    explicitly_closed = true;
                     break;
                 }
             }
@@ -874,6 +946,10 @@ fn consume_quoted_string<'a>(
         // If this byte is part of a multi-byte code point,
         // we’ll end up copying the whole code point before this loop does something else.
         string_bytes.push(b);
+    }
+
+    if !explicitly_closed {
+        tokenizer.mark_current_token_implicitly_closed();
     }
 
     Ok(
@@ -1141,6 +1217,7 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
             Some(item) => item,
             None => {
                 tokenizer.position = tokenizer.input.len();
+                tokenizer.mark_current_token_implicitly_closed();
                 break;
             }
         };
@@ -1194,6 +1271,7 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
         let mut string_bytes: Vec<u8>;
         loop {
             if tokenizer.is_eof() {
+                tokenizer.mark_current_token_implicitly_closed();
                 return UnquotedUrl(tokenizer.slice_from(start_pos).into());
             }
             match_byte! { tokenizer.next_byte_unchecked(),
@@ -1228,6 +1306,7 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
                 }
             }
         }
+        let mut explicitly_closed = false;
         while !tokenizer.is_eof() {
             let b = tokenizer.next_byte_unchecked();
             match_byte! { b,
@@ -1238,6 +1317,7 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
                 }
                 b')' => {
                     tokenizer.advance(1);
+                    explicitly_closed = true;
                     break;
                 }
                 b'\x01'..=b'\x08' | b'\x0B' | b'\x0E'..=b'\x1F' | b'\x7F'  // non-printable
@@ -1279,6 +1359,9 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
                 }
             }
         }
+        if !explicitly_closed {
+            tokenizer.mark_current_token_implicitly_closed();
+        }
         UnquotedUrl(
             // string_bytes is well-formed UTF-8, see other comments.
             unsafe { from_utf8_release_unchecked(string_bytes) }.into(),
@@ -1290,10 +1373,12 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
         start_pos: SourcePosition,
         string: CowRcStr<'a>,
     ) -> Token<'a> {
+        let mut explicitly_closed = false;
         while !tokenizer.is_eof() {
             match_byte! { tokenizer.next_byte_unchecked(),
                 b')' => {
                     tokenizer.advance(1);
+                    explicitly_closed = true;
                     break
                 }
                 b' ' | b'\t' => { tokenizer.advance(1); }
@@ -1305,6 +1390,9 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
                     return consume_bad_url(tokenizer, start_pos);
                 }
             }
+        }
+        if !explicitly_closed {
+            tokenizer.mark_current_token_implicitly_closed();
         }
         UnquotedUrl(string)
     }
@@ -1332,6 +1420,7 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
                 }
             }
         }
+        tokenizer.mark_current_token_implicitly_closed();
         BadUrl(tokenizer.slice_from(start_pos).into())
     }
 }
