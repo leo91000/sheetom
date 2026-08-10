@@ -429,7 +429,7 @@ function ruleForestSize(roots: readonly CSSRule[]): number {
     const rule = pending.pop();
     if (!rule) continue;
     count += 1;
-    pending.push(...ruleChildren(rule));
+    for (const child of ruleChildren(rule)) pending.push(child);
   }
   return count;
 }
@@ -459,18 +459,27 @@ function assertRuleInsertionBudget(
 ): void {
   if (owner instanceof CSSStyleSheet) {
     const roots = sheetRuleArrays.get(owner) ?? [];
-    assertRuleForestBudget([...roots, inserted], resourceBudget);
+    assertRuleCountBudget(
+      ruleForestSize(roots) + ruleForestSize([inserted]),
+      resourceBudget,
+    );
     return;
   }
   const sheet = owner.parentStyleSheet;
   if (sheet) {
     const roots = sheetRuleArrays.get(sheet) ?? [];
-    assertRuleForestBudget([...roots, inserted], resourceBudget);
+    assertRuleCountBudget(
+      ruleForestSize(roots) + ruleForestSize([inserted]),
+      resourceBudget,
+    );
     return;
   }
   let root = owner;
   while (root.parentRule) root = root.parentRule;
-  assertRuleForestBudget([root, inserted], resourceBudget);
+  assertRuleCountBudget(
+    ruleForestSize([root]) + ruleForestSize([inserted]),
+    resourceBudget,
+  );
 }
 
 /** A rule containing a live nested rule list. */
