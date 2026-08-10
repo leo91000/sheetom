@@ -69,7 +69,7 @@
     "native:collect": "node scripts/collect-native-artifacts.mjs",
     "native:check": "cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
     "native:test": "npm run native:build && npm run build && node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs && node scripts/test-native-crash-safety.mjs && node scripts/test-native-operation-fixtures.mjs && node scripts/check-native-public-corpus.mjs",
-    "native:browser-differential": "npm run native:build && node scripts/native-browser-differential.mjs",
+    "native:browser-differential": "npm run native:build && npm run build && node scripts/native-browser-differential.mjs && node scripts/font-face-browser-differential.mjs",
     "wpt:paths": "node scripts/list-wpt-paths.mjs",
     "benchmark": "npm run build && node scripts/benchmark.mjs",
     "pack:test": "node scripts/test-package.mjs",

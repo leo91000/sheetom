@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.2");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.3");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",

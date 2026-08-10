@@ -25,7 +25,7 @@ interface NativeDeclarationState {
 }
 
 interface NativeBinding {
-  NativeDeclarationState: new () => NativeDeclarationState;
+  NativeDeclarationState: new (context?: "style" | "font-face") => NativeDeclarationState;
 }
 
 function loadBinding(): NativeBinding {
@@ -41,13 +41,17 @@ const binding = loadBinding();
 
 /** Thin JS ownership boundary around the Rust declaration state machine. */
 export class NativeDeclarationBlock {
-  readonly #state = new binding.NativeDeclarationState();
+  readonly #state: NativeDeclarationState;
   readonly #reportDiagnostic: ReportDeclarationDiagnostic;
   #observableCache: string | undefined;
   readonly #serializationCache = new Map<string, string>();
 
-  constructor(reportDiagnostic: ReportDeclarationDiagnostic) {
+  constructor(
+    reportDiagnostic: ReportDeclarationDiagnostic,
+    context: "style" | "font-face" = "style",
+  ) {
     this.#reportDiagnostic = reportDiagnostic;
+    this.#state = new binding.NativeDeclarationState(context);
   }
 
   get cssText(): string {

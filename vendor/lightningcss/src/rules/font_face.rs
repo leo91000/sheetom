@@ -109,7 +109,7 @@ impl<'i> ToCss for Source<'i> {
       Source::Url(url) => url.to_css(dest),
       Source::Local(local) => {
         dest.write_str("local(")?;
-        local.to_css(dest)?;
+        local.to_css_as_string(dest)?;
         dest.write_char(')')
       }
     }

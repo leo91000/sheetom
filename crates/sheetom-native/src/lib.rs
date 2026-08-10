@@ -5,8 +5,8 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 
 use napi_derive::napi;
 use sheetom_core::{
-    canonicalize_declaration_block as canonicalize, DeclarationState, MutationOutcome,
-    ENGINE_REVISION,
+    canonicalize_declaration_block as canonicalize, DeclarationContext, DeclarationState,
+    MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -25,8 +25,19 @@ impl Default for NativeDeclarationState {
 #[napi]
 impl NativeDeclarationState {
     #[napi(constructor)]
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(context: Option<String>) -> napi::Result<Self> {
+        let context = match context.as_deref() {
+            None | Some("style") => DeclarationContext::Style,
+            Some("font-face") => DeclarationContext::FontFace,
+            Some(context) => {
+                return Err(napi::Error::from_reason(format!(
+                    "SHEETOM_DECLARATION_CONTEXT: unsupported declaration context {context}"
+                )))
+            }
+        };
+        Ok(Self {
+            state: DeclarationState::new_with_context(context),
+        })
     }
 
     #[napi(getter)]

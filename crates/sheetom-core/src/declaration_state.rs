@@ -1,5 +1,9 @@
 use crate::{
-    catalog::{canonical_property_name, shorthand_longhands, shorthand_names},
+    catalog::{
+        canonical_property_name as canonical_style_property_name,
+        shorthand_longhands as style_shorthand_longhands, shorthand_names,
+    },
+    font_face::{canonical_descriptor_name, parse_descriptor_value},
     shorthand::{parse_value, synthesize_shorthand},
     syntax::{parse_declaration_list, serialize_identifier},
 };
@@ -39,15 +43,30 @@ pub enum MutationOutcome {
     UnsupportedShorthand,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum DeclarationContext {
+    #[default]
+    Style,
+    FontFace,
+}
+
 #[derive(Debug, Default, PartialEq)]
 pub struct DeclarationState {
     records: Vec<DeclarationRecord>,
     next_pending_group_id: u64,
+    context: DeclarationContext,
 }
 
 impl DeclarationState {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn new_with_context(context: DeclarationContext) -> Self {
+        Self {
+            context,
+            ..Self::default()
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -69,11 +88,11 @@ impl DeclarationState {
     }
 
     pub fn get_property_value(&self, name: &str) -> String {
-        let Some(name) = canonical_property_name(name) else {
+        let Some(name) = self.canonical_name(name) else {
             return String::new();
         };
 
-        if shorthand_longhands(&name).is_some() {
+        if self.shorthand_longhands(&name).is_some() {
             return synthesize_shorthand(&self.records, &name, false).unwrap_or_default();
         }
 
@@ -84,11 +103,11 @@ impl DeclarationState {
     }
 
     pub fn get_property_priority(&self, name: &str) -> &'static str {
-        let Some(name) = canonical_property_name(name) else {
+        let Some(name) = self.canonical_name(name) else {
             return "";
         };
 
-        if let Some(longhands) = shorthand_longhands(&name) {
+        if let Some(longhands) = self.shorthand_longhands(&name) {
             let records = longhands
                 .iter()
                 .map(|longhand| self.find(longhand))
@@ -114,7 +133,7 @@ impl DeclarationState {
     }
 
     pub fn set_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
-        let Some(name) = canonical_property_name(name) else {
+        let Some(name) = self.canonical_name(name) else {
             return MutationOutcome::InvalidName;
         };
         let priority = priority.to_ascii_lowercase();
@@ -127,7 +146,7 @@ impl DeclarationState {
         }
 
         let important = priority == "important";
-        let mut parsed = match parse_value(&name, value, important) {
+        let mut parsed = match self.parse_value(&name, value, important) {
             Ok(parsed) => parsed,
             Err(MutationOutcome::InvalidValue) => return MutationOutcome::InvalidValue,
             Err(MutationOutcome::UnsupportedShorthand) => {
@@ -137,7 +156,7 @@ impl DeclarationState {
         };
 
         if parsed.pending_substitution {
-            if let Some(longhands) = shorthand_longhands(&name) {
+            if let Some(longhands) = self.shorthand_longhands(&name) {
                 let group =
                     self.new_pending_group(name, parsed.observable_value, parsed.safe_value);
                 for longhand in longhands {
@@ -177,10 +196,11 @@ impl DeclarationState {
         let mut winners = HashMap::<String, (DeclarationRecord, usize, usize)>::new();
 
         for (source_index, declaration) in declarations.iter().enumerate() {
-            let Some(name) = canonical_property_name(&declaration.name) else {
+            let Some(name) = self.canonical_name(&declaration.name) else {
                 continue;
             };
-            let Ok(parsed) = parse_value(&name, &declaration.value, declaration.important) else {
+            let Ok(parsed) = self.parse_value(&name, &declaration.value, declaration.important)
+            else {
                 continue;
             };
             let records = self.records_for_parsed(name, parsed, declaration.important);
@@ -219,11 +239,11 @@ impl DeclarationState {
     }
 
     pub fn remove_property(&mut self, name: &str) -> String {
-        let Some(name) = canonical_property_name(name) else {
+        let Some(name) = self.canonical_name(name) else {
             return String::new();
         };
         let previous = self.get_property_value(&name);
-        if let Some(longhands) = shorthand_longhands(&name) {
+        if let Some(longhands) = self.shorthand_longhands(&name) {
             self.records
                 .retain(|record| !longhands.contains(&record.name.as_str()));
             return previous;
@@ -265,6 +285,33 @@ impl DeclarationState {
         self.records.iter().find(|record| record.name == name)
     }
 
+    fn canonical_name(&self, name: &str) -> Option<String> {
+        match self.context {
+            DeclarationContext::Style => canonical_style_property_name(name),
+            DeclarationContext::FontFace => canonical_descriptor_name(name),
+        }
+    }
+
+    fn shorthand_longhands(&self, name: &str) -> Option<&'static [&'static str]> {
+        (self.context == DeclarationContext::Style)
+            .then(|| style_shorthand_longhands(name))
+            .flatten()
+    }
+
+    fn parse_value(
+        &self,
+        name: &str,
+        value: &str,
+        important: bool,
+    ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
+        match self.context {
+            DeclarationContext::Style => parse_value(name, value, important),
+            DeclarationContext::FontFace => {
+                parse_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
+            }
+        }
+    }
+
     fn commit(&mut self, record: DeclarationRecord) {
         self.break_group_for_name(
             &record.name,
@@ -288,7 +335,7 @@ impl DeclarationState {
         important: bool,
     ) -> Vec<DeclarationRecord> {
         if parsed.pending_substitution {
-            if let Some(longhands) = shorthand_longhands(&name) {
+            if let Some(longhands) = self.shorthand_longhands(&name) {
                 let group =
                     self.new_pending_group(name, parsed.observable_value, parsed.safe_value);
                 return longhands
@@ -340,7 +387,10 @@ impl DeclarationState {
         parsed: &crate::shorthand::ParsedValue,
         records: &mut [DeclarationRecord],
     ) {
-        if shorthand_longhands(name).is_none_or(|longhands| longhands.len() < 2) {
+        if self
+            .shorthand_longhands(name)
+            .is_none_or(|longhands| longhands.len() < 2)
+        {
             return;
         }
         if name == "-webkit-mask-box-image" {
@@ -397,6 +447,26 @@ impl DeclarationState {
     }
 
     fn serialized_declarations(&self, safe: bool) -> Vec<String> {
+        if self.context == DeclarationContext::FontFace {
+            return self
+                .records
+                .iter()
+                .map(|record| {
+                    let name = if record.name.starts_with("--") {
+                        serialize_identifier(&record.name)
+                    } else {
+                        record.name.clone()
+                    };
+                    let value = if safe || record.name == "font-variant" {
+                        &record.safe_value
+                    } else {
+                        &record.observable_value
+                    };
+                    format_declaration(&name, value, record.important)
+                })
+                .collect();
+        }
+
         #[derive(Clone)]
         struct Candidate {
             name: String,
@@ -412,10 +482,10 @@ impl DeclarationState {
             .collect::<HashMap<_, _>>();
         let mut candidates = shorthand_names()
             .filter_map(|name| {
-                if canonical_property_name(name).as_deref() != Some(name) {
+                if canonical_style_property_name(name).as_deref() != Some(name) {
                     return None;
                 }
-                let longhands = shorthand_longhands(name)?;
+                let longhands = style_shorthand_longhands(name)?;
                 if longhands
                     .iter()
                     .any(|longhand| !records_by_name.contains_key(longhand))
