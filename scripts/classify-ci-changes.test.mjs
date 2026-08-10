@@ -23,11 +23,29 @@ test("vendored source changes run only native validation", () => {
     });
 });
 
-test("native bridge changes include the performance gate", () => {
+test("native shadow-engine changes run only native validation", () => {
     assert.deepEqual(classifyPaths(["crates/sheetom-native/src/lib.rs"]), {
         ...none,
         native: true,
-        performance: true,
+    });
+});
+
+test("the generated native property catalog does not trigger browser jobs", () => {
+    assert.deepEqual(
+        classifyPaths([
+            "scripts/generate-native-property-catalog.mjs",
+            "crates/sheetom-core/src/generated/chromium_properties.rs",
+        ]),
+        { ...none, native: true },
+    );
+});
+
+test("browser-backed grammar generators still run browser validation", () => {
+    assert.deepEqual(classifyPaths(["scripts/generate-native-grammar-inventory.mjs"]), {
+        ...none,
+        browser: true,
+        docs: true,
+        quality: true,
     });
 });
 
