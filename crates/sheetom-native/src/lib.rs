@@ -83,6 +83,11 @@ impl NativeDeclarationState {
     pub fn serialize_safe(&self) -> String {
         self.state.serialize_safe()
     }
+
+    #[napi]
+    pub fn serialize_formatted(&self, safe: bool, indent: String, separator: String) -> String {
+        self.state.serialize_formatted(safe, &indent, &separator)
+    }
 }
 
 fn mutation_outcome_name(outcome: MutationOutcome) -> &'static str {

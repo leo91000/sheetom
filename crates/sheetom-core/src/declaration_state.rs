@@ -127,7 +127,7 @@ impl DeclarationState {
         }
 
         let important = priority == "important";
-        let parsed = match parse_value(&name, value, important) {
+        let mut parsed = match parse_value(&name, value, important) {
             Ok(parsed) => parsed,
             Err(MutationOutcome::InvalidValue) => return MutationOutcome::InvalidValue,
             Err(MutationOutcome::UnsupportedShorthand) => {
@@ -154,7 +154,8 @@ impl DeclarationState {
             }
         }
 
-        if let Some(longhands) = parsed.longhands {
+        if let Some(mut longhands) = parsed.longhands.take() {
+            self.attach_static_group(&name, &parsed, &mut longhands);
             for record in longhands {
                 self.commit(record);
             }
@@ -228,6 +229,7 @@ impl DeclarationState {
             return previous;
         }
 
+        self.break_group_for_name(&name, None);
         self.records.retain(|record| record.name != name);
         previous
     }
@@ -251,11 +253,23 @@ impl DeclarationState {
         self.serialize(true)
     }
 
+    pub fn serialize_formatted(&self, safe: bool, indent: &str, separator: &str) -> String {
+        self.serialized_declarations(safe)
+            .into_iter()
+            .map(|declaration| format!("{indent}{declaration}"))
+            .collect::<Vec<_>>()
+            .join(separator)
+    }
+
     fn find(&self, name: &str) -> Option<&DeclarationRecord> {
         self.records.iter().find(|record| record.name == name)
     }
 
     fn commit(&mut self, record: DeclarationRecord) {
+        self.break_group_for_name(
+            &record.name,
+            record.pending_group.as_ref().map(|group| group.id),
+        );
         if let Some(existing) = self
             .records
             .iter_mut()
@@ -270,7 +284,7 @@ impl DeclarationState {
     fn records_for_parsed(
         &mut self,
         name: String,
-        parsed: crate::shorthand::ParsedValue,
+        mut parsed: crate::shorthand::ParsedValue,
         important: bool,
     ) -> Vec<DeclarationRecord> {
         if parsed.pending_substitution {
@@ -290,7 +304,8 @@ impl DeclarationState {
                     .collect();
             }
         }
-        if let Some(longhands) = parsed.longhands {
+        if let Some(mut longhands) = parsed.longhands.take() {
+            self.attach_static_group(&name, &parsed, &mut longhands);
             return longhands;
         }
         vec![DeclarationRecord {
@@ -319,7 +334,69 @@ impl DeclarationState {
         }
     }
 
+    fn attach_static_group(
+        &mut self,
+        name: &str,
+        parsed: &crate::shorthand::ParsedValue,
+        records: &mut [DeclarationRecord],
+    ) {
+        if shorthand_longhands(name).is_none_or(|longhands| longhands.len() < 2) {
+            return;
+        }
+        if name == "-webkit-mask-box-image" {
+            return;
+        }
+        let observable_value = if prefers_synthesized_provenance(name) {
+            synthesize_shorthand(records, name, false)
+                .unwrap_or_else(|| parsed.observable_value.clone())
+        } else {
+            parsed.observable_value.clone()
+        };
+        let safe_value = if prefers_synthesized_safe_provenance(name) {
+            synthesize_shorthand(records, name, true).unwrap_or_else(|| parsed.safe_value.clone())
+        } else {
+            parsed.safe_value.clone()
+        };
+        let safe_value = normalize_rgb_function_spacing(&safe_value);
+        let group = self.new_pending_group(name.to_owned(), observable_value, safe_value);
+        for record in records {
+            record.pending_group = Some(group.clone());
+        }
+    }
+
+    fn break_group_for_name(&mut self, name: &str, replacement_group_id: Option<u64>) {
+        let Some(group_id) = self
+            .records
+            .iter()
+            .find(|record| record.name == name)
+            .and_then(|record| record.pending_group.as_ref())
+            .map(|group| group.id)
+        else {
+            return;
+        };
+        if replacement_group_id == Some(group_id) {
+            return;
+        }
+        for record in &mut self.records {
+            if record
+                .pending_group
+                .as_ref()
+                .is_some_and(|group| group.id == group_id)
+            {
+                if !record.pending_substitution {
+                    record.observable_value =
+                        materialize_static_observable(&record.observable_value, &record.safe_value);
+                }
+                record.pending_group = None;
+            }
+        }
+    }
+
     fn serialize(&self, safe: bool) -> String {
+        self.serialized_declarations(safe).join(" ")
+    }
+
+    fn serialized_declarations(&self, safe: bool) -> Vec<String> {
         #[derive(Clone)]
         struct Candidate {
             name: String,
@@ -404,8 +481,87 @@ impl DeclarationState {
             };
             declarations.push(format_declaration(&name, value, record.important));
         }
-        declarations.join(" ")
+        declarations
     }
+}
+
+fn prefers_synthesized_provenance(name: &str) -> bool {
+    matches!(
+        name,
+        "animation"
+            | "background"
+            | "border-image"
+            | "columns"
+            | "container"
+            | "flex"
+            | "grid-template"
+            | "mask"
+            | "offset"
+            | "scroll-timeline"
+            | "text-box"
+            | "text-wrap"
+            | "transition"
+            | "view-timeline"
+            | "white-space"
+    )
+}
+
+fn prefers_synthesized_safe_provenance(name: &str) -> bool {
+    name == "border-image" || name.ends_with("-color")
+}
+
+fn materialize_static_observable(observable: &str, safe: &str) -> String {
+    let observable_parts = crate::syntax::split_top_level_delimiter(observable, b',');
+    let safe_parts = crate::syntax::split_top_level_delimiter(safe, b',');
+    let (Some(observable_parts), Some(safe_parts)) = (observable_parts, safe_parts) else {
+        return if observable == "initial" {
+            observable.to_owned()
+        } else {
+            safe.to_owned()
+        };
+    };
+    if observable_parts.len() != safe_parts.len() {
+        return safe.to_owned();
+    }
+    observable_parts
+        .iter()
+        .zip(safe_parts)
+        .map(|(observable, safe)| {
+            if *observable == "initial" {
+                "initial"
+            } else {
+                safe
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn normalize_rgb_function_spacing(value: &str) -> String {
+    let lower = value.to_ascii_lowercase();
+    let function = if lower.starts_with("rgb(") {
+        "rgb"
+    } else if lower.starts_with("rgba(") {
+        "rgba"
+    } else {
+        return value.to_owned();
+    };
+    let Some(body) = value
+        .get(function.len() + 1..)
+        .and_then(|body| body.strip_suffix(')'))
+    else {
+        return value.to_owned();
+    };
+    if !body.contains(',') {
+        return value.to_owned();
+    }
+    format!(
+        "{function}({})",
+        body.split(',')
+            .map(str::trim)
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 fn format_declaration(name: &str, value: &str, important: bool) -> String {

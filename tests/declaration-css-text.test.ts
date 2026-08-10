@@ -39,3 +39,23 @@ test("stylesheet parsing shares declaration-block winner semantics", () => {
   );
   assert.equal(rule.style.cssText, "color: red; width: 1px !important;");
 });
+
+test("repeated serialization is cached without hiding later mutations", () => {
+  const sheet = parseStyleSheet(".card { color: red; padding: 1px 2px; }");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  const initial = sheet.serialize();
+  assert.equal(sheet.serialize(), initial);
+
+  rule.style.setProperty("padding-left", "3px");
+  const mutated = sheet.serialize();
+  assert.notEqual(mutated, initial);
+  assert.match(mutated, /padding: 1px 2px 1px 3px/u);
+  assert.equal(sheet.serialize(), mutated);
+
+  rule.style.removeProperty("color");
+  const removed = sheet.serialize();
+  assert.doesNotMatch(removed, /color:/u);
+  assert.equal(sheet.serialize(), removed);
+});

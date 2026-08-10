@@ -1,3 +1,5 @@
+use crate::catalog::shorthand_longhands;
+
 pub(crate) enum ObservableCategory {
     Typed,
     PendingSubstitution,
@@ -12,10 +14,21 @@ pub(crate) fn serialize_observable_value(
 ) -> String {
     let recovered = recover_token_text(input.trim());
     if !matches!(category, ObservableCategory::Typed) {
+        if matches!(category, ObservableCategory::Custom)
+            && input.trim().to_ascii_lowercase().starts_with("url(")
+            && input.trim().ends_with('\\')
+        {
+            return recovered.closed;
+        }
         return recovered.retained;
     }
     if name == "font-family" {
         return serialize_font_family(input, safe_value, &recovered);
+    }
+    if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
+        && !recovered.recovered
+    {
+        return input.trim().to_owned();
     }
     if name == "color" || name.ends_with("-color") {
         return serialize_color(&recovered.closed, safe_value);
@@ -36,7 +49,7 @@ pub(crate) fn serialize_observable_value(
         return recovered.closed;
     }
     if !recovered.recovered {
-        return safe_value.to_owned();
+        return canonicalize_leading_decimal(safe_value);
     }
     if recovered.closed.to_ascii_lowercase().starts_with("url(") || input.starts_with(['\'', '"']) {
         return safe_value.to_owned();
@@ -45,6 +58,33 @@ pub(crate) fn serialize_observable_value(
         return recovered.retained;
     }
     recovered.closed
+}
+
+fn canonicalize_leading_decimal(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut result = String::with_capacity(value.len() + 1);
+    let mut index = 0usize;
+    while index < bytes.len() {
+        let signed = matches!(bytes[index], b'+' | b'-');
+        let dot = if signed { index + 1 } else { index };
+        if bytes.get(dot) == Some(&b'.')
+            && bytes.get(dot + 1).is_some_and(u8::is_ascii_digit)
+            && (index == 0
+                || !bytes[index - 1].is_ascii_alphanumeric()
+                    && !matches!(bytes[index - 1], b'_' | b'-'))
+        {
+            if signed {
+                result.push(bytes[index] as char);
+            }
+            result.push_str("0.");
+            index = dot + 1;
+            continue;
+        }
+        let character = value[index..].chars().next().unwrap_or('\u{fffd}');
+        result.push(character);
+        index += character.len_utf8();
+    }
+    result
 }
 
 struct RecoveredTokenText {

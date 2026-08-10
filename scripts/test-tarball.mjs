@@ -64,7 +64,15 @@ try {
       execFileSync(process.execPath, ["probe.mjs"], { cwd: packageDirectory, stdio: "inherit" });
       await writeFile(
         path.join(packageDirectory, "probe.cjs"),
-        'const sheetom = require("sheetom"); if (!sheetom.CSSStyleSheet) throw new Error("CJS export missing");',
+        `
+          const { CSSStyleRule, CSSStyleSheet } = require("sheetom");
+          const sheet = new CSSStyleSheet();
+          sheet.insertRule(".x {}");
+          const rule = sheet.cssRules[0];
+          if (!(rule instanceof CSSStyleRule)) throw new Error("CJS style rule missing");
+          rule.style.setProperty("background", "image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red");
+          if (!sheet.serialize().includes("image-set(")) throw new Error("CJS native mutation failed");
+        `,
       );
       execFileSync(process.execPath, ["probe.cjs"], { cwd: packageDirectory, stdio: "inherit" });
       break;

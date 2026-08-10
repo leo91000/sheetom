@@ -305,9 +305,21 @@ async function verifyShorthandRenderingWitness(page) {
   }
 }
 
+const availableBrowserTypes = { chromium, firefox, webkit };
+const requestedBrowsers = (process.env.SHEETOM_DIFFERENTIAL_BROWSERS ?? "chromium,firefox,webkit")
+  .split(",")
+  .map(name => name.trim())
+  .filter(Boolean);
+for (const name of requestedBrowsers) {
+  if (!Object.hasOwn(availableBrowserTypes, name)) {
+    throw new Error(`Unsupported differential browser: ${name}`);
+  }
+}
+
 const browsers = new Map();
 try {
-  for (const [name, browserType] of Object.entries({ chromium, firefox, webkit })) {
+  for (const name of requestedBrowsers) {
+    const browserType = availableBrowserTypes[name];
     const browser = await browserType.launch({ headless: true });
     browsers.set(name, browser);
   }

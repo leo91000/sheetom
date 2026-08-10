@@ -6,14 +6,39 @@ pub use generated::{CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA2
 
 pub(crate) fn canonical_property_name(name: &str) -> Option<String> {
     if name.starts_with("--") {
-        return Some(name.to_owned());
+        return (name.len() > 2).then(|| name.to_owned());
     }
 
     let lower = name.to_ascii_lowercase();
+    if lower == "grid-gap" {
+        return Some("gap".to_owned());
+    }
     if let Ok(index) =
         generated::PROPERTY_ALIASES.binary_search_by_key(&lower.as_str(), |(alias, _)| *alias)
     {
         return Some(generated::PROPERTY_ALIASES[index].1.to_owned());
+    }
+    if let Some(unprefixed) = lower.strip_prefix("-webkit-") {
+        let prefixed_longhands = shorthand_longhands(&lower);
+        let unprefixed_longhands = shorthand_longhands(unprefixed);
+        if prefixed_longhands.is_some() && prefixed_longhands == unprefixed_longhands {
+            return Some(unprefixed.to_owned());
+        }
+    }
+    if lower.starts_with("-webkit-") {
+        if let Some(longhands) = shorthand_longhands(&lower) {
+            if let Some((canonical, _)) =
+                generated::SHORTHAND_LONGHANDS
+                    .iter()
+                    .find(|(candidate, candidate_longhands)| {
+                        !candidate.starts_with('-')
+                            && *candidate != lower
+                            && *candidate_longhands == longhands
+                    })
+            {
+                return Some((*canonical).to_owned());
+            }
+        }
     }
     generated::SUPPORTED_PROPERTIES
         .binary_search(&lower.as_str())
@@ -26,6 +51,13 @@ pub(crate) fn shorthand_longhands(name: &str) -> Option<&'static [&'static str]>
         .binary_search_by_key(&name, |(shorthand, _)| *shorthand)
         .ok()?;
     Some(generated::SHORTHAND_LONGHANDS[index].1)
+}
+
+pub(crate) fn observed_shorthand_longhands(name: &str) -> Option<&'static [&'static str]> {
+    let index = generated::OBSERVED_SHORTHAND_LONGHANDS
+        .binary_search_by_key(&name, |(shorthand, _)| *shorthand)
+        .ok()?;
+    Some(generated::OBSERVED_SHORTHAND_LONGHANDS[index].1)
 }
 
 pub(crate) fn shorthand_names() -> impl Iterator<Item = &'static str> {
@@ -73,6 +105,15 @@ mod tests {
             Some("--Theme")
         );
         assert_eq!(canonical_property_name("not-a-browser-property"), None);
+        assert_eq!(canonical_property_name("--"), None);
+        assert_eq!(
+            canonical_property_name("-webkit-animation").as_deref(),
+            Some("animation")
+        );
+        assert_eq!(
+            canonical_property_name("-webkit-border-after").as_deref(),
+            Some("border-block-end")
+        );
     }
 
     #[test]

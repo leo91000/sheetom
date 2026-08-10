@@ -1182,6 +1182,1010 @@ pub static SHORTHAND_LONGHANDS: &[(&str, &[&str])] = &[
         "transform-style",
     ]),
     ("-webkit-transition", &[
+        "transition-property",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-behavior",
+    ]),
+    ("-webkit-transition-delay", &[
+        "transition-delay",
+    ]),
+    ("-webkit-transition-duration", &[
+        "transition-duration",
+    ]),
+    ("-webkit-transition-property", &[
+        "transition-property",
+    ]),
+    ("-webkit-transition-timing-function", &[
+        "transition-timing-function",
+    ]),
+    ("-webkit-user-select", &[
+        "user-select",
+    ]),
+    ("animation", &[
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end",
+    ]),
+    ("animation-range", &[
+        "animation-range-start",
+        "animation-range-end",
+    ]),
+    ("background", &[
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color",
+    ]),
+    ("background-position", &[
+        "background-position-x",
+        "background-position-y",
+    ]),
+    ("border", &[
+        "border-top-color",
+        "border-top-style",
+        "border-top-width",
+        "border-right-color",
+        "border-right-style",
+        "border-right-width",
+        "border-bottom-color",
+        "border-bottom-style",
+        "border-bottom-width",
+        "border-left-color",
+        "border-left-style",
+        "border-left-width",
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat",
+    ]),
+    ("border-block", &[
+        "border-block-start-color",
+        "border-block-start-style",
+        "border-block-start-width",
+        "border-block-end-color",
+        "border-block-end-style",
+        "border-block-end-width",
+    ]),
+    ("border-block-color", &[
+        "border-block-start-color",
+        "border-block-end-color",
+    ]),
+    ("border-block-end", &[
+        "border-block-end-width",
+        "border-block-end-style",
+        "border-block-end-color",
+    ]),
+    ("border-block-start", &[
+        "border-block-start-width",
+        "border-block-start-style",
+        "border-block-start-color",
+    ]),
+    ("border-block-style", &[
+        "border-block-start-style",
+        "border-block-end-style",
+    ]),
+    ("border-block-width", &[
+        "border-block-start-width",
+        "border-block-end-width",
+    ]),
+    ("border-bottom", &[
+        "border-bottom-width",
+        "border-bottom-style",
+        "border-bottom-color",
+    ]),
+    ("border-color", &[
+        "border-top-color",
+        "border-right-color",
+        "border-bottom-color",
+        "border-left-color",
+    ]),
+    ("border-image", &[
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat",
+    ]),
+    ("border-inline", &[
+        "border-inline-start-color",
+        "border-inline-start-style",
+        "border-inline-start-width",
+        "border-inline-end-color",
+        "border-inline-end-style",
+        "border-inline-end-width",
+    ]),
+    ("border-inline-color", &[
+        "border-inline-start-color",
+        "border-inline-end-color",
+    ]),
+    ("border-inline-end", &[
+        "border-inline-end-width",
+        "border-inline-end-style",
+        "border-inline-end-color",
+    ]),
+    ("border-inline-start", &[
+        "border-inline-start-width",
+        "border-inline-start-style",
+        "border-inline-start-color",
+    ]),
+    ("border-inline-style", &[
+        "border-inline-start-style",
+        "border-inline-end-style",
+    ]),
+    ("border-inline-width", &[
+        "border-inline-start-width",
+        "border-inline-end-width",
+    ]),
+    ("border-left", &[
+        "border-left-width",
+        "border-left-style",
+        "border-left-color",
+    ]),
+    ("border-radius", &[
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius",
+    ]),
+    ("border-right", &[
+        "border-right-width",
+        "border-right-style",
+        "border-right-color",
+    ]),
+    ("border-spacing", &[
+        "-webkit-border-horizontal-spacing",
+        "-webkit-border-vertical-spacing",
+    ]),
+    ("border-style", &[
+        "border-top-style",
+        "border-right-style",
+        "border-bottom-style",
+        "border-left-style",
+    ]),
+    ("border-top", &[
+        "border-top-width",
+        "border-top-style",
+        "border-top-color",
+    ]),
+    ("border-width", &[
+        "border-top-width",
+        "border-right-width",
+        "border-bottom-width",
+        "border-left-width",
+    ]),
+    ("column-rule", &[
+        "column-rule-width",
+        "column-rule-style",
+        "column-rule-color",
+    ]),
+    ("column-rule-inset", &[
+        "column-rule-inset-cap-start",
+        "column-rule-inset-cap-end",
+        "column-rule-inset-junction-start",
+        "column-rule-inset-junction-end",
+    ]),
+    ("column-rule-inset-cap", &[
+        "column-rule-inset-cap-start",
+        "column-rule-inset-cap-end",
+    ]),
+    ("column-rule-inset-end", &[
+        "column-rule-inset-cap-end",
+        "column-rule-inset-junction-end",
+    ]),
+    ("column-rule-inset-junction", &[
+        "column-rule-inset-junction-start",
+        "column-rule-inset-junction-end",
+    ]),
+    ("column-rule-inset-start", &[
+        "column-rule-inset-cap-start",
+        "column-rule-inset-junction-start",
+    ]),
+    ("columns", &[
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap",
+    ]),
+    ("contain-intrinsic-size", &[
+        "contain-intrinsic-width",
+        "contain-intrinsic-height",
+    ]),
+    ("container", &[
+        "container-name",
+        "container-type",
+    ]),
+    ("corner-block-end-shape", &[
+        "corner-end-start-shape",
+        "corner-end-end-shape",
+    ]),
+    ("corner-block-start-shape", &[
+        "corner-start-start-shape",
+        "corner-start-end-shape",
+    ]),
+    ("corner-bottom-shape", &[
+        "corner-bottom-left-shape",
+        "corner-bottom-right-shape",
+    ]),
+    ("corner-inline-end-shape", &[
+        "corner-start-end-shape",
+        "corner-end-end-shape",
+    ]),
+    ("corner-inline-start-shape", &[
+        "corner-start-start-shape",
+        "corner-end-start-shape",
+    ]),
+    ("corner-left-shape", &[
+        "corner-top-left-shape",
+        "corner-bottom-left-shape",
+    ]),
+    ("corner-right-shape", &[
+        "corner-top-right-shape",
+        "corner-bottom-right-shape",
+    ]),
+    ("corner-shape", &[
+        "corner-top-left-shape",
+        "corner-top-right-shape",
+        "corner-bottom-right-shape",
+        "corner-bottom-left-shape",
+    ]),
+    ("corner-top-shape", &[
+        "corner-top-left-shape",
+        "corner-top-right-shape",
+    ]),
+    ("flex", &[
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis",
+    ]),
+    ("flex-flow", &[
+        "flex-direction",
+        "flex-wrap",
+    ]),
+    ("font", &[
+        "font-style",
+        "font-variant-ligatures",
+        "font-variant-caps",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-alternates",
+        "font-variant-position",
+        "font-variant-emoji",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family",
+        "font-optical-sizing",
+        "font-size-adjust",
+        "font-kerning",
+        "font-feature-settings",
+        "font-variation-settings",
+        "font-language-override",
+    ]),
+    ("font-synthesis", &[
+        "font-synthesis-weight",
+        "font-synthesis-style",
+        "font-synthesis-small-caps",
+    ]),
+    ("font-variant", &[
+        "font-variant-ligatures",
+        "font-variant-caps",
+        "font-variant-alternates",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-position",
+        "font-variant-emoji",
+    ]),
+    ("gap", &[
+        "row-gap",
+        "column-gap",
+    ]),
+    ("grid", &[
+        "grid-template-rows",
+        "grid-template-columns",
+        "grid-template-areas",
+        "grid-auto-flow",
+        "grid-auto-rows",
+        "grid-auto-columns",
+    ]),
+    ("grid-area", &[
+        "grid-row-start",
+        "grid-column-start",
+        "grid-row-end",
+        "grid-column-end",
+    ]),
+    ("grid-column", &[
+        "grid-column-start",
+        "grid-column-end",
+    ]),
+    ("grid-column-gap", &[
+        "column-gap",
+    ]),
+    ("grid-gap", &[
+        "row-gap",
+        "column-gap",
+    ]),
+    ("grid-row", &[
+        "grid-row-start",
+        "grid-row-end",
+    ]),
+    ("grid-row-gap", &[
+        "row-gap",
+    ]),
+    ("grid-template", &[
+        "grid-template-rows",
+        "grid-template-columns",
+        "grid-template-areas",
+    ]),
+    ("inset", &[
+        "top",
+        "right",
+        "bottom",
+        "left",
+    ]),
+    ("inset-block", &[
+        "inset-block-start",
+        "inset-block-end",
+    ]),
+    ("inset-inline", &[
+        "inset-inline-start",
+        "inset-inline-end",
+    ]),
+    ("interest-delay", &[
+        "interest-delay-start",
+        "interest-delay-end",
+    ]),
+    ("list-style", &[
+        "list-style-position",
+        "list-style-image",
+        "list-style-type",
+    ]),
+    ("margin", &[
+        "margin-top",
+        "margin-right",
+        "margin-bottom",
+        "margin-left",
+    ]),
+    ("margin-block", &[
+        "margin-block-start",
+        "margin-block-end",
+    ]),
+    ("margin-inline", &[
+        "margin-inline-start",
+        "margin-inline-end",
+    ]),
+    ("marker", &[
+        "marker-start",
+        "marker-mid",
+        "marker-end",
+    ]),
+    ("mask", &[
+        "mask-image",
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode",
+    ]),
+    ("mask-position", &[
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+    ]),
+    ("offset", &[
+        "offset-position",
+        "offset-path",
+        "offset-distance",
+        "offset-rotate",
+        "offset-anchor",
+    ]),
+    ("outline", &[
+        "outline-color",
+        "outline-style",
+        "outline-width",
+    ]),
+    ("overflow", &[
+        "overflow-x",
+        "overflow-y",
+    ]),
+    ("overscroll-behavior", &[
+        "overscroll-behavior-x",
+        "overscroll-behavior-y",
+    ]),
+    ("padding", &[
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left",
+    ]),
+    ("padding-block", &[
+        "padding-block-start",
+        "padding-block-end",
+    ]),
+    ("padding-inline", &[
+        "padding-inline-start",
+        "padding-inline-end",
+    ]),
+    ("page-break-after", &[
+        "break-after",
+    ]),
+    ("page-break-before", &[
+        "break-before",
+    ]),
+    ("page-break-inside", &[
+        "break-inside",
+    ]),
+    ("place-content", &[
+        "align-content",
+        "justify-content",
+    ]),
+    ("place-items", &[
+        "align-items",
+        "justify-items",
+    ]),
+    ("place-self", &[
+        "align-self",
+        "justify-self",
+    ]),
+    ("position-try", &[
+        "position-try-order",
+        "position-try-fallbacks",
+    ]),
+    ("row-rule", &[
+        "row-rule-width",
+        "row-rule-style",
+        "row-rule-color",
+    ]),
+    ("row-rule-inset", &[
+        "row-rule-inset-cap-start",
+        "row-rule-inset-cap-end",
+        "row-rule-inset-junction-start",
+        "row-rule-inset-junction-end",
+    ]),
+    ("row-rule-inset-cap", &[
+        "row-rule-inset-cap-start",
+        "row-rule-inset-cap-end",
+    ]),
+    ("row-rule-inset-end", &[
+        "row-rule-inset-cap-end",
+        "row-rule-inset-junction-end",
+    ]),
+    ("row-rule-inset-junction", &[
+        "row-rule-inset-junction-start",
+        "row-rule-inset-junction-end",
+    ]),
+    ("row-rule-inset-start", &[
+        "row-rule-inset-cap-start",
+        "row-rule-inset-junction-start",
+    ]),
+    ("rule", &[
+        "column-rule-width",
+        "column-rule-style",
+        "column-rule-color",
+        "row-rule-width",
+        "row-rule-style",
+        "row-rule-color",
+    ]),
+    ("rule-break", &[
+        "row-rule-break",
+        "column-rule-break",
+    ]),
+    ("rule-color", &[
+        "column-rule-color",
+        "row-rule-color",
+    ]),
+    ("rule-inset", &[
+        "row-rule-inset-cap-start",
+        "row-rule-inset-cap-end",
+        "row-rule-inset-junction-start",
+        "row-rule-inset-junction-end",
+        "column-rule-inset-cap-start",
+        "column-rule-inset-cap-end",
+        "column-rule-inset-junction-start",
+        "column-rule-inset-junction-end",
+    ]),
+    ("rule-inset-cap", &[
+        "row-rule-inset-cap-start",
+        "row-rule-inset-cap-end",
+        "column-rule-inset-cap-start",
+        "column-rule-inset-cap-end",
+    ]),
+    ("rule-inset-end", &[
+        "column-rule-inset-cap-end",
+        "column-rule-inset-junction-end",
+        "row-rule-inset-cap-end",
+        "row-rule-inset-junction-end",
+    ]),
+    ("rule-inset-junction", &[
+        "row-rule-inset-junction-start",
+        "row-rule-inset-junction-end",
+        "column-rule-inset-junction-start",
+        "column-rule-inset-junction-end",
+    ]),
+    ("rule-inset-start", &[
+        "column-rule-inset-cap-start",
+        "column-rule-inset-junction-start",
+        "row-rule-inset-cap-start",
+        "row-rule-inset-junction-start",
+    ]),
+    ("rule-style", &[
+        "column-rule-style",
+        "row-rule-style",
+    ]),
+    ("rule-visibility-items", &[
+        "column-rule-visibility-items",
+        "row-rule-visibility-items",
+    ]),
+    ("rule-width", &[
+        "column-rule-width",
+        "row-rule-width",
+    ]),
+    ("scroll-margin", &[
+        "scroll-margin-top",
+        "scroll-margin-right",
+        "scroll-margin-bottom",
+        "scroll-margin-left",
+    ]),
+    ("scroll-margin-block", &[
+        "scroll-margin-block-start",
+        "scroll-margin-block-end",
+    ]),
+    ("scroll-margin-inline", &[
+        "scroll-margin-inline-start",
+        "scroll-margin-inline-end",
+    ]),
+    ("scroll-padding", &[
+        "scroll-padding-top",
+        "scroll-padding-right",
+        "scroll-padding-bottom",
+        "scroll-padding-left",
+    ]),
+    ("scroll-padding-block", &[
+        "scroll-padding-block-start",
+        "scroll-padding-block-end",
+    ]),
+    ("scroll-padding-inline", &[
+        "scroll-padding-inline-start",
+        "scroll-padding-inline-end",
+    ]),
+    ("scroll-timeline", &[
+        "scroll-timeline-name",
+        "scroll-timeline-axis",
+    ]),
+    ("text-box", &[
+        "text-box-trim",
+        "text-box-edge",
+    ]),
+    ("text-decoration", &[
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color",
+    ]),
+    ("text-emphasis", &[
+        "text-emphasis-style",
+        "text-emphasis-color",
+    ]),
+    ("text-wrap", &[
+        "text-wrap-mode",
+        "text-wrap-style",
+    ]),
+    ("timeline-trigger", &[
+        "timeline-trigger-name",
+        "timeline-trigger-source",
+        "timeline-trigger-activation-range-start",
+        "timeline-trigger-activation-range-end",
+        "timeline-trigger-active-range-start",
+        "timeline-trigger-active-range-end",
+    ]),
+    ("timeline-trigger-activation-range", &[
+        "timeline-trigger-activation-range-start",
+        "timeline-trigger-activation-range-end",
+    ]),
+    ("timeline-trigger-active-range", &[
+        "timeline-trigger-active-range-start",
+        "timeline-trigger-active-range-end",
+    ]),
+    ("transition", &[
+        "transition-property",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-behavior",
+    ]),
+    ("view-timeline", &[
+        "view-timeline-name",
+        "view-timeline-axis",
+        "view-timeline-inset",
+    ]),
+    ("white-space", &[
+        "white-space-collapse",
+        "text-wrap-mode",
+    ]),
+    ("word-wrap", &[
+        "overflow-wrap",
+    ]),
+];
+
+pub static OBSERVED_SHORTHAND_LONGHANDS: &[(&str, &[&str])] = &[
+    ("-webkit-align-content", &[
+        "align-content",
+    ]),
+    ("-webkit-align-items", &[
+        "align-items",
+    ]),
+    ("-webkit-align-self", &[
+        "align-self",
+    ]),
+    ("-webkit-animation", &[
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end",
+    ]),
+    ("-webkit-animation-delay", &[
+        "animation-delay",
+    ]),
+    ("-webkit-animation-direction", &[
+        "animation-direction",
+    ]),
+    ("-webkit-animation-duration", &[
+        "animation-duration",
+    ]),
+    ("-webkit-animation-fill-mode", &[
+        "animation-fill-mode",
+    ]),
+    ("-webkit-animation-iteration-count", &[
+        "animation-iteration-count",
+    ]),
+    ("-webkit-animation-name", &[
+        "animation-name",
+    ]),
+    ("-webkit-animation-play-state", &[
+        "animation-play-state",
+    ]),
+    ("-webkit-animation-timing-function", &[
+        "animation-timing-function",
+    ]),
+    ("-webkit-app-region", &[
+        "app-region",
+    ]),
+    ("-webkit-appearance", &[
+        "appearance",
+    ]),
+    ("-webkit-backface-visibility", &[
+        "backface-visibility",
+    ]),
+    ("-webkit-background-clip", &[
+        "background-clip",
+    ]),
+    ("-webkit-background-origin", &[
+        "background-origin",
+    ]),
+    ("-webkit-background-size", &[
+        "background-size",
+    ]),
+    ("-webkit-border-after", &[
+        "border-block-end-width",
+        "border-block-end-style",
+        "border-block-end-color",
+    ]),
+    ("-webkit-border-after-color", &[
+        "border-block-end-color",
+    ]),
+    ("-webkit-border-after-style", &[
+        "border-block-end-style",
+    ]),
+    ("-webkit-border-after-width", &[
+        "border-block-end-width",
+    ]),
+    ("-webkit-border-before", &[
+        "border-block-start-width",
+        "border-block-start-style",
+        "border-block-start-color",
+    ]),
+    ("-webkit-border-before-color", &[
+        "border-block-start-color",
+    ]),
+    ("-webkit-border-before-style", &[
+        "border-block-start-style",
+    ]),
+    ("-webkit-border-before-width", &[
+        "border-block-start-width",
+    ]),
+    ("-webkit-border-bottom-left-radius", &[
+        "border-bottom-left-radius",
+    ]),
+    ("-webkit-border-bottom-right-radius", &[
+        "border-bottom-right-radius",
+    ]),
+    ("-webkit-border-end", &[
+        "border-inline-end-width",
+        "border-inline-end-style",
+        "border-inline-end-color",
+    ]),
+    ("-webkit-border-end-color", &[
+        "border-inline-end-color",
+    ]),
+    ("-webkit-border-end-style", &[
+        "border-inline-end-style",
+    ]),
+    ("-webkit-border-end-width", &[
+        "border-inline-end-width",
+    ]),
+    ("-webkit-border-radius", &[
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius",
+    ]),
+    ("-webkit-border-start", &[
+        "border-inline-start-width",
+        "border-inline-start-style",
+        "border-inline-start-color",
+    ]),
+    ("-webkit-border-start-color", &[
+        "border-inline-start-color",
+    ]),
+    ("-webkit-border-start-style", &[
+        "border-inline-start-style",
+    ]),
+    ("-webkit-border-start-width", &[
+        "border-inline-start-width",
+    ]),
+    ("-webkit-border-top-left-radius", &[
+        "border-top-left-radius",
+    ]),
+    ("-webkit-border-top-right-radius", &[
+        "border-top-right-radius",
+    ]),
+    ("-webkit-box-shadow", &[
+        "box-shadow",
+    ]),
+    ("-webkit-box-sizing", &[
+        "box-sizing",
+    ]),
+    ("-webkit-clip-path", &[
+        "clip-path",
+    ]),
+    ("-webkit-column-break-after", &[
+        "break-after",
+    ]),
+    ("-webkit-column-break-before", &[
+        "break-before",
+    ]),
+    ("-webkit-column-break-inside", &[
+        "break-inside",
+    ]),
+    ("-webkit-column-count", &[
+        "column-count",
+    ]),
+    ("-webkit-column-gap", &[
+        "column-gap",
+    ]),
+    ("-webkit-column-rule", &[
+        "column-rule-width",
+        "column-rule-style",
+        "column-rule-color",
+    ]),
+    ("-webkit-column-rule-color", &[
+        "column-rule-color",
+    ]),
+    ("-webkit-column-rule-style", &[
+        "column-rule-style",
+    ]),
+    ("-webkit-column-rule-width", &[
+        "column-rule-width",
+    ]),
+    ("-webkit-column-span", &[
+        "column-span",
+    ]),
+    ("-webkit-column-width", &[
+        "column-width",
+    ]),
+    ("-webkit-columns", &[
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap",
+    ]),
+    ("-webkit-filter", &[
+        "filter",
+    ]),
+    ("-webkit-flex", &[
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis",
+    ]),
+    ("-webkit-flex-basis", &[
+        "flex-basis",
+    ]),
+    ("-webkit-flex-direction", &[
+        "flex-direction",
+    ]),
+    ("-webkit-flex-flow", &[
+        "flex-direction",
+        "flex-wrap",
+    ]),
+    ("-webkit-flex-grow", &[
+        "flex-grow",
+    ]),
+    ("-webkit-flex-shrink", &[
+        "flex-shrink",
+    ]),
+    ("-webkit-flex-wrap", &[
+        "flex-wrap",
+    ]),
+    ("-webkit-font-feature-settings", &[
+        "font-feature-settings",
+    ]),
+    ("-webkit-hyphenate-character", &[
+        "hyphenate-character",
+    ]),
+    ("-webkit-justify-content", &[
+        "justify-content",
+    ]),
+    ("-webkit-logical-height", &[
+        "block-size",
+    ]),
+    ("-webkit-logical-width", &[
+        "inline-size",
+    ]),
+    ("-webkit-margin-after", &[
+        "margin-block-end",
+    ]),
+    ("-webkit-margin-before", &[
+        "margin-block-start",
+    ]),
+    ("-webkit-margin-end", &[
+        "margin-inline-end",
+    ]),
+    ("-webkit-margin-start", &[
+        "margin-inline-start",
+    ]),
+    ("-webkit-mask", &[
+        "mask-image",
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode",
+    ]),
+    ("-webkit-mask-box-image", &[
+        "-webkit-mask-box-image-source",
+        "-webkit-mask-box-image-slice",
+        "-webkit-mask-box-image-width",
+        "-webkit-mask-box-image-outset",
+        "-webkit-mask-box-image-repeat",
+    ]),
+    ("-webkit-mask-clip", &[
+        "mask-clip",
+    ]),
+    ("-webkit-mask-composite", &[
+        "mask-composite",
+    ]),
+    ("-webkit-mask-image", &[
+        "mask-image",
+    ]),
+    ("-webkit-mask-origin", &[
+        "mask-origin",
+    ]),
+    ("-webkit-mask-position", &[
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+    ]),
+    ("-webkit-mask-repeat", &[
+        "mask-repeat",
+    ]),
+    ("-webkit-mask-size", &[
+        "mask-size",
+    ]),
+    ("-webkit-max-logical-height", &[
+        "max-block-size",
+    ]),
+    ("-webkit-max-logical-width", &[
+        "max-inline-size",
+    ]),
+    ("-webkit-min-logical-height", &[
+        "min-block-size",
+    ]),
+    ("-webkit-min-logical-width", &[
+        "min-inline-size",
+    ]),
+    ("-webkit-opacity", &[
+        "opacity",
+    ]),
+    ("-webkit-order", &[
+        "order",
+    ]),
+    ("-webkit-padding-after", &[
+        "padding-block-end",
+    ]),
+    ("-webkit-padding-before", &[
+        "padding-block-start",
+    ]),
+    ("-webkit-padding-end", &[
+        "padding-inline-end",
+    ]),
+    ("-webkit-padding-start", &[
+        "padding-inline-start",
+    ]),
+    ("-webkit-perspective", &[
+        "perspective",
+    ]),
+    ("-webkit-perspective-origin", &[
+        "perspective-origin",
+    ]),
+    ("-webkit-print-color-adjust", &[
+        "print-color-adjust",
+    ]),
+    ("-webkit-shape-image-threshold", &[
+        "shape-image-threshold",
+    ]),
+    ("-webkit-shape-margin", &[
+        "shape-margin",
+    ]),
+    ("-webkit-shape-outside", &[
+        "shape-outside",
+    ]),
+    ("-webkit-text-emphasis", &[
+        "text-emphasis-style",
+        "text-emphasis-color",
+    ]),
+    ("-webkit-text-emphasis-color", &[
+        "text-emphasis-color",
+    ]),
+    ("-webkit-text-emphasis-position", &[
+        "text-emphasis-position",
+    ]),
+    ("-webkit-text-emphasis-style", &[
+        "text-emphasis-style",
+    ]),
+    ("-webkit-text-size-adjust", &[
+        "text-size-adjust",
+    ]),
+    ("-webkit-text-stroke", &[
+        "-webkit-text-stroke-width",
+        "-webkit-text-stroke-color",
+    ]),
+    ("-webkit-transform", &[
+        "transform",
+    ]),
+    ("-webkit-transform-origin", &[
+        "transform-origin",
+    ]),
+    ("-webkit-transform-style", &[
+        "transform-style",
+    ]),
+    ("-webkit-transition", &[
         "transition-behavior",
         "transition-duration",
         "transition-timing-function",

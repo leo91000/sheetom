@@ -1,5 +1,5 @@
 use crate::{
-    catalog::{initial_longhand_value, shorthand_longhands},
+    catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
     inspect_property,
     observable::{serialize_observable_value, ObservableCategory},
@@ -26,7 +26,7 @@ pub(crate) fn synthesize_shorthand(
     name: &str,
     safe: bool,
 ) -> Option<String> {
-    let longhands = shorthand_longhands(name)?;
+    let longhands = observed_shorthand_longhands(name)?;
     let records = longhands
         .iter()
         .map(|longhand| records.iter().find(|record| record.name == *longhand))
@@ -69,13 +69,22 @@ pub(crate) fn synthesize_shorthand(
             }
         })
         .collect::<Vec<_>>();
+    let has_css_wide = records.iter().any(|record| {
+        let selected = if safe {
+            &record.safe_value
+        } else {
+            &record.observable_value
+        };
+        is_css_wide_keyword(selected)
+            && record.safe_value == record.observable_value
+            && is_css_wide_keyword(&record.safe_value)
+    });
     if let Some(first_value) = values.first() {
-        if matches!(
-            first_value.as_str(),
-            "initial" | "inherit" | "unset" | "revert" | "revert-layer"
-        ) && values.iter().all(|value| *value == *first_value)
-        {
-            return Some((*first_value).clone());
+        if has_css_wide {
+            return values
+                .iter()
+                .all(|value| *value == *first_value)
+                .then(|| (*first_value).clone());
         }
     }
 
@@ -107,8 +116,19 @@ fn synthesize_special_shorthand(
         "animation" | "-webkit-animation" => synthesize_animation(records, safe),
         "transition" | "-webkit-transition" => synthesize_transition(records, safe),
         "background" => synthesize_background(records, safe),
+        "border-image" => synthesize_border_image(records, safe),
+        "columns" => synthesize_columns(records, safe),
+        "container" => synthesize_container(records, safe),
+        "flex" => synthesize_flex(records, safe),
+        "grid-template" => synthesize_grid_template(records, safe),
+        "mask" => synthesize_mask(records, safe),
+        "offset" => synthesize_offset(records, safe),
+        "scroll-timeline" => synthesize_scroll_timeline(records, safe),
+        "text-box" => synthesize_text_box(records, safe),
+        "text-wrap" => synthesize_text_wrap(records, safe),
+        "white-space" => synthesize_white_space(records, safe),
         "view-timeline" => synthesize_view_timeline(records, safe),
-        _ => synthesize_repeated_pair(name, records, safe),
+        _ => synthesize_structural_shorthand(name, records, safe),
     }
 }
 
@@ -296,6 +316,40 @@ fn synthesize_background(records: &[&DeclarationRecord], safe: bool) -> Option<S
     Some(layers.join(", "))
 }
 
+fn synthesize_border_image(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let raw_source = record_value(records, "border-image-source", safe)?;
+    let source = if safe {
+        canonicalize_reparsable_url(raw_source)
+    } else {
+        raw_source.to_owned()
+    };
+    let slice = record_value(records, "border-image-slice", safe)?;
+    let width = record_value(records, "border-image-width", safe)?;
+    let outset = record_value(records, "border-image-outset", safe)?;
+    let repeat = record_value(records, "border-image-repeat", safe)?;
+    if source == "none" && slice == "100%" && width == "1" && outset == "0" && repeat == "stretch" {
+        return Some("none".to_owned());
+    }
+    Some(format!("{source} {slice} / {width} / {outset} {repeat}"))
+}
+
+fn canonicalize_reparsable_url(value: &str) -> String {
+    let Some(body) = value
+        .strip_prefix("url(\"")
+        .and_then(|body| body.strip_suffix("\")"))
+    else {
+        return value.to_owned();
+    };
+    if body.is_empty()
+        || body.chars().any(|character| {
+            character.is_whitespace() || matches!(character, '"' | '\'' | '(' | ')' | '\\')
+        })
+    {
+        return value.to_owned();
+    }
+    format!("url({body})")
+}
+
 fn synthesize_view_timeline(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
     let names = value_list(record_value(records, "view-timeline-name", safe)?)?;
     let axes = repeat_list(
@@ -322,6 +376,370 @@ fn synthesize_view_timeline(records: &[&DeclarationRecord], safe: bool) -> Optio
             })
             .collect::<Vec<_>>()
             .join(", "),
+    )
+}
+
+fn synthesize_columns(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let width = record_value(records, "column-width", safe)?;
+    let count = record_value(records, "column-count", safe)?;
+    if record_value(records, "column-height", safe)? != "auto"
+        || record_value(records, "column-wrap", safe)? != "auto"
+    {
+        return None;
+    }
+    Some(match (width, count) {
+        ("auto", "auto") => "auto".to_owned(),
+        ("auto", value) | (value, "auto") => value.to_owned(),
+        _ => format!("{width} {count}"),
+    })
+}
+
+fn synthesize_container(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let name = record_value(records, "container-name", safe)?;
+    let kind = record_value(records, "container-type", safe)?;
+    Some(if kind == "normal" {
+        name.to_owned()
+    } else {
+        format!("{name} / {kind}")
+    })
+}
+
+fn synthesize_flex(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let grow = record_value(records, "flex-grow", safe)?;
+    let shrink = record_value(records, "flex-shrink", safe)?;
+    let basis = record_value(records, "flex-basis", safe)?;
+    Some(format!("{grow} {shrink} {basis}"))
+}
+
+fn synthesize_grid_template(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let rows = record_value(records, "grid-template-rows", safe)?;
+    let columns = record_value(records, "grid-template-columns", safe)?;
+    let areas = record_value(records, "grid-template-areas", safe)?;
+    if rows == "none" && columns == "none" {
+        return Some("none".to_owned());
+    }
+    if areas == "none" {
+        return Some(format!("{rows} / {columns}"));
+    }
+    let area_rows = split_top_level_whitespace(areas)?;
+    let row_sizes = split_top_level_whitespace(rows)?;
+    if area_rows.len() != row_sizes.len() {
+        return None;
+    }
+    Some(format!(
+        "{} / {columns}",
+        area_rows
+            .iter()
+            .zip(row_sizes)
+            .map(|(area, size)| format!("{area} {size}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+    ))
+}
+
+fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let properties = [
+        "mask-image",
+        "-webkit-mask-position-x",
+        "-webkit-mask-position-y",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode",
+    ];
+    let lists = parallel_lists(records, &properties, safe)?;
+    let mut layers = Vec::with_capacity(lists[0].len());
+    for index in 0..lists[0].len() {
+        let image = *lists[0].get(index)?;
+        let x = *lists[1].get(index)?;
+        let y = *lists[2].get(index)?;
+        let size = *lists[3].get(index)?;
+        let repeat = *lists[4].get(index)?;
+        let origin = *lists[5].get(index)?;
+        let clip = *lists[6].get(index)?;
+        let composite = *lists[7].get(index)?;
+        let mode = *lists[8].get(index)?;
+        let mut components = vec![image.to_owned()];
+        if x != "0%" || y != "0%" || size != "auto" {
+            components.push(format!("{x} {y}"));
+            if size != "auto" {
+                components.push(format!("/ {size}"));
+            }
+        }
+        if repeat != "repeat" {
+            components.push(repeat.to_owned());
+        }
+        if origin != "border-box" || clip != "border-box" {
+            components.push(origin.to_owned());
+            if clip != origin {
+                components.push(clip.to_owned());
+            }
+        }
+        if composite != "add" {
+            components.push(composite.to_owned());
+        }
+        if mode != "match-source" {
+            components.push(mode.to_owned());
+        }
+        layers.push(components.join(" "));
+    }
+    Some(layers.join(", "))
+}
+
+fn synthesize_offset(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let position = record_value(records, "offset-position", safe)?;
+    let path = record_value(records, "offset-path", safe)?;
+    let distance = record_value(records, "offset-distance", safe)?;
+    let rotate = record_value(records, "offset-rotate", safe)?;
+    let anchor = record_value(records, "offset-anchor", safe)?;
+    if position == "normal"
+        && path == "none"
+        && distance == "0px"
+        && rotate == "auto"
+        && anchor == "auto"
+    {
+        return Some("normal".to_owned());
+    }
+    let mut components = Vec::new();
+    if position != "normal" {
+        components.push(position.to_owned());
+    }
+    if path != "none" {
+        components.push(path.to_owned());
+    }
+    if distance != "0px" {
+        components.push(distance.to_owned());
+    }
+    if rotate != "auto" {
+        components.push(rotate.to_owned());
+    }
+    if anchor != "auto" {
+        components.push(format!("/ {anchor}"));
+    }
+    (!components.is_empty()).then(|| components.join(" "))
+}
+
+fn synthesize_text_wrap(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let mode = record_value(records, "text-wrap-mode", safe)?;
+    let style = record_value(records, "text-wrap-style", safe)?;
+    Some(if style == "initial" {
+        mode.to_owned()
+    } else if matches!(mode, "wrap" | "initial") {
+        style.to_owned()
+    } else {
+        format!("{mode} {style}")
+    })
+}
+
+fn synthesize_scroll_timeline(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let names = value_list(record_value(records, "scroll-timeline-name", safe)?)?;
+    let axes = repeat_list(
+        value_list(record_value(records, "scroll-timeline-axis", safe)?)?,
+        names.len(),
+    )?;
+    (!names.is_empty()).then(|| {
+        names
+            .iter()
+            .enumerate()
+            .map(|(index, name)| {
+                if axes[index] == "block" {
+                    (*name).to_owned()
+                } else {
+                    format!("{name} {}", axes[index])
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    })
+}
+
+fn synthesize_text_box(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let trim = record_value(records, "text-box-trim", safe)?;
+    let edge = record_value(records, "text-box-edge", safe)?;
+    if trim == "none" && edge == "auto" {
+        return Some("normal".to_owned());
+    }
+    if edge == "auto" {
+        return Some(trim.to_owned());
+    }
+    Some(if trim == "trim-both" {
+        edge.to_owned()
+    } else {
+        format!("{trim} {edge}")
+    })
+}
+
+fn synthesize_white_space(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let collapse = record_value(records, "white-space-collapse", safe)?;
+    let mode = record_value(records, "text-wrap-mode", safe)?;
+    Some(match (collapse, mode) {
+        ("collapse", "wrap") => "normal".to_owned(),
+        ("preserve", "nowrap") => "pre".to_owned(),
+        ("preserve", "wrap") => "pre-wrap".to_owned(),
+        ("preserve-breaks", "wrap") => "pre-line".to_owned(),
+        ("collapse", "nowrap") => "nowrap".to_owned(),
+        ("break-spaces", "wrap") => "break-spaces".to_owned(),
+        _ => format!("{collapse} {mode}"),
+    })
+}
+
+fn synthesize_structural_shorthand(
+    name: &str,
+    records: &[&DeclarationRecord],
+    safe: bool,
+) -> Option<String> {
+    if is_border_like(name) {
+        return synthesize_border_like(records, safe);
+    }
+    if is_repeated_four_value(name) && records.len() == 4 {
+        return compress_four_values(record_values(records, safe)?);
+    }
+    if (is_repeated_two_value(name) || is_two_value(name)) && records.len() == 2 {
+        let values = record_values(records, safe)?;
+        return Some(if values[0] == values[1] {
+            values[0].clone()
+        } else {
+            values.join(" ")
+        });
+    }
+    synthesize_repeated_pair(name, records, safe)
+}
+
+fn record_values(records: &[&DeclarationRecord], safe: bool) -> Option<Vec<String>> {
+    Some(
+        records
+            .iter()
+            .map(|record| {
+                if safe {
+                    record.safe_value.clone()
+                } else {
+                    record.observable_value.clone()
+                }
+            })
+            .collect(),
+    )
+}
+
+fn compress_four_values(values: Vec<String>) -> Option<String> {
+    let [top, right, bottom, left] = values.as_slice() else {
+        return None;
+    };
+    Some(if top == right && top == bottom && top == left {
+        top.clone()
+    } else if top == bottom && right == left {
+        format!("{top} {right}")
+    } else if right == left {
+        format!("{top} {right} {bottom}")
+    } else {
+        values.join(" ")
+    })
+}
+
+fn synthesize_border_like(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let collect_suffix = |suffix: &str| {
+        records
+            .iter()
+            .filter(|record| record.name.ends_with(suffix))
+            .map(|record| {
+                if safe {
+                    record.safe_value.as_str()
+                } else {
+                    record.observable_value.as_str()
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    let widths = collect_suffix("-width");
+    let styles = collect_suffix("-style");
+    let colors = collect_suffix("-color");
+    let width = uniform_value(&widths)?;
+    let style = uniform_value(&styles)?;
+    let color = uniform_value(&colors)?;
+    let mut components = Vec::new();
+    if width != "medium" {
+        components.push(width);
+    }
+    components.push(style);
+    if color != "currentcolor" {
+        components.push(color);
+    }
+    Some(components.join(" "))
+}
+
+fn uniform_value<'a>(values: &[&'a str]) -> Option<&'a str> {
+    let first = values.first().copied()?;
+    values.iter().all(|value| *value == first).then_some(first)
+}
+
+fn is_border_like(name: &str) -> bool {
+    matches!(
+        name,
+        "border"
+            | "border-block"
+            | "border-block-end"
+            | "border-block-start"
+            | "border-bottom"
+            | "border-inline"
+            | "border-inline-end"
+            | "border-inline-start"
+            | "border-left"
+            | "border-right"
+            | "border-top"
+            | "column-rule"
+            | "row-rule"
+            | "rule"
+    )
+}
+
+fn is_two_value(name: &str) -> bool {
+    matches!(
+        name,
+        "gap"
+            | "grid-gap"
+            | "inset-block"
+            | "inset-inline"
+            | "margin-block"
+            | "margin-inline"
+            | "overscroll-behavior"
+            | "padding-block"
+            | "padding-inline"
+            | "scroll-margin-block"
+            | "scroll-margin-inline"
+            | "scroll-padding-block"
+            | "scroll-padding-inline"
+    )
+}
+
+fn is_repeated_two_value(name: &str) -> bool {
+    matches!(
+        name,
+        "border-block-color"
+            | "border-block-style"
+            | "border-block-width"
+            | "border-inline-color"
+            | "border-inline-style"
+            | "border-inline-width"
+            | "corner-block-end-shape"
+            | "corner-block-start-shape"
+            | "corner-bottom-shape"
+            | "corner-inline-end-shape"
+            | "corner-inline-start-shape"
+            | "corner-left-shape"
+            | "corner-right-shape"
+            | "corner-top-shape"
+    )
+}
+
+fn is_repeated_four_value(name: &str) -> bool {
+    name == "corner-shape"
+}
+
+fn is_css_wide_keyword(value: &str) -> bool {
+    matches!(
+        value,
+        "initial" | "inherit" | "unset" | "revert" | "revert-layer"
     )
 }
 
@@ -389,6 +807,28 @@ pub(crate) fn parse_value(
         });
     }
 
+    if let Some(keyword) = css_wide_keyword(value) {
+        let longhands = shorthand_longhands(name).map(|longhands| {
+            longhands
+                .iter()
+                .map(|longhand| DeclarationRecord {
+                    name: (*longhand).to_owned(),
+                    observable_value: keyword.clone(),
+                    safe_value: keyword.clone(),
+                    important,
+                    pending_substitution: false,
+                    pending_group: None,
+                })
+                .collect()
+        });
+        return Ok(ParsedValue {
+            observable_value: keyword.clone(),
+            safe_value: keyword,
+            longhands,
+            pending_substitution: false,
+        });
+    }
+
     if substitutions.found {
         let property =
             Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
@@ -413,6 +853,18 @@ pub(crate) fn parse_value(
         return Ok(ParsedValue {
             observable_value: grammar.observable_value,
             safe_value: grammar.safe_value,
+            longhands: None,
+            pending_substitution: false,
+        });
+    }
+
+    if shorthand_longhands(name).is_none()
+        && initial_longhand_value(name).is_some_and(|initial| initial == value.trim())
+    {
+        let value = value.trim().to_owned();
+        return Ok(ParsedValue {
+            observable_value: value.clone(),
+            safe_value: value,
             longhands: None,
             pending_substitution: false,
         });
@@ -450,15 +902,21 @@ pub(crate) fn parse_value(
     }
     let inspection = inspection.map_err(map_engine_error)?;
 
-    let Some(longhand_names) = shorthand_longhands(name) else {
+    let Some(longhand_names) = observed_shorthand_longhands(name) else {
+        let mut observable_value = serialize_observable_value(
+            name,
+            value,
+            &inspection.canonical_value,
+            ObservableCategory::Typed,
+        );
+        let mut safe_value = inspection.canonical_value;
+        if observable_value == "0" && is_zero_length_property(name) {
+            observable_value = "0px".to_owned();
+            safe_value = "0px".to_owned();
+        }
         return Ok(ParsedValue {
-            observable_value: serialize_observable_value(
-                name,
-                value,
-                &inspection.canonical_value,
-                ObservableCategory::Typed,
-            ),
-            safe_value: inspection.canonical_value,
+            observable_value,
+            safe_value,
             longhands: None,
             pending_substitution: false,
         });
@@ -519,6 +977,39 @@ pub(crate) fn parse_value(
         longhands: Some(longhands),
         pending_substitution: false,
     })
+}
+
+fn css_wide_keyword(value: &str) -> Option<String> {
+    let keyword = value.trim().to_ascii_lowercase();
+    matches!(
+        keyword.as_str(),
+        "initial" | "inherit" | "unset" | "revert" | "revert-layer"
+    )
+    .then_some(keyword)
+}
+
+fn is_zero_length_property(name: &str) -> bool {
+    matches!(
+        name,
+        "width"
+            | "height"
+            | "min-width"
+            | "min-height"
+            | "max-width"
+            | "max-height"
+            | "padding-top"
+            | "padding-right"
+            | "padding-bottom"
+            | "padding-left"
+            | "margin-top"
+            | "margin-right"
+            | "margin-bottom"
+            | "margin-left"
+            | "top"
+            | "right"
+            | "bottom"
+            | "left"
+    )
 }
 
 fn observable_shorthand_longhand(name: &str, safe_value: &str, shorthand_input: &str) -> String {
@@ -611,6 +1102,20 @@ fn observable_shorthand_override(
 }
 
 fn observable_background_longhand(longhand: &str, input: &str) -> Option<String> {
+    let layers = split_top_level_delimiter(input, b',')?;
+    if longhand == "background-color" {
+        return observable_background_layer_value(longhand, layers.last()?).map(str::to_owned);
+    }
+    Some(
+        layers
+            .iter()
+            .map(|layer| observable_background_layer_value(longhand, layer))
+            .collect::<Option<Vec<_>>>()?
+            .join(", "),
+    )
+}
+
+fn observable_background_layer_value<'a>(longhand: &str, input: &'a str) -> Option<&'a str> {
     let components = split_top_level_whitespace(input)?;
     let color = components
         .iter()
@@ -667,7 +1172,7 @@ fn observable_background_longhand(longhand: &str, input: &str) -> Option<String>
             .unwrap_or("initial"),
         _ => return None,
     };
-    Some(value.to_owned())
+    Some(value)
 }
 
 fn position_components(input: &str) -> Vec<&str> {
@@ -724,6 +1229,22 @@ fn expand_special_shorthand(
     value: &str,
     important: bool,
 ) -> Option<Vec<DeclarationRecord>> {
+    if name == "font" && is_system_font(value) {
+        return Some(
+            SYSTEM_FONT_LONGHANDS
+                .iter()
+                .map(|longhand| DeclarationRecord {
+                    name: (*longhand).to_owned(),
+                    observable_value: String::new(),
+                    safe_value: String::new(),
+                    important,
+                    pending_substitution: false,
+                    pending_group: None,
+                })
+                .collect(),
+        );
+    }
+
     let components = split_top_level_whitespace(value)?;
     let values = match name {
         "columns" | "-webkit-columns" => expand_columns(&components)?,
@@ -777,6 +1298,35 @@ fn expand_special_shorthand(
     records_from_values(name, values, important)
 }
 
+const SYSTEM_FONT_LONGHANDS: &[&str] = &[
+    "font-style",
+    "font-variant-ligatures",
+    "font-variant-caps",
+    "font-variant-numeric",
+    "font-variant-east-asian",
+    "font-variant-alternates",
+    "font-variant-position",
+    "font-variant-emoji",
+    "font-weight",
+    "font-stretch",
+    "font-size",
+    "line-height",
+    "font-family",
+    "font-optical-sizing",
+    "font-size-adjust",
+    "font-kerning",
+    "font-feature-settings",
+    "font-variation-settings",
+    "font-language-override",
+];
+
+fn is_system_font(value: &str) -> bool {
+    matches!(
+        value,
+        "caption" | "icon" | "menu" | "message-box" | "small-caption" | "status-bar"
+    )
+}
+
 fn initial_border_image_value(longhand: &str) -> &'static str {
     match longhand {
         "-webkit-mask-box-image-slice" => "100%",
@@ -792,7 +1342,7 @@ fn records_from_values(
     values: Vec<(&str, String)>,
     important: bool,
 ) -> Option<Vec<DeclarationRecord>> {
-    let longhands = shorthand_longhands(shorthand)?;
+    let longhands = observed_shorthand_longhands(shorthand)?;
     if values.len() != longhands.len() {
         return None;
     }
@@ -1049,6 +1599,9 @@ fn offset_rotate_value(components: &[&str]) -> Option<String> {
 }
 
 fn typed_longhand_value(name: &str, value: &str) -> Option<String> {
+    if let Some(grammar) = parse_browser_grammar_gap(name, value) {
+        return Some(grammar.safe_value);
+    }
     let inspection = inspect_property(name, value).ok()?;
     matches!(
         inspection.kind,
@@ -1384,7 +1937,7 @@ fn expand_structural_shorthand(
     value: &str,
     important: bool,
 ) -> Option<Vec<DeclarationRecord>> {
-    let longhands = shorthand_longhands(name)?;
+    let longhands = observed_shorthand_longhands(name)?;
     let maximum = structural_cardinality(name, longhands.len())?;
     let components = split_top_level_whitespace(value)?;
     if components.is_empty() || components.len() > maximum {

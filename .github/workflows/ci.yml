@@ -85,6 +85,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: rust-host-${{ runner.os }}-1.88-${{ hashFiles('Cargo.lock') }}
+          restore-keys: rust-host-${{ runner.os }}-1.88-
+
+      - name: Build the host native binding
+        run: npm run native:build
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -300,7 +313,7 @@ jobs:
         run: npm run generate:shorthand-grammar && npm run generate:native-grammar
 
       - name: Run browser differential and native reparsing evidence
-        run: npm run test:differential
+        run: npm run native:build && npm run test:differential
 
   package-artifact:
     needs: [changes, native-bindings, native-musl-bindings]
@@ -361,6 +374,7 @@ jobs:
           cache: npm
       - name: Install with the npm bundled with Node 22
         run: npm ci
+      - run: npm run native:build
       - run: npm run test:unit
 
   syntax-engine-future-signal:
@@ -377,6 +391,7 @@ jobs:
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - run: npm install --no-save lightningcss@latest css-tree@latest @csstools/css-tokenizer@latest
+      - run: npm run native:build
       - run: npm run test:unit
       - run: npm run build
 
@@ -492,6 +507,7 @@ jobs:
           cache: npm
       - run: npm install --global npm@11.16.0
       - run: npm ci
+      - run: npm run native:build
       - run: npm run test:unit
 
   performance:
@@ -509,6 +525,7 @@ jobs:
           cache: npm
       - run: npm install --global npm@11.16.0
       - run: npm ci
+      - run: npm run native:build
       - run: npm run build
       - run: node scripts/benchmark.mjs --output candidate-benchmark.json
       - name: Check out base commit as a detached worktree
@@ -516,6 +533,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
         run: git worktree add --detach ../sheetom-baseline "$BASE_SHA"
       - run: npm ci
+        working-directory: ../sheetom-baseline
+      - run: npm run native:build
         working-directory: ../sheetom-baseline
       - run: npm run build
         working-directory: ../sheetom-baseline
