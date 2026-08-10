@@ -17,7 +17,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.2";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -35,6 +35,7 @@ pub enum EngineError {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PropertyParseKind {
     Typed,
+    SheetomTyped,
     Unparsed,
     Custom,
 }
@@ -186,6 +187,24 @@ fn inspect_property_unchecked<'i>(
     name: &'i str,
     value: &'i str,
 ) -> Result<PropertyInspection, EngineError> {
+    if matches!(name, "row-rule" | "rule") {
+        let property =
+            Property::parse_string(PropertyId::from("border"), value, ParserOptions::default())
+                .map_err(|error| EngineError::Parse(error.to_string()))?;
+        if !matches!(property, Property::Border(_)) {
+            return Err(EngineError::Parse(format!(
+                "invalid value for {name}: {value}"
+            )));
+        }
+        let canonical_value = property
+            .value_to_css_string(PrinterOptions::default())
+            .map_err(|error| EngineError::Serialize(error.to_string()))?;
+        return Ok(PropertyInspection {
+            kind: PropertyParseKind::SheetomTyped,
+            canonical_value,
+        });
+    }
+
     let property = Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
         .map_err(|error| EngineError::Parse(error.to_string()))?;
     let kind = match property {
@@ -267,7 +286,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.2");
     }
 
     #[test]
@@ -282,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn distinguishes_typed_unparsed_and_unknown_properties() {
+    fn distinguishes_vendored_and_sheetom_owned_grammars() {
         assert_eq!(
             inspect_property("background-position", "left 10px top 20px"),
             Ok(PropertyInspection {
@@ -292,16 +311,40 @@ mod tests {
         );
         assert_eq!(
             inspect_property("animation", "auto ease 1s foo")
-                .expect("known grammar should remain recoverable")
+                .expect("automatic animation duration should parse")
                 .kind,
-            PropertyParseKind::Unparsed,
+            PropertyParseKind::Typed,
         );
         assert_eq!(
             inspect_property("row-rule", "2px dashed red")
-                .expect("unknown grammar should remain recoverable")
+                .expect("row-rule should use the SheetOM border grammar")
                 .kind,
-            PropertyParseKind::Custom,
+            PropertyParseKind::SheetomTyped,
         );
+        assert_eq!(
+            inspect_property("rule", "2px dashed red")
+                .expect("rule should use the SheetOM border grammar")
+                .kind,
+            PropertyParseKind::SheetomTyped,
+        );
+        assert_eq!(
+            inspect_property("font", "caption")
+                .expect("system font should parse")
+                .kind,
+            PropertyParseKind::Typed,
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_sheetom_owned_grammar() {
+        assert!(matches!(
+            inspect_property("row-rule", "2px dashed solid red"),
+            Err(EngineError::Parse(_))
+        ));
+        assert!(matches!(
+            inspect_property("rule", "2px dashed solid red"),
+            Err(EngineError::Parse(_))
+        ));
     }
 
     #[test]
