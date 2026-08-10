@@ -50,6 +50,7 @@ const ruleParentage = new WeakMap<
 const ruleResourceBudgets = new WeakMap<object, NativeResourceBudget>();
 const sheetResourceBudgets = new WeakMap<object, NativeResourceBudget>();
 const sheetRuleArrays = new WeakMap<object, CSSRule[]>();
+const sheetRuleCounts = new WeakMap<object, number>();
 const functionRuleHeaders = new WeakMap<object, string>();
 const unsignedLongRange = 2 ** 32;
 const pageMarginRuleNames = new Set([
@@ -456,30 +457,39 @@ function assertRuleInsertionBudget(
   owner: CSSRule | CSSStyleSheet,
   inserted: CSSRule,
   resourceBudget: NativeResourceBudget,
-): void {
+): number {
+  const insertedCount = ruleForestSize([inserted]);
   if (owner instanceof CSSStyleSheet) {
     const roots = sheetRuleArrays.get(owner) ?? [];
     assertRuleCountBudget(
-      ruleForestSize(roots) + ruleForestSize([inserted]),
+      (sheetRuleCounts.get(owner) ?? ruleForestSize(roots)) + insertedCount,
       resourceBudget,
     );
-    return;
+    return insertedCount;
   }
   const sheet = owner.parentStyleSheet;
   if (sheet) {
     const roots = sheetRuleArrays.get(sheet) ?? [];
     assertRuleCountBudget(
-      ruleForestSize(roots) + ruleForestSize([inserted]),
+      (sheetRuleCounts.get(sheet) ?? ruleForestSize(roots)) + insertedCount,
       resourceBudget,
     );
-    return;
+    return insertedCount;
   }
   let root = owner;
   while (root.parentRule) root = root.parentRule;
   assertRuleCountBudget(
-    ruleForestSize([root]) + ruleForestSize([inserted]),
+    ruleForestSize([root]) + insertedCount,
     resourceBudget,
   );
+  return insertedCount;
+}
+
+function adjustSheetRuleCount(sheet: CSSStyleSheet | null, difference: number): void {
+  if (!sheet) return;
+  const roots = sheetRuleArrays.get(sheet) ?? [];
+  const current = sheetRuleCounts.get(sheet) ?? ruleForestSize(roots);
+  sheetRuleCounts.set(sheet, current + difference);
 }
 
 /** A rule containing a live nested rule list. */
@@ -530,9 +540,10 @@ export class CSSGroupingRule extends CSSRule {
       rule.selectorText = `& ${rule.selectorText}`;
     }
 
-    assertRuleInsertionBudget(this, rule, resourceBudget);
+    const insertedCount = assertRuleInsertionBudget(this, rule, resourceBudget);
     rules.splice(normalizedIndex, 0, rule);
     attachRuleTree(rule, this, this.parentStyleSheet);
+    adjustSheetRuleCount(this.parentStyleSheet, insertedCount);
     return normalizedIndex;
   }
 
@@ -544,7 +555,11 @@ export class CSSGroupingRule extends CSSRule {
       throw new DOMException("The index is outside the allowed range.", "IndexSizeError");
     }
     const [removed] = rules.splice(normalizedIndex, 1);
-    if (removed) attachRuleTree(removed, null, null);
+    if (removed) {
+      const removedCount = ruleForestSize([removed]);
+      adjustSheetRuleCount(this.parentStyleSheet, -removedCount);
+      attachRuleTree(removed, null, null);
+    }
   }
 
   protected serializeGroup(header: string): string {
@@ -1283,9 +1298,10 @@ export class CSSKeyframesRule extends CSSRule {
     if (!parsed) return;
     const rules = ruleTree.children(this);
     const resourceBudget = ruleResourceBudgets.get(this) ?? defaultResourceBudget;
-    assertRuleInsertionBudget(this, parsed, resourceBudget);
+    const insertedCount = assertRuleInsertionBudget(this, parsed, resourceBudget);
     rules.push(parsed);
     attachRuleTree(parsed, this, this.parentStyleSheet);
+    adjustSheetRuleCount(this.parentStyleSheet, insertedCount);
   }
 
   deleteRule(select: string): void {
@@ -1302,7 +1318,10 @@ export class CSSKeyframesRule extends CSSRule {
     }
     if (index === -1) return;
     const [removed] = rules.splice(index, 1);
-    if (removed) attachRuleTree(removed, null, null);
+    if (removed) {
+      adjustSheetRuleCount(this.parentStyleSheet, -1);
+      attachRuleTree(removed, null, null);
+    }
   }
 
   findRule(select: string): CSSKeyframeRule | null {
@@ -2184,6 +2203,7 @@ export class CSSStyleSheet {
     const resourceBudget = normalizeResourceBudget(normalizedOptions.resourceBudget);
     sheetResourceBudgets.set(this, resourceBudget);
     sheetRuleArrays.set(this, this.#rules);
+    sheetRuleCounts.set(this, 0);
     this.#diagnostics = Boolean(normalizedOptions.diagnostics) ? [] : null;
     this.#constructedBaseURL = normalizedOptions.baseURL === undefined
       ? "about:blank"
@@ -2248,9 +2268,10 @@ export class CSSStyleSheet {
       throw new DOMException("The rule violates stylesheet ordering.", "HierarchyRequestError");
     }
 
-    assertRuleInsertionBudget(this, rule, resourceBudget);
+    const insertedCount = assertRuleInsertionBudget(this, rule, resourceBudget);
     attachRuleTree(rule, null, this);
     this.#rules.splice(normalizedIndex, 0, rule);
+    adjustSheetRuleCount(this, insertedCount);
     return normalizedIndex;
   }
 
@@ -2263,6 +2284,7 @@ export class CSSStyleSheet {
 
     const [removed] = this.#rules.splice(normalizedIndex, 1);
     if (!removed) return;
+    adjustSheetRuleCount(this, -ruleForestSize([removed]));
     attachRuleTree(removed, null, null);
   }
 
@@ -2281,6 +2303,7 @@ export class CSSStyleSheet {
     for (const rule of replacement) attachRuleTree(rule, null, this);
 
     this.#rules.splice(0, this.#rules.length, ...replacement);
+    sheetRuleCounts.set(this, ruleForestSize(replacement));
   }
 
   async replace(cssText: string): Promise<CSSStyleSheet> {
