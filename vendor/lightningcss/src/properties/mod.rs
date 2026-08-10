@@ -161,7 +161,7 @@ use outline::*;
 use overflow::*;
 use size::*;
 use smallvec::{smallvec, SmallVec};
-#[cfg(feature = "into_owned")]
+#[cfg(feature = "serde")]
 use static_self::IntoOwned;
 use svg::*;
 use text::*;
