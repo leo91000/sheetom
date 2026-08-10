@@ -296,6 +296,7 @@ dependencies = [
  "pastey",
  "pathdiff",
  "smallvec",
+ "static-self",
 ]
 
 [[package]]
@@ -401,6 +402,7 @@ dependencies = [
  "precomputed-hash",
  "rustc-hash",
  "smallvec",
+ "static-self",
 ]
 
 [[package]]
@@ -640,6 +642,24 @@ name = "smallvec"
 version = "1.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
+
+[[package]]
+name = "static-self"
+version = "0.1.2"
+dependencies = [
+ "indexmap",
+ "smallvec",
+ "static-self-derive",
+]
+
+[[package]]
+name = "static-self-derive"
+version = "0.1.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "syn"
