@@ -3275,7 +3275,7 @@ export type Declaration =
     }
   | {
       property: "font";
-      value: Font;
+      value: FontShorthand;
     }
   | {
       property: "vertical-align";
@@ -8914,6 +8914,22 @@ export interface Font {
    */
   weight: FontWeight;
 }
+/**
+ * A system font keyword accepted by the font shorthand.
+ */
+export type SystemFont = "caption" | "icon" | "menu" | "message-box" | "small-caption" | "status-bar";
+/**
+ * A value for the font shorthand.
+ */
+export type FontShorthand =
+  | {
+      type: "system";
+      value: SystemFont;
+    }
+  | {
+      type: "explicit";
+      value: Font;
+    };
 /**
  * A value for the [transition](https://www.w3.org/TR/2018/WD-css-transitions-1-20181011/#transition-shorthand-property) property.
  */

@@ -657,25 +657,29 @@ pub enum VerticalAlign {
   Length(LengthPercentage),
 }
 
-define_shorthand! {
-  /// A value for the [font](https://www.w3.org/TR/css-fonts-4/#font-prop) shorthand property.
-  pub struct Font<'i> {
-    /// The font family.
-    #[cfg_attr(feature = "serde", serde(borrow))]
-    family: FontFamily(Vec<FontFamily<'i>>),
-    /// The font size.
-    size: FontSize(FontSize),
-    /// The font style.
-    style: FontStyle(FontStyle),
-    /// The font weight.
-    weight: FontWeight(FontWeight),
-    /// The font stretch.
-    stretch: FontStretch(FontStretch),
-    /// The line height.
-    line_height: LineHeight(LineHeight),
-    /// How the text should be capitalized. Only CSS 2.1 values are supported.
-    variant_caps: FontVariantCaps(FontVariantCaps),
-  }
+/// An explicit value for the [font](https://www.w3.org/TR/css-fonts-4/#font-prop)
+/// shorthand property.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct Font<'i> {
+  /// The font family.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  pub family: Vec<FontFamily<'i>>,
+  /// The font size.
+  pub size: FontSize,
+  /// The font style.
+  pub style: FontStyle,
+  /// The font weight.
+  pub weight: FontWeight,
+  /// The font stretch.
+  pub stretch: FontStretch,
+  /// The line height.
+  pub line_height: LineHeight,
+  /// How the text should be capitalized. Only CSS 2.1 values are supported.
+  pub variant_caps: FontVariantCaps,
 }
 
 impl<'i> Parse<'i> for Font<'i> {
@@ -800,6 +804,157 @@ impl<'i> ToCss for Font<'i> {
   }
 }
 
+enum_property! {
+  /// A system font keyword for the [font](https://drafts.csswg.org/css-fonts-4/#font-prop)
+  /// shorthand property.
+  #[allow(missing_docs)]
+  pub enum SystemFont {
+    Caption,
+    Icon,
+    Menu,
+    MessageBox,
+    SmallCaption,
+    StatusBar,
+  }
+}
+
+/// A value for the [font](https://drafts.csswg.org/css-fonts-4/#font-prop) shorthand property.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum FontShorthand<'i> {
+  /// A system font whose individual longhands are user-agent dependent.
+  System(SystemFont),
+  /// An explicit font shorthand.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  Explicit(Font<'i>),
+}
+
+impl<'i> Parse<'i> for FontShorthand<'i> {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if let Ok(system) = input.try_parse(SystemFont::parse) {
+      return Ok(Self::System(system));
+    }
+
+    Font::parse(input).map(Self::Explicit)
+  }
+}
+
+impl ToCss for FontShorthand<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      Self::System(system) => system.to_css(dest),
+      Self::Explicit(font) => font.to_css(dest),
+    }
+  }
+}
+
+impl<'i> Shorthand<'i> for FontShorthand<'i> {
+  fn from_longhands(
+    declarations: &DeclarationBlock<'i>,
+    _vendor_prefix: crate::vendor_prefix::VendorPrefix,
+  ) -> Option<(Self, bool)> {
+    macro_rules! get {
+      ($id:ident, $variant:ident) => {{
+        let (property, important) = declarations.get(&PropertyId::$id)?;
+        let value = match property.as_ref() {
+          Property::$variant(value) => value.clone(),
+          _ => return None,
+        };
+        (value, important)
+      }};
+    }
+
+    let (family, important) = get!(FontFamily, FontFamily);
+    let (size, size_important) = get!(FontSize, FontSize);
+    let (style, style_important) = get!(FontStyle, FontStyle);
+    let (weight, weight_important) = get!(FontWeight, FontWeight);
+    let (stretch, stretch_important) = get!(FontStretch, FontStretch);
+    let (line_height, line_height_important) = get!(LineHeight, LineHeight);
+    let (variant_caps, variant_caps_important) = get!(FontVariantCaps, FontVariantCaps);
+    if [
+      size_important,
+      style_important,
+      weight_important,
+      stretch_important,
+      line_height_important,
+      variant_caps_important,
+    ]
+    .iter()
+    .any(|candidate| *candidate != important)
+    {
+      return None;
+    }
+
+    Some((
+      Self::Explicit(Font {
+        family,
+        size,
+        style,
+        weight,
+        stretch,
+        line_height,
+        variant_caps,
+      }),
+      important,
+    ))
+  }
+
+  fn longhands(_vendor_prefix: crate::vendor_prefix::VendorPrefix) -> Vec<PropertyId<'static>> {
+    vec![
+      PropertyId::FontFamily,
+      PropertyId::FontSize,
+      PropertyId::FontStyle,
+      PropertyId::FontWeight,
+      PropertyId::FontStretch,
+      PropertyId::LineHeight,
+      PropertyId::FontVariantCaps,
+    ]
+  }
+
+  fn longhand(&self, property_id: &PropertyId) -> Option<Property<'i>> {
+    let Self::Explicit(font) = self else {
+      return None;
+    };
+    match property_id {
+      PropertyId::FontFamily => Some(Property::FontFamily(font.family.clone())),
+      PropertyId::FontSize => Some(Property::FontSize(font.size.clone())),
+      PropertyId::FontStyle => Some(Property::FontStyle(font.style.clone())),
+      PropertyId::FontWeight => Some(Property::FontWeight(font.weight.clone())),
+      PropertyId::FontStretch => Some(Property::FontStretch(font.stretch.clone())),
+      PropertyId::LineHeight => Some(Property::LineHeight(font.line_height.clone())),
+      PropertyId::FontVariantCaps => Some(Property::FontVariantCaps(font.variant_caps.clone())),
+      _ => None,
+    }
+  }
+
+  fn set_longhand(&mut self, property: &Property<'i>) -> Result<(), ()> {
+    let Self::Explicit(font) = self else {
+      return Err(());
+    };
+    match property {
+      Property::FontFamily(value) => font.family = value.clone(),
+      Property::FontSize(value) => font.size = value.clone(),
+      Property::FontStyle(value) => font.style = value.clone(),
+      Property::FontWeight(value) => font.weight = value.clone(),
+      Property::FontStretch(value) => font.stretch = value.clone(),
+      Property::LineHeight(value) => font.line_height = value.clone(),
+      Property::FontVariantCaps(value) => font.variant_caps = value.clone(),
+      _ => return Err(()),
+    }
+    Ok(())
+  }
+}
+
 property_bitflags! {
   #[derive(Default, Debug)]
   struct FontProperty: u8 {
@@ -860,7 +1015,12 @@ impl<'i> PropertyHandler<'i> for FontHandler<'i> {
       FontStretch(val) => property!(stretch, val),
       FontVariantCaps(val) => property!(variant_caps, val),
       LineHeight(val) => property!(line_height, val),
-      Font(val) => {
+      Font(FontShorthand::System(_)) => {
+        self.flush(dest, context);
+        dest.push(property.clone());
+        return true;
+      }
+      Font(FontShorthand::Explicit(val)) => {
         flush!(family, &val.family);
         flush!(size, &val.size);
         flush!(style, &val.style);
@@ -942,7 +1102,7 @@ impl<'i> FontHandler<'i> {
       let caps = variant_caps.unwrap();
       push!(
         Font,
-        Font {
+        FontShorthand::Explicit(Font {
           family: family.unwrap(),
           size: size.unwrap(),
           style: style.unwrap(),
@@ -954,7 +1114,7 @@ impl<'i> FontHandler<'i> {
           } else {
             FontVariantCaps::default()
           },
-        }
+        })
       );
 
       // The `font` property only accepts CSS 2.1 values for font-variant caps.
@@ -1044,5 +1204,40 @@ fn is_font_property(property_id: &PropertyId) -> bool {
     | PropertyId::LineHeight
     | PropertyId::Font => true,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{FontShorthand, SystemFont};
+  use crate::printer::PrinterOptions;
+  use crate::properties::{Property, PropertyId};
+  use crate::stylesheet::ParserOptions;
+
+  #[test]
+  fn parses_all_system_font_keywords_without_inventing_longhand_values() {
+    for (input, expected) in [
+      ("caption", SystemFont::Caption),
+      ("icon", SystemFont::Icon),
+      ("menu", SystemFont::Menu),
+      ("message-box", SystemFont::MessageBox),
+      ("small-caption", SystemFont::SmallCaption),
+      ("status-bar", SystemFont::StatusBar),
+    ] {
+      let property = Property::parse_string(PropertyId::from("font"), input, ParserOptions::default())
+        .expect("system font should parse");
+
+      assert!(matches!(
+        property,
+        Property::Font(FontShorthand::System(ref system)) if *system == expected
+      ));
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("system font should serialize"),
+        input
+      );
+      assert!(property.longhand(&PropertyId::from("font-size")).is_none());
+    }
   }
 }

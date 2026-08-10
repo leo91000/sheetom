@@ -1444,7 +1444,7 @@ define_properties! {
   "font-style": FontStyle(FontStyle),
   "font-variant-caps": FontVariantCaps(FontVariantCaps),
   "line-height": LineHeight(LineHeight),
-  "font": Font(Font<'i>) shorthand: true,
+  "font": Font(FontShorthand<'i>) shorthand: true,
   "vertical-align": VerticalAlign(VerticalAlign),
   "font-palette": FontPalette(DashedIdentReference<'i>),
 
