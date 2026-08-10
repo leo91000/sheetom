@@ -76,6 +76,7 @@
     "pack:test": "node scripts/test-package.mjs",
     "record:shorthand-capabilities": "node scripts/generate-shorthand-capabilities.mjs --record",
     "record:native-grammar": "node scripts/generate-native-grammar-inventory.mjs --record",
+    "record:css-math": "node scripts/record-css-math-capabilities.mjs",
     "record:native-properties": "node scripts/generate-native-property-catalog.mjs --record",
     "record:shorthand-grammar": "node scripts/generate-shorthand-grammar-observations.mjs --record",
     "release:verify": "node scripts/verify-release.mjs",

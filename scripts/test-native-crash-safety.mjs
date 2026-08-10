@@ -59,6 +59,27 @@ const crashCases = [
         expectRejected: true,
     },
     {
+        name: "dimensionless length calculation",
+        source: "width: calc(1px + 1)",
+        public: true,
+        expectRejected: true,
+    },
+    {
+        name: "non-finite dimension calculation",
+        source: "width: calc(infinity * 1px)",
+        public: true,
+    },
+    {
+        name: "cross-dimension static sign calculation",
+        source: "opacity: sign(1px)",
+        public: true,
+    },
+    {
+        name: "mixed word spacing calculation",
+        source: "word-spacing: min(1px, 2%)",
+        public: true,
+    },
+    {
         name: "malformed pending substitution",
         source: "padding: 72px var(--space, var(--space,",
         public: true,

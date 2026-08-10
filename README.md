@@ -165,6 +165,10 @@ Modern or implementation-dependent value grammar is bounded by the checked-in
 [`Value Capability Corpus`](./compatibility/value-capabilities.json). Each
 measured family includes accepted and rejected neighboring cases; browser
 probing occurs only during conformance work and never at runtime.
+The corpus includes 94 CSS Math branches across number, integer, length,
+percentage, angle, and time contexts. It locks dimensional rejection,
+mixed-unit ordering, non-finite constants, function arity, CSSOM observable
+serialization, and atomic failure to Chromium 151.
 
 The corresponding shorthand depth evidence is split between the reviewed
 [`Grammar Branch Contracts`](./compatibility/shorthand-grammar-contracts.json)

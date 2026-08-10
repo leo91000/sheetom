@@ -284,7 +284,14 @@ fn parse_integer_calculation(value: &str) -> Option<GrammarValue> {
     } else if number == f32::NEG_INFINITY {
         "-infinity".to_owned()
     } else {
-        number.to_css_string(PrinterOptions::default()).ok()?
+        let serialized = number.to_css_string(PrinterOptions::default()).ok()?;
+        if serialized.starts_with('.') {
+            format!("0{serialized}")
+        } else if serialized.starts_with("-.") {
+            format!("-0{}", &serialized[1..])
+        } else {
+            serialized
+        }
     };
     let value = format!("calc({number})");
     Some(GrammarValue {
