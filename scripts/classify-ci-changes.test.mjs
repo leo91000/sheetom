@@ -50,6 +50,13 @@ test("native packaging scripts rebuild the native matrix and package artifact", 
     });
 });
 
+test("native and public crash workers run the subprocess safety gate", () => {
+    assert.deepEqual(
+        classifyPaths(["scripts/native-crash-worker.mjs", "scripts/public-crash-worker.mjs"]),
+        { ...none, native: true, package: true },
+    );
+});
+
 test("browser-backed grammar generators still run browser validation", () => {
     assert.deepEqual(classifyPaths(["scripts/generate-native-grammar-inventory.mjs"]), {
         ...none,

@@ -67,14 +67,19 @@ function nativeProtocolError(message: string, cause: unknown): Error {
 }
 
 function isNativeRuleDescription(value: unknown): value is NativeRuleDescription {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Partial<NativeRuleDescription>;
-  if (
-    typeof candidate.kind !== "string"
-    || typeof candidate.prelude !== "string"
-    || typeof candidate.declarations !== "string"
-    || typeof candidate.cssText !== "string"
-    || !Array.isArray(candidate.children)
-  ) return false;
-  return candidate.children.every(isNativeRuleDescription);
+  const pending: unknown[] = [value];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current !== "object" || current === null) return false;
+    const candidate = current as Partial<NativeRuleDescription>;
+    if (
+      typeof candidate.kind !== "string"
+      || typeof candidate.prelude !== "string"
+      || typeof candidate.declarations !== "string"
+      || typeof candidate.cssText !== "string"
+      || !Array.isArray(candidate.children)
+    ) return false;
+    for (const child of candidate.children) pending.push(child);
+  }
+  return true;
 }

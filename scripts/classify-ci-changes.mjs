@@ -20,6 +20,8 @@ const isNativePath = filePath =>
     filePath.startsWith("vendor/lightningcss/") ||
     filePath === "scripts/check-native-public-corpus.mjs" ||
     filePath === "scripts/generate-native-property-catalog.mjs" ||
+    filePath === "scripts/native-crash-worker.mjs" ||
+    filePath === "scripts/public-crash-worker.mjs" ||
     filePath.startsWith("scripts/build-native-") ||
     filePath.startsWith("scripts/collect-native-") ||
     filePath.startsWith("scripts/test-native-");
