@@ -17,7 +17,7 @@ test("documentation changes run only documentation validation", () => {
 });
 
 test("vendored source changes rebuild native validation and package artifacts", () => {
-    assert.deepEqual(classifyPaths(["vendor/lightningcss/src/lib.rs", "fuzz/fuzz_targets/declaration_block.rs"]), {
+    assert.deepEqual(classifyPaths(["vendor/cssparser/src/parser.rs", "vendor/lightningcss/src/lib.rs", "fuzz/fuzz_targets/declaration_block.rs"]), {
         ...none,
         native: true,
         package: true,

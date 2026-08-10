@@ -12,6 +12,8 @@ const sourcePaths = [
   "crates/sheetom-core",
   "crates/sheetom-native",
   "native",
+  "vendor/README.md",
+  "vendor/cssparser",
   "vendor/lightningcss",
 ];
 
@@ -42,6 +44,11 @@ export async function nativeEngineEvidence(repositoryRoot) {
       repository: "https://github.com/parcel-bundler/lightningcss",
       version: "1.33.0",
       commit: "c6a0c3cebf3395635e61075d2c81a96a710d4910",
+    },
+    cssSyntax: {
+      repository: "https://github.com/servo/rust-cssparser",
+      version: "0.37.0",
+      commit: "4c49486494fb24dc01390e3baca9698ef1744c71",
     },
     sourceManifestSha256: sourceManifest.digest("hex"),
     sourceFileCount: files.length,
