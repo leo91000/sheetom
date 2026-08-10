@@ -22,11 +22,14 @@ if (crashCase.mode === "stylesheet-resource") {
     if (crashCase.expectError) {
         assert.ok(thrown instanceof RangeError);
         assert.match(thrown.message, new RegExp(crashCase.expectError, "u"));
-    } else if (thrown !== undefined) {
-        assert.ok(thrown instanceof Error, "deep parser failures must remain controlled errors");
     } else {
+        assert.equal(thrown, undefined, "input at the advertised boundary must remain usable");
         assert.equal(sheet.cssRules.length, 1);
         assert.notEqual(sheet.cssRules[0], previousRule);
+        const ruleCssText = sheet.cssRules[0]?.cssText;
+        assert.match(ruleCssText, /color: red/u);
+        const serialized = sheet.serialize();
+        assert.match(serialized, /color: red/u);
     }
     if (thrown !== undefined) {
         assert.equal(sheet.cssRules.length, 1);

@@ -416,6 +416,87 @@ function indentRuleText(value: string): string {
   return value.split("\n").map(line => `  ${line}`).join("\n");
 }
 
+function serializeLineGroupCssText(root: CSSGroupingRule, header: string): string {
+  type Frame =
+    | { kind: "rule"; rule: CSSRule; depth: number; rootHeader?: string }
+    | { kind: "text"; value: string };
+
+  const chunks: string[] = [];
+  const pending: Frame[] = [{ kind: "rule", rule: root, depth: 0, rootHeader: header }];
+  while (pending.length > 0) {
+    const frame = pending.pop();
+    if (!frame) continue;
+    if (frame.kind === "text") {
+      chunks.push(frame.value);
+      continue;
+    }
+
+    const plan = lineGroupCssTextPlan(frame.rule, frame.rootHeader);
+    if (!plan) {
+      appendRuleTextAtDepth(chunks, frame.rule.cssText, frame.depth);
+      continue;
+    }
+
+    chunks.push("  ".repeat(frame.depth), `${plan.header} {\n`);
+    const contentCount = (plan.declarations === "" ? 0 : 1) + plan.children.length;
+    if (contentCount === 0) {
+      chunks.push("  ".repeat(frame.depth), "}");
+      continue;
+    }
+
+    pending.push({ kind: "text", value: `\n${"  ".repeat(frame.depth)}}` });
+    for (let index = plan.children.length - 1; index >= 0; index -= 1) {
+      const child = plan.children[index];
+      if (!child) continue;
+      pending.push({ kind: "rule", rule: child, depth: frame.depth + 1 });
+      if (index > 0 || plan.declarations !== "") {
+        pending.push({ kind: "text", value: "\n" });
+      }
+    }
+    if (plan.declarations !== "") {
+      pending.push({
+        kind: "text",
+        value: indentRuleTextAtDepth(plan.declarations, frame.depth + 1),
+      });
+    }
+  }
+  return chunks.join("");
+}
+
+function lineGroupCssTextPlan(
+  rule: CSSRule,
+  rootHeader?: string,
+): { header: string; declarations: string; children: readonly CSSRule[] } | null {
+  if (rule instanceof CSSStyleRule) {
+    const children = ruleTree.children(rule);
+    if (children.length === 0) return null;
+    return {
+      header: rootHeader ?? rule.selectorText,
+      declarations: rule.style.cssText,
+      children,
+    };
+  }
+  if (
+    !(rule instanceof CSSGroupingRule)
+    || rule instanceof CSSFunctionRule
+    || rule instanceof CSSPageRule
+  ) return null;
+  return {
+    header: rootHeader ?? groupingRuleHeader(rule),
+    declarations: "",
+    children: ruleTree.children(rule),
+  };
+}
+
+function appendRuleTextAtDepth(chunks: string[], value: string, depth: number): void {
+  chunks.push(indentRuleTextAtDepth(value, depth));
+}
+
+function indentRuleTextAtDepth(value: string, depth: number): string {
+  const indentation = "  ".repeat(depth);
+  return `${indentation}${value.replaceAll("\n", `\n${indentation}`)}`;
+}
+
 function ruleChildren(rule: CSSRule): CSSRule[] {
   if (rule instanceof CSSGroupingRule || rule instanceof CSSKeyframesRule) {
     return ruleTree.children(rule);
@@ -563,9 +644,7 @@ export class CSSGroupingRule extends CSSRule {
   }
 
   protected serializeGroup(header: string): string {
-    const rules = ruleTree.children(this);
-    if (rules.length === 0) return `${header} {\n}`;
-    return `${header} {\n${rules.map(rule => indentRuleText(rule.cssText)).join("\n")}\n}`;
+    return serializeLineGroupCssText(this, header);
   }
 }
 
@@ -1615,11 +1694,7 @@ export class CSSStyleRule extends CSSGroupingRule {
         ? `${this.selectorText} { }`
         : `${this.selectorText} { ${declarations} }`;
     }
-
-    const contents: string[] = [];
-    if (declarations !== "") contents.push(indentRuleText(declarations));
-    for (const child of children) contents.push(indentRuleText(child.cssText));
-    return `${this.selectorText} {\n${contents.join("\n")}\n}`;
+    return serializeLineGroupCssText(this, this.selectorText);
   }
 
   set cssText(_value: string) {}
@@ -1791,7 +1866,7 @@ function createRuleFromNative(
   resourceBudget: NativeResourceBudget,
 ): CSSRule | null {
   return constructWithResourceBudget(() =>
-    createRuleFromNativeInternal(
+    createRuleTreeFromNative(
       description,
       reportDiagnostic,
       preserveImports,
@@ -1801,7 +1876,77 @@ function createRuleFromNative(
   );
 }
 
-function createRuleFromNativeInternal(
+function createRuleTreeFromNative(
+  description: NativeRuleDescription,
+  reportDiagnostic: ReportDiagnostic,
+  preserveImports: boolean,
+  resourceBudget: NativeResourceBudget,
+): CSSRule | null {
+  const root = createRuleShellFromNative(
+    description,
+    reportDiagnostic,
+    preserveImports,
+    resourceBudget,
+  );
+  if (!root) return null;
+
+  const pending = [{ description, rule: root }];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (
+      !current
+      || (
+        !(current.rule instanceof CSSGroupingRule)
+        && !(current.rule instanceof CSSKeyframesRule)
+      )
+    ) continue;
+
+    const children: CSSRule[] = [];
+    const childFrames: { description: NativeRuleDescription; rule: CSSRule }[] = [];
+    for (const childDescription of current.description.children) {
+      if (isNativeMetadataRule(childDescription)) continue;
+      const child = createRuleShellFromNative(
+        childDescription,
+        reportDiagnostic,
+        preserveImports,
+        resourceBudget,
+      );
+      if (!child) continue;
+      if (child instanceof CSSFunctionDeclarations && child.style.length === 0) continue;
+      if (current.rule instanceof CSSKeyframesRule && !(child instanceof CSSKeyframeRule)) {
+        continue;
+      }
+      children.push(child);
+      childFrames.push({ description: childDescription, rule: child });
+    }
+
+    if (current.rule instanceof CSSKeyframesRule) {
+      replaceKeyframeRules(
+        current.rule,
+        children.filter((candidate): candidate is CSSKeyframeRule =>
+          candidate instanceof CSSKeyframeRule
+        ),
+      );
+    } else {
+      replaceGroupingRules(current.rule, children);
+    }
+    for (let index = childFrames.length - 1; index >= 0; index -= 1) {
+      const childFrame = childFrames[index];
+      if (childFrame) pending.push(childFrame);
+    }
+  }
+
+  return root;
+}
+
+function isNativeMetadataRule(description: NativeRuleDescription): boolean {
+  return description.kind === "function-parameter"
+    || description.kind === "property-descriptor"
+    || description.kind === "view-transition-type"
+    || description.kind === "layer-name";
+}
+
+function createRuleShellFromNative(
   description: NativeRuleDescription,
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
@@ -1812,15 +1957,6 @@ function createRuleFromNativeInternal(
     case "style": {
       const style = new CSSStyleRule(description.prelude);
       style.style.cssText = description.declarations;
-      replaceGroupingRules(
-        style,
-        createNativeChildren(
-          description,
-          reportDiagnostic,
-          preserveImports,
-          resourceBudget,
-        ),
-      );
       rule = style;
       break;
     }
@@ -1860,15 +1996,6 @@ function createRuleFromNativeInternal(
     case "page": {
       const page = new CSSPageRule(description.prelude);
       page.style.cssText = description.declarations;
-      replaceGroupingRules(
-        page,
-        createNativeChildren(
-          description,
-          reportDiagnostic,
-          preserveImports,
-          resourceBudget,
-        ),
-      );
       rule = page;
       break;
     }
@@ -1885,15 +2012,7 @@ function createRuleFromNativeInternal(
       break;
     }
     case "keyframes": {
-      const keyframes = new CSSKeyframesRule(description.prelude);
-      const frames = createNativeChildren(
-        description,
-        reportDiagnostic,
-        preserveImports,
-        resourceBudget,
-      ).filter((candidate): candidate is CSSKeyframeRule => candidate instanceof CSSKeyframeRule);
-      replaceKeyframeRules(keyframes, frames);
-      rule = keyframes;
+      rule = new CSSKeyframesRule(description.prelude);
       break;
     }
     case "keyframe": {
@@ -2021,22 +2140,6 @@ function createRuleFromNativeInternal(
   }
 
   ruleDiagnostics.set(rule, reportDiagnostic);
-  if (
-    rule instanceof CSSGroupingRule
-    && !(rule instanceof CSSStyleRule)
-    && !(rule instanceof CSSPageRule)
-    && !(rule instanceof CSSKeyframesRule)
-  ) {
-    replaceGroupingRules(
-      rule,
-      createNativeChildren(
-        description,
-        reportDiagnostic,
-        preserveImports,
-        resourceBudget,
-      ),
-    );
-  }
   return rule;
 }
 
@@ -2057,32 +2160,6 @@ function hydrateCounterStyleDescriptors(
   )) {
     rule.setParsedDescriptor(descriptor.name, descriptor.value);
   }
-}
-
-function createNativeChildren(
-  description: NativeRuleDescription,
-  reportDiagnostic: ReportDiagnostic,
-  preserveImports: boolean,
-  resourceBudget: NativeResourceBudget,
-): CSSRule[] {
-  const children: CSSRule[] = [];
-  for (const child of description.children) {
-    if (
-      child.kind === "function-parameter"
-      || child.kind === "property-descriptor"
-      || child.kind === "view-transition-type"
-      || child.kind === "layer-name"
-    ) continue;
-    const rule = createRuleFromNative(
-      child,
-      reportDiagnostic,
-      preserveImports,
-      resourceBudget,
-    );
-    if (rule instanceof CSSFunctionDeclarations && rule.style.length === 0) continue;
-    if (rule) children.push(rule);
-  }
-  return children;
 }
 
 function parseStrictRule(
