@@ -9,6 +9,7 @@ mod declaration_state;
 mod font_face;
 mod function_rule;
 mod observable;
+mod recovered_value;
 mod rules;
 mod shorthand;
 mod syntax;
@@ -25,6 +26,12 @@ pub use counter_style::{
 pub use declaration_state::{
     DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
     PendingSubstitutionGroup,
+};
+#[doc(hidden)]
+pub use recovered_value::{
+    recover_component_values, recover_component_values_with_limits, RecoveredBlockDelimiter,
+    RecoveredClosure, RecoveredComponentKind, RecoveredComponentValue, RecoveredToken,
+    RecoveredTokenKind, RecoveredTokenTermination, RecoveredValue, SourceSpan,
 };
 pub use rules::{
     normalize_media_text, normalize_media_text_with_limits, normalize_selector_text,
@@ -57,7 +64,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.13";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.14";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -439,7 +446,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.13");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.14");
     }
 
     #[test]
