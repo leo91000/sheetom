@@ -1,48 +1,914 @@
 {
   "$schema": "./schemas/value-capability-corpus.schema.json",
   "schemaVersion": 1,
-  "baseline": { "browser": "chromium", "major": 151 },
+  "baseline": {
+    "browser": "chromium",
+    "major": 151
+  },
   "cases": [
-    { "id": "grid.subgrid", "property": "grid-template-columns", "input": "subgrid", "accepted": true, "observable": "subgrid" },
-    { "id": "grid.invalid-subgrid-track", "property": "grid-template-columns", "input": "subgrid 1px", "accepted": false },
-    { "id": "anchor.anchor-size", "property": "width", "input": "anchor-size(width)", "accepted": true, "observable": "anchor-size(width)" },
-    { "id": "anchor.invalid-anchor-size", "property": "width", "input": "anchor-size(width,)", "accepted": false },
-    { "id": "color.contrast-color", "property": "color", "input": "contrast-color(red)", "accepted": true, "observable": "contrast-color(red)" },
-    { "id": "color.contrast-in-light-dark", "property": "color", "input": "light-dark(contrast-color(red), blue)", "accepted": true, "observable": "light-dark(contrast-color(red), blue)" },
-    { "id": "color.contrast-in-dynamic-mix", "property": "color", "input": "color-mix(in srgb, contrast-color(red), currentColor)", "accepted": true, "observable": "color-mix(in srgb, contrast-color(red), currentcolor)" },
-    { "id": "color.contrast-in-scrollbar-pair", "property": "scrollbar-color", "input": "contrast-color(red) blue", "accepted": true, "observable": "contrast-color(red) blue" },
-    { "id": "color.contrast-in-gradient", "property": "background-image", "input": "linear-gradient(contrast-color(red), blue)", "accepted": true, "observable": "linear-gradient(contrast-color(red), blue)" },
-    { "id": "color.invalid-contrast-color", "property": "color", "input": "contrast-color()", "accepted": false },
-    { "id": "color.invalid-contrast-color-pair", "property": "color", "input": "contrast-color(red blue)", "accepted": false },
-    { "id": "integer.calc-folding", "property": "z-index", "input": "calc(1 + 1)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.calc-canonical", "property": "z-index", "input": "calc(2)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.calc-product", "property": "z-index", "input": "calc(2 * (1 + 1))", "accepted": true, "observable": "calc(4)" },
-    { "id": "integer.math-min", "property": "z-index", "input": "min(1, 2)", "accepted": true, "observable": "calc(1)" },
-    { "id": "integer.math-max", "property": "z-index", "input": "max(1, 2)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.math-clamp", "property": "z-index", "input": "clamp(1, 2, 3)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.math-round", "property": "z-index", "input": "round(1.5, 1)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.math-rem", "property": "z-index", "input": "rem(5, 2)", "accepted": true, "observable": "calc(1)" },
-    { "id": "integer.math-mod", "property": "z-index", "input": "mod(5, 2)", "accepted": true, "observable": "calc(1)" },
-    { "id": "integer.math-abs", "property": "z-index", "input": "abs(-2)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.math-sign", "property": "z-index", "input": "sign(-2)", "accepted": true, "observable": "calc(-1)" },
-    { "id": "integer.math-hypot", "property": "z-index", "input": "hypot(3, 4)", "accepted": true, "observable": "calc(5)" },
-    { "id": "integer.math-sin", "property": "z-index", "input": "sin(0)", "accepted": true, "observable": "calc(0)" },
-    { "id": "integer.math-cos", "property": "z-index", "input": "cos(0)", "accepted": true, "observable": "calc(1)" },
-    { "id": "integer.math-tan", "property": "z-index", "input": "tan(0)", "accepted": true, "observable": "calc(0)" },
-    { "id": "integer.math-pow", "property": "z-index", "input": "pow(2, 3)", "accepted": true, "observable": "calc(8)" },
-    { "id": "integer.math-sqrt", "property": "z-index", "input": "sqrt(4)", "accepted": true, "observable": "calc(2)" },
-    { "id": "integer.math-log", "property": "z-index", "input": "log(1)", "accepted": true, "observable": "calc(0)" },
-    { "id": "integer.math-exp", "property": "z-index", "input": "exp(0)", "accepted": true, "observable": "calc(1)" },
-    { "id": "integer.math-pi", "property": "z-index", "input": "calc(pi)", "accepted": true, "observable": "calc(3.14159)" },
-    { "id": "integer.math-infinity", "property": "z-index", "input": "calc(infinity)", "accepted": true, "observable": "calc(infinity)" },
-    { "id": "integer.math-nan", "property": "z-index", "input": "calc(NaN)", "accepted": true, "observable": "calc(NaN)" },
-    { "id": "integer.invalid-dimensional-calc", "property": "z-index", "input": "calc(1px)", "accepted": false },
-    { "id": "integer.invalid-empty-calc", "property": "z-index", "input": "calc()", "accepted": false },
-    { "id": "integer.invalid-unknown-math", "property": "z-index", "input": "unknown(1)", "accepted": false },
-    { "id": "integer.invalid-angle-math", "property": "z-index", "input": "atan2(1, 2)", "accepted": false },
-    { "id": "content.pending-var-eof", "property": "content", "input": "var(--x", "accepted": true, "observable": "var(--x" },
-    { "id": "content.typed-attr-target-text", "property": "content", "input": "target-text(attr(href url))", "accepted": true, "observable": "target-text(attr(href url))" },
-    { "id": "content.invalid-leader", "property": "content", "input": "leader(.)", "accepted": false },
-    { "id": "content.unsupported-url-target-text", "property": "content", "input": "target-text(url(#x))", "accepted": false }
+    {
+      "id": "grid.subgrid",
+      "property": "grid-template-columns",
+      "input": "subgrid",
+      "accepted": true,
+      "observable": "subgrid"
+    },
+    {
+      "id": "grid.invalid-subgrid-track",
+      "property": "grid-template-columns",
+      "input": "subgrid 1px",
+      "accepted": false
+    },
+    {
+      "id": "anchor.anchor-size",
+      "property": "width",
+      "input": "anchor-size(width)",
+      "accepted": true,
+      "observable": "anchor-size(width)"
+    },
+    {
+      "id": "anchor.invalid-anchor-size",
+      "property": "width",
+      "input": "anchor-size(width,)",
+      "accepted": false
+    },
+    {
+      "id": "color.contrast-color",
+      "property": "color",
+      "input": "contrast-color(red)",
+      "accepted": true,
+      "observable": "contrast-color(red)"
+    },
+    {
+      "id": "color.contrast-in-light-dark",
+      "property": "color",
+      "input": "light-dark(contrast-color(red), blue)",
+      "accepted": true,
+      "observable": "light-dark(contrast-color(red), blue)"
+    },
+    {
+      "id": "color.contrast-in-dynamic-mix",
+      "property": "color",
+      "input": "color-mix(in srgb, contrast-color(red), currentColor)",
+      "accepted": true,
+      "observable": "color-mix(in srgb, contrast-color(red), currentcolor)"
+    },
+    {
+      "id": "color.contrast-in-scrollbar-pair",
+      "property": "scrollbar-color",
+      "input": "contrast-color(red) blue",
+      "accepted": true,
+      "observable": "contrast-color(red) blue"
+    },
+    {
+      "id": "color.contrast-in-gradient",
+      "property": "background-image",
+      "input": "linear-gradient(contrast-color(red), blue)",
+      "accepted": true,
+      "observable": "linear-gradient(contrast-color(red), blue)"
+    },
+    {
+      "id": "color.invalid-contrast-color",
+      "property": "color",
+      "input": "contrast-color()",
+      "accepted": false
+    },
+    {
+      "id": "color.invalid-contrast-color-pair",
+      "property": "color",
+      "input": "contrast-color(red blue)",
+      "accepted": false
+    },
+    {
+      "id": "integer.calc-folding",
+      "property": "z-index",
+      "input": "calc(1 + 1)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.calc-canonical",
+      "property": "z-index",
+      "input": "calc(2)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.calc-product",
+      "property": "z-index",
+      "input": "calc(2 * (1 + 1))",
+      "accepted": true,
+      "observable": "calc(4)"
+    },
+    {
+      "id": "integer.math-min",
+      "property": "z-index",
+      "input": "min(1, 2)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "integer.math-max",
+      "property": "z-index",
+      "input": "max(1, 2)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.math-clamp",
+      "property": "z-index",
+      "input": "clamp(1, 2, 3)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.math-round",
+      "property": "z-index",
+      "input": "round(1.5, 1)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.math-rem",
+      "property": "z-index",
+      "input": "rem(5, 2)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "integer.math-mod",
+      "property": "z-index",
+      "input": "mod(5, 2)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "integer.math-abs",
+      "property": "z-index",
+      "input": "abs(-2)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.math-sign",
+      "property": "z-index",
+      "input": "sign(-2)",
+      "accepted": true,
+      "observable": "calc(-1)"
+    },
+    {
+      "id": "integer.math-hypot",
+      "property": "z-index",
+      "input": "hypot(3, 4)",
+      "accepted": true,
+      "observable": "calc(5)"
+    },
+    {
+      "id": "integer.math-sin",
+      "property": "z-index",
+      "input": "sin(0)",
+      "accepted": true,
+      "observable": "calc(0)"
+    },
+    {
+      "id": "integer.math-cos",
+      "property": "z-index",
+      "input": "cos(0)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "integer.math-tan",
+      "property": "z-index",
+      "input": "tan(0)",
+      "accepted": true,
+      "observable": "calc(0)"
+    },
+    {
+      "id": "integer.math-pow",
+      "property": "z-index",
+      "input": "pow(2, 3)",
+      "accepted": true,
+      "observable": "calc(8)"
+    },
+    {
+      "id": "integer.math-sqrt",
+      "property": "z-index",
+      "input": "sqrt(4)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "integer.math-log",
+      "property": "z-index",
+      "input": "log(1)",
+      "accepted": true,
+      "observable": "calc(0)"
+    },
+    {
+      "id": "integer.math-exp",
+      "property": "z-index",
+      "input": "exp(0)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "integer.math-pi",
+      "property": "z-index",
+      "input": "calc(pi)",
+      "accepted": true,
+      "observable": "calc(3.14159)"
+    },
+    {
+      "id": "integer.math-infinity",
+      "property": "z-index",
+      "input": "calc(infinity)",
+      "accepted": true,
+      "observable": "calc(infinity)"
+    },
+    {
+      "id": "integer.math-nan",
+      "property": "z-index",
+      "input": "calc(NaN)",
+      "accepted": true,
+      "observable": "calc(NaN)"
+    },
+    {
+      "id": "integer.invalid-dimensional-calc",
+      "property": "z-index",
+      "input": "calc(1px)",
+      "accepted": false
+    },
+    {
+      "id": "integer.invalid-empty-calc",
+      "property": "z-index",
+      "input": "calc()",
+      "accepted": false
+    },
+    {
+      "id": "integer.invalid-unknown-math",
+      "property": "z-index",
+      "input": "unknown(1)",
+      "accepted": false
+    },
+    {
+      "id": "integer.invalid-angle-math",
+      "property": "z-index",
+      "input": "atan2(1, 2)",
+      "accepted": false
+    },
+    {
+      "id": "content.pending-var-eof",
+      "property": "content",
+      "input": "var(--x",
+      "accepted": true,
+      "observable": "var(--x"
+    },
+    {
+      "id": "content.typed-attr-target-text",
+      "property": "content",
+      "input": "target-text(attr(href url))",
+      "accepted": true,
+      "observable": "target-text(attr(href url))"
+    },
+    {
+      "id": "content.invalid-leader",
+      "property": "content",
+      "input": "leader(.)",
+      "accepted": false
+    },
+    {
+      "id": "content.unsupported-url-target-text",
+      "property": "content",
+      "input": "target-text(url(#x))",
+      "accepted": false
+    },
+    {
+      "id": "math.width.number-result",
+      "property": "width",
+      "input": "calc(1)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.zero-number-result",
+      "property": "width",
+      "input": "calc(0)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.length-result",
+      "property": "width",
+      "input": "calc(1px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.width.percentage-result",
+      "property": "width",
+      "input": "calc(1%)",
+      "accepted": true,
+      "observable": "calc(1%)"
+    },
+    {
+      "id": "math.width.mixed-sum-dimension-first",
+      "property": "width",
+      "input": "calc(1px + 1%)",
+      "accepted": true,
+      "observable": "calc(1% + 1px)"
+    },
+    {
+      "id": "math.width.mixed-sum-percentage-first",
+      "property": "width",
+      "input": "calc(1% + 1px)",
+      "accepted": true,
+      "observable": "calc(1% + 1px)"
+    },
+    {
+      "id": "math.width.invalid-dimension-number-sum",
+      "property": "width",
+      "input": "calc(1px + 1)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-number-dimension-sum",
+      "property": "width",
+      "input": "calc(1 + 1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.product-dimension-first",
+      "property": "width",
+      "input": "calc(1px * 2)",
+      "accepted": true,
+      "observable": "calc(2px)"
+    },
+    {
+      "id": "math.width.product-number-first",
+      "property": "width",
+      "input": "calc(2 * 1px)",
+      "accepted": true,
+      "observable": "calc(2px)"
+    },
+    {
+      "id": "math.width.division-by-number",
+      "property": "width",
+      "input": "calc(1px / 2)",
+      "accepted": true,
+      "observable": "calc(0.5px)"
+    },
+    {
+      "id": "math.width.invalid-division-by-dimension",
+      "property": "width",
+      "input": "calc(1px / 1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.min-same-dimension",
+      "property": "width",
+      "input": "min(1px, 2px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.width.invalid-min-number",
+      "property": "width",
+      "input": "min(1px, 2)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.min-mixed-percentage",
+      "property": "width",
+      "input": "min(1px, 2%)",
+      "accepted": true,
+      "observable": "min(1px, 2%)"
+    },
+    {
+      "id": "math.width.max-mixed-percentage",
+      "property": "width",
+      "input": "max(1%, 2px)",
+      "accepted": true,
+      "observable": "max(1%, 2px)"
+    },
+    {
+      "id": "math.width.clamp-mixed-percentage",
+      "property": "width",
+      "input": "clamp(1px, 2%, 3px)",
+      "accepted": true,
+      "observable": "clamp(1px, 2%, 3px)"
+    },
+    {
+      "id": "math.width.invalid-clamp-number",
+      "property": "width",
+      "input": "clamp(1px, 2, 3px)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.round-same-dimension",
+      "property": "width",
+      "input": "round(1px, 2px)",
+      "accepted": true,
+      "observable": "calc(2px)"
+    },
+    {
+      "id": "math.width.invalid-round-number-step",
+      "property": "width",
+      "input": "round(1px, 2)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.rem-same-dimension",
+      "property": "width",
+      "input": "rem(5px, 2px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.width.mod-same-dimension",
+      "property": "width",
+      "input": "mod(5px, 2px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.width.abs-dimension",
+      "property": "width",
+      "input": "abs(-2px)",
+      "accepted": true,
+      "observable": "calc(2px)"
+    },
+    {
+      "id": "math.width.invalid-sign-number-result",
+      "property": "width",
+      "input": "sign(-2px)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.hypot-same-dimension",
+      "property": "width",
+      "input": "hypot(3px, 4px)",
+      "accepted": true,
+      "observable": "calc(5px)"
+    },
+    {
+      "id": "math.width.invalid-hypot-number",
+      "property": "width",
+      "input": "hypot(3px, 4)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-sin-number-result",
+      "property": "width",
+      "input": "sin(0)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-sin-angle-number-result",
+      "property": "width",
+      "input": "sin(90deg)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-atan2-angle-result",
+      "property": "width",
+      "input": "atan2(1px, 1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-pow-number-result",
+      "property": "width",
+      "input": "pow(2, 3)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-sqrt-number-result",
+      "property": "width",
+      "input": "sqrt(4)",
+      "accepted": false
+    },
+    {
+      "id": "math.width.positive-infinity-dimension",
+      "property": "width",
+      "input": "calc(infinity * 1px)",
+      "accepted": true,
+      "observable": "calc(infinity * 1px)"
+    },
+    {
+      "id": "math.width.negative-infinity-dimension",
+      "property": "width",
+      "input": "calc(-infinity * 1px)",
+      "accepted": true,
+      "observable": "calc(-infinity * 1px)"
+    },
+    {
+      "id": "math.width.positive-infinity-percentage",
+      "property": "width",
+      "input": "calc(infinity * 1%)",
+      "accepted": true,
+      "observable": "calc(infinity * 1%)"
+    },
+    {
+      "id": "math.width.nan-dimension",
+      "property": "width",
+      "input": "calc(NaN * 1px)",
+      "accepted": true,
+      "observable": "calc(NaN * 1px)"
+    },
+    {
+      "id": "math.width.nested-mixed-product",
+      "property": "width",
+      "input": "calc(2 * (1px + 1%))",
+      "accepted": true,
+      "observable": "calc(2% + 2px)"
+    },
+    {
+      "id": "math.width.round-up-dimension",
+      "property": "width",
+      "input": "round(up, 1px, 2px)",
+      "accepted": true,
+      "observable": "calc(2px)"
+    },
+    {
+      "id": "math.width.negative-rem-dimension",
+      "property": "width",
+      "input": "rem(-5px, 2px)",
+      "accepted": true,
+      "observable": "calc(-1px)"
+    },
+    {
+      "id": "math.width.negative-mod-dimension",
+      "property": "width",
+      "input": "mod(-5px, 2px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.width.invalid-empty-min",
+      "property": "width",
+      "input": "min()",
+      "accepted": false
+    },
+    {
+      "id": "math.width.invalid-short-clamp",
+      "property": "width",
+      "input": "clamp(1px, 2px)",
+      "accepted": false
+    },
+    {
+      "id": "math.letter-spacing.number-result",
+      "property": "letter-spacing",
+      "input": "calc(1)",
+      "accepted": false
+    },
+    {
+      "id": "math.letter-spacing.length-result",
+      "property": "letter-spacing",
+      "input": "calc(1px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.letter-spacing.percentage-result",
+      "property": "letter-spacing",
+      "input": "calc(1%)",
+      "accepted": true,
+      "observable": "calc(1%)"
+    },
+    {
+      "id": "math.letter-spacing.mixed-sum",
+      "property": "letter-spacing",
+      "input": "calc(1px + 1%)",
+      "accepted": true,
+      "observable": "calc(1% + 1px)"
+    },
+    {
+      "id": "math.letter-spacing.min-length",
+      "property": "letter-spacing",
+      "input": "min(1px, 2px)",
+      "accepted": true,
+      "observable": "calc(1px)"
+    },
+    {
+      "id": "math.letter-spacing.min-mixed-percentage",
+      "property": "letter-spacing",
+      "input": "min(1px, 2%)",
+      "accepted": true,
+      "observable": "min(1px, 2%)"
+    },
+    {
+      "id": "math.letter-spacing.invalid-sign-number-result",
+      "property": "letter-spacing",
+      "input": "sign(1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.letter-spacing.hypot-length",
+      "property": "letter-spacing",
+      "input": "hypot(3px, 4px)",
+      "accepted": true,
+      "observable": "calc(5px)"
+    },
+    {
+      "id": "math.word-spacing.percentage-result",
+      "property": "word-spacing",
+      "input": "calc(1%)",
+      "accepted": true,
+      "observable": "calc(1%)"
+    },
+    {
+      "id": "math.word-spacing.mixed-sum",
+      "property": "word-spacing",
+      "input": "calc(1px + 1%)",
+      "accepted": true,
+      "observable": "calc(1% + 1px)"
+    },
+    {
+      "id": "math.word-spacing.min-mixed-percentage",
+      "property": "word-spacing",
+      "input": "min(1px, 2%)",
+      "accepted": true,
+      "observable": "min(1px, 2%)"
+    },
+    {
+      "id": "math.transition-duration.number-result",
+      "property": "transition-duration",
+      "input": "calc(1)",
+      "accepted": false
+    },
+    {
+      "id": "math.transition-duration.time-result",
+      "property": "transition-duration",
+      "input": "calc(1s)",
+      "accepted": true,
+      "observable": "calc(1s)"
+    },
+    {
+      "id": "math.transition-duration.invalid-time-number-sum",
+      "property": "transition-duration",
+      "input": "calc(1s + 1)",
+      "accepted": false
+    },
+    {
+      "id": "math.transition-duration.mixed-time-units",
+      "property": "transition-duration",
+      "input": "calc(1s + 1ms)",
+      "accepted": true,
+      "observable": "calc(1.001s)"
+    },
+    {
+      "id": "math.transition-duration.min-time",
+      "property": "transition-duration",
+      "input": "min(1s, 2s)",
+      "accepted": true,
+      "observable": "calc(1s)"
+    },
+    {
+      "id": "math.transition-duration.invalid-min-number",
+      "property": "transition-duration",
+      "input": "min(1s, 2)",
+      "accepted": false
+    },
+    {
+      "id": "math.transition-duration.invalid-sign-number-result",
+      "property": "transition-duration",
+      "input": "sign(1s)",
+      "accepted": false
+    },
+    {
+      "id": "math.transition-duration.hypot-time",
+      "property": "transition-duration",
+      "input": "hypot(3s, 4s)",
+      "accepted": true,
+      "observable": "calc(5s)"
+    },
+    {
+      "id": "math.rotate.number-result",
+      "property": "rotate",
+      "input": "calc(1)",
+      "accepted": false
+    },
+    {
+      "id": "math.rotate.angle-result",
+      "property": "rotate",
+      "input": "calc(1deg)",
+      "accepted": true,
+      "observable": "calc(1deg)"
+    },
+    {
+      "id": "math.rotate.invalid-angle-number-sum",
+      "property": "rotate",
+      "input": "calc(1deg + 1)",
+      "accepted": false
+    },
+    {
+      "id": "math.rotate.mixed-angle-units",
+      "property": "rotate",
+      "input": "calc(1deg + 1rad)",
+      "accepted": true,
+      "observable": "calc(58.2958deg)"
+    },
+    {
+      "id": "math.rotate.min-angle",
+      "property": "rotate",
+      "input": "min(1deg, 2deg)",
+      "accepted": true,
+      "observable": "calc(1deg)"
+    },
+    {
+      "id": "math.rotate.invalid-min-number",
+      "property": "rotate",
+      "input": "min(1deg, 2)",
+      "accepted": false
+    },
+    {
+      "id": "math.rotate.invalid-sign-number-result",
+      "property": "rotate",
+      "input": "sign(1deg)",
+      "accepted": false
+    },
+    {
+      "id": "math.rotate.atan2-angle-result",
+      "property": "rotate",
+      "input": "atan2(1, 1)",
+      "accepted": true,
+      "observable": "calc(45deg)"
+    },
+    {
+      "id": "math.opacity.number-result",
+      "property": "opacity",
+      "input": "calc(1)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.opacity.invalid-length-result",
+      "property": "opacity",
+      "input": "calc(1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.opacity.sign-length-number-result",
+      "property": "opacity",
+      "input": "sign(1px)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.opacity.sin-angle-number-result",
+      "property": "opacity",
+      "input": "sin(90deg)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.opacity.invalid-atan2-angle-result",
+      "property": "opacity",
+      "input": "atan2(1px, 1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.opacity.pow-number-result",
+      "property": "opacity",
+      "input": "pow(2, 3)",
+      "accepted": true,
+      "observable": "calc(8)"
+    },
+    {
+      "id": "math.opacity.number-division",
+      "property": "opacity",
+      "input": "calc(1 / 2)",
+      "accepted": true,
+      "observable": "calc(0.5)"
+    },
+    {
+      "id": "math.opacity.positive-infinity",
+      "property": "opacity",
+      "input": "calc(infinity)",
+      "accepted": true,
+      "observable": "calc(infinity)"
+    },
+    {
+      "id": "math.opacity.negative-infinity",
+      "property": "opacity",
+      "input": "calc(-infinity)",
+      "accepted": true,
+      "observable": "calc(-infinity)"
+    },
+    {
+      "id": "math.opacity.nan",
+      "property": "opacity",
+      "input": "calc(NaN)",
+      "accepted": true,
+      "observable": "calc(NaN)"
+    },
+    {
+      "id": "math.opacity.sign-negative-absolute-length",
+      "property": "opacity",
+      "input": "sign(-1px)",
+      "accepted": true,
+      "observable": "calc(-1)"
+    },
+    {
+      "id": "math.opacity.sign-absolute-length",
+      "property": "opacity",
+      "input": "sign(1cm)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.opacity.sign-time",
+      "property": "opacity",
+      "input": "sign(1s)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.opacity.sign-angle",
+      "property": "opacity",
+      "input": "sign(1deg)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.z-index.number-result",
+      "property": "z-index",
+      "input": "calc(1)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.z-index.fractional-number-result",
+      "property": "z-index",
+      "input": "calc(1.5)",
+      "accepted": true,
+      "observable": "calc(1.5)"
+    },
+    {
+      "id": "math.z-index.invalid-length-result",
+      "property": "z-index",
+      "input": "calc(1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.z-index.sign-length-number-result",
+      "property": "z-index",
+      "input": "sign(1px)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.z-index.sin-angle-number-result",
+      "property": "z-index",
+      "input": "sin(90deg)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.z-index.invalid-atan2-angle-result",
+      "property": "z-index",
+      "input": "atan2(1px, 1px)",
+      "accepted": false
+    },
+    {
+      "id": "math.z-index.pow-number-result",
+      "property": "z-index",
+      "input": "pow(2, 3)",
+      "accepted": true,
+      "observable": "calc(8)"
+    },
+    {
+      "id": "math.z-index.number-division",
+      "property": "z-index",
+      "input": "calc(1 / 2)",
+      "accepted": true,
+      "observable": "calc(0.5)"
+    },
+    {
+      "id": "math.z-index.negative-number-division",
+      "property": "z-index",
+      "input": "calc(-1 / 2)",
+      "accepted": true,
+      "observable": "calc(-0.5)"
+    },
+    {
+      "id": "math.z-index.sign-negative-absolute-length",
+      "property": "z-index",
+      "input": "sign(-1px)",
+      "accepted": true,
+      "observable": "calc(-1)"
+    },
+    {
+      "id": "math.z-index.sign-time",
+      "property": "z-index",
+      "input": "sign(1s)",
+      "accepted": true,
+      "observable": "calc(1)"
+    },
+    {
+      "id": "math.z-index.sign-angle",
+      "property": "z-index",
+      "input": "sign(1deg)",
+      "accepted": true,
+      "observable": "calc(1)"
+    }
   ]
 }

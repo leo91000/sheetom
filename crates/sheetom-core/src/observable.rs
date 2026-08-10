@@ -45,8 +45,9 @@ pub(crate) fn serialize_observable_value(
         }
     }
     if starts_math_function(&recovered.closed) {
-        return if safe_value.starts_with("calc(") {
-            safe_value.to_owned()
+        let safe_value = canonicalize_leading_decimal(safe_value);
+        return if starts_math_function(&safe_value) {
+            safe_value
         } else {
             format!("calc({safe_value})")
         };
@@ -476,9 +477,16 @@ fn serialize_integer_calculation(value: &str) -> Option<String> {
 }
 
 fn starts_math_function(value: &str) -> bool {
-    ["calc(", "min(", "max(", "clamp("]
-        .iter()
-        .any(|prefix| value.to_ascii_lowercase().starts_with(prefix))
+    let mut tokenizer = TokenizerWithSpans::new(value);
+    let Some(Token::Function(function)) = next_significant_token(&mut tokenizer) else {
+        return false;
+    };
+    [
+        "calc", "min", "max", "clamp", "round", "rem", "mod", "abs", "sign", "hypot", "sin", "cos",
+        "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "log", "exp",
+    ]
+    .iter()
+    .any(|candidate| function.eq_ignore_ascii_case(candidate))
 }
 
 #[cfg(test)]
@@ -499,6 +507,24 @@ mod tests {
             serialize_observable_value("width", "calc(1px", "1px", ObservableCategory::Typed),
             "calc(1px)"
         );
+    }
+
+    #[test]
+    fn serializes_typed_math_like_chromium_cssom() {
+        for (input, safe, expected) in [
+            ("calc(1px / 2)", ".5px", "calc(0.5px)"),
+            ("min(1px, 2%)", "min(1px, 2%)", "min(1px, 2%)"),
+            ("round(1px, 2px)", "2px", "calc(2px)"),
+            ("hypot(3px, 4px)", "5px", "calc(5px)"),
+            ("atan2(1, 1)", "45deg", "calc(45deg)"),
+            ("pow(2, 3)", "8", "calc(8)"),
+        ] {
+            assert_eq!(
+                serialize_observable_value("width", input, safe, ObservableCategory::Typed),
+                expected,
+                "{input}"
+            );
+        }
     }
 
     #[test]

@@ -18,6 +18,10 @@ const relativeColorCorpus = JSON.parse(await readFile(
     path.join(repositoryRoot, "compatibility/relative-color-capabilities.json"),
     "utf8",
 ));
+const valueCapabilityCorpus = JSON.parse(await readFile(
+    path.join(repositoryRoot, "compatibility/value-capabilities.json"),
+    "utf8",
+));
 
 const cases = [
     {
@@ -179,6 +183,41 @@ try {
         assert.deepEqual(nativeSnapshot(cases[index]), browserSnapshots[index], cases[index].id);
     }
 
+    const valueCapabilityBrowserSnapshots = await page.evaluate(testCases => testCases.map(testCase => {
+        const style = document.createElement("div").style;
+        style.setProperty(testCase.property, testCase.input);
+        return {
+            accepted: style.length > 0,
+            observable: style.getPropertyValue(testCase.property),
+        };
+    }), valueCapabilityCorpus.cases);
+
+    for (let index = 0; index < valueCapabilityCorpus.cases.length; index += 1) {
+        const testCase = valueCapabilityCorpus.cases[index];
+        const browserSnapshot = valueCapabilityBrowserSnapshots[index];
+        assert.equal(
+            browserSnapshot.accepted,
+            testCase.accepted,
+            `${testCase.id}: Chromium acceptance drifted`,
+        );
+        assert.equal(
+            browserSnapshot.observable,
+            testCase.observable ?? "",
+            `${testCase.id}: Chromium serialization drifted`,
+        );
+
+        const state = new binding.NativeDeclarationState();
+        state.setProperty(testCase.property, testCase.input, "");
+        assert.deepEqual(
+            {
+                accepted: state.length > 0,
+                observable: state.getPropertyValue(testCase.property),
+            },
+            browserSnapshot,
+            testCase.id,
+        );
+    }
+
     const relativeColorBrowserSnapshots = await page.evaluate(testCases => testCases.map(testCase => {
         const style = document.createElement("div").style;
         style.setProperty(testCase.property, testCase.input);
@@ -219,5 +258,6 @@ try {
 
 console.log(
     `${cases.length} native declaration sequences and ` +
+    `${valueCapabilityCorpus.cases.length} value-capability cases and ` +
     `${relativeColorCorpus.cases.length} relative-color cases match Chromium.`,
 );
