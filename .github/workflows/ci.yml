@@ -22,6 +22,30 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      browser: ${{ steps.classify.outputs.browser }}
+      docs: ${{ steps.classify.outputs.docs }}
+      native: ${{ steps.classify.outputs.native }}
+      package: ${{ steps.classify.outputs.package }}
+      performance: ${{ steps.classify.outputs.performance }}
+      quality: ${{ steps.classify.outputs.quality }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Test change classification
+        run: node --test scripts/classify-ci-changes.test.mjs
+      - name: Classify changed paths
+        id: classify
+        run: node scripts/classify-ci-changes.mjs >> "$GITHUB_OUTPUT"
+        env:
+          SHEETOM_CI_BASE: ${{ github.event.pull_request.base.sha || github.event.before || inputs.base_sha }}
+          SHEETOM_CI_HEAD: ${{ github.sha }}
+          SHEETOM_CI_FORCE_FULL: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
+
   changeset-policy:
     if: github.event_name == 'pull_request' || inputs.base_sha != ''
     runs-on: ubuntu-24.04
@@ -40,6 +64,8 @@ jobs:
           SHEETOM_NO_CHANGESET: ${{ contains(github.event.pull_request.labels.*.name, 'no-changeset') && '1' || '0' }}
 
   quality:
+    needs: changes
+    if: needs.changes.outputs.quality == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -76,10 +102,49 @@ jobs:
       - name: Check pinned WPT mapping drift
         run: npm run conformance:drift
 
-      - name: Validate API documentation
-        run: npm run docs:check
+  documentation:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run docs:check
+
+  native-quality:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: rust-${{ runner.os }}-1.88-${{ hashFiles('Cargo.lock') }}
+          restore-keys: rust-${{ runner.os }}-1.88-
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run native:check
+      - run: npm run native:test
 
   browser-compatibility:
+    needs: changes
+    if: needs.changes.outputs.browser == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -112,6 +177,8 @@ jobs:
         run: npm run test:differential
 
   package-artifact:
+    needs: changes
+    if: needs.changes.outputs.package == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -147,6 +214,8 @@ jobs:
           if-no-files-found: error
 
   minimum-node:
+    needs: changes
+    if: needs.changes.outputs.quality == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -172,7 +241,7 @@ jobs:
           cache: npm
       - run: npm install --global npm@11.16.0
       - run: npm ci
-      - run: npm install --no-save lightningcss@latest css-tree@latest cssstyle@latest @csstools/css-tokenizer@latest
+      - run: npm install --no-save lightningcss@latest css-tree@latest @csstools/css-tokenizer@latest
       - run: npm run test:unit
       - run: npm run build
 
@@ -252,7 +321,8 @@ jobs:
       - run: npm run test:unit
 
   performance:
-    if: github.event_name == 'pull_request' || inputs.base_sha != ''
+    needs: changes
+    if: (github.event_name == 'pull_request' || inputs.base_sha != '') && needs.changes.outputs.performance == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
