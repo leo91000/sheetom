@@ -15,6 +15,7 @@ const isNativePath = filePath =>
     filePath === "Cargo.toml" ||
     filePath === "rust-toolchain.toml" ||
     filePath.startsWith("crates/") ||
+    filePath.startsWith("fuzz/") ||
     filePath.startsWith("native/") ||
     filePath.startsWith("vendor/lightningcss/");
 

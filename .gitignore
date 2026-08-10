@@ -2,6 +2,9 @@ dist/
 node_modules/
 native/*.node
 target/
+fuzz/artifacts/
+fuzz/coverage/
+fuzz/target/
 playwright-report/
 test-results/
 site/
