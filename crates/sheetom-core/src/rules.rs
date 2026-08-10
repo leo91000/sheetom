@@ -10,6 +10,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 
 const MAX_STYLESHEET_BYTES: usize = 16 * 1024 * 1024;
 const MAX_RULES: usize = 100_000;
+const MAX_RULE_NESTING_DEPTH: usize = 256;
 
 /// An owned, parser-independent description of one CSS rule.
 ///
@@ -128,6 +129,41 @@ fn push_source_slice(parser: &Parser<'_, '_>, start: SourcePosition, output: &mu
     }
 }
 
+fn split_outer_block(source: &str) -> Option<(String, String)> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let start = parser.position();
+    loop {
+        let token_start = parser.position();
+        let token = parser
+            .next_including_whitespace_and_comments()
+            .ok()?
+            .clone();
+        match token {
+            Token::CurlyBracketBlock => {
+                let header = parser.slice(start..token_start).trim().to_owned();
+                let body_start = parser.position();
+                consume_nested_block(&mut parser).ok()?;
+                let mut body = parser.slice(body_start..parser.position());
+                if let Some(without_close) = body.strip_suffix('}') {
+                    body = without_close;
+                }
+                while let Ok(token) = parser.next_including_whitespace_and_comments() {
+                    if !matches!(token, Token::WhiteSpace(_) | Token::Comment(_)) {
+                        return None;
+                    }
+                }
+                return Some((header, body.to_owned()));
+            }
+            Token::Function(_) | Token::ParenthesisBlock | Token::SquareBracketBlock => {
+                consume_nested_block(&mut parser).ok()?;
+            }
+            Token::Semicolon => return None,
+            _ => {}
+        }
+    }
+}
+
 pub fn parse_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
     let mut rules = parse_stylesheet_tree(source, false)?;
     if rules.len() != 1 {
@@ -138,6 +174,327 @@ pub fn parse_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
     rules
         .pop()
         .ok_or_else(|| EngineError::Parse("the rule is empty".to_owned()))
+}
+
+/// Parses one rule with browser-style declaration recovery.
+pub fn parse_recovered_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
+    catch_unwind(AssertUnwindSafe(|| {
+        validate_stylesheet_budget(source)?;
+        parse_recovered_rule_tree_inner(source, 0)
+    }))
+    .unwrap_or(Err(EngineError::UnexpectedPanic))
+}
+
+fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedRule, EngineError> {
+    if depth > MAX_RULE_NESTING_DEPTH {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: depth,
+            limit: MAX_RULE_NESTING_DEPTH,
+        });
+    }
+    let strict = parse_rule_tree(source).ok();
+    let Some((header, body)) = split_outer_block(source) else {
+        return strict
+            .map(|mut parsed| {
+                preserve_source_text(&mut parsed, source);
+                parsed
+            })
+            .ok_or_else(|| EngineError::Parse("the rule has no recoverable block".to_owned()));
+    };
+    if let Some(parsed) = strict.as_ref() {
+        let raw_items = scan_recovered_block_items(&body).len();
+        let recover_from_source = matches!(
+            parsed.kind.as_str(),
+            "style"
+                | "font-face"
+                | "position-try"
+                | "counter-style"
+                | "page"
+                | "media"
+                | "supports"
+                | "container"
+                | "layer-block"
+                | "scope"
+                | "starting-style"
+                | "keyframes"
+        );
+        let child_count_matches = !matches!(
+            parsed.kind.as_str(),
+            "media"
+                | "supports"
+                | "container"
+                | "layer-block"
+                | "scope"
+                | "starting-style"
+                | "keyframes"
+        ) || parsed.children.len() == raw_items;
+        if !recover_from_source && child_count_matches {
+            let mut parsed = parsed.clone();
+            preserve_source_prelude(&mut parsed, &header);
+            preserve_source_text(&mut parsed, source);
+            return Ok(parsed);
+        }
+    }
+
+    let probe_source = format!("{header}{{}}");
+    let mut probe = parse_rule_tree(&probe_source)?;
+    preserve_source_prelude(&mut probe, &header);
+    recover_block_rule(probe, &body, depth)
+}
+
+fn preserve_source_text(rule: &mut ParsedRule, source: &str) {
+    if matches!(rule.kind.as_str(), "generic" | "font-feature-values") {
+        rule.css_text = source.trim().to_owned();
+    }
+}
+
+fn preserve_source_prelude(rule: &mut ParsedRule, header: &str) {
+    let prefix = match rule.kind.as_str() {
+        "media" => "@media",
+        "supports" => "@supports",
+        "container" => "@container",
+        "layer-block" => "@layer",
+        "scope" => "@scope",
+        "page" => "@page",
+        "position-try" => "@position-try",
+        "keyframes" => {
+            if header
+                .trim_start()
+                .to_ascii_lowercase()
+                .starts_with("@-webkit-keyframes")
+            {
+                "@-webkit-keyframes"
+            } else {
+                "@keyframes"
+            }
+        }
+        "counter-style" => "@counter-style",
+        _ => return,
+    };
+    if let Some(prelude) = header.trim().get(prefix.len()..) {
+        rule.prelude = prelude.trim().to_owned();
+    }
+}
+
+fn recover_block_rule(
+    mut probe: ParsedRule,
+    body: &str,
+    depth: usize,
+) -> Result<ParsedRule, EngineError> {
+    probe.css_text.clear();
+    match probe.kind.as_str() {
+        "style" => recover_style_body(&mut probe, body, depth)?,
+        "media" | "supports" | "container" | "layer-block" | "scope" | "starting-style" => {
+            probe.children = recover_child_rules(body, depth + 1)?;
+        }
+        "font-face" | "position-try" | "counter-style" => {
+            probe.declarations = body.trim().to_owned();
+        }
+        "page" => recover_page_body(&mut probe, body, depth)?,
+        "keyframes" => recover_keyframes_body(&mut probe, body, depth)?,
+        _ => {
+            return Err(EngineError::Parse(format!(
+                "{} rules do not support declaration recovery",
+                probe.kind
+            )))
+        }
+    }
+    Ok(probe)
+}
+
+fn recover_style_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result<(), EngineError> {
+    let fragments = scan_recovered_block_items(body);
+    let mut declarations = Vec::new();
+    let mut found_child = false;
+    for fragment in fragments {
+        match parse_recovered_rule_tree_inner(&fragment, depth + 1) {
+            Ok(child) => {
+                flush_nested_declarations(probe, &mut declarations, found_child);
+                found_child = true;
+                probe.children.push(child);
+            }
+            Err(_) => declarations.push(fragment),
+        }
+    }
+    flush_nested_declarations(probe, &mut declarations, found_child);
+    Ok(())
+}
+
+fn flush_nested_declarations(probe: &mut ParsedRule, declarations: &mut Vec<String>, nested: bool) {
+    if declarations.is_empty() {
+        return;
+    }
+    let source = declarations.join(" ");
+    declarations.clear();
+    if !nested {
+        probe.declarations = source;
+        return;
+    }
+    probe.children.push(ParsedRule {
+        kind: "nested-declarations".to_owned(),
+        prelude: String::new(),
+        declarations: source,
+        children: Vec::new(),
+        css_text: String::new(),
+    });
+}
+
+fn recover_child_rules(body: &str, depth: usize) -> Result<Vec<ParsedRule>, EngineError> {
+    let mut children = Vec::new();
+    for fragment in scan_recovered_block_items(body) {
+        children.push(parse_recovered_rule_tree_inner(&fragment, depth)?);
+    }
+    Ok(children)
+}
+
+fn recover_page_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result<(), EngineError> {
+    let mut declarations = Vec::new();
+    for fragment in scan_recovered_block_items(body) {
+        if fragment.trim_start().starts_with('@') {
+            let (_, margin_body) = split_outer_block(&fragment)
+                .ok_or_else(|| EngineError::Parse("invalid page margin rule".to_owned()))?;
+            let name = fragment
+                .trim_start()
+                .strip_prefix('@')
+                .and_then(|value| {
+                    value
+                        .split(|character: char| character.is_whitespace() || character == '{')
+                        .next()
+                })
+                .unwrap_or_default();
+            probe.children.push(ParsedRule {
+                kind: "margin".to_owned(),
+                prelude: name.to_ascii_lowercase(),
+                declarations: margin_body.trim().to_owned(),
+                children: Vec::new(),
+                css_text: String::new(),
+            });
+        } else {
+            declarations.push(fragment);
+        }
+    }
+    probe.declarations = declarations.join(" ");
+    if depth > MAX_RULE_NESTING_DEPTH {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: depth,
+            limit: MAX_RULE_NESTING_DEPTH,
+        });
+    }
+    Ok(())
+}
+
+fn recover_keyframes_body(
+    probe: &mut ParsedRule,
+    body: &str,
+    depth: usize,
+) -> Result<(), EngineError> {
+    for fragment in scan_recovered_block_items(body) {
+        let (header, declarations) = split_outer_block(&fragment)
+            .ok_or_else(|| EngineError::Parse("invalid keyframe rule".to_owned()))?;
+        let wrapper = format!("@keyframes sheetom{{{header}{{}}}}");
+        let parsed = parse_rule_tree(&wrapper)?;
+        let keyframe = parsed
+            .children
+            .into_iter()
+            .next()
+            .ok_or_else(|| EngineError::Parse("invalid keyframe selector".to_owned()))?;
+        probe.children.push(ParsedRule {
+            declarations: declarations.trim().to_owned(),
+            css_text: String::new(),
+            ..keyframe
+        });
+    }
+    if depth > MAX_RULE_NESTING_DEPTH {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: depth,
+            limit: MAX_RULE_NESTING_DEPTH,
+        });
+    }
+    Ok(())
+}
+
+fn scan_recovered_block_items(source: &str) -> Vec<String> {
+    let bytes = source.as_bytes();
+    let mut output = Vec::new();
+    let mut start = None;
+    let mut index = 0usize;
+    let mut curly_depth = 0usize;
+    let mut quote = None;
+    let mut in_comment = false;
+
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if in_comment {
+            if byte == b'*' && bytes.get(index + 1) == Some(&b'/') {
+                in_comment = false;
+                index += 2;
+                continue;
+            }
+            index += 1;
+            continue;
+        }
+        if let Some(delimiter) = quote {
+            if byte == b'\\' {
+                index = (index + 2).min(bytes.len());
+                continue;
+            }
+            if byte == delimiter {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if byte == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            if start.is_none() {
+                start = Some(index);
+            }
+            in_comment = true;
+            index += 2;
+            continue;
+        }
+        if matches!(byte, b'\'' | b'"') {
+            if start.is_none() {
+                start = Some(index);
+            }
+            quote = Some(byte);
+            index += 1;
+            continue;
+        }
+        if start.is_none() {
+            if byte.is_ascii_whitespace() || matches!(byte, b';' | b'}') {
+                index += 1;
+                continue;
+            }
+            start = Some(index);
+        }
+
+        match byte {
+            b'{' => curly_depth = curly_depth.saturating_add(1),
+            b'}' if curly_depth > 0 => {
+                curly_depth -= 1;
+                if curly_depth == 0 {
+                    push_recovered_item(source, start.take(), index + 1, &mut output);
+                }
+            }
+            b';' if curly_depth == 0 => {
+                push_recovered_item(source, start.take(), index + 1, &mut output);
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+    push_recovered_item(source, start, bytes.len(), &mut output);
+    output
+}
+
+fn push_recovered_item(source: &str, start: Option<usize>, end: usize, output: &mut Vec<String>) {
+    let Some(start) = start else {
+        return;
+    };
+    let item = source[start..end].trim();
+    if !item.is_empty() {
+        output.push(item.to_owned());
+    }
 }
 
 pub fn parse_stylesheet_tree(
@@ -483,5 +840,57 @@ mod tests {
             scan_top_level_rules(&source),
             Err(EngineError::NestingLimitExceeded { .. })
         ));
+    }
+
+    #[test]
+    fn recovers_browser_style_malformed_declarations() {
+        let parsed =
+            parse_recovered_rule_tree(".x { padding: 72px var(--space, var(--space,; }").unwrap();
+        assert_eq!(parsed.kind, "style");
+        assert_eq!(
+            parsed.declarations,
+            "padding: 72px var(--space, var(--space,;"
+        );
+    }
+
+    #[test]
+    fn recovers_malformed_declarations_through_grouping_rules() {
+        let parsed = parse_recovered_rule_tree(
+            "@layer theme { .x { padding: 72px var(--space, var(--space,; } @media screen { .y { color: red; } } }",
+        )
+        .unwrap();
+        assert_eq!(parsed.kind, "layer-block");
+        assert_eq!(parsed.children[0].kind, "style");
+        assert!(parsed.children[0].declarations.contains("var(--space"));
+        assert_eq!(parsed.children[1].kind, "media");
+    }
+
+    #[test]
+    fn recovers_nested_declaration_order() {
+        let parsed =
+            parse_recovered_rule_tree(".x { color: red; .child { width: 1px; } height: 2px; }")
+                .unwrap();
+        assert_eq!(parsed.declarations, "color: red;");
+        assert_eq!(parsed.children[0].kind, "style");
+        assert_eq!(parsed.children[1].kind, "nested-declarations");
+        assert_eq!(parsed.children[1].declarations, "height: 2px;");
+    }
+
+    #[test]
+    fn recovers_page_and_keyframe_declaration_blocks() {
+        let page = parse_recovered_rule_tree(
+            "@page :first { margin: 72px var(--x,; @top-left { content: var(--x,; } }",
+        )
+        .unwrap();
+        assert!(page.declarations.contains("margin:"));
+        assert_eq!(page.children[0].kind, "margin");
+        assert!(page.children[0].declarations.contains("content:"));
+
+        let keyframes = parse_recovered_rule_tree(
+            "@keyframes spin { from { opacity: var(--x,; } to { opacity: 1; } }",
+        )
+        .unwrap();
+        assert_eq!(keyframes.children.len(), 2);
+        assert!(keyframes.children[0].declarations.contains("var(--x"));
     }
 }

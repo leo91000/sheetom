@@ -25,6 +25,7 @@ interface NativeBinding {
   NativeDeclarationState: new (
     context?: "style" | "font-face",
   ) => NativeDeclarationStateHandle;
+  parseRecoveredRuleTreeJson(source: string): string;
   scanTopLevelRulesJson(source: string): string;
 }
 

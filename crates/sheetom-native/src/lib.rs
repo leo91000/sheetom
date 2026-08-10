@@ -5,8 +5,9 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 
 use napi_derive::napi;
 use sheetom_core::{
-    canonicalize_declaration_block as canonicalize, parse_rule_tree, parse_stylesheet_tree,
-    scan_top_level_rules, DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
+    canonicalize_declaration_block as canonicalize, parse_recovered_rule_tree, parse_rule_tree,
+    parse_stylesheet_tree, scan_top_level_rules, DeclarationContext, DeclarationState,
+    MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -131,6 +132,14 @@ pub fn canonicalize_declaration_block(source: String) -> napi::Result<String> {
 pub fn parse_rule_tree_json(source: String) -> napi::Result<String> {
     let parsed =
         parse_rule_tree(&source).map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+/// Parses exactly one rule with browser-style declaration recovery.
+#[napi]
+pub fn parse_recovered_rule_tree_json(source: String) -> napi::Result<String> {
+    let parsed = parse_recovered_rule_tree(&source)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 

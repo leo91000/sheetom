@@ -7,6 +7,9 @@ pub(crate) struct GrammarValue {
 
 pub(crate) fn parse_browser_grammar_gap(name: &str, value: &str) -> Option<GrammarValue> {
     let input = value.trim();
+    if name == "size" {
+        return parse_page_size(input);
+    }
     if name == "content" {
         return parse_content(input);
     }
@@ -34,6 +37,68 @@ pub(crate) fn parse_browser_grammar_gap(name: &str, value: &str) -> Option<Gramm
         return parse_offset_rotate(input);
     }
     None
+}
+
+fn parse_page_size(value: &str) -> Option<GrammarValue> {
+    const NAMED_SIZES: &[&str] = &[
+        "a5", "a4", "a3", "b5", "b4", "jis-b5", "jis-b4", "ledger", "legal", "letter",
+    ];
+    const ORIENTATIONS: &[&str] = &["portrait", "landscape"];
+
+    let components = split_top_level_whitespace(value)?;
+    match components.as_slice() {
+        [single] => {
+            let lower = single.to_ascii_lowercase();
+            if lower == "auto"
+                || NAMED_SIZES.contains(&lower.as_str())
+                || ORIENTATIONS.contains(&lower.as_str())
+            {
+                return Some(raw(&lower));
+            }
+            let length = parse_page_length(single)?;
+            Some(raw(&length))
+        }
+        [first, second] => {
+            let first_lower = first.to_ascii_lowercase();
+            let second_lower = second.to_ascii_lowercase();
+            let named = if NAMED_SIZES.contains(&first_lower.as_str())
+                && ORIENTATIONS.contains(&second_lower.as_str())
+            {
+                Some((first_lower, second_lower))
+            } else if ORIENTATIONS.contains(&first_lower.as_str())
+                && NAMED_SIZES.contains(&second_lower.as_str())
+            {
+                Some((second_lower, first_lower))
+            } else {
+                None
+            };
+            if let Some((size, orientation)) = named {
+                return Some(raw(&format!("{size} {orientation}")));
+            }
+            let width = parse_page_length(first)?;
+            let height = parse_page_length(second)?;
+            Some(raw(&format!("{width} {height}")))
+        }
+        _ => None,
+    }
+}
+
+fn parse_page_length(value: &str) -> Option<String> {
+    let inspection = inspect_property("width", value).ok()?;
+    if inspection.kind != PropertyParseKind::Typed {
+        return None;
+    }
+    let canonical = inspection.canonical_value;
+    if canonical == "0" {
+        return Some("0px".to_owned());
+    }
+    (!matches!(
+        canonical.as_str(),
+        "auto" | "min-content" | "max-content" | "fit-content"
+    ) && !canonical.contains('%')
+        && !canonical.starts_with("anchor-size(")
+        && canonical != "stretch")
+        .then_some(canonical)
 }
 
 fn parse_content(value: &str) -> Option<GrammarValue> {
@@ -272,5 +337,23 @@ mod tests {
                 "{value}"
             );
         }
+    }
+
+    #[test]
+    fn parses_page_size_branches() {
+        assert_eq!(
+            parse_browser_grammar_gap("size", "landscape A4").map(|value| value.observable_value),
+            Some("a4 landscape".to_owned())
+        );
+        assert_eq!(
+            parse_browser_grammar_gap("size", "10cm 20cm").map(|value| value.observable_value),
+            Some("10cm 20cm".to_owned())
+        );
+        assert_eq!(
+            parse_browser_grammar_gap("size", "0").map(|value| value.observable_value),
+            Some("0px".to_owned())
+        );
+        assert!(parse_browser_grammar_gap("size", "50%").is_none());
+        assert!(parse_browser_grammar_gap("size", "auto landscape").is_none());
     }
 }
