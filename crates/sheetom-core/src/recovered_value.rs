@@ -134,6 +134,106 @@ impl RecoveredValue {
     pub fn slice(&self, span: SourceSpan) -> Option<&str> {
         self.source.get(span.range())
     }
+
+    pub fn reparsable_css(&self) -> Result<String, EngineError> {
+        enum SerializationEvent<'a> {
+            Component(&'a RecoveredComponentValue),
+            Close(char),
+        }
+
+        let mut output = String::with_capacity(self.source.len());
+        let mut pending = Vec::with_capacity(self.values.len());
+        for component in self.values.iter().rev() {
+            pending.push(SerializationEvent::Component(component));
+        }
+
+        while let Some(event) = pending.pop() {
+            match event {
+                SerializationEvent::Close(delimiter) => output.push(delimiter),
+                SerializationEvent::Component(component) => match &component.kind {
+                    RecoveredComponentKind::Token(token) => {
+                        serialize_recovered_token(self, component.span, token, &mut output)?;
+                    }
+                    RecoveredComponentKind::Function {
+                        opening, values, ..
+                    } => {
+                        append_source_slice(self, *opening, &mut output)?;
+                        pending.push(SerializationEvent::Close(')'));
+                        for child in values.iter().rev() {
+                            pending.push(SerializationEvent::Component(child));
+                        }
+                    }
+                    RecoveredComponentKind::SimpleBlock {
+                        delimiter,
+                        opening,
+                        values,
+                        ..
+                    } => {
+                        append_source_slice(self, *opening, &mut output)?;
+                        pending.push(SerializationEvent::Close(match delimiter {
+                            RecoveredBlockDelimiter::Parenthesis => ')',
+                            RecoveredBlockDelimiter::SquareBracket => ']',
+                            RecoveredBlockDelimiter::CurlyBracket => '}',
+                        }));
+                        for child in values.iter().rev() {
+                            pending.push(SerializationEvent::Component(child));
+                        }
+                    }
+                },
+            }
+        }
+
+        Ok(output)
+    }
+}
+
+fn serialize_recovered_token(
+    recovered: &RecoveredValue,
+    span: SourceSpan,
+    token: &RecoveredToken,
+    output: &mut String,
+) -> Result<(), EngineError> {
+    if token.parse_error || token.termination == RecoveredTokenTermination::Invalid {
+        return Err(EngineError::Serialize(
+            "cannot serialize a CSS token parse error".to_owned(),
+        ));
+    }
+
+    append_source_slice(recovered, span, output)?;
+    if token.termination != RecoveredTokenTermination::ImplicitEof {
+        return Ok(());
+    }
+
+    match token.kind {
+        RecoveredTokenKind::String(_) => {
+            let quote = recovered
+                .source()
+                .as_bytes()
+                .get(span.start)
+                .copied()
+                .filter(|quote| matches!(*quote, b'\'' | b'"'))
+                .ok_or_else(|| {
+                    EngineError::Serialize("recovered string lost its quote".to_owned())
+                })?;
+            output.push(char::from(quote));
+        }
+        RecoveredTokenKind::Url(_) => output.push(')'),
+        RecoveredTokenKind::Comment => output.push_str("*/"),
+        _ => {}
+    }
+    Ok(())
+}
+
+fn append_source_slice(
+    recovered: &RecoveredValue,
+    span: SourceSpan,
+    output: &mut String,
+) -> Result<(), EngineError> {
+    let source = recovered.slice(span).ok_or_else(|| {
+        EngineError::Serialize("recovered CSS span is outside its source".to_owned())
+    })?;
+    output.push_str(source);
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -647,5 +747,44 @@ mod tests {
         }
 
         assert_eq!(observed_depth, ResourceLimits::default().max_nesting_depth);
+        assert_eq!(
+            recovered.reparsable_css().unwrap(),
+            format!(
+                "{source}{}",
+                ")".repeat(ResourceLimits::default().max_nesting_depth)
+            )
+        );
+    }
+
+    #[test]
+    fn serializes_recovery_from_structure_instead_of_raw_suffixes() {
+        for (source, expected) in [
+            (
+                "72px var(--space, var(--space,",
+                "72px var(--space, var(--space,))",
+            ),
+            ("\"Gotham", "\"Gotham\""),
+            ("url(image.png", "url(image.png)"),
+            ("red/* trailing", "red/* trailing*/"),
+            ("[a{b(c", "[a{b(c)}]"),
+        ] {
+            assert_eq!(
+                recover_component_values(source)
+                    .unwrap()
+                    .reparsable_css()
+                    .unwrap(),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn refuses_to_serialize_tokenizer_errors() {
+        for source in ["red)", "\"bad\nnext", "url(bad\""] {
+            assert!(recover_component_values(source)
+                .unwrap()
+                .reparsable_css()
+                .is_err());
+        }
     }
 }
