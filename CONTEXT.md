@@ -20,6 +20,10 @@ _Avoid_: CSS engine, parser binding, generated N-API classes
 The complete upstream Lightning CSS source snapshot imported as ordinary repository files in one isolated commit, built through local Cargo paths and modified in later focused commits. Its recorded upstream revision and MPL notices make local changes reproducible and extractable for upstream contribution.
 _Avoid_: npm lightningcss, Git dependency, subtree, submodule, opaque vendor binary
 
+**Vendored CSS Syntax Source**:
+The complete rust-cssparser source snapshot that defines the Rust CSS Engine's sole lexical interpretation of CSS. It is versioned and patched with the same provenance and upstreamability discipline as Vendored Lightning Source.
+_Avoid_: crates.io tokenizer, nom CSS parser, parallel scanner, hidden parser dependency
+
 **Native Data Boundary**:
 The narrow N-API contract between the JavaScript CSSOM Facade and Rust CSS Engine. It accepts strings and validated primitive inputs and returns owned domain DTOs; arbitrary JavaScript or Lightning AST objects never cross it.
 _Avoid_: Visitor API, AST roundtrip, generic object bridge
@@ -85,12 +89,20 @@ The diagnostic classification for a browser-accepted static shorthand that Sheet
 _Avoid_: Invalid property value, parser rejection, opaque shorthand state
 
 **Declaration Record**:
-One ordered, unique expanded-longhand or exact-case custom-property entry containing its browser-facing text and recovered semantic representation together with its priority and shorthand provenance.
+One ordered, unique expanded-longhand or exact-case custom-property entry containing its browser-facing text, Semantic Property Value, priority and shorthand provenance.
 _Avoid_: Raw declaration, parallel stylesheet entry
+
+**Recovered Component Value Tree**:
+The Rust CSS Engine's lossless CSS-token structure for one declaration value, sharing its source text while recording token spans, nested children, comments, invalid tokens and whether each structure closed explicitly, implicitly at end of input, or invalidly. It is produced from Vendored CSS Syntax Source and provides the lexical evidence for both serialization contracts without becoming part of the tokenizer's interface.
+_Avoid_: Raw string, normalized AST, repaired value, second token stream
 
 **Recovered Token Text**:
 Browser-facing value text produced by CSS token recovery while preserving category-specific omitted EOF structures after lexical effects such as comment removal and escaped-code-point replacement.
 _Avoid_: Raw input, repaired stylesheet value, universal canonical form
+
+**Semantic Property Value**:
+The owned typed meaning of an accepted ordinary property value retained by its Declaration Record and serving as the single semantic source of truth. Standard CSS meaning comes directly from Vendored Lightning Source, while pinned browser extensions remain owned by the Rust CSS Engine.
+_Avoid_: Canonical value string, reparsed getter, unparsed fallback, public value object
 
 **Static Shorthand Codec**:
 The single internal expansion and synthesis seam for one semantic family of static shorthands, converting accepted values into complete canonical longhand records and reconstructing browser-facing shorthand text only from current longhand state.
@@ -144,16 +156,28 @@ _Avoid_: Complete CSS grammar, latest-browser support, string allowlist
 A narrow property-family validator that fills a measured grammar gap or corrects a known parser mismatch, backed by neighboring positive and negative cases in the Value Capability Corpus.
 _Avoid_: Literal value allowlist, permissive unparsed fallback, browser runtime probe
 
+**Property Grammar Registry**:
+The reviewed Rust declaration associating every supported ordinary property with either its standard Lightning grammar or one typed pinned-browser extension and generating runtime dispatch plus coverage metadata. Exact registry-to-manifest equality makes missing or accidentally opaque grammar a release failure without turning browser observations into runtime authority.
+_Avoid_: Property switch, parser cascade, runtime corpus, generic unparsed acceptance
+
+**Observable Codec**:
+A typed serializer for one semantic value family whose browser-facing text differs from standard Lightning serialization. It consumes Semantic Property Values and recovery evidence rather than reparsing or patching serialized strings.
+_Avoid_: String correction, property exception, safe serializer, grammar validator
+
 **Value Gate**:
 The layered decision that accepts or rejects one independently parsed property value by classifying substitutions from original tokens before typed parsing, grammar matching, and measured Value Capability Validators.
 _Avoid_: Lightning CSS parse result, text heuristic
 
 **Accepted Property Value**:
-The internal structured result transported from the Value Gate to mutation codecs, retaining either a typed parser declaration, validated grammar tokens, or recovered pending-substitution tokens together with observable and reparsable serializations.
+The internal result transported from the Value Gate to mutation codecs, carrying a Semantic Property Value or recovered substitution tokens together with observable and reparsable serializations.
 _Avoid_: Reparsed value string, public value object, raw input
 
+**Semantic Declaration**:
+The immutable shared state for one accepted property, combining its Semantic Property Value, recovery evidence, priority and disposable cached serialization views. A mutation replaces this value instead of invalidating it in place.
+_Avoid_: Mutable parser result, cache owner, serialized declaration, public declaration object
+
 **Syntax Engine Set**:
-The exact, release-versioned Rust CSS Engine source revision, Vendored Lightning Source snapshot and local patch set, plus any remaining parser or tokenizer dependencies whose joint behavior underpins a Compatibility Baseline.
+The exact, release-versioned Rust CSS Engine source revision plus the Vendored Lightning Source and Vendored CSS Syntax Source snapshots and local patch sets whose joint behavior underpins a Compatibility Baseline.
 _Avoid_: Compatible dependency range, lockfile snapshot, npm Lightning CSS version
 
 **Live CSSOM Object**:
