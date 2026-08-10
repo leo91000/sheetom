@@ -91,6 +91,31 @@ const crashCases = [
         expectError: "SHEETOM_NESTING_LIMIT",
     },
     {
+        name: "selector normalization",
+        mode: "selector",
+        source: ':is(.a, [data-value="a;b"], :not(.c)) > .child',
+    },
+    {
+        name: "media normalization",
+        mode: "media",
+        source: "screen/**/and (max-width:767px),print",
+    },
+    {
+        name: "supports normalization",
+        mode: "supports",
+        source: "(display:grid) and (not (color:contrast-color(red)))",
+    },
+    {
+        name: "container prelude parsing",
+        mode: "container",
+        source: "card style(--theme:dark)",
+    },
+    {
+        name: "scope prelude parsing",
+        mode: "scope",
+        source: "(.a, :is(.b, .c)) to (.d)",
+    },
+    {
         name: "rule parser nesting above the supported limit",
         mode: "rule",
         source: `${"@media all{".repeat(4097)}.x{color:red}${"}".repeat(4097)}`,

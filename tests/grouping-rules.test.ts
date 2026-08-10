@@ -74,7 +74,7 @@ test("condition and structural grouping rules expose specialized interfaces", ()
 
   const supports = sheet.cssRules[0];
   assert.ok(supports instanceof CSSSupportsRule);
-  assert.equal(supports.conditionText, "(display: grid)");
+  assert.equal(supports.conditionText, "(display:grid)");
 
   const container = sheet.cssRules[1];
   assert.ok(container instanceof CSSContainerRule);

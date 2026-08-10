@@ -49,7 +49,7 @@ assert.equal(
 
 const binding = require(`${repositoryRoot}/native/index.cjs`);
 assert.equal(typeof binding.NativeDeclarationState, "function");
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.6");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.7");
 
 async function assertLoaderFailure(expectedCode, installBinding) {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "sheetom-loader-"));

@@ -29,6 +29,26 @@ const cases = [
     id: "nested-declarations",
     source: ".a { color: red; & .b { width: 1px; } height: 2px; }",
   },
+  {
+    id: "selector-serialization",
+    source: ":is(.a,.b) > .child+.sibling { color: red; }",
+  },
+  {
+    id: "media-list-serialization",
+    source: "@media screen/**/and (max-width:767px),print { .x { color: red; } }",
+  },
+  {
+    id: "supports-serialization",
+    source: "@supports (display:grid) and (not (color:contrast-color(red))) { .x { color: red; } }",
+  },
+  {
+    id: "container-style-query",
+    source: "@container style(--theme:dark) { .x { color: red; } }",
+  },
+  {
+    id: "scope-selector-list",
+    source: "@scope (.a,.b) to (:is(.c,.d)) { .x { color: red; } }",
+  },
 ];
 
 function styleSnapshot(style) {

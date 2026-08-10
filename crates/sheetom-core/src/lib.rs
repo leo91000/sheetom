@@ -21,8 +21,10 @@ pub use declaration_state::{
     PendingSubstitutionGroup,
 };
 pub use rules::{
-    parse_recovered_rule_tree, parse_rule_tree, parse_stylesheet_tree, scan_top_level_rules,
-    ParsedRule,
+    normalize_media_text, normalize_selector_text, normalize_supports_text,
+    parse_container_prelude, parse_recovered_rule_tree, parse_rule_tree, parse_scope_prelude,
+    parse_stylesheet_tree, scan_top_level_rules, ParsedContainerPrelude, ParsedRule,
+    ParsedScopePrelude,
 };
 
 #[cfg(panic = "abort")]
@@ -39,7 +41,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.6";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.7";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -365,7 +367,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.6");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.7");
     }
 
     #[test]

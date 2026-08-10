@@ -5,9 +5,10 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 
 use napi_derive::napi;
 use sheetom_core::{
-    canonicalize_declaration_block as canonicalize, parse_recovered_rule_tree, parse_rule_tree,
-    parse_stylesheet_tree, scan_top_level_rules, DeclarationContext, DeclarationState,
-    MutationOutcome, ENGINE_REVISION,
+    canonicalize_declaration_block as canonicalize, normalize_media_text, normalize_selector_text,
+    normalize_supports_text, parse_container_prelude, parse_recovered_rule_tree, parse_rule_tree,
+    parse_scope_prelude, parse_stylesheet_tree, scan_top_level_rules, DeclarationContext,
+    DeclarationState, MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -139,6 +140,35 @@ pub fn parse_rule_tree_json(source: String) -> napi::Result<String> {
 #[napi]
 pub fn parse_recovered_rule_tree_json(source: String) -> napi::Result<String> {
     let parsed = parse_recovered_rule_tree(&source)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn normalize_selector(source: String) -> napi::Result<String> {
+    normalize_selector_text(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn normalize_media(source: String) -> napi::Result<String> {
+    normalize_media_text(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn normalize_supports(source: String) -> napi::Result<String> {
+    normalize_supports_text(&source).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn parse_container_prelude_json(source: String) -> napi::Result<String> {
+    let parsed = parse_container_prelude(&source)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn parse_scope_prelude_json(source: String) -> napi::Result<String> {
+    let parsed = parse_scope_prelude(&source)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }

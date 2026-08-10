@@ -26,6 +26,268 @@ pub struct ParsedRule {
     pub css_text: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedContainerPrelude {
+    pub condition_text: String,
+    pub name: String,
+    pub query: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ParsedScopePrelude {
+    pub start: Option<String>,
+    pub end: Option<String>,
+}
+
+pub fn normalize_selector_text(source: &str) -> Result<String, EngineError> {
+    catch_unwind(AssertUnwindSafe(|| {
+        let rule_source = format!("{source}{{}} ");
+        validate_stylesheet_budget(&rule_source)?;
+        let sheet = StyleSheet::parse(&rule_source, ParserOptions::default())
+            .map_err(|error| EngineError::Parse(error.to_string()))?;
+        let Some(CssRule::Style(rule)) = sheet.rules.0.first() else {
+            return Err(EngineError::Parse("invalid selector list".to_owned()));
+        };
+        rule.selectors
+            .to_css_string(PrinterOptions::default())
+            .map_err(|error| EngineError::Serialize(error.to_string()))
+    }))
+    .unwrap_or(Err(EngineError::UnexpectedPanic))
+}
+
+pub fn normalize_media_text(source: &str) -> Result<String, EngineError> {
+    if source.trim().is_empty() {
+        return Ok(String::new());
+    }
+    let parsed = parse_rule_tree(&format!("@media {source}{{}}"))?;
+    if parsed.kind != "media" {
+        return Err(EngineError::Parse("invalid media query list".to_owned()));
+    }
+    Ok(format_condition_text(source))
+}
+
+pub fn normalize_supports_text(source: &str) -> Result<String, EngineError> {
+    let parsed = parse_rule_tree(&format!("@supports {source}{{}}"))?;
+    if parsed.kind != "supports" {
+        return Err(EngineError::Parse("invalid supports condition".to_owned()));
+    }
+    Ok(parsed.prelude)
+}
+
+pub fn parse_container_prelude(source: &str) -> Result<ParsedContainerPrelude, EngineError> {
+    let parsed = parse_rule_tree(&format!("@container {source}{{}}"))?;
+    if parsed.kind != "container" {
+        return Err(EngineError::Parse("invalid container query".to_owned()));
+    }
+    let condition_text = format_condition_text(source);
+    let query_start = container_query_start(&condition_text);
+    let (name, query) = condition_text.split_at(query_start);
+    let name = name.trim().to_owned();
+    let query = query.trim().to_owned();
+    if query.is_empty() {
+        return Err(EngineError::Parse("container query is empty".to_owned()));
+    }
+    Ok(ParsedContainerPrelude {
+        condition_text,
+        name,
+        query,
+    })
+}
+
+pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineError> {
+    let parsed = parse_rule_tree(&format!("@scope {source}{{}}"))?;
+    if parsed.kind != "scope" {
+        return Err(EngineError::Parse("invalid scope prelude".to_owned()));
+    }
+    let text = source.trim();
+    if text.is_empty() {
+        return Ok(ParsedScopePrelude {
+            start: None,
+            end: None,
+        });
+    }
+    let Some((start, remainder)) = consume_parenthesized(text) else {
+        return Err(EngineError::Parse("invalid scope start".to_owned()));
+    };
+    let remainder = remainder.trim();
+    if remainder.is_empty() {
+        return Ok(ParsedScopePrelude {
+            start: Some(normalize_selector_text(start)?),
+            end: None,
+        });
+    }
+    let Some(after_to) = remainder.strip_prefix("to") else {
+        return Err(EngineError::Parse("invalid scope boundary".to_owned()));
+    };
+    let Some((end, trailing)) = consume_parenthesized(after_to.trim()) else {
+        return Err(EngineError::Parse("invalid scope end".to_owned()));
+    };
+    if !trailing.trim().is_empty() {
+        return Err(EngineError::Parse(
+            "invalid scope trailing input".to_owned(),
+        ));
+    }
+    Ok(ParsedScopePrelude {
+        start: Some(normalize_selector_text(start)?),
+        end: Some(normalize_selector_text(end)?),
+    })
+}
+
+fn container_query_start(source: &str) -> usize {
+    let lower = source.to_ascii_lowercase();
+    if source.starts_with('(') || lower.starts_with("style(") || lower.starts_with("scroll-state(")
+    {
+        return 0;
+    }
+    source.find(char::is_whitespace).unwrap_or(source.len())
+}
+
+fn consume_parenthesized(source: &str) -> Option<(&str, &str)> {
+    if !source.starts_with('(') {
+        return None;
+    }
+    let mut depth = 0usize;
+    let mut quote = None;
+    let mut escaped = false;
+    for (index, character) in source.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if character == '\\' {
+            escaped = true;
+            continue;
+        }
+        if let Some(active_quote) = quote {
+            if character == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+        if matches!(character, '\'' | '"') {
+            quote = Some(character);
+            continue;
+        }
+        match character {
+            '(' => depth += 1,
+            ')' => {
+                depth = depth.checked_sub(1)?;
+                if depth == 0 {
+                    return Some((&source[1..index], &source[index + 1..]));
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn format_condition_text(source: &str) -> String {
+    let mut output = String::with_capacity(source.len());
+    let mut quote = None;
+    let mut escaped = false;
+    let mut comment = false;
+    let mut pending_space = false;
+    let characters = source.chars().collect::<Vec<_>>();
+    let mut index = 0usize;
+    while index < characters.len() {
+        let character = characters[index];
+        let next = characters.get(index + 1).copied();
+        if comment {
+            if character == '*' && next == Some('/') {
+                comment = false;
+                pending_space = true;
+                index += 2;
+                continue;
+            }
+            index += 1;
+            continue;
+        }
+        if escaped {
+            output.push(character);
+            escaped = false;
+            index += 1;
+            continue;
+        }
+        if let Some(active_quote) = quote {
+            output.push(character);
+            if character == '\\' {
+                escaped = true;
+            } else if character == active_quote {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if character == '/' && next == Some('*') {
+            comment = true;
+            index += 2;
+            continue;
+        }
+        if matches!(character, '\'' | '"') {
+            push_pending_space(&mut output, &mut pending_space);
+            quote = Some(character);
+            output.push(character);
+            index += 1;
+            continue;
+        }
+        if character.is_whitespace() {
+            pending_space = true;
+            index += 1;
+            continue;
+        }
+        match character {
+            '(' | '[' => {
+                push_pending_space(&mut output, &mut pending_space);
+                output.push(character);
+                pending_space = false;
+            }
+            ')' | ']' | ',' => {
+                trim_trailing_space(&mut output);
+                output.push(character);
+                pending_space = character == ',';
+            }
+            ':' => {
+                trim_trailing_space(&mut output);
+                output.push(':');
+                pending_space = true;
+            }
+            '<' | '>' | '=' => {
+                trim_trailing_space(&mut output);
+                if !output.is_empty() {
+                    output.push(' ');
+                }
+                output.push(character);
+                if matches!(next, Some('=')) && character != '=' {
+                    output.push('=');
+                    index += 1;
+                }
+                pending_space = true;
+            }
+            _ => {
+                push_pending_space(&mut output, &mut pending_space);
+                output.push(character);
+            }
+        }
+        index += 1;
+    }
+    output.trim().to_owned()
+}
+
+fn push_pending_space(output: &mut String, pending: &mut bool) {
+    if *pending && !output.is_empty() && !output.ends_with(['(', '[', ' ']) {
+        output.push(' ');
+    }
+    *pending = false;
+}
+
+fn trim_trailing_space(output: &mut String) {
+    while output.ends_with(' ') {
+        output.pop();
+    }
+}
+
 /// Consumes top-level CSS Syntax rules while preserving their exact source.
 pub fn scan_top_level_rules(source: &str) -> Result<Vec<String>, EngineError> {
     catch_unwind(AssertUnwindSafe(|| scan_top_level_rules_inner(source)))
@@ -892,5 +1154,41 @@ mod tests {
         .unwrap();
         assert_eq!(keyframes.children.len(), 2);
         assert!(keyframes.children[0].declarations.contains("var(--x"));
+    }
+
+    #[test]
+    fn normalizes_public_rule_preludes_without_modernizing_legacy_queries() {
+        assert_eq!(normalize_selector_text(".a,.b").unwrap(), ".a, .b");
+        assert_eq!(
+            normalize_media_text("screen and (max-width:767px),print").unwrap(),
+            "screen and (max-width: 767px), print"
+        );
+        assert_eq!(
+            normalize_supports_text("(display:grid)").unwrap(),
+            "(display:grid)"
+        );
+
+        let container = parse_container_prelude("card (max-width:767px)").unwrap();
+        assert_eq!(container.condition_text, "card (max-width: 767px)");
+        assert_eq!(container.name, "card");
+        assert_eq!(container.query, "(max-width: 767px)");
+    }
+
+    #[test]
+    fn parses_and_canonicalizes_scope_boundaries() {
+        assert_eq!(
+            parse_scope_prelude("(.a,.b) to (.c)").unwrap(),
+            ParsedScopePrelude {
+                start: Some(".a, .b".to_owned()),
+                end: Some(".c".to_owned()),
+            }
+        );
+        assert_eq!(
+            parse_scope_prelude("").unwrap(),
+            ParsedScopePrelude {
+                start: None,
+                end: None,
+            }
+        );
     }
 }
