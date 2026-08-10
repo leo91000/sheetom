@@ -1,0 +1,1 @@
+background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red

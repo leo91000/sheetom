@@ -1,0 +1,27 @@
+[package]
+name = "sheetom-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.13"
+sheetom-core = { path = "../crates/sheetom-core" }
+
+[[bin]]
+name = "declaration_block"
+path = "fuzz_targets/declaration_block.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+members = ["."]
+
+[patch.crates-io]
+lightningcss = { path = "../vendor/lightningcss" }
+lightningcss-derive = { path = "../vendor/lightningcss/derive" }
+parcel_selectors = { path = "../vendor/lightningcss/selectors" }

@@ -17,7 +17,10 @@ test("documentation changes run only documentation validation", () => {
 });
 
 test("vendored source changes run only native validation", () => {
-    assert.deepEqual(classifyPaths(["vendor/lightningcss/src/lib.rs"]), { ...none, native: true });
+    assert.deepEqual(classifyPaths(["vendor/lightningcss/src/lib.rs", "fuzz/fuzz_targets/declaration_block.rs"]), {
+        ...none,
+        native: true,
+    });
 });
 
 test("native bridge changes include the performance gate", () => {
