@@ -252,6 +252,15 @@ pub(crate) fn sheetom_parser_property_name(name: &str) -> Option<&'static str> {
     if name == "grid-gap" {
         return Some("gap");
     }
+    if name.ends_with("rule-width") || name == "-webkit-text-stroke-width" {
+        return Some("border-top-width");
+    }
+    if name.ends_with("rule-style") {
+        return Some("border-top-style");
+    }
+    if name.ends_with("rule-color") || name == "-webkit-text-stroke-color" {
+        return Some("border-top-color");
+    }
     None
 }
 
