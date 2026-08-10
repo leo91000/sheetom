@@ -29,6 +29,8 @@ interface NativeBinding {
   parseCounterStyleDescriptorValue(name: string, value: string): string | null;
   parseCounterStyleDescriptorsJson(source: string): string;
   parseCounterStyleNameJson(source: string): string | null;
+  serializeIdentifierValue(value: string): string;
+  serializeFontFamilyValue(value: string): string;
   NativeDeclarationState: new (
     context?: "style" | "font-face",
   ) => NativeDeclarationStateHandle;

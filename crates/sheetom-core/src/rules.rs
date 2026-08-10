@@ -1,5 +1,9 @@
-use crate::{scan_safety_metrics, EngineError, MAX_NESTING_DEPTH};
-use cssparser::{Parser, ParserInput, SourcePosition, Token};
+use crate::{
+    scan_safety_metrics,
+    syntax::{parse_declaration_list, serialize_identifier, split_top_level_whitespace},
+    EngineError, MAX_NESTING_DEPTH,
+};
+use cssparser::{serialize_string, Parser, ParserInput, SourcePosition, Token};
 use lightningcss::{
     rules::{CssRule, CssRuleList},
     stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
@@ -132,6 +136,57 @@ pub fn parse_scope_prelude(source: &str) -> Result<ParsedScopePrelude, EngineErr
         start: Some(normalize_selector_text(start)?),
         end: Some(normalize_selector_text(end)?),
     })
+}
+
+pub fn serialize_font_family_setter(value: &str) -> String {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|family| !family.is_empty())
+        .map(|family| {
+            if valid_unquoted_font_family(family) {
+                return serialize_identifier(family);
+            }
+            let mut serialized = String::new();
+            if serialize_string(family, &mut serialized).is_err() {
+                return "\"\"".to_owned();
+            }
+            serialized
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn valid_unquoted_font_family(value: &str) -> bool {
+    if value.starts_with("--")
+        || matches!(
+            value.to_ascii_lowercase().as_str(),
+            "initial"
+                | "inherit"
+                | "unset"
+                | "default"
+                | "revert"
+                | "revert-layer"
+                | "serif"
+                | "sans-serif"
+                | "cursive"
+                | "fantasy"
+                | "monospace"
+                | "system-ui"
+                | "emoji"
+                | "math"
+                | "fangsong"
+                | "ui-serif"
+                | "ui-sans-serif"
+                | "ui-monospace"
+                | "ui-rounded"
+        )
+    {
+        return false;
+    }
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    matches!(parser.next().ok(), Some(Token::Ident(_))) && parser.is_exhausted()
 }
 
 fn container_query_start(source: &str) -> usize {
@@ -464,6 +519,11 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             .ok_or_else(|| EngineError::Parse("the rule has no recoverable block".to_owned()));
     };
     if let Some(parsed) = strict.as_ref() {
+        if parsed.kind == "property" {
+            let mut parsed = parsed.clone();
+            preserve_property_descriptor_values(&mut parsed, &body);
+            return Ok(parsed);
+        }
         let raw_items = scan_recovered_block_items(&body).len();
         let recover_from_source = matches!(
             parsed.kind.as_str(),
@@ -471,6 +531,7 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
                 | "font-face"
                 | "position-try"
                 | "counter-style"
+                | "font-feature-values"
                 | "page"
                 | "media"
                 | "supports"
@@ -504,6 +565,61 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
     recover_block_rule(probe, &body, depth)
 }
 
+fn preserve_property_descriptor_values(rule: &mut ParsedRule, body: &str) {
+    let declarations = parse_declaration_list(body);
+    let last_value = |name: &str| {
+        declarations
+            .iter()
+            .rev()
+            .find(|declaration| declaration.name.eq_ignore_ascii_case(name))
+            .map(|declaration| declaration.value.trim())
+    };
+    let Some(syntax) = last_value("syntax") else {
+        return;
+    };
+    let Some(inherits) = last_value("inherits") else {
+        return;
+    };
+    let mut descriptors = vec![
+        format!("syntax: {syntax};"),
+        format!("inherits: {};", inherits.to_ascii_lowercase()),
+    ];
+    if let Some(initial_value) = last_value("initial-value") {
+        descriptors.push(format!("initial-value: {initial_value};"));
+    }
+    let syntax_value = parse_css_string(syntax).unwrap_or_default();
+    rule.children = vec![
+        property_descriptor("syntax", &syntax_value),
+        property_descriptor("inherits", &inherits.to_ascii_lowercase()),
+    ];
+    if let Some(initial_value) = last_value("initial-value") {
+        rule.children
+            .push(property_descriptor("initial-value", initial_value));
+    }
+    rule.declarations = descriptors.join(" ");
+    rule.css_text = format!("@property {} {{ {} }}", rule.prelude, descriptors.join(" "));
+}
+
+fn property_descriptor(name: &str, value: &str) -> ParsedRule {
+    ParsedRule {
+        kind: "property-descriptor".to_owned(),
+        prelude: name.to_owned(),
+        declarations: value.to_owned(),
+        children: Vec::new(),
+        css_text: String::new(),
+    }
+}
+
+fn parse_css_string(value: &str) -> Option<String> {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    let value = match parser.next().ok()? {
+        Token::QuotedString(value) => value.to_string(),
+        _ => return None,
+    };
+    parser.is_exhausted().then_some(value)
+}
+
 fn preserve_source_text(rule: &mut ParsedRule, source: &str) {
     if matches!(rule.kind.as_str(), "generic" | "font-feature-values") {
         rule.css_text = source.trim().to_owned();
@@ -531,10 +647,15 @@ fn preserve_source_prelude(rule: &mut ParsedRule, header: &str) {
             }
         }
         "counter-style" => "@counter-style",
+        "font-feature-values" => "@font-feature-values",
         _ => return,
     };
     if let Some(prelude) = header.trim().get(prefix.len()..) {
-        rule.prelude = prelude.trim().to_owned();
+        rule.prelude = if rule.kind == "font-feature-values" {
+            format_condition_text(prelude)
+        } else {
+            prelude.trim().to_owned()
+        };
     }
 }
 
@@ -552,6 +673,7 @@ fn recover_block_rule(
         "font-face" | "position-try" | "counter-style" => {
             probe.declarations = body.trim().to_owned();
         }
+        "font-feature-values" => recover_font_feature_values_body(&mut probe, body),
         "page" => recover_page_body(&mut probe, body, depth)?,
         "keyframes" => recover_keyframes_body(&mut probe, body, depth)?,
         _ => {
@@ -562,6 +684,110 @@ fn recover_block_rule(
         }
     }
     Ok(probe)
+}
+
+fn recover_font_feature_values_body(probe: &mut ParsedRule, body: &str) {
+    probe.children.clear();
+    for fragment in scan_recovered_block_items(body) {
+        let Some((header, declarations)) = split_outer_block(&fragment) else {
+            continue;
+        };
+        let Some(name) = font_feature_subrule_name(&header) else {
+            continue;
+        };
+        let Some(entries) = parse_font_feature_entries(&declarations) else {
+            continue;
+        };
+        let map_index = probe.children.iter().position(|candidate| {
+            candidate.kind == "font-feature-map" && candidate.prelude == name
+        });
+        let map = if let Some(index) = map_index {
+            &mut probe.children[index]
+        } else {
+            probe.children.push(ParsedRule {
+                kind: "font-feature-map".to_owned(),
+                prelude: name.clone(),
+                declarations: String::new(),
+                children: Vec::new(),
+                css_text: String::new(),
+            });
+            let Some(map) = probe.children.last_mut() else {
+                continue;
+            };
+            map
+        };
+        for entry in entries {
+            if let Some(existing) = map
+                .children
+                .iter_mut()
+                .find(|candidate| candidate.prelude == entry.prelude)
+            {
+                existing.declarations = entry.declarations;
+                existing.css_text = entry.css_text;
+            } else {
+                map.children.push(entry);
+            }
+        }
+    }
+}
+
+fn font_feature_subrule_name(header: &str) -> Option<String> {
+    let mut input = ParserInput::new(header);
+    let mut parser = Parser::new(&mut input);
+    let name = match parser.next().ok()? {
+        Token::AtKeyword(name) => name.to_ascii_lowercase(),
+        _ => return None,
+    };
+    if !parser.is_exhausted()
+        || !matches!(
+            name.as_str(),
+            "annotation" | "ornaments" | "stylistic" | "swash" | "character-variant" | "styleset"
+        )
+    {
+        return None;
+    }
+    Some(name)
+}
+
+fn parse_font_feature_entries(source: &str) -> Option<Vec<ParsedRule>> {
+    let mut entries = Vec::<ParsedRule>::new();
+    for fragment in scan_recovered_block_items(source) {
+        let declarations = parse_declaration_list(&fragment);
+        let [declaration] = declarations.as_slice() else {
+            return None;
+        };
+        if declaration.important {
+            return None;
+        }
+        let components = split_top_level_whitespace(&declaration.value)?;
+        if components.is_empty() {
+            return None;
+        }
+        let mut values = Vec::with_capacity(components.len());
+        for component in components {
+            let value = component.parse::<i32>().ok()?;
+            if value < 0 {
+                return None;
+            }
+            values.push(value.to_string());
+        }
+        let entry = ParsedRule {
+            kind: "font-feature-entry".to_owned(),
+            prelude: declaration.name.clone(),
+            declarations: values.join(" "),
+            children: Vec::new(),
+            css_text: serialize_identifier(&declaration.name),
+        };
+        if let Some(existing) = entries
+            .iter_mut()
+            .find(|candidate| candidate.prelude == declaration.name)
+        {
+            *existing = entry;
+        } else {
+            entries.push(entry);
+        }
+    }
+    Some(entries)
 }
 
 fn recover_style_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result<(), EngineError> {
@@ -923,7 +1149,72 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
             children: Vec::new(),
             css_text,
         },
-        CssRule::FontFeatureValues(_) => leaf("font-feature-values", &css_text),
+        CssRule::FontFeatureValues(rule) => {
+            let mut children = Vec::with_capacity(rule.rules.len());
+            for subrule in rule.rules.values() {
+                if subrule
+                    .declarations
+                    .values()
+                    .flatten()
+                    .any(|value| *value < 0)
+                {
+                    continue;
+                }
+                let mut entries = Vec::with_capacity(subrule.declarations.len());
+                for (name, values) in &subrule.declarations {
+                    entries.push(ParsedRule {
+                        kind: "font-feature-entry".to_owned(),
+                        prelude: name.0.as_ref().to_owned(),
+                        declarations: values
+                            .iter()
+                            .map(i32::to_string)
+                            .collect::<Vec<_>>()
+                            .join(" "),
+                        children: Vec::new(),
+                        css_text: serialize_identifier(name.0.as_ref()),
+                    });
+                }
+                children.push(ParsedRule {
+                    kind: "font-feature-map".to_owned(),
+                    prelude: serialize(&subrule.name)?,
+                    declarations: String::new(),
+                    children: entries,
+                    css_text: String::new(),
+                });
+            }
+            ParsedRule {
+                kind: "font-feature-values".to_owned(),
+                prelude: block_prelude(&css_text, "@font-feature-values"),
+                declarations: String::new(),
+                children,
+                css_text,
+            }
+        }
+        CssRule::Property(rule) => {
+            let name = serialize(&rule.name)?;
+            let syntax = serialize(&rule.syntax)?;
+            let mut descriptors = vec![
+                format!("syntax: {syntax};"),
+                format!("inherits: {};", rule.inherits),
+            ];
+            let mut children = vec![
+                property_descriptor("syntax", &parse_css_string(&syntax).unwrap_or_default()),
+                property_descriptor("inherits", if rule.inherits { "true" } else { "false" }),
+            ];
+            if let Some(initial_value) = rule.initial_value.as_ref() {
+                let initial_value = serialize(initial_value)?;
+                descriptors.push(format!("initial-value: {initial_value};"));
+                children.push(property_descriptor("initial-value", &initial_value));
+            }
+            let declarations = descriptors.join(" ");
+            ParsedRule {
+                kind: "property".to_owned(),
+                prelude: name.clone(),
+                declarations,
+                children,
+                css_text: format!("@property {name} {{ {} }}", descriptors.join(" ")),
+            }
+        }
         CssRule::NestedDeclarations(rule) => ParsedRule {
             kind: "nested-declarations".to_owned(),
             prelude: String::new(),
@@ -1067,12 +1358,48 @@ mod tests {
                 "layer-block",
                 "scope",
                 "starting-style",
-                "generic",
+                "property",
             ]
         );
         assert_eq!(parsed[2].children[0].kind, "margin");
         assert_eq!(parsed[4].children.len(), 2);
+        assert_eq!(parsed[6].prelude, "Test");
+        assert_eq!(parsed[6].children[0].kind, "font-feature-map");
+        assert_eq!(parsed[6].children[0].prelude, "styleset");
+        assert_eq!(parsed[6].children[0].children[0].prelude, "nice");
+        assert_eq!(parsed[6].children[0].children[0].declarations, "1");
         assert_eq!(parsed[11].children[0].kind, "style");
+    }
+
+    #[test]
+    fn recovers_font_feature_maps_with_browser_winners() {
+        let parsed = parse_recovered_rule_tree(
+            "@font-feature-values Test { @styleset { a: 1; } @styleset { b: 2; a: 3; } @annotation { mark: 0; } @swash { good: 1; bad: -1; } }",
+        )
+        .unwrap();
+        assert_eq!(parsed.prelude, "Test");
+        assert_eq!(parsed.children.len(), 2);
+        assert_eq!(parsed.children[0].prelude, "styleset");
+        assert_eq!(parsed.children[0].children[0].prelude, "a");
+        assert_eq!(parsed.children[0].children[0].declarations, "3");
+        assert_eq!(parsed.children[0].children[1].prelude, "b");
+        assert_eq!(parsed.children[1].prelude, "annotation");
+        assert_eq!(parsed.children[1].children[0].css_text, "mark");
+    }
+
+    #[test]
+    fn serializes_font_family_setter_values_like_chromium() {
+        for (input, expected) in [
+            ("Other", "Other"),
+            ("A B", "\"A B\""),
+            ("\"A B\", Test", "\"\\\"A B\\\"\", Test"),
+            ("A,,B", "A, B"),
+            ("serif", "\"serif\""),
+            ("--foo", "\"--foo\""),
+            ("é", "é"),
+        ] {
+            assert_eq!(serialize_font_family_setter(input), expected, "{input}");
+        }
     }
 
     #[test]
