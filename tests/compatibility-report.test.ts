@@ -87,9 +87,14 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       version: "1.33.0",
       commit: "c6a0c3cebf3395635e61075d2c81a96a710d4910",
     });
+    assert.deepEqual(report.baseline.nativeEngine.cssSyntax, {
+      repository: "https://github.com/servo/rust-cssparser",
+      version: "0.37.0",
+      commit: "4c49486494fb24dc01390e3baca9698ef1744c71",
+    });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.12",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.13",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);

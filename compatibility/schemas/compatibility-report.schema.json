@@ -31,10 +31,20 @@
         "nativeEngine": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["revision", "upstream", "sourceManifestSha256", "sourceFileCount"],
+          "required": ["revision", "upstream", "cssSyntax", "sourceManifestSha256", "sourceFileCount"],
           "properties": {
             "revision": { "type": "string", "minLength": 1 },
             "upstream": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["repository", "version", "commit"],
+              "properties": {
+                "repository": { "type": "string", "minLength": 1 },
+                "version": { "type": "string", "minLength": 1 },
+                "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+              }
+            },
+            "cssSyntax": {
               "type": "object",
               "additionalProperties": false,
               "required": ["repository", "version", "commit"],
