@@ -1,47 +1,13 @@
-import { createRequire } from "node:module";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import type { SheetOMDiagnosticCode } from "../diagnostics.js";
 import type { ReportDeclarationDiagnostic } from "./declaration-block.js";
-
-type MutationOutcome =
-  | "applied"
-  | "invalid-name"
-  | "invalid-priority"
-  | "invalid-value"
-  | "unsupported-shorthand";
-
-interface NativeDeclarationState {
-  readonly length: number;
-  readonly cssText: string;
-  item(index: number): string;
-  getPropertyValue(name: string): string;
-  getPropertyPriority(name: string): string;
-  setProperty(name: string, value: string, priority: string): MutationOutcome;
-  removeProperty(name: string): string;
-  replaceCssText(source: string): void;
-  serializeFormatted(safe: boolean, indent: string, separator: string): string;
-}
-
-interface NativeBinding {
-  NativeDeclarationState: new (context?: "style" | "font-face") => NativeDeclarationState;
-}
-
-function loadBinding(): NativeBinding {
-  const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
-  const packageRoot = path.basename(moduleDirectory) === "dist"
-    ? path.dirname(moduleDirectory)
-    : path.resolve(moduleDirectory, "../..");
-  const require = createRequire(import.meta.url);
-  return require(path.join(packageRoot, "native", "index.cjs")) as NativeBinding;
-}
-
-const binding = loadBinding();
+import {
+  nativeBinding,
+  type NativeDeclarationStateHandle,
+} from "./native-binding.js";
 
 /** Thin JS ownership boundary around the Rust declaration state machine. */
 export class NativeDeclarationBlock {
-  readonly #state: NativeDeclarationState;
+  readonly #state: NativeDeclarationStateHandle;
   readonly #reportDiagnostic: ReportDeclarationDiagnostic;
   #observableCache: string | undefined;
   readonly #serializationCache = new Map<string, string>();
@@ -51,7 +17,7 @@ export class NativeDeclarationBlock {
     context: "style" | "font-face" = "style",
   ) {
     this.#reportDiagnostic = reportDiagnostic;
-    this.#state = new binding.NativeDeclarationState(context);
+    this.#state = new nativeBinding.NativeDeclarationState(context);
   }
 
   get cssText(): string {

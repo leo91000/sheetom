@@ -1,4 +1,5 @@
 use crate::{scan_safety_metrics, EngineError, MAX_NESTING_DEPTH};
+use cssparser::{Parser, ParserInput, SourcePosition, Token};
 use lightningcss::{
     rules::{CssRule, CssRuleList},
     stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
@@ -22,6 +23,109 @@ pub struct ParsedRule {
     pub declarations: String,
     pub children: Vec<ParsedRule>,
     pub css_text: String,
+}
+
+/// Consumes top-level CSS Syntax rules while preserving their exact source.
+pub fn scan_top_level_rules(source: &str) -> Result<Vec<String>, EngineError> {
+    catch_unwind(AssertUnwindSafe(|| scan_top_level_rules_inner(source)))
+        .unwrap_or(Err(EngineError::UnexpectedPanic))
+}
+
+fn scan_top_level_rules_inner(source: &str) -> Result<Vec<String>, EngineError> {
+    validate_stylesheet_budget(source)?;
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let mut output = Vec::new();
+
+    while !parser.is_exhausted() {
+        let start = parser.position();
+        let first = match parser.next_including_whitespace_and_comments() {
+            Ok(token) => token.clone(),
+            Err(_) => break,
+        };
+        if is_rule_trivia(&first) {
+            continue;
+        }
+
+        let mut token = first;
+        loop {
+            let boundary = match token {
+                Token::CurlyBracketBlock => {
+                    consume_nested_block(&mut parser)?;
+                    true
+                }
+                Token::Function(_) | Token::ParenthesisBlock | Token::SquareBracketBlock => {
+                    consume_nested_block(&mut parser)?;
+                    false
+                }
+                Token::Semicolon => true,
+                _ => false,
+            };
+            if boundary {
+                break;
+            }
+
+            token = match parser.next_including_whitespace_and_comments() {
+                Ok(token) => token.clone(),
+                Err(_) => break,
+            };
+        }
+
+        push_source_slice(&parser, start, &mut output);
+        if output.len() > MAX_RULES {
+            return Err(EngineError::RuleLimitExceeded {
+                actual: output.len(),
+                limit: MAX_RULES,
+            });
+        }
+    }
+
+    Ok(output)
+}
+
+fn validate_stylesheet_budget(source: &str) -> Result<(), EngineError> {
+    if source.len() > MAX_STYLESHEET_BYTES {
+        return Err(EngineError::InputLimitExceeded {
+            actual: source.len(),
+            limit: MAX_STYLESHEET_BYTES,
+        });
+    }
+    let metrics = scan_safety_metrics(source);
+    if metrics.maximum_depth > MAX_NESTING_DEPTH {
+        return Err(EngineError::NestingLimitExceeded {
+            actual: metrics.maximum_depth,
+            limit: MAX_NESTING_DEPTH,
+        });
+    }
+    Ok(())
+}
+
+fn is_rule_trivia(token: &Token<'_>) -> bool {
+    matches!(
+        token,
+        Token::WhiteSpace(_)
+            | Token::Comment(_)
+            | Token::CDO
+            | Token::CDC
+            | Token::Semicolon
+            | Token::CloseCurlyBracket
+    )
+}
+
+fn consume_nested_block<'i>(parser: &mut Parser<'i, '_>) -> Result<(), EngineError> {
+    parser
+        .parse_nested_block(|nested| {
+            while nested.next_including_whitespace_and_comments().is_ok() {}
+            Ok::<(), cssparser::ParseError<'i, ()>>(())
+        })
+        .map_err(|error| EngineError::Parse(format!("{:?}", error.kind)))
+}
+
+fn push_source_slice(parser: &Parser<'_, '_>, start: SourcePosition, output: &mut Vec<String>) {
+    let source = parser.slice(start..parser.position()).trim();
+    if !source.is_empty() {
+        output.push(source.to_owned());
+    }
 }
 
 pub fn parse_rule_tree(source: &str) -> Result<ParsedRule, EngineError> {
@@ -50,19 +154,7 @@ fn parse_stylesheet_tree_inner(
     source: &str,
     error_recovery: bool,
 ) -> Result<Vec<ParsedRule>, EngineError> {
-    if source.len() > MAX_STYLESHEET_BYTES {
-        return Err(EngineError::InputLimitExceeded {
-            actual: source.len(),
-            limit: MAX_STYLESHEET_BYTES,
-        });
-    }
-    let metrics = scan_safety_metrics(source);
-    if metrics.maximum_depth > MAX_NESTING_DEPTH {
-        return Err(EngineError::NestingLimitExceeded {
-            actual: metrics.maximum_depth,
-            limit: MAX_NESTING_DEPTH,
-        });
-    }
+    validate_stylesheet_budget(source)?;
 
     let sheet = StyleSheet::parse(
         source,
@@ -362,5 +454,34 @@ mod tests {
         assert_eq!(parsed[2].children[0].kind, "margin");
         assert_eq!(parsed[4].children.len(), 2);
         assert_eq!(parsed[11].children[0].kind, "style");
+    }
+
+    #[test]
+    fn scans_exact_top_level_rule_sources() {
+        let source = r#"
+            /* before */ ; }
+            .é { --x: "a;b}"; color: red; }
+            @media screen { .nested { content: "}"; } }
+            @unknown fn(a;b) [x;y];
+            .recovered { padding: 72px var(--space, var(--space,
+        "#;
+        let rules = scan_top_level_rules(source).unwrap();
+        assert_eq!(rules.len(), 4);
+        assert_eq!(rules[0], ".é { --x: \"a;b}\"; color: red; }");
+        assert_eq!(rules[1], "@media screen { .nested { content: \"}\"; } }");
+        assert_eq!(rules[2], "@unknown fn(a;b) [x;y];");
+        assert_eq!(
+            rules[3],
+            ".recovered { padding: 72px var(--space, var(--space,"
+        );
+    }
+
+    #[test]
+    fn scanner_rejects_excessive_nesting_before_tokenization() {
+        let source = format!("{}x{}", "fn(".repeat(4097), ")".repeat(4097));
+        assert!(matches!(
+            scan_top_level_rules(&source),
+            Err(EngineError::NestingLimitExceeded { .. })
+        ));
     }
 }

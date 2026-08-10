@@ -20,7 +20,7 @@ pub use declaration_state::{
     DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
     PendingSubstitutionGroup,
 };
-pub use rules::{parse_rule_tree, parse_stylesheet_tree, ParsedRule};
+pub use rules::{parse_rule_tree, parse_stylesheet_tree, scan_top_level_rules, ParsedRule};
 
 #[cfg(panic = "abort")]
 compile_error!("sheetom-core must be compiled with panic=unwind");
@@ -36,7 +36,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.4";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.5";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.4");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.5");
     }
 
     #[test]

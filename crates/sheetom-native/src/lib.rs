@@ -6,7 +6,7 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 use napi_derive::napi;
 use sheetom_core::{
     canonicalize_declaration_block as canonicalize, parse_rule_tree, parse_stylesheet_tree,
-    DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
+    scan_top_level_rules, DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -140,4 +140,12 @@ pub fn parse_stylesheet_tree_json(source: String, error_recovery: bool) -> napi:
     let parsed = parse_stylesheet_tree(&source, error_recovery)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+/// Scans exact top-level CSS rule source without exposing native parser nodes.
+#[napi]
+pub fn scan_top_level_rules_json(source: String) -> napi::Result<String> {
+    let rules = scan_top_level_rules(&source)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&rules).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
