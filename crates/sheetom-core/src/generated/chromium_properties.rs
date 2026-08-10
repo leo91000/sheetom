@@ -3072,17 +3072,125 @@ pub static INITIAL_LONGHAND_VALUES: &[(&str, &str)] = &[
 ];
 
 pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtension])] = &[
+    ("-webkit-animation-iteration-count", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-box-flex", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-box-ordinal-group", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
     ("-webkit-box-reflect", &[
         super::PropertyGrammarExtension::WebkitBoxReflect,
     ]),
+    ("-webkit-column-count", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-flex-grow", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-flex-shrink", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-line-clamp", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-mask-box-image-outset", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("-webkit-mask-box-image-slice", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-mask-box-image-width", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("-webkit-opacity", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-order", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("-webkit-shape-image-threshold", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("animation-iteration-count", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("baseline-shift", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("border-image-outset", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("border-image-slice", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("border-image-width", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("column-count", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
     ("content", &[
         super::PropertyGrammarExtension::Content,
+    ]),
+    ("cx", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("cy", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("fill-opacity", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("flex-grow", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("flex-line-count", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("flex-shrink", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("flood-opacity", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("font-size-adjust", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("font-weight", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("grid-column-end", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("grid-column-start", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("grid-row-end", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("grid-row-start", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
     ("grid-template-columns", &[
         super::PropertyGrammarExtension::Subgrid,
     ]),
     ("grid-template-rows", &[
         super::PropertyGrammarExtension::Subgrid,
+    ]),
+    ("hyphenate-limit-chars", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("initial-letter", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("line-height", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("math-depth", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
     ("offset-anchor", &[
         super::PropertyGrammarExtension::OffsetPosition,
@@ -3093,10 +3201,71 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("offset-rotate", &[
         super::PropertyGrammarExtension::OffsetRotate,
     ]),
+    ("opacity", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("order", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("orphans", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("r", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("reading-order", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("rx", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("ry", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("scale", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("shape-image-threshold", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
     ("size", &[
         super::PropertyGrammarExtension::PageSize,
     ]),
+    ("stop-opacity", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("stroke-dasharray", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("stroke-dashoffset", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("stroke-miterlimit", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("stroke-opacity", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("stroke-width", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("tab-size", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("widows", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("x", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
+    ("y", &[
+        super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+    ]),
     ("z-index", &[
         super::PropertyGrammarExtension::IntegerCalculation,
+        super::PropertyGrammarExtension::LengthNumberCalculation,
+    ]),
+    ("zoom", &[
+        super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
 ];

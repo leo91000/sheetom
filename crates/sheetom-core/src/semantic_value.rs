@@ -9,7 +9,7 @@ use lightningcss::{
 use crate::{
     analyze_recovered_substitutions,
     catalog::{property_grammar, PropertyGrammarOwner},
-    extension_value::parse_extension_value,
+    extension_value::{parse_extension_value, parse_preferred_extension_value},
     recover_component_values_with_limits, EngineError, PropertyParseKind, RecoveredValue,
     ResourceLimits, SemanticExtensionValue, SemanticSubstitutionValue,
 };
@@ -91,6 +91,19 @@ pub fn parse_semantic_property_with_limits(
             recovered,
             parse_kind: PropertyParseKind::Unparsed,
         });
+    }
+
+    if recovered.contains_context_dependent_sign() {
+        if let Some(value) =
+            parse_preferred_extension_value(grammar.extensions(), grammar.canonical_name(), source)
+        {
+            return Ok(SemanticDeclaration {
+                property_name: Arc::from(grammar.canonical_name()),
+                value: SemanticPropertyValue::Extension(value),
+                recovered,
+                parse_kind: PropertyParseKind::SheetomTyped,
+            });
+        }
     }
 
     let standard = if grammar.has_standard_parser() {
@@ -398,6 +411,36 @@ mod tests {
             assert!(
                 parse_standard_semantic_property("color", source).is_err(),
                 "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn matches_the_complete_chromium_number_result_math_corpus() {
+        let corpus: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../compatibility/number-result-math-capabilities.json"
+        ))
+        .unwrap();
+        let cases = corpus["cases"].as_array().unwrap();
+
+        for candidate in cases {
+            let id = candidate["id"].as_str().unwrap();
+            let name = candidate["property"].as_str().unwrap();
+            let source = candidate["input"].as_str().unwrap();
+            let expected = candidate["accepted"].as_bool().unwrap();
+            if candidate["integration"].as_str().unwrap() == "composite-property" {
+                continue;
+            }
+            let declaration = parse_semantic_property(name, source);
+            assert_eq!(declaration.is_ok(), expected, "{id}");
+            if !expected {
+                continue;
+            }
+
+            assert_eq!(
+                declaration.unwrap().canonical_value().unwrap(),
+                candidate["observable"].as_str().unwrap(),
+                "{id}"
             );
         }
     }

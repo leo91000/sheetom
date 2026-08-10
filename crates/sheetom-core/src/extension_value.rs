@@ -4,7 +4,8 @@ use lightningcss::{
     traits::{Parse, Sign, ToCss},
     values::{
         angle::Angle,
-        length::{Length, LengthValue},
+        calc::Calc,
+        length::{Length, LengthValue, PreservedLengthPercentage},
         number::CSSNumber,
         position::{HorizontalPosition, Position, PositionComponent, VerticalPosition},
     },
@@ -15,6 +16,7 @@ use crate::{catalog::PropertyGrammarExtension, EngineError};
 #[derive(Clone, Debug, PartialEq)]
 pub enum SemanticExtensionValue {
     IntegerCalculation(IntegerCalculationValue),
+    CrossDimensionCalculation(CrossDimensionCalculationValue),
     OffsetPosition(OffsetPositionValue),
     OffsetRotate(OffsetRotateValue),
     PageSize(PageSizeValue),
@@ -24,9 +26,48 @@ impl SemanticExtensionValue {
     pub fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             SemanticExtensionValue::IntegerCalculation(value) => value.canonical_value(),
+            SemanticExtensionValue::CrossDimensionCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetPosition(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetRotate(value) => value.canonical_value(),
             SemanticExtensionValue::PageSize(value) => value.canonical_value(),
+        }
+    }
+
+    pub(crate) fn retains_context_dependent_math(&self) -> bool {
+        match self {
+            SemanticExtensionValue::CrossDimensionCalculation(value) => {
+                value.retains_context_dependent_math()
+            }
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum CrossDimensionCalculationValue {
+    LengthNumber(Calc<Length>),
+    LengthPercentageNumber(Calc<PreservedLengthPercentage>),
+    LengthPercentageOrNumber(Calc<PreservedLengthPercentage>),
+}
+
+impl CrossDimensionCalculationValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            CrossDimensionCalculationValue::LengthNumber(value) => serialize_typed(value),
+            CrossDimensionCalculationValue::LengthPercentageNumber(value)
+            | CrossDimensionCalculationValue::LengthPercentageOrNumber(value) => {
+                serialize_typed(value)
+            }
+        }
+    }
+
+    fn retains_context_dependent_math(&self) -> bool {
+        match self {
+            CrossDimensionCalculationValue::LengthNumber(value) => value.contains_unresolved_sign(),
+            CrossDimensionCalculationValue::LengthPercentageNumber(value)
+            | CrossDimensionCalculationValue::LengthPercentageOrNumber(value) => {
+                value.contains_unresolved_sign()
+            }
         }
     }
 }
@@ -264,23 +305,95 @@ pub(crate) fn parse_extension_value(
     property_name: &str,
     source: &str,
 ) -> Result<Option<SemanticExtensionValue>, EngineError> {
+    let mut last_error = None;
     for extension in extensions {
         let value = match extension {
-            PropertyGrammarExtension::IntegerCalculation => {
-                Some(parse_integer_calculation(source)?)
+            PropertyGrammarExtension::IntegerCalculation => Some(parse_integer_calculation(source)),
+            PropertyGrammarExtension::LengthNumberCalculation => {
+                Some(parse_length_number_calculation(source))
+            }
+            PropertyGrammarExtension::LengthPercentageNumberCalculation => {
+                Some(parse_length_percentage_number_calculation(source))
+            }
+            PropertyGrammarExtension::LengthPercentageOrNumberCalculation => {
+                Some(parse_length_percentage_or_number_calculation(source))
             }
             PropertyGrammarExtension::OffsetPosition => {
-                Some(parse_offset_position(property_name, source)?)
+                Some(parse_offset_position(property_name, source))
             }
-            PropertyGrammarExtension::OffsetRotate => Some(parse_offset_rotate(source)?),
-            PropertyGrammarExtension::PageSize => Some(parse_page_size(source)?),
+            PropertyGrammarExtension::OffsetRotate => Some(parse_offset_rotate(source)),
+            PropertyGrammarExtension::PageSize => Some(parse_page_size(source)),
             _ => None,
         };
-        if value.is_some() {
-            return Ok(value);
+        match value {
+            Some(Ok(value)) => return Ok(Some(value)),
+            Some(Err(error)) => last_error = Some(error),
+            None => {}
         }
     }
-    Ok(None)
+    match last_error {
+        Some(error) => Err(error),
+        None => Ok(None),
+    }
+}
+
+pub(crate) fn parse_preferred_extension_value(
+    extensions: &[PropertyGrammarExtension],
+    property_name: &str,
+    source: &str,
+) -> Option<SemanticExtensionValue> {
+    let preferred = extensions.iter().copied().filter(|extension| {
+        matches!(
+            extension,
+            PropertyGrammarExtension::LengthNumberCalculation
+                | PropertyGrammarExtension::LengthPercentageNumberCalculation
+                | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
+        )
+    });
+    for extension in preferred {
+        let Ok(Some(value)) = parse_extension_value(&[extension], property_name, source) else {
+            continue;
+        };
+        if value.retains_context_dependent_math() {
+            return Some(value);
+        }
+    }
+    None
+}
+
+fn parse_length_number_calculation(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let value = parse_entire(source, Calc::<Length>::parse)?;
+    if !value.resolves_to_number() {
+        return Err(EngineError::Parse(
+            "calculation does not resolve to a number".to_owned(),
+        ));
+    }
+    Ok(SemanticExtensionValue::CrossDimensionCalculation(
+        CrossDimensionCalculationValue::LengthNumber(value),
+    ))
+}
+
+fn parse_length_percentage_number_calculation(
+    source: &str,
+) -> Result<SemanticExtensionValue, EngineError> {
+    let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse)?;
+    if !value.resolves_to_number() {
+        return Err(EngineError::Parse(
+            "calculation does not resolve to a number".to_owned(),
+        ));
+    }
+    Ok(SemanticExtensionValue::CrossDimensionCalculation(
+        CrossDimensionCalculationValue::LengthPercentageNumber(value),
+    ))
+}
+
+fn parse_length_percentage_or_number_calculation(
+    source: &str,
+) -> Result<SemanticExtensionValue, EngineError> {
+    let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse)?;
+    Ok(SemanticExtensionValue::CrossDimensionCalculation(
+        CrossDimensionCalculationValue::LengthPercentageOrNumber(value),
+    ))
 }
 
 fn parse_integer_calculation(source: &str) -> Result<SemanticExtensionValue, EngineError> {
@@ -519,6 +632,86 @@ mod tests {
             "calc(1px)"
         )
         .is_err());
+    }
+
+    #[test]
+    fn owns_number_results_with_relative_dimension_arguments() {
+        for (extension, source, expected) in [
+            (
+                PropertyGrammarExtension::LengthNumberCalculation,
+                "sign(1em)",
+                "sign(1em)",
+            ),
+            (
+                PropertyGrammarExtension::LengthNumberCalculation,
+                "sign(calc(1px - 2em))",
+                "sign(-2em + 1px)",
+            ),
+            (
+                PropertyGrammarExtension::LengthNumberCalculation,
+                "calc(sign(1em) * 2)",
+                "calc(2 * sign(1em))",
+            ),
+            (
+                PropertyGrammarExtension::LengthPercentageNumberCalculation,
+                "sign(1%)",
+                "sign(1%)",
+            ),
+            (
+                PropertyGrammarExtension::LengthPercentageNumberCalculation,
+                "sign(calc(1px + 2%))",
+                "sign(2% + 1px)",
+            ),
+            (
+                PropertyGrammarExtension::LengthPercentageNumberCalculation,
+                "calc(sign(1em) / sign(1rem))",
+                "calc(sign(1em) * (1 / sign(1rem)))",
+            ),
+        ] {
+            let value = parse(extension, "opacity", source).unwrap();
+            assert_eq!(value.canonical_value().unwrap(), expected, "{source}");
+        }
+    }
+
+    #[test]
+    fn owns_number_or_dimension_results_without_erasing_the_result_type() {
+        for (source, expected) in [
+            ("sign(1em)", "sign(1em)"),
+            ("calc(sign(1em) * 1px)", "calc(1px * sign(1em))"),
+            ("calc(1px / sign(1em))", "calc(1px * (1 / sign(1em)))"),
+        ] {
+            let value = parse(
+                PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+                "line-height",
+                source,
+            )
+            .unwrap();
+            assert_eq!(value.canonical_value().unwrap(), expected, "{source}");
+        }
+    }
+
+    #[test]
+    fn rejects_dimension_results_and_incompatible_math() {
+        for (extension, source) in [
+            (
+                PropertyGrammarExtension::LengthNumberCalculation,
+                "calc(sign(1em) * 1px)",
+            ),
+            (
+                PropertyGrammarExtension::LengthPercentageNumberCalculation,
+                "calc(sign(1em) * 1px)",
+            ),
+            (
+                PropertyGrammarExtension::LengthNumberCalculation,
+                "sin(1em)",
+            ),
+            (
+                PropertyGrammarExtension::LengthNumberCalculation,
+                "sign(1%)",
+            ),
+        ] {
+            assert!(parse(extension, "opacity", source).is_err(), "{source}");
+        }
     }
 
     #[test]

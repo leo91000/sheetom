@@ -1,9 +1,9 @@
 use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
-    inspect_property, inspect_property_with_limits,
+    inspect_property,
     observable::{serialize_observable_value, ObservableCategory},
-    sheetom_parser_property_name,
+    parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
     value_grammar::parse_browser_grammar_gap,
     EngineError, PropertyParseKind, ResourceLimits,
@@ -900,25 +900,24 @@ pub(crate) fn parse_value_with_limits(
         });
     }
 
-    let inspection = inspect_property_with_limits(name, value, limits);
-    if !inspection.as_ref().is_ok_and(|candidate| {
+    let semantic = parse_semantic_property_with_limits(name, value, limits);
+    if !semantic.as_ref().is_ok_and(|candidate| {
         matches!(
-            candidate.kind,
+            candidate.parse_kind(),
             PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
         )
     }) {
         return Err(MutationOutcome::InvalidValue);
     }
-    let inspection = inspection.map_err(map_engine_error)?;
+    let canonical_value = semantic
+        .map_err(map_engine_error)?
+        .canonical_value()
+        .map_err(map_engine_error)?;
 
     let Some(longhand_names) = observed_shorthand_longhands(name) else {
-        let mut observable_value = serialize_observable_value(
-            name,
-            value,
-            &inspection.canonical_value,
-            ObservableCategory::Typed,
-        );
-        let mut safe_value = inspection.canonical_value;
+        let mut observable_value =
+            serialize_observable_value(name, value, &canonical_value, ObservableCategory::Typed);
+        let mut safe_value = canonical_value;
         if observable_value == "0" && is_zero_length_property(name) {
             observable_value = "0px".to_owned();
             safe_value = "0px".to_owned();
@@ -979,10 +978,10 @@ pub(crate) fn parse_value_with_limits(
         observable_value: serialize_observable_value(
             name,
             value,
-            &inspection.canonical_value,
+            &canonical_value,
             ObservableCategory::Typed,
         ),
-        safe_value: inspection.canonical_value,
+        safe_value: canonical_value,
         longhands: Some(longhands),
         pending_substitution: false,
     })

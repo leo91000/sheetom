@@ -19,6 +19,9 @@
             "enum": [
               "content",
               "integer-calculation",
+              "length-number-calculation",
+              "length-percentage-number-calculation",
+              "length-percentage-or-number-calculation",
               "offset-position",
               "offset-rotate",
               "page-size",

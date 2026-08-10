@@ -22,6 +22,10 @@ const valueCapabilityCorpus = JSON.parse(await readFile(
     path.join(repositoryRoot, "compatibility/value-capabilities.json"),
     "utf8",
 ));
+const numberResultMathCorpus = JSON.parse(await readFile(
+    path.join(repositoryRoot, "compatibility/number-result-math-capabilities.json"),
+    "utf8",
+));
 
 const cases = [
     {
@@ -218,6 +222,56 @@ try {
         );
     }
 
+    const numberResultBrowserSnapshots = await page.evaluate(testCases => testCases.map(testCase => {
+        const style = document.createElement("div").style;
+        style.setProperty(testCase.property, testCase.input);
+        return {
+            accepted: style.length > 0,
+            observable: style.getPropertyValue(testCase.property),
+            items: Array.from(style),
+            cssText: style.cssText,
+        };
+    }), numberResultMathCorpus.cases);
+
+    for (let index = 0; index < numberResultMathCorpus.cases.length; index += 1) {
+        const testCase = numberResultMathCorpus.cases[index];
+        const browserSnapshot = numberResultBrowserSnapshots[index];
+        assert.equal(
+            browserSnapshot.accepted,
+            testCase.accepted,
+            `${testCase.id}: Chromium acceptance drifted`,
+        );
+        assert.equal(
+            browserSnapshot.observable,
+            testCase.observable ?? "",
+            `${testCase.id}: Chromium serialization drifted`,
+        );
+        assert.deepEqual(
+            browserSnapshot.items,
+            testCase.items ?? [],
+            `${testCase.id}: Chromium expansion drifted`,
+        );
+        assert.equal(
+            browserSnapshot.cssText,
+            testCase.cssText ?? "",
+            `${testCase.id}: Chromium declaration serialization drifted`,
+        );
+        if (testCase.integration !== "direct-number") continue;
+
+        const state = new binding.NativeDeclarationState();
+        state.setProperty(testCase.property, testCase.input, "");
+        assert.deepEqual(
+            {
+                accepted: state.length > 0,
+                observable: state.getPropertyValue(testCase.property),
+                items: Array.from({ length: state.length }, (_, itemIndex) => state.item(itemIndex)),
+                cssText: state.cssText,
+            },
+            browserSnapshot,
+            testCase.id,
+        );
+    }
+
     const relativeColorBrowserSnapshots = await page.evaluate(testCases => testCases.map(testCase => {
         const style = document.createElement("div").style;
         style.setProperty(testCase.property, testCase.input);
@@ -259,5 +313,6 @@ try {
 console.log(
     `${cases.length} native declaration sequences and ` +
     `${valueCapabilityCorpus.cases.length} value-capability cases and ` +
+    `${numberResultMathCorpus.cases.length} number-result math cases and ` +
     `${relativeColorCorpus.cases.length} relative-color cases match Chromium.`,
 );

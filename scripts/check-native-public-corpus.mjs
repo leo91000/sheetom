@@ -22,6 +22,9 @@ const valueCapabilities = JSON.parse(
 const relativeColorCapabilities = JSON.parse(
   await readFile(new URL("../compatibility/relative-color-capabilities.json", import.meta.url)),
 );
+const numberResultMathCapabilities = JSON.parse(
+  await readFile(new URL("../compatibility/number-result-math-capabilities.json", import.meta.url)),
+);
 const observationsById = new Map(observations.cases.map(candidate => [candidate.id, candidate]));
 const contractCasesById = new Map(
   [
@@ -183,6 +186,39 @@ for (const candidate of valueCapabilities.cases) {
   });
 }
 
+const directNumberResultMathCases = numberResultMathCapabilities.cases.filter(
+  candidate => candidate.integration === "direct-number",
+);
+for (const candidate of directNumberResultMathCases) {
+  capture(candidate.id, () => {
+    const { sheet, rule } = createRule();
+    if (!candidate.accepted) {
+      rule.style.setProperty(candidate.property, "initial");
+      const before = {
+        state: state(rule),
+        value: rule.style.getPropertyValue(candidate.property),
+        cssText: rule.style.cssText,
+        serialized: sheet.serialize(),
+      };
+      rule.style.setProperty(candidate.property, candidate.input);
+      assert.deepEqual(state(rule), before.state);
+      assert.equal(rule.style.getPropertyValue(candidate.property), before.value);
+      assert.equal(rule.style.cssText, before.cssText);
+      assert.equal(sheet.serialize(), before.serialized);
+      return;
+    }
+
+    rule.style.setProperty(candidate.property, candidate.input);
+    assert.deepEqual(state(rule).items, candidate.items);
+    assert.equal(rule.style.getPropertyValue(candidate.property), candidate.observable);
+    assert.equal(rule.style.cssText, candidate.cssText);
+    const serialized = sheet.serialize();
+    const reparsed = new CSSStyleSheet();
+    reparsed.replaceSync(serialized);
+    assert.equal(reparsed.serialize(), serialized);
+  });
+}
+
 for (const candidate of relativeColorCapabilities.cases) {
   capture(candidate.id, () => {
     const { sheet, rule } = createRule();
@@ -273,5 +309,6 @@ console.log(
     `${negativeGrammarCases} atomic rejection branches and ` +
     `${nativeInventory.propertyBranches.length} property plus ` +
     `${valueCapabilities.cases.length} value and ` +
+    `${directNumberResultMathCases.length} direct number-result math and ` +
     `${relativeColorCapabilities.cases.length} relative-color branches.`,
 );

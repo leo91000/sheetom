@@ -4,6 +4,9 @@ use lightningcss::properties::PropertyId;
 pub(crate) enum PropertyGrammarExtension {
     Content,
     IntegerCalculation,
+    LengthNumberCalculation,
+    LengthPercentageNumberCalculation,
+    LengthPercentageOrNumberCalculation,
     OffsetPosition,
     OffsetRotate,
     PageSize,
@@ -273,7 +276,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 19, 6, 257]);
+        assert_eq!(owner_counts, [0, 429, 19, 30, 233]);
     }
 
     #[test]
