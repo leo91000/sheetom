@@ -11,6 +11,7 @@ mod function_rule;
 mod observable;
 mod recovered_value;
 mod rules;
+mod semantic_value;
 mod shorthand;
 mod syntax;
 mod value_grammar;
@@ -44,6 +45,11 @@ pub use rules::{
     parse_stylesheet_tree_with_limits, scan_top_level_rules, scan_top_level_rules_with_limits,
     serialize_font_family_setter, ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
 };
+#[doc(hidden)]
+pub use semantic_value::{
+    parse_standard_semantic_property, parse_standard_semantic_property_with_limits,
+    SemanticDeclaration, SemanticPropertyValue,
+};
 
 #[doc(hidden)]
 pub fn serialize_css_identifier(value: &str) -> String {
@@ -64,7 +70,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.14";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.15";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -451,7 +457,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.14");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.15");
     }
 
     #[test]
