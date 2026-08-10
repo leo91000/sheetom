@@ -49,6 +49,7 @@
     "build": "tsdown",
     "changeset": "changeset",
     "changeset:check": "node scripts/check-changeset.mjs",
+    "ci:classifier:test": "node --test scripts/classify-ci-changes.test.mjs",
     "check": "npm run typecheck && npm run test:unit && npm run conformance:validate && npm run docs:check && npm run build && npm run runtime:check && npm run pack:test",
     "conformance:validate": "node scripts/validate-conformance.mjs",
     "conformance:drift": "node scripts/check-wpt-drift.mjs",
@@ -59,6 +60,9 @@
     "generate:properties": "node scripts/generate-chromium-properties.mjs",
     "generate:shorthand-capabilities": "node scripts/generate-shorthand-capabilities.mjs --check",
     "generate:shorthand-grammar": "node scripts/generate-shorthand-grammar-observations.mjs --check",
+    "native:build": "napi build --platform --release --package sheetom-native --manifest-path crates/sheetom-native/Cargo.toml --output-dir native --no-js --dts sheetom-native.d.ts",
+    "native:check": "cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
+    "native:test": "npm run native:build && node scripts/test-native-foundation.mjs",
     "wpt:paths": "node scripts/list-wpt-paths.mjs",
     "benchmark": "npm run build && node scripts/benchmark.mjs",
     "pack:test": "node scripts/test-package.mjs",
@@ -80,6 +84,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
+    "@napi-rs/cli": "3.8.3",
     "@types/css-tree": "^2.3.10",
     "@types/node": "^24.0.0",
     "@vitest/browser-playwright": "^4.1.10",
@@ -96,5 +101,14 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "napi": {
+    "binaryName": "sheetom-native",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "aarch64-apple-darwin"
+    ]
   }
 }

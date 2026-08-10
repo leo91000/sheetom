@@ -1,0 +1,19 @@
+[workspace]
+members = ["crates/sheetom-native"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+rust-version = "1.88"
+
+[patch.crates-io]
+lightningcss = { path = "vendor/lightningcss" }
+lightningcss-derive = { path = "vendor/lightningcss/derive" }
+parcel_selectors = { path = "vendor/lightningcss/selectors" }
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "unwind"
+strip = "symbols"

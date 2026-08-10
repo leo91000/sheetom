@@ -1,0 +1,95 @@
+import { execFileSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
+
+const OUTPUT_NAMES = ["browser", "docs", "native", "package", "performance", "quality"];
+
+const isDocumentationPath = filePath =>
+    filePath.endsWith(".md") ||
+    filePath.startsWith("docs/") ||
+    ["CONTEXT.md", "LICENSE", "SECURITY.md", "SUPPORT.md"].includes(filePath);
+
+const isReleaseMetadataPath = filePath => filePath.startsWith(".changeset/");
+
+const isNativePath = filePath =>
+    filePath === "Cargo.lock" ||
+    filePath === "Cargo.toml" ||
+    filePath === "rust-toolchain.toml" ||
+    filePath.startsWith("crates/") ||
+    filePath.startsWith("native/") ||
+    filePath.startsWith("vendor/lightningcss/");
+
+const isAutomationPath = filePath =>
+    filePath.startsWith(".github/") ||
+    filePath === "scripts/classify-ci-changes.mjs" ||
+    filePath === "scripts/classify-ci-changes.test.mjs";
+
+const isBrowserPath = filePath =>
+    filePath.startsWith("src/") ||
+    filePath.startsWith("tests/browser/") ||
+    filePath.startsWith("tests/conformance/") ||
+    filePath.startsWith("compatibility/") ||
+    filePath.startsWith("conformance/") ||
+    filePath.startsWith("scripts/browser-") ||
+    filePath.startsWith("scripts/generate-") ||
+    ["package.json", "package-lock.json", "vitest.config.ts"].includes(filePath);
+
+const isPackagePath = filePath =>
+    filePath.startsWith("src/") ||
+    filePath.startsWith("scripts/test-package") ||
+    filePath.startsWith("scripts/test-tarball") ||
+    ["package.json", "package-lock.json", "tsdown.config.ts", "tsconfig.json"].includes(filePath);
+
+const isPerformancePath = filePath =>
+    filePath.startsWith("src/") ||
+    filePath.startsWith("crates/") ||
+    filePath.startsWith("scripts/benchmark") ||
+    filePath.startsWith("scripts/compare-benchmarks") ||
+    ["package.json", "package-lock.json", "tsdown.config.ts"].includes(filePath);
+
+const fullClassification = () => Object.fromEntries(OUTPUT_NAMES.map(name => [name, true]));
+
+export function classifyPaths(filePaths, { forceFull = false } = {}) {
+    if (forceFull || filePaths.length === 0 || filePaths.some(isAutomationPath)) {
+        return fullClassification();
+    }
+
+    const knownPaths = filePaths.filter(
+        filePath => isDocumentationPath(filePath) || isReleaseMetadataPath(filePath) || isNativePath(filePath),
+    );
+    const hasUnknownPath = knownPaths.length !== filePaths.length;
+    const native = filePaths.some(isNativePath);
+    const quality = hasUnknownPath;
+
+    return {
+        browser: filePaths.some(isBrowserPath),
+        docs: quality || filePaths.some(isDocumentationPath),
+        native,
+        package: filePaths.some(isPackagePath),
+        performance: filePaths.some(isPerformancePath),
+        quality,
+    };
+}
+
+function changedPaths(base, head) {
+    if (!base || /^0+$/u.test(base)) {
+        return [];
+    }
+
+    return execFileSync("git", ["diff", "--name-only", base, head], { encoding: "utf8" })
+        .split("\n")
+        .filter(Boolean);
+}
+
+function run() {
+    const forceFull = process.env.SHEETOM_CI_FORCE_FULL === "1";
+    const filePaths = changedPaths(process.env.SHEETOM_CI_BASE, process.env.SHEETOM_CI_HEAD ?? "HEAD");
+    const classification = classifyPaths(filePaths, { forceFull });
+
+    for (const name of OUTPUT_NAMES) {
+        console.log(`${name}=${classification[name]}`);
+    }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    run();
+}
