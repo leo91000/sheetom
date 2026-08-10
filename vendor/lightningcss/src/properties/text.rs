@@ -361,7 +361,7 @@ pub enum Spacing {
   /// No additional spacing is applied.
   Normal,
   /// Additional spacing between each word or letter.
-  Length(Length),
+  Length(LengthPercentage),
 }
 
 /// A value for the [text-indent](https://www.w3.org/TR/2021/CRD-css-text-3-20210422/#text-indent-property) property.

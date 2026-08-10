@@ -262,6 +262,44 @@ pub enum Calc<V> {
   Function(Box<MathFunction<V>>),
 }
 
+impl<V> Calc<V> {
+  /// Returns whether this calculation resolves to the dimension represented by
+  /// `V`, rather than to a plain `<number>`.
+  ///
+  /// `Calc<V>` can contain numbers because CSS products use numeric
+  /// coefficients. That does not make a standalone number, or a function such
+  /// as `sign()`, valid where a dimension is required.
+  pub(crate) fn resolves_to_dimension(&self) -> bool {
+    match self {
+      Calc::Value(_) => true,
+      Calc::Number(_) => false,
+      Calc::Sum(a, b) => a.resolves_to_dimension() && b.resolves_to_dimension(),
+      Calc::Product(_, value) => value.resolves_to_dimension(),
+      Calc::Function(function) => function.resolves_to_dimension(),
+    }
+  }
+}
+
+impl<V> MathFunction<V> {
+  fn resolves_to_dimension(&self) -> bool {
+    match self {
+      MathFunction::Calc(value) | MathFunction::Abs(value) => value.resolves_to_dimension(),
+      MathFunction::Min(values) | MathFunction::Max(values) | MathFunction::Hypot(values) => {
+        values.iter().all(Calc::resolves_to_dimension)
+      }
+      MathFunction::Clamp(min, center, max) => {
+        min.resolves_to_dimension()
+          && center.resolves_to_dimension()
+          && max.resolves_to_dimension()
+      }
+      MathFunction::Round(_, value, step) | MathFunction::Rem(value, step) | MathFunction::Mod(value, step) => {
+        value.resolves_to_dimension() && step.resolves_to_dimension()
+      }
+      MathFunction::Sign(_) => false,
+    }
+  }
+}
+
 impl<V: IsCompatible> IsCompatible for Calc<V> {
   fn is_compatible(&self, browsers: Browsers) -> bool {
     match self {
@@ -516,7 +554,17 @@ impl<
       },
       "sign" => {
         input.parse_nested_block(|input| {
-          let v: Calc<V> = Self::parse_sum(input, parse_ident)?;
+          let start = input.state();
+          let v: Calc<V> = match Self::parse_sum(input, parse_ident) {
+            Ok(value) => value,
+            Err(error) => {
+              input.reset(&start);
+              if let Ok(sign) = Self::parse_static_cross_dimension_sign(input) {
+                return Ok(Calc::Number(sign));
+              }
+              return Err(error);
+            }
+          };
           match &v {
             Calc::Number(n) => return Ok(Calc::Number(n.sign())),
             Calc::Value(v) => {
@@ -818,6 +866,26 @@ impl<
     })
   }
 
+  fn parse_static_cross_dimension_sign<'t>(
+    input: &mut Parser<'i, 't>,
+  ) -> Result<CSSNumber, ParseError<'i, ParserError<'i>>> {
+    let location = input.current_source_location();
+    let token = input.next()?.clone();
+    input.expect_exhausted()?;
+    let Token::Dimension { value, unit, .. } = token else {
+      return Err(location.new_unexpected_token_error(token));
+    };
+    if ![
+      "px", "cm", "mm", "q", "in", "pt", "pc", "deg", "grad", "rad", "turn", "s", "ms",
+    ]
+    .iter()
+    .any(|candidate| unit.eq_ignore_ascii_case(candidate))
+    {
+      return Err(location.new_unexpected_token_error(Token::Ident(unit)));
+    }
+    Ok(value.sign())
+  }
+
   fn parse_atan2<'t, Parse: Copy + Fn(&str) -> Option<Calc<V>>>(
     input: &mut Parser<'i, 't>,
     parse_ident: Parse,
@@ -905,6 +973,13 @@ impl<V: std::ops::Mul<f32, Output = V>> std::ops::Mul<f32> for Calc<V> {
   fn mul(self, other: f32) -> Self {
     if other == 1.0 {
       return self;
+    }
+
+    // Preserve symbolic non-finite coefficients. Multiplying them into a
+    // dimension value would turn `infinity`/`NaN` into an implementation-limit
+    // float and make CSSOM serialization observably incorrect.
+    if !other.is_finite() && !matches!(self, Calc::Number(_)) {
+      return Calc::Product(other, Box::new(self));
     }
 
     match self {

@@ -228,7 +228,8 @@ impl<
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     match input.try_parse(Calc::parse) {
       Ok(Calc::Value(v)) => return Ok(*v),
-      Ok(calc) => return Ok(DimensionPercentage::Calc(Box::new(calc))),
+      Ok(calc) if calc.resolves_to_dimension() => return Ok(DimensionPercentage::Calc(Box::new(calc))),
+      Ok(_) => return Err(input.new_custom_error(ParserError::InvalidValue)),
       _ => {}
     }
 
@@ -359,6 +360,12 @@ impl<D: TryAdd<D> + Clone + Zero + TrySign + std::fmt::Debug> DimensionPercentag
 
     if b.is_zero() {
       return a;
+    }
+
+    // CSSOM canonicalizes mixed dimension/percentage sums with the percentage
+    // first, regardless of their source order.
+    if matches!(a, DimensionPercentage::Dimension(_)) && matches!(b, DimensionPercentage::Percentage(_)) {
+      std::mem::swap(&mut a, &mut b);
     }
 
     if a.is_sign_negative() && b.is_sign_positive() {

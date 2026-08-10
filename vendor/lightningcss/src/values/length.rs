@@ -554,7 +554,8 @@ impl<'i> Parse<'i> for Length {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     match input.try_parse(Calc::parse) {
       Ok(Calc::Value(v)) => return Ok(*v),
-      Ok(calc) => return Ok(Length::Calc(Box::new(calc))),
+      Ok(calc) if calc.resolves_to_dimension() => return Ok(Length::Calc(Box::new(calc))),
+      Ok(_) => return Err(input.new_custom_error(ParserError::InvalidValue)),
       _ => {}
     }
 
@@ -805,6 +806,72 @@ impl TrySign for Length {
 }
 
 impl_try_from_angle!(Length);
+
+#[cfg(test)]
+mod tests {
+  use super::{Length, LengthPercentage};
+  use crate::{printer::PrinterOptions, traits::{Parse, ToCss}};
+  use cssparser::{Parser, ParserInput};
+
+  fn parses<'i, T: Parse<'i>>(value: &'i str) -> bool {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    parser.parse_entirely(T::parse).is_ok()
+  }
+
+  #[test]
+  fn rejects_number_results_in_length_calculations() {
+    for value in [
+      "calc(1)",
+      "calc(1px + 1)",
+      "min(1px, 2)",
+      "round(1px, 2)",
+      "sign(1px)",
+      "hypot(3px, 4)",
+      "sin(90deg)",
+      "pow(2, 3)",
+    ] {
+      assert!(!parses::<Length>(value), "{value}");
+      assert!(!parses::<LengthPercentage>(value), "{value}");
+    }
+  }
+
+  #[test]
+  fn retains_valid_length_and_length_percentage_calculations() {
+    for value in [
+      "calc(1px)",
+      "min(1px, 2px)",
+      "round(1px, 2px)",
+      "hypot(3px, 4px)",
+    ] {
+      assert!(parses::<Length>(value), "{value}");
+      assert!(parses::<LengthPercentage>(value), "{value}");
+    }
+    for value in [
+      "calc(1px + 1%)",
+      "min(1px, 2%)",
+      "clamp(1px, 2%, 3px)",
+    ] {
+      assert!(parses::<LengthPercentage>(value), "{value}");
+    }
+  }
+
+  #[test]
+  fn retains_chromium_unitless_length_compatibility_outside_calc() {
+    assert!(parses::<Length>("1"));
+    assert!(parses::<LengthPercentage>("1"));
+  }
+
+  #[test]
+  fn preserves_non_finite_dimension_coefficients() {
+    for value in ["calc(infinity * 1px)", "calc(NaN * 1px)"] {
+      let mut input = ParserInput::new(value);
+      let mut parser = Parser::new(&mut input);
+      let parsed = parser.parse_entirely(LengthPercentage::parse).unwrap();
+      assert_eq!(parsed.to_css_string(PrinterOptions::default()).unwrap(), value);
+    }
+  }
+}
 
 /// Either a [`<length>`](https://www.w3.org/TR/css-values-4/#lengths) or a [`<number>`](https://www.w3.org/TR/css-values-4/#numbers).
 #[derive(Debug, Clone, PartialEq, Parse, ToCss)]

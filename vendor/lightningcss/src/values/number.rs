@@ -35,6 +35,23 @@ impl ToCss for CSSNumber {
     W: std::fmt::Write,
   {
     let number = *self;
+    if !number.is_finite() {
+      let wrap = !dest.in_calc;
+      if wrap {
+        dest.write_str("calc(")?;
+      }
+      if number.is_nan() {
+        dest.write_str("NaN")?;
+      } else if number.is_sign_negative() {
+        dest.write_str("-infinity")?;
+      } else {
+        dest.write_str("infinity")?;
+      }
+      if wrap {
+        dest.write_char(')')?;
+      }
+      return Ok(());
+    }
     if number != 0.0 && number.abs() < 1.0 {
       let mut s = String::new();
       cssparser::ToCss::to_css(self, &mut s)?;
@@ -109,6 +126,23 @@ impl Zero for CSSNumber {
 }
 
 impl_try_from_angle!(CSSNumber);
+
+#[cfg(test)]
+mod tests {
+  use super::CSSNumber;
+  use crate::{printer::PrinterOptions, traits::ToCss};
+
+  #[test]
+  fn keeps_non_finite_math_constants_reparsable() {
+    for (value, expected) in [
+      (CSSNumber::INFINITY, "calc(infinity)"),
+      (CSSNumber::NEG_INFINITY, "calc(-infinity)"),
+      (CSSNumber::NAN, "calc(NaN)"),
+    ] {
+      assert_eq!(value.to_css_string(PrinterOptions::default()).unwrap(), expected);
+    }
+  }
+}
 
 /// A CSS [`<integer>`](https://www.w3.org/TR/css-values-4/#integers) value.
 pub type CSSInteger = i32;
