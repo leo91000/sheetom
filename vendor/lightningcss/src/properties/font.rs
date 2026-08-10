@@ -8,7 +8,7 @@ use crate::context::PropertyHandlerContext;
 use crate::declaration::{DeclarationBlock, DeclarationList};
 use crate::error::{ParserError, PrinterError};
 use crate::macros::*;
-use crate::printer::Printer;
+use crate::printer::{Printer, PrinterOptions};
 use crate::targets::should_compile;
 use crate::traits::{IsCompatible, Parse, PropertyHandler, Shorthand, ToCss};
 use crate::values::length::LengthValue;
@@ -371,6 +371,22 @@ impl<'i> ToCss for FontFamily<'i> {
       FontFamily::Generic(val) => val.to_css(dest),
       FontFamily::FamilyName(val) => val.to_css(dest),
     }
+  }
+}
+
+impl FontFamily<'_> {
+  pub(crate) fn to_css_as_string<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      FontFamily::Generic(value) => {
+        let value = value.to_css_string(PrinterOptions::default())?;
+        serialize_string(&value, dest)?;
+      }
+      FontFamily::FamilyName(value) => serialize_string(&value.0, dest)?,
+    }
+    Ok(())
   }
 }
 
