@@ -1,0 +1,11 @@
+.DS_Store
+*.node
+node_modules/
+target/
+pkg/
+dist/
+.parcel-cache
+node/*.flow
+artifacts
+npm
+node/ast.json
