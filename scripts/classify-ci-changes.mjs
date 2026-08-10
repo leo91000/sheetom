@@ -17,7 +17,8 @@ const isNativePath = filePath =>
     filePath.startsWith("crates/") ||
     filePath.startsWith("fuzz/") ||
     filePath.startsWith("native/") ||
-    filePath.startsWith("vendor/lightningcss/");
+    filePath.startsWith("vendor/lightningcss/") ||
+    filePath === "scripts/generate-native-property-catalog.mjs";
 
 const isAutomationPath = filePath =>
     filePath.startsWith(".github/") ||
@@ -31,7 +32,9 @@ const isBrowserPath = filePath =>
     filePath.startsWith("compatibility/") ||
     filePath.startsWith("conformance/") ||
     filePath.startsWith("scripts/browser-") ||
-    filePath.startsWith("scripts/generate-") ||
+    filePath === "scripts/generate-chromium-properties.mjs" ||
+    filePath === "scripts/generate-native-grammar-inventory.mjs" ||
+    filePath.startsWith("scripts/generate-shorthand-") ||
     ["package.json", "package-lock.json", "vitest.config.ts"].includes(filePath);
 
 const isPackagePath = filePath =>
@@ -42,7 +45,6 @@ const isPackagePath = filePath =>
 
 const isPerformancePath = filePath =>
     filePath.startsWith("src/") ||
-    filePath.startsWith("crates/") ||
     filePath.startsWith("scripts/benchmark") ||
     filePath.startsWith("scripts/compare-benchmarks") ||
     ["package.json", "package-lock.json", "tsdown.config.ts"].includes(filePath);
