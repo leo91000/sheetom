@@ -1,10 +1,5 @@
 import { transform } from "lightningcss";
 import * as csstree from "css-tree";
-import {
-  DeclarationBlock,
-  type AcceptedPropertyValue,
-  type ParsedDeclaration,
-} from "./internal/declaration-block.js";
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
@@ -14,28 +9,12 @@ import {
   type RuleSerializationPlan,
 } from "./internal/serializer.js";
 import {
-  expandStaticFourSide,
-  expandStaticShorthand,
-  getShorthandLonghands,
-  getStaticShorthandNames,
-  isFourSideShorthand,
-  synthesizeStaticShorthand,
-} from "./internal/shorthand-registry.js";
-import {
   parseAtruleDescriptorValue,
-  parsePropertyValue,
-  serializeIdentifier,
 } from "./internal/value-gate.js";
 import {
   assertInternalConstructor,
   constructInternally,
 } from "./internal/webidl-construction.js";
-
-import {
-  chromiumPropertyAliases,
-  chromiumShorthandLonghands,
-  chromiumSupportedProperties,
-} from "./chromium-properties.js";
 
 export type { SheetOMDiagnosticCode } from "./diagnostics.js";
 
@@ -105,45 +84,6 @@ const ruleTree = new RuleTree<CSSRule, CSSStyleSheet>(
   rule => rule.parentStyleSheet,
 );
 const safeSerializer = new Serializer<CSSRule>(describeRuleSafe);
-
-function parseDeclarationValue(
-  declaration: CSSStyleDeclaration,
-  name: string,
-  observableValue: string,
-): AcceptedPropertyValue | null {
-  const atrule = declaration.parentRule instanceof CSSFontFaceRule
-    ? "font-face"
-    : null;
-  if (atrule) {
-    const parsed = parseAtruleDescriptorValue(atrule, name, observableValue);
-    if (!parsed) return null;
-    return {
-      ...parsed,
-      representation: { kind: "grammar", declaration: null },
-    };
-  }
-  return parsePropertyValue(name, observableValue);
-}
-
-function normalizeDeclarationName(name: string): string {
-  if (name.startsWith("--")) return name;
-  const lowerName = name.toLowerCase();
-  const propertyAlias = chromiumPropertyAliases[lowerName];
-  if (propertyAlias) return propertyAlias;
-  if (!lowerName.startsWith("-webkit-")) return lowerName;
-  const unprefixed = lowerName.slice("-webkit-".length);
-  const prefixedLonghands = chromiumShorthandLonghands[lowerName];
-  const unprefixedLonghands = chromiumShorthandLonghands[unprefixed];
-  if (
-    prefixedLonghands &&
-    unprefixedLonghands &&
-    prefixedLonghands.length === unprefixedLonghands.length &&
-    prefixedLonghands.every((longhand, index) => longhand === unprefixedLonghands[index])
-  ) {
-    return unprefixed;
-  }
-  return lowerName;
-}
 
 function namedPropertyToCSS(property: string): string {
   if (property === "cssFloat") return "float";
@@ -735,7 +675,7 @@ export class CSSStyleDeclaration {
   readonly [index: number]: string | undefined;
 
   readonly parentRule: CSSRule;
-  readonly #block: DeclarationBlock | NativeDeclarationBlock;
+  readonly #block: NativeDeclarationBlock;
 
   constructor(parentRule: CSSRule) {
     assertInternalConstructor("CSSStyleDeclaration");
@@ -762,23 +702,10 @@ export class CSSStyleDeclaration {
         location: null,
       });
     };
-    this.#block = parentRule instanceof CSSFontFaceRule
-      ? new DeclarationBlock(
-      {
-        normalizeName: normalizeDeclarationName,
-        parseValue: (name, value) => parseDeclarationValue(this, name, value),
-        shorthandLonghands: getShorthandLonghands,
-        staticShorthandNames: getStaticShorthandNames,
-        expandFourSide: expandStaticFourSide,
-        expandShorthand: expandStaticShorthand,
-        synthesizeShorthand: synthesizeStaticShorthand,
-        serializeIdentifier,
-        normalizeIndex: toUnsignedLong,
-        isFourSideShorthand,
-      },
+    this.#block = new NativeDeclarationBlock(
       reportDeclarationDiagnostic,
-    )
-      : new NativeDeclarationBlock(reportDeclarationDiagnostic);
+      parentRule instanceof CSSFontFaceRule ? "font-face" : "style",
+    );
 
     return new Proxy(this, {
       get(target, property) {
@@ -805,45 +732,12 @@ export class CSSStyleDeclaration {
   }
 
   get cssText(): string {
-    return this.#block instanceof NativeDeclarationBlock
-      ? this.#block.cssText
-      : this.#block.serialize(false, "", " ");
+    return this.#block.cssText;
   }
 
   set cssText(value: string) {
     const input = `${value}`;
-    if (this.#block instanceof NativeDeclarationBlock) {
-      this.#block.replaceCssText(input);
-      return;
-    }
-    let parsed: csstree.CssNode;
-    try {
-      parsed = csstree.parse(input, {
-        context: "declarationList",
-        positions: true,
-      });
-    } catch {
-      this.#block.replace(null);
-      return;
-    }
-
-    if (parsed.type !== "DeclarationList") {
-      this.#block.replace(null);
-      return;
-    }
-
-    const declarations: ParsedDeclaration[] = [];
-    for (const child of parsed.children) {
-      if (child.type !== "Declaration") continue;
-      declarations.push({
-        name: csstree.ident.decode(child.property),
-        value: child.value.loc
-          ? input.slice(child.value.loc.start.offset, child.value.loc.end.offset)
-          : csstree.generate(child.value),
-        important: child.important === true || child.important === "important",
-      });
-    }
-    this.#block.replace(declarations);
+    this.#block.replaceCssText(input);
   }
 
   get length(): number {
