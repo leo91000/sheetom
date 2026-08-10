@@ -1,4 +1,3 @@
-import { transform } from "lightningcss";
 import * as csstree from "css-tree";
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
@@ -7,6 +6,13 @@ import {
   parseNativeRule,
   type NativeRuleDescription,
 } from "./internal/native-rule-parser.js";
+import {
+  normalizeNativeMedia,
+  normalizeNativeSelector,
+  normalizeNativeSupports,
+  parseNativeContainerPrelude,
+  parseNativeScopePrelude,
+} from "./internal/native-rule-syntax.js";
 import { RuleTree } from "./internal/rule-tree.js";
 import {
   Serializer,
@@ -22,8 +28,6 @@ import {
 
 export type { SheetOMDiagnosticCode } from "./diagnostics.js";
 
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
 const arrayIndexPattern = /^(0|[1-9]\d*)$/;
 const regularSheetMetadata = new WeakMap<
   object,
@@ -98,27 +102,7 @@ function namedPropertyToCSS(property: string): string {
 }
 
 function normalizeSelectorText(value: string): string | null {
-  let parsed: csstree.CssNode;
-  try {
-    parsed = csstree.parse(value, { context: "selectorList" });
-  } catch {
-    return null;
-  }
-  if (parsed.type !== "SelectorList" || parsed.children.isEmpty) return null;
-
-  try {
-    const generated = csstree.generate(parsed);
-    const result = transform({
-      filename: "sheetom-selector.css",
-      code: encoder.encode(`${generated} { --sheetom-probe: 0; }`),
-    });
-    const serialized = decoder.decode(result.code);
-    const blockIndex = serialized.indexOf(" {");
-    if (blockIndex === -1) return null;
-    return serialized.slice(0, blockIndex);
-  } catch {
-    return null;
-  }
+  return normalizeNativeSelector(value);
 }
 
 function toUnsignedLong(value: unknown): number {
@@ -268,32 +252,11 @@ export class CSSRuleList {
 }
 
 function normalizeMediaText(value: string): string | null {
-  try {
-    const parsed = csstree.parse(value, { context: "mediaQueryList" });
-    if (parsed.type !== "MediaQueryList") return null;
-    return csstree.generate(parsed)
-      .replace(/,\s*/g, ", ")
-      .replace(/:\s*/g, ": ")
-      .replace(/\s*(<=|>=|=|<|>)\s*/g, " $1 ");
-  } catch {
-    return null;
-  }
+  return normalizeNativeMedia(value);
 }
 
 function normalizeConditionalPrelude(name: "supports", value: string): string {
-  try {
-    const result = transform({
-      filename: `sheetom-${name}.css`,
-      code: encoder.encode(`@${name} ${value} { .sheetom-probe { --sheetom: 0; } }`),
-    });
-    const serialized = decoder.decode(result.code);
-    const blockIndex = serialized.indexOf("{");
-    const prefix = `@${name} `;
-    if (!serialized.startsWith(prefix) || blockIndex === -1) return value;
-    return serialized.slice(prefix.length, blockIndex).trim();
-  } catch {
-    return value;
-  }
+  return name === "supports" ? normalizeNativeSupports(value) ?? value : value;
 }
 
 interface ContainerPrelude {
@@ -303,31 +266,7 @@ interface ContainerPrelude {
 }
 
 function parseContainerPrelude(value: string): ContainerPrelude | null {
-  try {
-    const parsed = csstree.parse(`@container ${value} {}`);
-    const rule = parsed.type === "StyleSheet" ? parsed.children.first : null;
-    if (rule?.type !== "Atrule" || rule.name.toLowerCase() !== "container") return null;
-    if (rule.prelude?.type !== "AtrulePrelude") return null;
-
-    const children = rule.prelude.children.toArray();
-    const first = children[0];
-    const name = first?.type === "Identifier" ? first.name : "";
-    const queryNodes = name === "" ? children : children.slice(1);
-    if (queryNodes.length === 0) return null;
-    const query = queryNodes
-      .map(node => csstree.generate(node))
-      .join(" ")
-      .replace(/:\s*/g, ": ")
-      .replace(/\s*(<=|>=|=|<|>)\s*/g, " $1 ");
-    if (query === "") return null;
-    return {
-      conditionText: name === "" ? query : `${name} ${query}`,
-      name,
-      query,
-    };
-  } catch {
-    return null;
-  }
+  return parseNativeContainerPrelude(value);
 }
 
 function splitMediaQueries(value: string): string[] {
@@ -1420,27 +1359,8 @@ function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
 }
 
 function parseScopePrelude(prelude: string): [string | null, string | null] {
-  const text = prelude.trim();
-  if (text === "") return [null, null];
-
-  const consumeGroup = (value: string): [string | null, string] => {
-    if (!value.startsWith("(")) return [null, value];
-    let depth = 0;
-    for (let index = 0; index < value.length; index += 1) {
-      const character = value[index];
-      if (character === "(") depth += 1;
-      if (character !== ")") continue;
-      depth -= 1;
-      if (depth !== 0) continue;
-      return [value.slice(1, index).trim(), value.slice(index + 1).trim()];
-    }
-    return [null, value];
-  };
-
-  const [start, remainder] = consumeGroup(text);
-  if (!remainder.startsWith("to")) return [start, null];
-  const [end] = consumeGroup(remainder.slice(2).trim());
-  return [start, end];
+  const parsed = parseNativeScopePrelude(prelude);
+  return parsed ? [parsed.start, parsed.end] : [null, null];
 }
 
 function parseImportPrelude(

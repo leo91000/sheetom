@@ -22,10 +22,15 @@ export interface NativeDeclarationStateHandle {
 }
 
 interface NativeBinding {
+  normalizeMedia(source: string): string;
+  normalizeSelector(source: string): string;
+  normalizeSupports(source: string): string;
+  parseContainerPreludeJson(source: string): string;
   NativeDeclarationState: new (
     context?: "style" | "font-face",
   ) => NativeDeclarationStateHandle;
   parseRecoveredRuleTreeJson(source: string): string;
+  parseScopePreludeJson(source: string): string;
   scanTopLevelRulesJson(source: string): string;
 }
 

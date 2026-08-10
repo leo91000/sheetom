@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.6");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.7");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
@@ -60,6 +60,25 @@ assert.equal(recoveredGroup.prelude, "app");
 assert.equal(recoveredGroup.children[0].kind, "media");
 assert.equal(recoveredGroup.children[0].prelude, "(max-width: 767px)");
 assert.equal(recoveredGroup.children[0].children[0].prelude, ".x:hover");
+
+assert.equal(binding.normalizeSelector(":is(.a,.b)>.child"), ":is(.a, .b) > .child");
+assert.equal(
+    binding.normalizeMedia("screen and (max-width:767px),print"),
+    "screen and (max-width: 767px), print",
+);
+assert.equal(binding.normalizeSupports("(display:grid)"), "(display:grid)");
+assert.deepEqual(
+    JSON.parse(binding.parseContainerPreludeJson("card (max-width:767px)")),
+    {
+        conditionText: "card (max-width: 767px)",
+        name: "card",
+        query: "(max-width: 767px)",
+    },
+);
+assert.deepEqual(
+    JSON.parse(binding.parseScopePreludeJson("(.a,.b) to (.c)")),
+    { start: ".a, .b", end: ".c" },
+);
 
 const state = new binding.NativeDeclarationState();
 assert.equal(state.setProperty("color", "red", ""), "applied");
