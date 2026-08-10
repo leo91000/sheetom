@@ -84,7 +84,6 @@ const initialValues = [...initialLonghandValues].sort(([left], [right]) =>
   left.localeCompare(right),
 );
 const extensionVariants = new Map([
-  ["anchor-size", "AnchorSize"],
   ["content", "Content"],
   ["contrast-color", "ContrastColor"],
   ["integer-calculation", "IntegerCalculation"],
