@@ -2,10 +2,15 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { readNativeEngineRevision } from "./native-engine-revision.mjs";
 
 const [artifactPath, runtime = "node"] = process.argv.slice(2);
 if (!artifactPath) throw new Error("Usage: test-tarball.mjs <tarball-or-directory> [node|bun|deno]");
 
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
 const artifact = path.resolve(artifactPath);
 const tarball = artifact.endsWith(".tgz")
   ? artifact
@@ -53,7 +58,7 @@ try {
     const require = createRequire(import.meta.url);
     const packageRoot = path.resolve(path.dirname(require.resolve("sheetom")), "..");
     const native = require(path.join(packageRoot, "native/index.cjs"));
-    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.11") {
+    if (native.nativeEngineRevision() !== ${JSON.stringify(expectedEngineRevision)}) {
       throw new Error("native engine revision mismatch");
     }
     const nativeTree = JSON.parse(native.parseRuleTreeJson("@media screen {.x {width:1px;}}"));

@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { readNativeEngineRevision } from "./native-engine-revision.mjs";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
 
 const [artifactPath, encodedCase] = process.argv.slice(2);
 assert.ok(artifactPath, "native artifact path is required");
@@ -59,5 +66,5 @@ if (crashCase.expectError) {
     assert.equal(typeof execute(), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.11");
+assert.equal(binding.nativeEngineRevision(), expectedEngineRevision);
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

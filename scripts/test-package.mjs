@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readNativeEngineRevision } from "./native-engine-revision.mjs";
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-package-"));
 const packageDirectory = path.join(temporaryRoot, "package");
 
@@ -39,7 +42,7 @@ try {
     const require = createRequire(import.meta.url);
     const packageRoot = path.resolve(path.dirname(require.resolve("sheetom")), "..");
     const native = require(path.join(packageRoot, "native/index.cjs"));
-    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.11") {
+    if (native.nativeEngineRevision() !== ${JSON.stringify(expectedEngineRevision)}) {
       throw new Error("native engine revision mismatch");
     }
     const nativeTree = JSON.parse(native.parseRuleTreeJson("@media screen {.x {width:1px;}}"));

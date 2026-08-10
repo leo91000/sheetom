@@ -3,6 +3,8 @@ import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { readNativeEngineRevision } from "./native-engine-revision.mjs";
+
 const sourcePaths = [
   ".cargo/config.toml",
   "Cargo.lock",
@@ -34,17 +36,8 @@ export async function nativeEngineEvidence(repositoryRoot) {
     sourceManifest.update("\0");
   }
 
-  const coreSource = await readFile(
-    path.join(repositoryRoot, "crates/sheetom-core/src/lib.rs"),
-    "utf8",
-  );
-  const revision = coreSource.match(
-    /pub const ENGINE_REVISION: &str = "([^"]+)";/u,
-  )?.[1];
-  if (!revision) throw new Error("Native engine revision is missing from sheetom-core");
-
   return {
-    revision,
+    revision: await readNativeEngineRevision(repositoryRoot),
     upstream: {
       repository: "https://github.com/parcel-bundler/lightningcss",
       version: "1.33.0",
