@@ -13,6 +13,7 @@ export declare class NativeDeclarationState {
   clear(): void
   get cssText(): string
   serializeSafe(): string
+  serializeFormatted(safe: boolean, indent: string, separator: string): string
 }
 
 /**

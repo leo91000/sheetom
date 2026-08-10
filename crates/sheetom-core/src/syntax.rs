@@ -8,6 +8,7 @@ pub(crate) fn analyze_substitutions(value: &str) -> SubstitutionAnalysis {
     let bytes = value.as_bytes();
     let mut found = false;
     let mut index = 0usize;
+    let mut functions = Vec::<(String, usize)>::new();
     let mut depth = 0usize;
     let mut quote = None;
     let mut in_comment = false;
@@ -54,6 +55,15 @@ pub(crate) fn analyze_substitutions(value: &str) -> SubstitutionAnalysis {
                 valid: false,
             };
         }
+        if functions.last().is_some_and(|(name, function_depth)| {
+            matches!(name.as_str(), "var" | "env" | "attr" | "if")
+                && ((byte == b';' && name != "if") || (byte == b'!' && depth == *function_depth))
+        }) {
+            return SubstitutionAnalysis {
+                found,
+                valid: false,
+            };
+        }
         if is_name_start(byte) {
             let start = index;
             index += 1;
@@ -73,6 +83,7 @@ pub(crate) fn analyze_substitutions(value: &str) -> SubstitutionAnalysis {
                     }
                 }
                 depth += 1;
+                functions.push((name, depth));
                 index += 1;
                 continue;
             }
@@ -81,6 +92,12 @@ pub(crate) fn analyze_substitutions(value: &str) -> SubstitutionAnalysis {
         if matches!(byte, b'(' | b'[' | b'{') {
             depth += 1;
         } else if matches!(byte, b')' | b']' | b'}') && depth > 0 {
+            if functions
+                .last()
+                .is_some_and(|(_, function_depth)| *function_depth == depth)
+            {
+                functions.pop();
+            }
             depth -= 1;
         }
         index += 1;
@@ -472,9 +489,16 @@ mod tests {
         assert!(recovered.found);
         assert!(recovered.valid);
 
-        for invalid in ["var(foo)", "var()", "var(--x, red); color: blue"] {
+        for invalid in [
+            "var(foo)",
+            "var()",
+            "var(--x, red); color: blue",
+            "var(--x, red; color: blue)",
+            "var(--x, !important)",
+        ] {
             assert!(!analyze_substitutions(invalid).valid, "{invalid}");
         }
+        assert!(analyze_substitutions("var(--x, fn(!important))").valid);
     }
 
     #[test]

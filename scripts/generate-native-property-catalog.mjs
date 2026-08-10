@@ -56,6 +56,8 @@ const shorthands = Object.entries(chromiumShorthandLonghands)
     return [shorthand, observed];
   })
   .sort(([left], [right]) => left.localeCompare(right));
+const declaredShorthands = Object.entries(chromiumShorthandLonghands)
+  .sort(([left], [right]) => left.localeCompare(right));
 const initialLonghandValues = new Map();
 for (const shorthandCase of capabilities.cases) {
   for (const longhand of shorthandCase.chromium.longhands) {
@@ -89,6 +91,14 @@ const lines = [
   "];",
   "",
   "pub static SHORTHAND_LONGHANDS: &[(&str, &[&str])] = &[",
+  ...declaredShorthands.flatMap(([shorthand, longhands]) => [
+    `    (${rustString(shorthand)}, &[`,
+    ...longhands.map(longhand => `        ${rustString(longhand)},`),
+    "    ]),",
+  ]),
+  "];",
+  "",
+  "pub static OBSERVED_SHORTHAND_LONGHANDS: &[(&str, &[&str])] = &[",
   ...shorthands.flatMap(([shorthand, longhands]) => [
     `    (${rustString(shorthand)}, &[`,
     ...longhands.map(longhand => `        ${rustString(longhand)},`),

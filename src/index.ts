@@ -6,6 +6,7 @@ import {
   type ParsedDeclaration,
 } from "./internal/declaration-block.js";
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
+import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
 import { RuleTree } from "./internal/rule-tree.js";
 import {
@@ -734,13 +735,35 @@ export class CSSStyleDeclaration {
   readonly [index: number]: string | undefined;
 
   readonly parentRule: CSSRule;
-  readonly #block: DeclarationBlock;
+  readonly #block: DeclarationBlock | NativeDeclarationBlock;
 
   constructor(parentRule: CSSRule) {
     assertInternalConstructor("CSSStyleDeclaration");
     this.parentRule = parentRule;
     lockOwnProperties(this, "parentRule");
-    this.#block = new DeclarationBlock(
+    const reportDeclarationDiagnostic = (
+      code: SheetOMDiagnosticCode,
+      property: string,
+      input: string,
+    ): void => {
+      const priority = code === "INVALID_PRIORITY";
+      const unsupportedShorthand = code === "UNSUPPORTED_SHORTHAND_VALUE";
+      (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)({
+        code,
+        severity: "warning",
+        operation: "setProperty",
+        message: priority
+          ? `The mutation was ignored because ${input} is not a valid priority.`
+          : unsupportedShorthand
+            ? `The value was ignored because the shorthand codec for ${property} cannot expand it.`
+            : `The value was ignored because it is invalid for ${property}.`,
+        property,
+        input,
+        location: null,
+      });
+    };
+    this.#block = parentRule instanceof CSSFontFaceRule
+      ? new DeclarationBlock(
       {
         normalizeName: normalizeDeclarationName,
         parseValue: (name, value) => parseDeclarationValue(this, name, value),
@@ -753,24 +776,9 @@ export class CSSStyleDeclaration {
         normalizeIndex: toUnsignedLong,
         isFourSideShorthand,
       },
-      (code, property, input) => {
-        const priority = code === "INVALID_PRIORITY";
-        const unsupportedShorthand = code === "UNSUPPORTED_SHORTHAND_VALUE";
-        (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)({
-          code,
-          severity: "warning",
-          operation: "setProperty",
-          message: priority
-            ? `The mutation was ignored because ${input} is not a valid priority.`
-            : unsupportedShorthand
-              ? `The value was ignored because the shorthand codec for ${property} cannot expand it.`
-              : `The value was ignored because it is invalid for ${property}.`,
-          property,
-          input,
-          location: null,
-        });
-      },
-    );
+      reportDeclarationDiagnostic,
+    )
+      : new NativeDeclarationBlock(reportDeclarationDiagnostic);
 
     return new Proxy(this, {
       get(target, property) {
@@ -797,11 +805,17 @@ export class CSSStyleDeclaration {
   }
 
   get cssText(): string {
-    return this.#block.serialize(false, "", " ");
+    return this.#block instanceof NativeDeclarationBlock
+      ? this.#block.cssText
+      : this.#block.serialize(false, "", " ");
   }
 
   set cssText(value: string) {
     const input = `${value}`;
+    if (this.#block instanceof NativeDeclarationBlock) {
+      this.#block.replaceCssText(input);
+      return;
+    }
     let parsed: csstree.CssNode;
     try {
       parsed = csstree.parse(input, {
@@ -1358,7 +1372,7 @@ function createStyleRule(
   const flushDeclarations = (): void => {
     if (declarationNodes.length === 0) return;
     const declarationText = declarationNodes
-      .map(child => csstree.generate(child))
+      .map(declarationTextFromNode)
       .join(";");
     if (!foundNestedRule) {
       rule.style.cssText = declarationText;
@@ -1393,19 +1407,25 @@ function declarationTextFromBlock(block: csstree.Block): string {
   const declarations: string[] = [];
   for (const child of block.children) {
     if (child.type !== "Declaration") continue;
-    const priority = child.important === true || child.important === "important"
-      ? " !important"
-      : "";
-    declarations.push(
-      `${child.property}:${generateDescriptorInput(child.value)}${priority}`,
-    );
+    declarations.push(declarationTextFromNode(child));
   }
   return declarations.join(";");
 }
 
+function declarationTextFromNode(declaration: csstree.Declaration): string {
+  const priority = declaration.important === true || declaration.important === "important"
+    ? " !important"
+    : "";
+  return `${declaration.property}:${generateDescriptorInput(declaration.value)}${priority}`;
+}
+
 function generateDescriptorInput(value: csstree.Value | csstree.Raw): string {
   if (value.type === "Raw") return value.value;
-  return value.children.toArray().map(child => csstree.generate(child)).join(" ");
+  return value.children.toArray()
+    .map(child => csstree.generate(child))
+    .join(" ")
+    .replace(/\s+,\s*/g, ", ")
+    .replace(/\s*\/\s*/g, " / ");
 }
 
 function createKeyframeRuleFromNode(

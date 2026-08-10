@@ -14,26 +14,32 @@ assert.equal(nativeArtifacts.length, 1, "expected exactly one local native artif
 
 const artifactPath = path.join(nativeDirectory, nativeArtifacts[0]);
 const workerPath = path.join(repositoryRoot, "scripts/native-crash-worker.mjs");
+const publicWorkerPath = path.join(repositoryRoot, "scripts/public-crash-worker.mjs");
 const crashCases = [
     {
         name: "background image-set",
         source: "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
+        public: true,
     },
     {
         name: "mask image-set",
         source: "mask: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat",
+        public: true,
     },
     {
         name: "webkit mask image-set",
         source: "-webkit-mask: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat",
+        public: true,
     },
     {
         name: "multiple image-set layers",
         source: "background: image-set(url(a.png) 1x), image-set(url(b.png) 2x) center/contain no-repeat",
+        public: true,
     },
     {
         name: "malformed pending substitution",
         source: "padding: 72px var(--space, var(--space,",
+        public: true,
     },
     {
         name: "deep recovered functions",
@@ -85,4 +91,22 @@ for (const crashCase of crashCases) {
     );
 }
 
-console.log(`${crashCases.length} native crash-safety subprocesses passed.`);
+const publicCrashCases = crashCases.filter(candidate => candidate.public);
+for (const crashCase of publicCrashCases) {
+    const encodedCase = Buffer.from(JSON.stringify(crashCase)).toString("base64url");
+    const child = spawnSync(process.execPath, [publicWorkerPath, encodedCase], {
+        encoding: "utf8",
+        timeout: 15_000,
+    });
+
+    assert.equal(child.signal, null, `public ${crashCase.name} terminated with ${child.signal ?? "no signal"}`);
+    assert.equal(
+        child.status,
+        0,
+        `public ${crashCase.name} exited ${child.status}\nstdout:\n${child.stdout}\nstderr:\n${child.stderr}`,
+    );
+}
+
+console.log(
+    `${crashCases.length} native and ${publicCrashCases.length} public crash-safety subprocesses passed.`,
+);
