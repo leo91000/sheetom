@@ -3,23 +3,6 @@
   "baseline": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
   "families": [
     {
-      "id": "anchor-size",
-      "properties": [
-        "block-size",
-        "height",
-        "inline-size",
-        "max-block-size",
-        "max-height",
-        "max-inline-size",
-        "max-width",
-        "min-block-size",
-        "min-height",
-        "min-inline-size",
-        "min-width",
-        "width"
-      ]
-    },
-    {
       "id": "content",
       "properties": ["content"]
     },

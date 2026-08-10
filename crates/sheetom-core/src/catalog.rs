@@ -2,7 +2,6 @@ use lightningcss::properties::PropertyId;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PropertyGrammarExtension {
-    AnchorSize,
     Content,
     ContrastColor,
     IntegerCalculation,
@@ -282,7 +281,7 @@ mod tests {
     fn distinguishes_standard_alias_extension_and_unsupported_owners() {
         let width = property_grammar("width").unwrap();
         assert_eq!(width.owner(), PropertyGrammarOwner::Lightning);
-        assert_eq!(width.extensions(), &[PropertyGrammarExtension::AnchorSize]);
+        assert_eq!(width.extensions(), &[]);
         assert!(width.has_standard_parser());
 
         let alias = property_grammar("row-rule").unwrap();

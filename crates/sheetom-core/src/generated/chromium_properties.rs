@@ -3108,9 +3108,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("background-color", &[
         super::PropertyGrammarExtension::ContrastColor,
     ]),
-    ("block-size", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
     ("border-block-color", &[
         super::PropertyGrammarExtension::ContrastColor,
     ]),
@@ -3165,38 +3162,8 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("grid-template-rows", &[
         super::PropertyGrammarExtension::Subgrid,
     ]),
-    ("height", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("inline-size", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
     ("lighting-color", &[
         super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("max-block-size", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("max-height", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("max-inline-size", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("max-width", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("min-block-size", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("min-height", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("min-inline-size", &[
-        super::PropertyGrammarExtension::AnchorSize,
-    ]),
-    ("min-width", &[
-        super::PropertyGrammarExtension::AnchorSize,
     ]),
     ("offset-anchor", &[
         super::PropertyGrammarExtension::OffsetPosition,
@@ -3230,9 +3197,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("text-emphasis-color", &[
         super::PropertyGrammarExtension::ContrastColor,
-    ]),
-    ("width", &[
-        super::PropertyGrammarExtension::AnchorSize,
     ]),
     ("z-index", &[
         super::PropertyGrammarExtension::IntegerCalculation,
