@@ -1509,6 +1509,7 @@ define_properties! {
   "text-emphasis": TextEmphasis(TextEmphasis<'i>, VendorPrefix) / WebKit shorthand: true,
   "text-emphasis-position": TextEmphasisPosition(TextEmphasisPosition, VendorPrefix) / WebKit,
   "text-shadow": TextShadow(SmallVec<[TextShadow; 1]>),
+  "text-fill-color": TextFillColor(CssColor, VendorPrefix) / WebKit unprefixed: false,
 
   // https://w3c.github.io/csswg-drafts/css-size-adjust/
   "text-size-adjust": TextSizeAdjust(TextSizeAdjust, VendorPrefix) / WebKit / Moz / Ms,
@@ -1528,6 +1529,8 @@ define_properties! {
   "caret": Caret(Caret) shorthand: true,
   "user-select": UserSelect(UserSelect, VendorPrefix) / WebKit / Moz / Ms,
   "accent-color": AccentColor(ColorOrAuto),
+  "tap-highlight-color": TapHighlightColor(CssColor, VendorPrefix) / WebKit unprefixed: false,
+  "scrollbar-color": ScrollbarColor(ScrollbarColor),
   "appearance": Appearance(Appearance<'i>, VendorPrefix) / WebKit / Moz / Ms,
 
   // https://www.w3.org/TR/2020/WD-css-lists-3-20201117
@@ -1552,6 +1555,9 @@ define_properties! {
   "stroke-miterlimit": StrokeMiterlimit(CSSNumber),
   "stroke-dasharray": StrokeDasharray(StrokeDasharray),
   "stroke-dashoffset": StrokeDashoffset(LengthPercentage),
+  "flood-color": FloodColor(CssColor),
+  "lighting-color": LightingColor(CssColor),
+  "stop-color": StopColor(CssColor),
   "marker-start": MarkerStart(Marker<'i>),
   "marker-mid": MarkerMid(Marker<'i>),
   "marker-end": MarkerEnd(Marker<'i>),
