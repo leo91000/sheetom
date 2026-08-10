@@ -1,6 +1,6 @@
 use crate::{
     catalog::{canonical_property_name, initial_longhand_value, shorthand_longhands},
-    inspect_property, EngineError, PropertyParseKind,
+    inspect_property, sheetom_parser_property_name, EngineError, PropertyParseKind,
 };
 use lightningcss::{
     declaration::DeclarationBlock,
@@ -244,16 +244,16 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
     let property = parse_typed_property(name, value).map_err(|_| MutationOutcome::InvalidValue)?;
     let mut longhands = Vec::with_capacity(longhand_names.len());
     for longhand_name in longhand_names {
-        let longhand_id = PropertyId::from(*longhand_name);
-        let canonical_value = if let Some(longhand) = property.longhand(&longhand_id) {
-            longhand
-                .value_to_css_string(PrinterOptions::default())
-                .map_err(|_| MutationOutcome::InvalidValue)?
-        } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
-            initial_value.to_owned()
-        } else {
-            return Err(MutationOutcome::UnsupportedShorthand);
-        };
+        let canonical_value =
+            if let Some(longhand) = shorthand_longhand(&property, name, longhand_name) {
+                longhand
+                    .value_to_css_string(PrinterOptions::default())
+                    .map_err(|_| MutationOutcome::InvalidValue)?
+            } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
+                initial_value.to_owned()
+            } else {
+                return Err(MutationOutcome::UnsupportedShorthand);
+            };
         longhands.push(DeclarationRecord {
             name: (*longhand_name).to_owned(),
             observable_value: canonical_value.clone(),
@@ -269,13 +269,39 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
     })
 }
 
-fn parse_typed_property<'i>(name: &'i str, value: &'i str) -> Result<Property<'i>, EngineError> {
-    if matches!(name, "row-rule" | "rule") {
-        return Property::parse_string(PropertyId::from("border"), value, ParserOptions::default())
-            .map_err(|error| EngineError::Parse(error.to_string()));
+fn shorthand_longhand<'i>(
+    property: &Property<'i>,
+    shorthand_name: &str,
+    longhand_name: &str,
+) -> Option<Property<'i>> {
+    let direct = PropertyId::from(longhand_name);
+    if let Some(longhand) = property.longhand(&direct) {
+        return Some(longhand);
     }
-    Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
-        .map_err(|error| EngineError::Parse(error.to_string()))
+    if sheetom_parser_property_name(shorthand_name) != Some("border") {
+        return None;
+    }
+
+    let source_name = if longhand_name.ends_with("-width") {
+        "border-top-width"
+    } else if longhand_name.ends_with("-style") {
+        "border-top-style"
+    } else if longhand_name.ends_with("-color") {
+        "border-top-color"
+    } else {
+        return None;
+    };
+    property.longhand(&PropertyId::from(source_name))
+}
+
+fn parse_typed_property<'i>(name: &'i str, value: &'i str) -> Result<Property<'i>, EngineError> {
+    let parser_name = sheetom_parser_property_name(name).unwrap_or(name);
+    Property::parse_string(
+        PropertyId::from(parser_name),
+        value,
+        ParserOptions::default(),
+    )
+    .map_err(|error| EngineError::Parse(error.to_string()))
 }
 
 fn map_engine_error(_: EngineError) -> MutationOutcome {
@@ -399,5 +425,52 @@ mod tests {
         let mut font = DeclarationState::new();
         font.set_property("font", "italic 700 16px / 1.5 serif", "");
         assert_eq!(font.get_property_value("font-kerning"), "auto");
+    }
+
+    #[test]
+    fn sheetom_border_codecs_expand_arbitrary_valid_components() {
+        let mut column_rule = DeclarationState::new();
+        assert_eq!(
+            column_rule.set_property("column-rule", "2px dashed red", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(column_rule.get_property_value("column-rule-width"), "2px");
+        assert_eq!(
+            column_rule.get_property_value("column-rule-style"),
+            "dashed"
+        );
+        assert_eq!(column_rule.get_property_value("column-rule-color"), "red");
+
+        let mut legacy_border = DeclarationState::new();
+        assert_eq!(
+            legacy_border.set_property("-webkit-border-after", "thick double blue", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            legacy_border.get_property_value("-webkit-border-after-width"),
+            "thick"
+        );
+        assert_eq!(
+            legacy_border.get_property_value("-webkit-border-after-style"),
+            "double"
+        );
+        assert_eq!(
+            legacy_border.get_property_value("-webkit-border-after-color"),
+            "#00f"
+        );
+
+        let mut text_stroke = DeclarationState::new();
+        assert_eq!(
+            text_stroke.set_property("-webkit-text-stroke", "1px green", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            text_stroke.get_property_value("-webkit-text-stroke-width"),
+            "1px"
+        );
+        assert_eq!(
+            text_stroke.get_property_value("-webkit-text-stroke-color"),
+            "green"
+        );
     }
 }

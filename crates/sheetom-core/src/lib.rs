@@ -196,11 +196,14 @@ fn inspect_property_unchecked<'i>(
     name: &'i str,
     value: &'i str,
 ) -> Result<PropertyInspection, EngineError> {
-    if matches!(name, "row-rule" | "rule") {
-        let property =
-            Property::parse_string(PropertyId::from("border"), value, ParserOptions::default())
-                .map_err(|error| EngineError::Parse(error.to_string()))?;
-        if !matches!(property, Property::Border(_)) {
+    if let Some(parser_name) = sheetom_parser_property_name(name) {
+        let property = Property::parse_string(
+            PropertyId::from(parser_name),
+            value,
+            ParserOptions::default(),
+        )
+        .map_err(|error| EngineError::Parse(error.to_string()))?;
+        if matches!(property, Property::Unparsed(_) | Property::Custom(_)) {
             return Err(EngineError::Parse(format!(
                 "invalid value for {name}: {value}"
             )));
@@ -229,6 +232,27 @@ fn inspect_property_unchecked<'i>(
         kind,
         canonical_value,
     })
+}
+
+pub(crate) fn sheetom_parser_property_name(name: &str) -> Option<&'static str> {
+    if matches!(
+        name,
+        "-webkit-border-after"
+            | "-webkit-border-before"
+            | "-webkit-border-end"
+            | "-webkit-border-start"
+            | "-webkit-column-rule"
+            | "-webkit-text-stroke"
+            | "column-rule"
+            | "row-rule"
+            | "rule"
+    ) {
+        return Some("border");
+    }
+    if name == "grid-gap" {
+        return Some("gap");
+    }
+    None
 }
 
 #[doc(hidden)]
@@ -360,6 +384,34 @@ mod tests {
                 .expect("system font should parse")
                 .kind,
             PropertyParseKind::Typed,
+        );
+        for name in [
+            "-webkit-border-after",
+            "-webkit-border-before",
+            "-webkit-border-end",
+            "-webkit-border-start",
+            "-webkit-column-rule",
+            "column-rule",
+        ] {
+            assert_eq!(
+                inspect_property(name, "2px dashed red")
+                    .expect("border-like shorthand should use the SheetOM border grammar")
+                    .kind,
+                PropertyParseKind::SheetomTyped,
+                "{name}"
+            );
+        }
+        assert_eq!(
+            inspect_property("-webkit-text-stroke", "2px red")
+                .expect("text stroke should use width and color grammar")
+                .kind,
+            PropertyParseKind::SheetomTyped,
+        );
+        assert_eq!(
+            inspect_property("grid-gap", "1px 2px")
+                .expect("legacy grid gap should use gap grammar")
+                .kind,
+            PropertyParseKind::SheetomTyped,
         );
     }
 
