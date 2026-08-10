@@ -42,6 +42,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       grammarBranches: { passed: 96, total: 96, positive: 72, negative: 24 },
       propertyBranches: { passed: 10, total: 10, positive: 5, negative: 5 },
       valueCapabilities: { passed: 41, total: 41, positive: 31, negative: 10 },
+      relativeColors: { passed: 1306, total: 1306, positive: 1146, negative: 160 },
     }));
     const processSafetyReportPath = path.join(directory, "process-safety.json");
     const processSafetyContractSha256 = createHash("sha256")
@@ -94,7 +95,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.21",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.22",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -138,6 +139,15 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         negative: report.evidence.nativeGrammar.valueCapabilities.negative,
       },
       { passed: 41, total: 41, positive: 31, negative: 10 },
+    );
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.relativeColors.passed,
+        total: report.evidence.nativeGrammar.relativeColors.total,
+        positive: report.evidence.nativeGrammar.relativeColors.positive,
+        negative: report.evidence.nativeGrammar.relativeColors.negative,
+      },
+      { passed: 1306, total: 1306, positive: 1146, negative: 160 },
     );
     assert.match(
       report.evidence.nativeGrammar.grammarBranches.contractsSha256,

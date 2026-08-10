@@ -132,6 +132,13 @@ and all 96 reviewed branches pass exactly. The contracts and browser
 observations ship as audit evidence but are never imported as runtime value
 authority.
 
+Relative colors use the same typed engine rather than a text fallback. The
+pinned Chromium 151 and WPT corpus contains 1,146 accepted and 160 rejected
+branches across `rgb()`, `hsl()`, `hwb()`, Lab, LCH, predefined color spaces,
+channel calculations, missing components, and nested color functions. CI
+compares all 1,306 browser-facing getters in one batched browser session and
+also requires every accepted value to survive reparsable serialization.
+
 ## API scope
 
 - `CSSStyleSheet`, live `CSSRuleList`, `CSSRule`, and `MediaList`

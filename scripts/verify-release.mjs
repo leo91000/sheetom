@@ -76,11 +76,16 @@ if (
   nativeGrammar?.valueCapabilities?.total !== 41 ||
   nativeGrammar?.valueCapabilities?.positive !== 31 ||
   nativeGrammar?.valueCapabilities?.negative !== 10 ||
+  nativeGrammar?.relativeColors?.passed !== 1_306 ||
+  nativeGrammar?.relativeColors?.total !== 1_306 ||
+  nativeGrammar?.relativeColors?.positive !== 1_146 ||
+  nativeGrammar?.relativeColors?.negative !== 160 ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.inventorySha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.contractsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.observationsSha256 ?? "") ||
-  !/^[0-9a-f]{64}$/.test(nativeGrammar?.valueCapabilities?.sha256 ?? "")
+  !/^[0-9a-f]{64}$/.test(nativeGrammar?.valueCapabilities?.sha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(nativeGrammar?.relativeColors?.sha256 ?? "")
 ) {
   throw new Error("Native Grammar Inventory evidence is incomplete");
 }
@@ -89,6 +94,7 @@ for (const [filename, recordedHash] of [
   ["compatibility/shorthand-grammar-contracts.json", shorthandGrammar.contractsSha256],
   ["compatibility/shorthand-grammar-observations.json", shorthandGrammar.observationsSha256],
   ["compatibility/value-capabilities.json", nativeGrammar.valueCapabilities.sha256],
+  ["compatibility/relative-color-capabilities.json", nativeGrammar.relativeColors.sha256],
 ]) {
   const actualHash = createHash("sha256").update(await readFile(filename)).digest("hex");
   if (actualHash !== recordedHash) {

@@ -11,6 +11,10 @@ const functionRuleCorpus = JSON.parse(await readFile(
   path.join(compatibilityRoot, "function-rule-cases.json"),
   "utf8",
 ));
+const relativeColorCorpus = JSON.parse(await readFile(
+  path.join(compatibilityRoot, "relative-color-capabilities.json"),
+  "utf8",
+));
 const mappingsByPath = new Map();
 
 for (const mapping of manifest.mappings) {
@@ -22,6 +26,15 @@ for (const source of functionRuleCorpus.baseline.sources) {
   const mappings = mappingsByPath.get(source.path) ?? [];
   mappings.push({
     id: `function-rule-corpus:${source.path}`,
+    blobSha: source.blobSha,
+    subtest: null,
+  });
+  mappingsByPath.set(source.path, mappings);
+}
+for (const source of relativeColorCorpus.provenance.sources) {
+  const mappings = mappingsByPath.get(source.path) ?? [];
+  mappings.push({
+    id: `relative-color-corpus:${source.path}`,
     blobSha: source.blobSha,
     subtest: null,
   });
@@ -52,5 +65,8 @@ for (const [sourcePath, mappings] of mappingsByPath) {
 }
 
 console.log(
-  `Verified ${manifest.mappings.length} WPT mappings and ${functionRuleCorpus.baseline.sources.length} Function Rule source blobs at ${lock.commit}.`,
+  `Verified ${manifest.mappings.length} WPT mappings, ` +
+    `${functionRuleCorpus.baseline.sources.length} Function Rule and ` +
+    `${relativeColorCorpus.provenance.sources.length} Relative Color source blobs ` +
+    `at ${lock.commit}.`,
 );

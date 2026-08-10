@@ -4,6 +4,7 @@
   "auditDate": "2026-08-10",
   "paths": [
     "css/cssom",
+    "css/css-color",
     "css/css-syntax",
     "css/css-variables",
     "css/css-cascade",

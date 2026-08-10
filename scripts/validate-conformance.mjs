@@ -51,6 +51,7 @@ const shorthandGrammarObservationsSchema = await readJson(path.join(compatibilit
 const nativeGrammarInventorySchema = await readJson(path.join(compatibilityRoot, "schemas/native-grammar-inventory.schema.json"));
 const functionRuleCasesSchema = await readJson(path.join(compatibilityRoot, "schemas/function-rule-cases.schema.json"));
 const propertyGrammarExtensionsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-grammar-extensions.schema.json"));
+const relativeColorCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/relative-color-corpus.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -62,6 +63,40 @@ const validateShorthandGrammarObservations = ajv.compile(shorthandGrammarObserva
 const validateNativeGrammarInventory = ajv.compile(nativeGrammarInventorySchema);
 const validateFunctionRuleCases = ajv.compile(functionRuleCasesSchema);
 const validatePropertyGrammarExtensions = ajv.compile(propertyGrammarExtensionsSchema);
+const validateRelativeColorCorpus = ajv.compile(relativeColorCorpusSchema);
+
+const relativeColorCorpusFile = path.join(
+  compatibilityRoot,
+  "relative-color-capabilities.json",
+);
+const relativeColorCorpus = await readJson(relativeColorCorpusFile);
+validateOrThrow(
+  validateRelativeColorCorpus,
+  relativeColorCorpus,
+  relativeColorCorpusFile,
+);
+assert.equal(
+  relativeColorCorpus.provenance.wptCommit,
+  (await readJson(path.join(compatibilityRoot, "wpt.lock.json"))).commit,
+  "Relative Color Corpus is stale for wpt.lock.json",
+);
+assert.equal(
+  new Set(relativeColorCorpus.cases.map(candidate => candidate.id)).size,
+  relativeColorCorpus.cases.length,
+  "Relative Color Corpus case IDs must be unique",
+);
+assert.equal(
+  relativeColorCorpus.cases.length,
+  1_306,
+  "Relative Color Corpus must retain every reviewed WPT case",
+);
+for (const candidate of relativeColorCorpus.cases) {
+  assert.equal(
+    candidate.chromiumAccepted,
+    candidate.wptAccepted,
+    `${candidate.id} Chromium acceptance drifted from the pinned WPT expectation`,
+  );
+}
 
 const propertyGrammarExtensionsFile = path.join(
   compatibilityRoot,

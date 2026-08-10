@@ -28,6 +28,9 @@ const nativeGrammarInventoryBytes = await readFile(
 const valueCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "value-capabilities.json"),
 );
+const relativeColorCapabilitiesBytes = await readFile(
+  path.join(compatibilityRoot, "relative-color-capabilities.json"),
+);
 const shorthandGrammarContracts = JSON.parse(shorthandGrammarContractsBytes.toString("utf8"));
 const shorthandGrammarObservations = JSON.parse(
   shorthandGrammarObservationsBytes.toString("utf8"),
@@ -38,6 +41,9 @@ const shorthandGrammarCases = shorthandGrammarContracts.profiles.flatMap(
 const shorthandCapabilities = JSON.parse(shorthandCapabilitiesBytes.toString("utf8"));
 const nativeGrammarInventory = JSON.parse(nativeGrammarInventoryBytes.toString("utf8"));
 const valueCapabilities = JSON.parse(valueCapabilitiesBytes.toString("utf8"));
+const relativeColorCapabilities = JSON.parse(
+  relativeColorCapabilitiesBytes.toString("utf8"),
+);
 if (
   shorthandGrammarContracts.profiles.length !== 24 ||
   shorthandGrammarCases.length !== 96 ||
@@ -138,6 +144,9 @@ const propertyPositive = nativeGrammarInventory.propertyBranches
 const propertyNegative = nativeGrammarInventory.propertyBranches.length - propertyPositive;
 const valuePositive = valueCapabilities.cases.filter(candidate => candidate.accepted).length;
 const valueNegative = valueCapabilities.cases.length - valuePositive;
+const relativeColorPositive = relativeColorCapabilities.cases
+  .filter(candidate => candidate.chromiumAccepted).length;
+const relativeColorNegative = relativeColorCapabilities.cases.length - relativeColorPositive;
 const expectedNativeCorpus = {
   schemaVersion: 1,
   shorthandProperties: {
@@ -161,6 +170,12 @@ const expectedNativeCorpus = {
     total: valueCapabilities.cases.length,
     positive: valuePositive,
     negative: valueNegative,
+  },
+  relativeColors: {
+    passed: relativeColorCapabilities.cases.length,
+    total: relativeColorCapabilities.cases.length,
+    positive: relativeColorPositive,
+    negative: relativeColorNegative,
   },
 };
 if (JSON.stringify(nativeCorpusReport) !== JSON.stringify(expectedNativeCorpus)) {
@@ -280,6 +295,12 @@ const report = {
       valueCapabilities: {
         ...nativeCorpusReport.valueCapabilities,
         sha256: createHash("sha256").update(valueCapabilitiesBytes).digest("hex"),
+      },
+      relativeColors: {
+        ...nativeCorpusReport.relativeColors,
+        sha256: createHash("sha256")
+          .update(relativeColorCapabilitiesBytes)
+          .digest("hex"),
       },
     },
     processSafety: {
