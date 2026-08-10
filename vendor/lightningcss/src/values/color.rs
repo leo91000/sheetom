@@ -2,6 +2,10 @@
 
 #![allow(non_upper_case_globals)]
 
+mod relative;
+
+pub use relative::RelativeColor;
+
 use super::angle::Angle;
 use super::calc::Calc;
 use super::number::CSSNumber;
@@ -72,6 +76,9 @@ pub enum CssColor {
   #[cfg_attr(feature = "visitor", skip_type)]
   #[cfg_attr(feature = "serde", serde(with = "ColorMixSchema"))]
   ColorMix(Box<ColorMix>),
+  /// A relative color that must be resolved at computed-value time.
+  #[cfg_attr(feature = "visitor", skip_type)]
+  Relative(Box<RelativeColor>),
   /// A [system color](https://drafts.csswg.org/css-color/#css-system-colors) keyword.
   System(SystemColor),
 }
@@ -304,6 +311,9 @@ pub enum PredefinedColor {
   /// A color in the `display-p3` color space.
   #[cfg_attr(feature = "serde", serde(rename = "display-p3"))]
   DisplayP3(P3),
+  /// A color in the linear-light `display-p3` color space.
+  #[cfg_attr(feature = "serde", serde(rename = "display-p3-linear"))]
+  DisplayP3Linear(P3Linear),
   /// A color in the `a98-rgb` color space.
   #[cfg_attr(feature = "serde", serde(rename = "a98-rgb"))]
   A98(A98),
@@ -362,6 +372,11 @@ enum_property! {
   enum ColorSpaceName {
     "srgb": SRGB,
     "srgb-linear": SRGBLinear,
+    "display-p3": DisplayP3,
+    "display-p3-linear": DisplayP3Linear,
+    "a98-rgb": A98RGB,
+    "prophoto-rgb": ProPhotoRGB,
+    "rec2020": Rec2020,
     "lab": LAB,
     "oklab": OKLAB,
     "xyz": XYZ,
@@ -453,6 +468,7 @@ impl CssColor {
         PredefinedColor::SRGB(rgb) => rgb.alpha,
         PredefinedColor::SRGBLinear(rgb) => rgb.alpha,
         PredefinedColor::DisplayP3(rgb) => rgb.alpha,
+        PredefinedColor::DisplayP3Linear(rgb) => rgb.alpha,
         PredefinedColor::A98(rgb) => rgb.alpha,
         PredefinedColor::ProPhoto(rgb) => rgb.alpha,
         PredefinedColor::Rec2020(rgb) => rgb.alpha,
@@ -467,6 +483,7 @@ impl CssColor {
       CssColor::LightDark(..)
       | CssColor::ContrastColor(..)
       | CssColor::ColorMix(..)
+      | CssColor::Relative(..)
       | CssColor::CurrentColor
       | CssColor::System(..) => return Err(()),
     })
@@ -496,6 +513,7 @@ impl CssColor {
           PredefinedColor::SRGB(rgb) => rgb.alpha = alpha,
           PredefinedColor::SRGBLinear(rgb) => rgb.alpha = alpha,
           PredefinedColor::DisplayP3(rgb) => rgb.alpha = alpha,
+          PredefinedColor::DisplayP3Linear(rgb) => rgb.alpha = alpha,
           PredefinedColor::A98(rgb) => rgb.alpha = alpha,
           PredefinedColor::ProPhoto(rgb) => rgb.alpha = alpha,
           PredefinedColor::Rec2020(rgb) => rgb.alpha = alpha,
@@ -560,6 +578,7 @@ impl CssColor {
       | CssColor::Float(..)
       | CssColor::ContrastColor(..)
       | CssColor::ColorMix(..)
+      | CssColor::Relative(..)
       | CssColor::System(..) => return ColorFallbackKind::empty(),
       CssColor::LAB(lab) => match &**lab {
         LABColor::LAB(..) | LABColor::LCH(..) if should_compile!(targets, LabColors) => {
@@ -571,7 +590,11 @@ impl CssColor {
         _ => return ColorFallbackKind::empty(),
       },
       CssColor::Predefined(predefined) => match &**predefined {
-        PredefinedColor::DisplayP3(..) if should_compile!(targets, P3Colors) => ColorFallbackKind::P3.and_below(),
+        PredefinedColor::DisplayP3(..) | PredefinedColor::DisplayP3Linear(..)
+          if should_compile!(targets, P3Colors) =>
+        {
+          ColorFallbackKind::P3.and_below()
+        }
         _ if should_compile!(targets, ColorFunction) => ColorFallbackKind::LAB.and_below(),
         _ => return ColorFallbackKind::empty(),
       },
@@ -654,7 +677,7 @@ impl CssColor {
       CssColor::Predefined(predefined_color) => {
         features |= Features::ColorFunction;
         match &**predefined_color {
-          PredefinedColor::DisplayP3(_) => {
+          PredefinedColor::DisplayP3(_) | PredefinedColor::DisplayP3Linear(_) => {
             features |= Features::P3Colors;
           }
           _ => {}
@@ -675,6 +698,9 @@ impl CssColor {
         features |= mix.first.get_features();
         features |= mix.second.get_features();
       }
+      CssColor::Relative(relative) => {
+        features |= relative.origin_features();
+      }
       _ => {}
     }
 
@@ -691,7 +717,9 @@ impl IsCompatible for CssColor {
         LABColor::OKLAB(..) | LABColor::OKLCH(..) => Feature::OklabColors.is_compatible(browsers),
       },
       CssColor::Predefined(predefined) => match &**predefined {
-        PredefinedColor::DisplayP3(..) => Feature::P3Colors.is_compatible(browsers),
+        PredefinedColor::DisplayP3(..) | PredefinedColor::DisplayP3Linear(..) => {
+          Feature::P3Colors.is_compatible(browsers)
+        }
         _ => Feature::ColorFunction.is_compatible(browsers),
       },
       CssColor::LightDark(light, dark) => {
@@ -699,6 +727,7 @@ impl IsCompatible for CssColor {
       }
       CssColor::ContrastColor(_) => false,
       CssColor::ColorMix(_) => false,
+      CssColor::Relative(_) => false,
       CssColor::System(system) => system.is_compatible(browsers),
     }
   }
@@ -857,6 +886,7 @@ impl ToCss for CssColor {
         dest.write_char(')')
       }
       CssColor::ColorMix(mix) => mix.to_css(dest),
+      CssColor::Relative(relative) => relative.to_css(dest),
       CssColor::System(system) => system.to_css(dest),
     }
   }
@@ -1270,6 +1300,10 @@ fn parse_color_function<'i, 't>(
   function: CowRcStr<'i>,
   input: &mut Parser<'i, 't>,
 ) -> Result<CssColor, ParseError<'i, ParserError<'i>>> {
+  if relative::has_relative_color_prefix(&function, input) {
+    return relative::parse_relative_color(&function, input).map(|relative| CssColor::Relative(Box::new(relative)));
+  }
+
   let mut parser = ComponentParser::new(true);
 
   match_ignore_ascii_case! {&*function,
@@ -1494,6 +1528,7 @@ fn parse_predefined_relative<'i, 't>(
       "srgb" => RelativeComponentParser::new(&SRGB::try_from(from).map_err(handle_error)?.resolve_missing()),
       "srgb-linear" => RelativeComponentParser::new(&SRGBLinear::try_from(from).map_err(handle_error)?.resolve_missing()),
       "display-p3" => RelativeComponentParser::new(&P3::try_from(from).map_err(handle_error)?.resolve_missing()),
+      "display-p3-linear" => RelativeComponentParser::new(&P3Linear::try_from(from).map_err(handle_error)?.resolve_missing()),
       "a98-rgb" => RelativeComponentParser::new(&A98::try_from(from).map_err(handle_error)?.resolve_missing()),
       "prophoto-rgb" => RelativeComponentParser::new(&ProPhoto::try_from(from).map_err(handle_error)?.resolve_missing()),
       "rec2020" => RelativeComponentParser::new(&Rec2020::try_from(from).map_err(handle_error)?.resolve_missing()),
@@ -1516,6 +1551,7 @@ fn parse_predefined_relative<'i, 't>(
     "srgb" => PredefinedColor::SRGB(SRGB { r: a, g: b, b: c, alpha }),
     "srgb-linear" => PredefinedColor::SRGBLinear(SRGBLinear { r: a, g: b, b: c, alpha }),
     "display-p3" => PredefinedColor::DisplayP3(P3 { r: a, g: b, b: c, alpha }),
+    "display-p3-linear" => PredefinedColor::DisplayP3Linear(P3Linear { r: a, g: b, b: c, alpha }),
     "a98-rgb" => PredefinedColor::A98(A98 { r: a, g: b, b: c, alpha }),
     "prophoto-rgb" => PredefinedColor::ProPhoto(ProPhoto { r: a, g: b, b: c, alpha }),
     "rec2020" => PredefinedColor::Rec2020(Rec2020 { r: a, g: b, b: c, alpha }),
@@ -1757,6 +1793,7 @@ where
     SRGB(rgb) => ("srgb", rgb.r, rgb.g, rgb.b, rgb.alpha),
     SRGBLinear(rgb) => ("srgb-linear", rgb.r, rgb.g, rgb.b, rgb.alpha),
     DisplayP3(rgb) => ("display-p3", rgb.r, rgb.g, rgb.b, rgb.alpha),
+    DisplayP3Linear(rgb) => ("display-p3-linear", rgb.r, rgb.g, rgb.b, rgb.alpha),
     A98(rgb) => ("a98-rgb", rgb.r, rgb.g, rgb.b, rgb.alpha),
     ProPhoto(rgb) => ("prophoto-rgb", rgb.r, rgb.g, rgb.b, rgb.alpha),
     Rec2020(rgb) => ("rec2020", rgb.r, rgb.g, rgb.b, rgb.alpha),
@@ -1999,6 +2036,18 @@ define_colorspace! {
 define_colorspace! {
   /// A color in the [`display-p3`](https://www.w3.org/TR/css-color-4/#predefined-display-p3) color space.
   pub struct P3 {
+    /// The red component.
+    r: Number,
+    /// The green component.
+    g: Number,
+    /// The blue component.
+    b: Number
+  }
+}
+
+define_colorspace! {
+  /// A color in the linear-light [`display-p3`](https://drafts.csswg.org/css-color-5/#predefined-display-p3-linear) color space.
+  pub struct P3Linear {
     /// The red component.
     r: Number,
     /// The green component.
@@ -2606,6 +2655,31 @@ impl From<XYZd65> for P3 {
   }
 }
 
+impl From<XYZd65> for P3Linear {
+  fn from(xyz: XYZd65) -> P3Linear {
+    const MATRIX: &[f32] = &[
+      2.493496911941425,
+      -0.9313836179191239,
+      -0.40271078445071684,
+      -0.8294889695615747,
+      1.7626640603183463,
+      0.023624685841943577,
+      0.03584583024378447,
+      -0.07617238926804182,
+      0.9568845240076872,
+    ];
+
+    let xyz = xyz.resolve_missing();
+    let (r, g, b) = multiply_matrix(MATRIX, xyz.x, xyz.y, xyz.z);
+    P3Linear {
+      r,
+      g,
+      b,
+      alpha: xyz.alpha,
+    }
+  }
+}
+
 impl From<P3> for XYZd65 {
   fn from(p3: P3) -> XYZd65 {
     // https://github.com/w3c/csswg-drafts/blob/fba005e2ce9bcac55b49e4aa19b87208b3a0631e/css-color-4/conversions.js#L91
@@ -2627,6 +2701,31 @@ impl From<P3> for XYZd65 {
     let p3 = p3.resolve_missing();
     let (r, g, b) = lin_srgb(p3.r, p3.g, p3.b);
     let (x, y, z) = multiply_matrix(MATRIX, r, g, b);
+    XYZd65 {
+      x,
+      y,
+      z,
+      alpha: p3.alpha,
+    }
+  }
+}
+
+impl From<P3Linear> for XYZd65 {
+  fn from(p3: P3Linear) -> XYZd65 {
+    const MATRIX: &[f32] = &[
+      0.4865709486482162,
+      0.26566769316909306,
+      0.1982172852343625,
+      0.2289745640697488,
+      0.6917385218365064,
+      0.079286914093745,
+      0.0000000000000000,
+      0.04511338185890264,
+      1.043944368900976,
+    ];
+
+    let p3 = p3.resolve_missing();
+    let (x, y, z) = multiply_matrix(MATRIX, p3.r, p3.g, p3.b);
     XYZd65 {
       x,
       y,
@@ -3099,6 +3198,20 @@ via!(LAB -> XYZd50 -> XYZd65);
 via!(ProPhoto -> XYZd50 -> XYZd65);
 via!(OKLCH -> OKLAB -> XYZd65);
 
+via!(P3Linear -> XYZd65 -> LAB);
+via!(P3Linear -> XYZd65 -> LCH);
+via!(P3Linear -> XYZd65 -> OKLAB);
+via!(P3Linear -> XYZd65 -> OKLCH);
+via!(P3Linear -> XYZd65 -> SRGB);
+via!(P3Linear -> XYZd65 -> SRGBLinear);
+via!(P3Linear -> XYZd65 -> P3);
+via!(P3Linear -> XYZd65 -> A98);
+via!(P3Linear -> XYZd65 -> ProPhoto);
+via!(P3Linear -> XYZd65 -> Rec2020);
+via!(P3Linear -> XYZd65 -> XYZd50);
+via!(P3Linear -> XYZd65 -> HSL);
+via!(P3Linear -> XYZd65 -> HWB);
+
 via!(LAB -> XYZd65 -> OKLAB);
 via!(LAB -> XYZd65 -> OKLCH);
 via!(LAB -> XYZd65 -> SRGB);
@@ -3190,6 +3303,7 @@ via!(RGB -> SRGB -> LCH);
 via!(RGB -> SRGB -> OKLAB);
 via!(RGB -> SRGB -> OKLCH);
 via!(RGB -> SRGB -> P3);
+via!(RGB -> SRGB -> P3Linear);
 via!(RGB -> SRGB -> SRGBLinear);
 via!(RGB -> SRGB -> A98);
 via!(RGB -> SRGB -> ProPhoto);
@@ -3206,6 +3320,7 @@ via!(RGBA -> SRGB -> LCH);
 via!(RGBA -> SRGB -> OKLAB);
 via!(RGBA -> SRGB -> OKLCH);
 via!(RGBA -> SRGB -> P3);
+via!(RGBA -> SRGB -> P3Linear);
 via!(RGBA -> SRGB -> SRGBLinear);
 via!(RGBA -> SRGB -> A98);
 via!(RGBA -> SRGB -> ProPhoto);
@@ -3238,6 +3353,7 @@ macro_rules! color_space {
           SRGB(v) => v.into(),
           SRGBLinear(v) => v.into(),
           DisplayP3(v) => v.into(),
+          DisplayP3Linear(v) => v.into(),
           A98(v) => v.into(),
           ProPhoto(v) => v.into(),
           Rec2020(v) => v.into(),
@@ -3271,6 +3387,7 @@ macro_rules! color_space {
           CssColor::LightDark(..) => return Err(()),
           CssColor::ContrastColor(..) => return Err(()),
           CssColor::ColorMix(..) => return Err(()),
+          CssColor::Relative(..) => return Err(()),
           CssColor::System(..) => return Err(()),
         })
       }
@@ -3288,6 +3405,7 @@ macro_rules! color_space {
           CssColor::LightDark(..) => return Err(()),
           CssColor::ContrastColor(..) => return Err(()),
           CssColor::ColorMix(..) => return Err(()),
+          CssColor::Relative(..) => return Err(()),
           CssColor::System(..) => return Err(()),
         })
       }
@@ -3304,6 +3422,7 @@ color_space!(SRGBLinear);
 color_space!(XYZd50);
 color_space!(XYZd65);
 color_space!(P3);
+color_space!(P3Linear);
 color_space!(A98);
 color_space!(ProPhoto);
 color_space!(Rec2020);
@@ -3332,6 +3451,7 @@ predefined!(SRGBLinear, SRGBLinear);
 predefined!(XYZd50, XYZd50);
 predefined!(XYZd65, XYZd65);
 predefined!(DisplayP3, P3);
+predefined!(DisplayP3Linear, P3Linear);
 predefined!(A98, A98);
 predefined!(ProPhoto, ProPhoto);
 predefined!(Rec2020, Rec2020);
@@ -3449,6 +3569,7 @@ macro_rules! hsl_hwb_color_gamut {
 bounded_color_gamut!(SRGB, r, g, b);
 bounded_color_gamut!(SRGBLinear, r, g, b);
 bounded_color_gamut!(P3, r, g, b);
+bounded_color_gamut!(P3Linear, r, g, b);
 bounded_color_gamut!(A98, r, g, b);
 bounded_color_gamut!(ProPhoto, r, g, b);
 bounded_color_gamut!(Rec2020, r, g, b);
@@ -3595,6 +3716,11 @@ fn parse_color_mix<'i, 't>(input: &mut Parser<'i, 't>) -> Result<CssColor, Parse
   let resolved = match method {
     ColorSpaceName::SRGB => first_color.interpolate::<SRGB>(p1, &second_color, p2, hue_method),
     ColorSpaceName::SRGBLinear => first_color.interpolate::<SRGBLinear>(p1, &second_color, p2, hue_method),
+    ColorSpaceName::DisplayP3 => first_color.interpolate::<P3>(p1, &second_color, p2, hue_method),
+    ColorSpaceName::DisplayP3Linear => first_color.interpolate::<P3Linear>(p1, &second_color, p2, hue_method),
+    ColorSpaceName::A98RGB => first_color.interpolate::<A98>(p1, &second_color, p2, hue_method),
+    ColorSpaceName::ProPhotoRGB => first_color.interpolate::<ProPhoto>(p1, &second_color, p2, hue_method),
+    ColorSpaceName::Rec2020 => first_color.interpolate::<Rec2020>(p1, &second_color, p2, hue_method),
     ColorSpaceName::Hsl => first_color.interpolate::<HSL>(p1, &second_color, p2, hue_method),
     ColorSpaceName::Hwb => first_color.interpolate::<HWB>(p1, &second_color, p2, hue_method),
     ColorSpaceName::LAB => first_color.interpolate::<LAB>(p1, &second_color, p2, hue_method),
@@ -3634,6 +3760,7 @@ impl CssColor {
         PredefinedColor::SRGB(..) => TypeId::of::<SRGB>(),
         PredefinedColor::SRGBLinear(..) => TypeId::of::<SRGBLinear>(),
         PredefinedColor::DisplayP3(..) => TypeId::of::<P3>(),
+        PredefinedColor::DisplayP3Linear(..) => TypeId::of::<P3Linear>(),
         PredefinedColor::A98(..) => TypeId::of::<A98>(),
         PredefinedColor::ProPhoto(..) => TypeId::of::<ProPhoto>(),
         PredefinedColor::Rec2020(..) => TypeId::of::<Rec2020>(),
@@ -3678,10 +3805,18 @@ impl CssColor {
   {
     if matches!(
       self,
-      CssColor::CurrentColor | CssColor::ContrastColor(..) | CssColor::ColorMix(..) | CssColor::System(..)
+      CssColor::CurrentColor
+        | CssColor::ContrastColor(..)
+        | CssColor::ColorMix(..)
+        | CssColor::Relative(..)
+        | CssColor::System(..)
     ) || matches!(
       other,
-      CssColor::CurrentColor | CssColor::ContrastColor(..) | CssColor::ColorMix(..) | CssColor::System(..)
+      CssColor::CurrentColor
+        | CssColor::ContrastColor(..)
+        | CssColor::ColorMix(..)
+        | CssColor::Relative(..)
+        | CssColor::System(..)
     ) {
       return Err(());
     }
@@ -3877,6 +4012,31 @@ impl Interpolate for SRGB {
 }
 
 impl Interpolate for SRGBLinear {
+  rectangular_premultiply!(r, g, b);
+  interpolate!(r, g, b);
+}
+
+impl Interpolate for P3 {
+  rectangular_premultiply!(r, g, b);
+  interpolate!(r, g, b);
+}
+
+impl Interpolate for P3Linear {
+  rectangular_premultiply!(r, g, b);
+  interpolate!(r, g, b);
+}
+
+impl Interpolate for A98 {
+  rectangular_premultiply!(r, g, b);
+  interpolate!(r, g, b);
+}
+
+impl Interpolate for ProPhoto {
+  rectangular_premultiply!(r, g, b);
+  interpolate!(r, g, b);
+}
+
+impl Interpolate for Rec2020 {
   rectangular_premultiply!(r, g, b);
   interpolate!(r, g, b);
 }
@@ -4170,6 +4330,114 @@ mod tests {
   }
 
   #[test]
+  fn preserves_relative_colors_as_typed_ast() {
+    for source in [
+      "rgb(from contrast-color(red) r g b)",
+      "rgb(from currentColor r g b / alpha)",
+      "hsl(from contrast-color(red) h s l)",
+      "hwb(from contrast-color(red) h w b)",
+      "lab(from contrast-color(red) l a b)",
+      "lch(from contrast-color(red) l c h)",
+      "oklab(from contrast-color(red) l a b)",
+      "oklch(from contrast-color(red) l c h)",
+      "color(from contrast-color(red) display-p3 r g b / alpha)",
+      "color(from contrast-color(red) display-p3-linear r g b)",
+      "color(from contrast-color(red) xyz x y z)",
+      "rgb(from color-mix(in srgb, red, currentColor) r g b)",
+      "rgb(from contrast-color(red) calc(r + 10) g b)",
+      "rgb(from contrast-color(red) calc(r * g) g b)",
+      "rgb(from contrast-color(red) calc(r / 0) g b)",
+      "rgb(from contrast-color(red) min(r, g) g b)",
+      "rgb(from contrast-color(red) round(up, r, 10) g b)",
+      "hsl(from contrast-color(red) atan2(h, 2) s l)",
+      "rgb(from contrast-color(red) calc(sin(r)) g b)",
+      "rgb(from contrast-color(red) calc(pi) g b)",
+      "rgb(from contrast-color(red) none 20% b / none)",
+      "rgb(from rgb(from contrast-color(red) r g b) r g b)",
+    ] {
+      let value = parse(source).unwrap();
+      assert!(matches!(value, CssColor::Relative(_)), "{source}: {value:?}");
+      let serialized = value.to_css_string(PrinterOptions::default()).unwrap();
+      assert!(parse(&serialized).is_ok(), "{source}: {serialized}");
+    }
+  }
+
+  #[test]
+  fn serializes_relative_colors_with_cssom_canonicalization() {
+    for (source, expected) in [
+      (
+        "rgb(from rgb(20%, 40%, 60%, 80%) r g b / alpha)",
+        "rgb(from rgba(51, 102, 153, 0.8) r g b / alpha)",
+      ),
+      (
+        "rgba(from rebeccapurple r calc(g * .5 + g * .5) 10)",
+        "rgb(from rebeccapurple r calc((0.5 * g) + (0.5 * g)) 10)",
+      ),
+      (
+        "lab(from lab(50 -30 40) l calc(a / 3) calc(b / 2))",
+        "lab(from lab(50 -30 40) l calc(0.333333 * a) calc(0.5 * b))",
+      ),
+      (
+        "oklab(from oklab(0.7 0.25 -0.15) calc(l - .2) a b)",
+        "oklab(from oklab(0.7 0.25 -0.15) calc(-0.2 + l) a b)",
+      ),
+      (
+        "lch(from lch(none none none / none) l c h / alpha)",
+        "lch(from lch(none none none / none) l c h / alpha)",
+      ),
+      (
+        "color(from color(display-p3-linear .7 .5 .3) display-p3-linear r g b)",
+        "color(from color(display-p3-linear 0.7 0.5 0.3) display-p3-linear r g b)",
+      ),
+      (
+        "rgb(from color-mix(in display-p3, red, blue) r g b)",
+        "rgb(from color-mix(in display-p3, red, blue) r g b)",
+      ),
+      (
+        "oklab(from color-mix(in oklab, oklab(0.25 0.2 0.5), oklab(0.25 0.2 0.5)) l a b / alpha)",
+        "oklab(from color-mix(oklab(0.25 0.2 0.5), oklab(0.25 0.2 0.5)) l a b / alpha)",
+      ),
+    ] {
+      let value = parse(source).unwrap();
+      assert!(matches!(value, CssColor::Relative(_)), "{source}: {value:?}");
+      assert_eq!(
+        value.to_css_string(PrinterOptions::default()).unwrap(),
+        expected,
+        "{source}"
+      );
+    }
+  }
+
+  #[test]
+  fn rejects_invalid_relative_color_neighbors() {
+    for source in [
+      "rgb(from contrast-color(red) r g)",
+      "rgb(from contrast-color(red) r g b extra)",
+      "rgb(from contrast-color(red) x g b)",
+      "rgb(from contrast-color(red) 10deg g b)",
+      "rgb(from contrast-color(red) calc(r + 10%) g b)",
+      "rgb(from contrast-color(red) calc(r +g) g b)",
+      "rgb(from contrast-color(red) calc(r+ g) g b)",
+      "hsl(from contrast-color(red) 10% s l)",
+      "hsl(from contrast-color(red) calc(h + 1deg) s l)",
+      "lch(from contrast-color(red) l c 10%)",
+      "color(from contrast-color(red) unknown r g b)",
+      "color(from contrast-color(red) xyz r g b)",
+      "color(from contrast-color(red) srgb x y z)",
+      "rgb(from contrast-color(red) round(r, 10%) g b)",
+      "rgb(from contrast-color(red) sibling-index(1) g b)",
+      "rgb(from contrast-color(red) calc(foo) g b)",
+      "rgb(from rebeccapurple r calc(g +1) b)",
+      "rgb(from rebeccapurple r calc(g+ 1) b)",
+      "rgb(from rebeccapurple r calc(g + 1%) b)",
+      "hsl(from rebeccapurple calc(h + 1deg) s l)",
+      "color(from red display-p3 x y z)",
+    ] {
+      assert!(parse(source).is_err(), "{source}");
+    }
+  }
+
+  #[test]
   fn rejects_invalid_contrast_function_neighbors() {
     for source in [
       "contrast-color()",
@@ -4187,6 +4455,8 @@ mod tests {
     for source in [
       "contrast-color(light-dark(red, blue))",
       "color-mix(in srgb, contrast-color(red), blue)",
+      "rgb(from contrast-color(red) calc(r / 0) g b / alpha)",
+      "color(from contrast-color(red) display-p3-linear r g b)",
     ] {
       let value = parse(source).unwrap();
       let json = serde_json::to_string(&value).unwrap();
