@@ -403,6 +403,52 @@ mod tests {
     }
 
     #[test]
+    fn parses_relative_colors_through_the_vendored_standard_ast() {
+        for (source, expected) in [
+            (
+                "rgb(from rgb(20%, 40%, 60%, 80%) r g b / alpha)",
+                "rgb(from rgba(51, 102, 153, 0.8) r g b / alpha)",
+            ),
+            (
+                "rgba(from rebeccapurple r calc(g * .5 + g * .5) 10)",
+                "rgb(from rebeccapurple r calc((0.5 * g) + (0.5 * g)) 10)",
+            ),
+            (
+                "lab(from lab(50 -30 40) l calc(a / 3) calc(b / 2))",
+                "lab(from lab(50 -30 40) l calc(0.333333 * a) calc(0.5 * b))",
+            ),
+            (
+                "lch(from lch(none none none / none) l c h / alpha)",
+                "lch(from lch(none none none / none) l c h / alpha)",
+            ),
+            (
+                "color(from color(display-p3-linear .7 .5 .3) display-p3-linear r g b)",
+                "color(from color(display-p3-linear 0.7 0.5 0.3) display-p3-linear r g b)",
+            ),
+        ] {
+            let declaration = parse_standard_semantic_property("color", source).unwrap();
+            assert_eq!(declaration.parse_kind(), PropertyParseKind::Typed);
+            assert!(matches!(
+                declaration.value(),
+                SemanticPropertyValue::Standard(_)
+            ));
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
+        }
+
+        for source in [
+            "rgb(from rebeccapurple r g)",
+            "rgb(from rebeccapurple r calc(g +1) b)",
+            "hsl(from rebeccapurple calc(h + 1deg) s l)",
+            "color(from red display-p3 x y z)",
+        ] {
+            assert!(
+                parse_standard_semantic_property("color", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
     fn owns_pending_substitutions_without_using_the_lightning_unparsed_variant() {
         let declaration =
             parse_semantic_property("padding", "72px var(--space, var(--space,").unwrap();

@@ -282,6 +282,9 @@ fn is_generic_font_family(value: &str) -> bool {
 }
 
 fn serialize_color(value: &str, safe_value: &str) -> String {
+    if is_relative_color_function(value) {
+        return safe_value.to_owned();
+    }
     if let Some(color) = serialize_rgb_color(value) {
         return color;
     }
@@ -303,6 +306,33 @@ fn serialize_color(value: &str, safe_value: &str) -> String {
         return serialize_hex_color(safe_value).unwrap_or_else(|| value.to_owned());
     }
     canonicalize_color_identifiers(value)
+}
+
+fn is_relative_color_function(value: &str) -> bool {
+    let mut tokenizer = TokenizerWithSpans::new(value);
+    let Some(Token::Function(function)) = next_significant_token(&mut tokenizer) else {
+        return false;
+    };
+    if ![
+        "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color",
+    ]
+    .iter()
+    .any(|candidate| function.eq_ignore_ascii_case(candidate))
+    {
+        return false;
+    }
+    next_significant_token(&mut tokenizer).is_some_and(
+        |token| matches!(token, Token::Ident(ident) if ident.eq_ignore_ascii_case("from")),
+    )
+}
+
+fn next_significant_token<'i>(tokenizer: &mut TokenizerWithSpans<'i>) -> Option<Token<'i>> {
+    loop {
+        let token = tokenizer.next_token().ok()?.token;
+        if !matches!(token, Token::WhiteSpace(_) | Token::Comment(_)) {
+            return Some(token);
+        }
+    }
 }
 
 fn canonicalize_color_identifiers(value: &str) -> String {
@@ -542,6 +572,24 @@ mod tests {
                 ObservableCategory::Typed,
             ),
             "contrast-color(currentcolor)"
+        );
+        assert_eq!(
+            serialize_observable_value(
+                "color",
+                "RGBA(from rgb(20%, 40%, 60%, 80%) r calc(g * .5 + g * .5) b / alpha)",
+                "rgb(from rgba(51, 102, 153, 0.8) r calc((0.5 * g) + (0.5 * g)) b / alpha)",
+                ObservableCategory::Typed,
+            ),
+            "rgb(from rgba(51, 102, 153, 0.8) r calc((0.5 * g) + (0.5 * g)) b / alpha)"
+        );
+        assert_eq!(
+            serialize_observable_value(
+                "color",
+                "lab(from var(--mycolor) l a b / calc(alpha * 0.8))",
+                "lab(from var(--mycolor) l a b / calc(alpha * .8))",
+                ObservableCategory::PendingSubstitution,
+            ),
+            "lab(from var(--mycolor) l a b / calc(alpha * 0.8))"
         );
     }
 }

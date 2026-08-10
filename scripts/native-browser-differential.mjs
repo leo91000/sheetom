@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,10 @@ const [nativeArtifact] = (await readdir(nativeDirectory)).filter(
 assert.ok(nativeArtifact, "build the native addon before running the differential");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, nativeArtifact));
+const relativeColorCorpus = JSON.parse(await readFile(
+    path.join(repositoryRoot, "compatibility/relative-color-capabilities.json"),
+    "utf8",
+));
 
 const cases = [
     {
@@ -174,8 +178,46 @@ try {
     for (let index = 0; index < cases.length; index += 1) {
         assert.deepEqual(nativeSnapshot(cases[index]), browserSnapshots[index], cases[index].id);
     }
+
+    const relativeColorBrowserSnapshots = await page.evaluate(testCases => testCases.map(testCase => {
+        const style = document.createElement("div").style;
+        style.setProperty(testCase.property, testCase.input);
+        return {
+            accepted: style.length === 1,
+            observable: style.getPropertyValue(testCase.property),
+        };
+    }), relativeColorCorpus.cases);
+
+    for (let index = 0; index < relativeColorCorpus.cases.length; index += 1) {
+        const testCase = relativeColorCorpus.cases[index];
+        const browserSnapshot = relativeColorBrowserSnapshots[index];
+        assert.equal(
+            browserSnapshot.accepted,
+            testCase.chromiumAccepted,
+            `${testCase.id}: Chromium acceptance drifted`,
+        );
+        assert.equal(
+            browserSnapshot.observable,
+            testCase.chromiumObservable ?? "",
+            `${testCase.id}: Chromium serialization drifted`,
+        );
+
+        const state = new binding.NativeDeclarationState();
+        state.setProperty(testCase.property, testCase.input, "");
+        assert.deepEqual(
+            {
+                accepted: state.length === 1,
+                observable: state.getPropertyValue(testCase.property),
+            },
+            browserSnapshot,
+            testCase.id,
+        );
+    }
 } finally {
     await browser.close();
 }
 
-console.log(`${cases.length} native declaration sequences match Chromium.`);
+console.log(
+    `${cases.length} native declaration sequences and ` +
+    `${relativeColorCorpus.cases.length} relative-color cases match Chromium.`,
+);

@@ -19,6 +19,9 @@ const nativeInventory = JSON.parse(
 const valueCapabilities = JSON.parse(
   await readFile(new URL("../compatibility/value-capabilities.json", import.meta.url)),
 );
+const relativeColorCapabilities = JSON.parse(
+  await readFile(new URL("../compatibility/relative-color-capabilities.json", import.meta.url)),
+);
 const observationsById = new Map(observations.cases.map(candidate => [candidate.id, candidate]));
 const contractCasesById = new Map(
   [
@@ -180,6 +183,37 @@ for (const candidate of valueCapabilities.cases) {
   });
 }
 
+for (const candidate of relativeColorCapabilities.cases) {
+  capture(candidate.id, () => {
+    const { sheet, rule } = createRule();
+    if (!candidate.chromiumAccepted) {
+      rule.style.setProperty(candidate.property, "red");
+      const before = {
+        state: state(rule),
+        value: rule.style.getPropertyValue(candidate.property),
+        cssText: rule.style.cssText,
+        serialized: sheet.serialize(),
+      };
+      rule.style.setProperty(candidate.property, candidate.input);
+      assert.deepEqual(state(rule), before.state);
+      assert.equal(rule.style.getPropertyValue(candidate.property), before.value);
+      assert.equal(rule.style.cssText, before.cssText);
+      assert.equal(sheet.serialize(), before.serialized);
+      return;
+    }
+
+    rule.style.setProperty(candidate.property, candidate.input);
+    assert.equal(
+      rule.style.getPropertyValue(candidate.property),
+      candidate.chromiumObservable,
+    );
+    const serialized = sheet.serialize();
+    const reparsed = new CSSStyleSheet();
+    reparsed.replaceSync(serialized);
+    assert.equal(reparsed.serialize(), serialized);
+  });
+}
+
 if (failures.length > 0) {
   throw new Error(`Native public corpus failures (${failures.length}):\n${failures.join("\n")}`);
 }
@@ -222,6 +256,14 @@ if (reportArgument) {
       positive: positiveValueCapabilities,
       negative: negativeValueCapabilities,
     },
+    relativeColors: {
+      passed: relativeColorCapabilities.cases.length,
+      total: relativeColorCapabilities.cases.length,
+      positive: relativeColorCapabilities.cases
+        .filter(candidate => candidate.chromiumAccepted).length,
+      negative: relativeColorCapabilities.cases
+        .filter(candidate => !candidate.chromiumAccepted).length,
+    },
   }, null, 2)}\n`);
 }
 
@@ -230,5 +272,6 @@ console.log(
     `${positiveGrammarCases} positive plus ` +
     `${negativeGrammarCases} atomic rejection branches and ` +
     `${nativeInventory.propertyBranches.length} property plus ` +
-    `${valueCapabilities.cases.length} value branches.`,
+    `${valueCapabilities.cases.length} value and ` +
+    `${relativeColorCapabilities.cases.length} relative-color branches.`,
 );

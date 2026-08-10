@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/relative-color-corpus.schema.json",
+  "title": "SheetOM Relative Color Compatibility Corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "provenance", "cases"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wptCommit", "sources", "browser", "userAgent"],
+      "properties": {
+        "wptCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "blobSha"],
+            "properties": {
+              "path": { "type": "string" },
+              "blobSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+            }
+          }
+        },
+        "browser": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "major"],
+          "properties": {
+            "name": { "const": "chromium" },
+            "major": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "userAgent": { "type": "string", "minLength": 1 }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sourcePath", "property", "input", "wptAccepted", "chromiumAccepted"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^relative-color\\.wpt-[0-9]+$" },
+          "sourcePath": { "type": "string" },
+          "property": { "const": "color" },
+          "input": { "type": "string" },
+          "wptAccepted": { "type": "boolean" },
+          "wptExpected": { "type": "string" },
+          "chromiumAccepted": { "type": "boolean" },
+          "chromiumObservable": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "chromiumAccepted": { "const": true } } },
+            "then": {
+              "properties": { "chromiumObservable": { "type": "string" } },
+              "required": ["chromiumObservable"]
+            },
+            "else": {
+              "not": {
+                "properties": { "chromiumObservable": { "type": "string" } },
+                "required": ["chromiumObservable"]
+              }
+            }
+          },
+          {
+            "if": { "properties": { "wptAccepted": { "const": true } } },
+            "then": {
+              "properties": { "wptExpected": { "type": "string" } },
+              "required": ["wptExpected"]
+            },
+            "else": {
+              "not": {
+                "properties": { "wptExpected": { "type": "string" } },
+                "required": ["wptExpected"]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
