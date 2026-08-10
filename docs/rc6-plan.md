@@ -41,14 +41,14 @@ RC6 replaces SheetOM's JavaScript syntax-engine stack with one repository-owned 
    - Remove the old TypeScript syntax engine and npm `lightningcss` dependency after shadow parity.
 
 8. **Native packaging**
-   - Produce exact-version optional packages for Linux x64 GNU, Linux ARM64 GNU, Windows x64 and macOS ARM64.
-   - Test Node.js 22 and 24 on claimed platforms plus Bun and Deno on Linux x64.
-   - Publish and verify all native packages before the root package; never download binaries in `postinstall` or select a behavioral fallback.
+   - Assemble one dependency-free tarball containing all eight tested GNU, musl, Windows and macOS x64/ARM64 binaries.
+   - Test Node.js 22 and 24 on the claimed platforms plus the documented Bun and Deno paths using those exact bytes.
+   - Never download binaries in `postinstall` or select a behavioral fallback.
 
 9. **Conformance and stabilization**
    - Record a fresh Pinned Browser Baseline and immutable compatibility report.
    - Complete applicable WPT, differential generation, native reparsing, extended fuzzing and the Publisher Performance Regression Gate.
-   - Require seven consecutive scheduled validation runs before creating and publishing RC6.
+   - Require seven consecutive nightly full-CI runs on the unchanged release pull request SHA before publishing RC6.
 
 ## Completion contract
 
