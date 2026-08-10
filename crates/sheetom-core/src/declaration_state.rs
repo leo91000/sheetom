@@ -335,6 +335,9 @@ impl DeclarationState {
             .collect::<HashMap<_, _>>();
         let mut candidates = shorthand_names()
             .filter_map(|name| {
+                if canonical_property_name(name).as_deref() != Some(name) {
+                    return None;
+                }
                 let longhands = shorthand_longhands(name)?;
                 if longhands
                     .iter()
@@ -431,7 +434,7 @@ mod tests {
 
         state.set_property("color", "blue", "important");
         assert_eq!(state.item(0), "color");
-        assert_eq!(state.get_property_value("color"), "#00f");
+        assert_eq!(state.get_property_value("color"), "blue");
         assert_eq!(state.get_property_priority("color"), "important");
     }
 

@@ -1,8 +1,11 @@
 use crate::{
     catalog::{initial_longhand_value, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
-    inspect_property, sheetom_parser_property_name,
+    inspect_property,
+    observable::{serialize_observable_value, ObservableCategory},
+    sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
+    value_grammar::parse_browser_grammar_gap,
     EngineError, PropertyParseKind,
 };
 use lightningcss::{
@@ -76,14 +79,285 @@ pub(crate) fn synthesize_shorthand(
         }
     }
 
+    if let Some(value) = synthesize_special_shorthand(name, &records, safe) {
+        return Some(value);
+    }
+
     let mut declarations = DeclarationBlock::new();
     for record in records {
-        let property = parse_typed_property(&record.name, &record.safe_value).ok()?;
+        let value = if safe {
+            &record.safe_value
+        } else {
+            &record.observable_value
+        };
+        let property = parse_typed_property(&record.name, value).ok()?;
         declarations.set(property, record.important);
     }
     let shorthand = PropertyId::from(name);
     let (property, _) = declarations.get(&shorthand)?;
     property.value_to_css_string(PrinterOptions::default()).ok()
+}
+
+fn synthesize_special_shorthand(
+    name: &str,
+    records: &[&DeclarationRecord],
+    safe: bool,
+) -> Option<String> {
+    match name {
+        "animation" | "-webkit-animation" => synthesize_animation(records, safe),
+        "transition" | "-webkit-transition" => synthesize_transition(records, safe),
+        "background" => synthesize_background(records, safe),
+        "view-timeline" => synthesize_view_timeline(records, safe),
+        _ => synthesize_repeated_pair(name, records, safe),
+    }
+}
+
+fn record_value<'a>(records: &'a [&DeclarationRecord], name: &str, safe: bool) -> Option<&'a str> {
+    let record = records.iter().find(|record| record.name == name)?;
+    Some(if safe {
+        &record.safe_value
+    } else {
+        &record.observable_value
+    })
+}
+
+fn value_list(value: &str) -> Option<Vec<&str>> {
+    split_top_level_delimiter(value, b',')
+}
+
+fn synthesize_animation(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    for (longhand, expected) in [
+        ("animation-timeline", "auto"),
+        ("animation-range-start", "normal"),
+        ("animation-range-end", "normal"),
+    ] {
+        if value_list(record_value(records, longhand, safe)?)?
+            .iter()
+            .any(|value| *value != expected)
+        {
+            return None;
+        }
+    }
+    let fields = [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+    ];
+    let lists = fields
+        .iter()
+        .map(|field| value_list(record_value(records, field, safe)?))
+        .collect::<Option<Vec<_>>>()?;
+    let length = lists.first()?.len();
+    if length == 0 || lists.iter().any(|list| list.len() != length) {
+        return None;
+    }
+    Some(
+        (0..length)
+            .map(|index| {
+                lists
+                    .iter()
+                    .filter_map(|list| list.get(index).copied())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .collect::<Vec<_>>()
+            .join(", "),
+    )
+}
+
+fn repeat_list(values: Vec<&str>, length: usize) -> Option<Vec<&str>> {
+    if values.len() == length {
+        return Some(values);
+    }
+    if values.len() == 1 {
+        return Some(vec![values[0]; length]);
+    }
+    None
+}
+
+fn synthesize_transition(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let properties = [
+        "transition-behavior",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-property",
+    ];
+    let raw_lists = properties
+        .iter()
+        .map(|property| value_list(record_value(records, property, safe)?))
+        .collect::<Option<Vec<_>>>()?;
+    let length = raw_lists.iter().map(Vec::len).max()?;
+    let lists = raw_lists
+        .into_iter()
+        .map(|list| repeat_list(list, length))
+        .collect::<Option<Vec<_>>>()?;
+    let mut transitions = Vec::with_capacity(length);
+    for index in 0..length {
+        let behavior = *lists[0].get(index)?;
+        let duration = *lists[1].get(index)?;
+        let timing = *lists[2].get(index)?;
+        let delay = *lists[3].get(index)?;
+        let property = *lists[4].get(index)?;
+        let mut components = vec![property];
+        if duration != "0s" || timing != "ease" || delay != "0s" || behavior != "normal" {
+            components.push(duration);
+        }
+        if timing != "ease" || delay != "0s" || behavior != "normal" {
+            components.push(timing);
+        }
+        if delay != "0s" || behavior != "normal" {
+            components.push(delay);
+        }
+        if behavior != "normal" {
+            components.push(behavior);
+        }
+        transitions.push(components.join(" "));
+    }
+    Some(transitions.join(", "))
+}
+
+fn parallel_lists<'a>(
+    records: &'a [&DeclarationRecord],
+    properties: &[&str],
+    safe: bool,
+) -> Option<Vec<Vec<&'a str>>> {
+    let lists = properties
+        .iter()
+        .map(|property| value_list(record_value(records, property, safe)?))
+        .collect::<Option<Vec<_>>>()?;
+    let length = lists.first()?.len();
+    (length > 0 && lists.iter().all(|list| list.len() == length)).then_some(lists)
+}
+
+fn synthesize_background(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let properties = [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+    ];
+    let lists = parallel_lists(records, &properties, safe)?;
+    let color = record_value(records, "background-color", safe)?;
+    let mut layers = Vec::with_capacity(lists[0].len());
+    for index in 0..lists[0].len() {
+        let image = *lists[0].get(index)?;
+        let x = *lists[1].get(index)?;
+        let y = *lists[2].get(index)?;
+        let size = *lists[3].get(index)?;
+        let repeat = *lists[4].get(index)?;
+        let attachment = *lists[5].get(index)?;
+        let origin = *lists[6].get(index)?;
+        let clip = *lists[7].get(index)?;
+        let mut components = Vec::new();
+        if image != "initial" {
+            components.push(image.to_owned());
+        }
+        if x != "initial" || y != "initial" || size != "initial" {
+            if x == "initial" || y == "initial" {
+                return None;
+            }
+            components.push(format!("{x} {y}"));
+            if size != "initial" {
+                components.push(format!("/ {size}"));
+            }
+        }
+        for value in [repeat, attachment] {
+            if value != "initial" {
+                components.push(value.to_owned());
+            }
+        }
+        if origin != "initial" || clip != "initial" {
+            if origin == "initial" || clip == "initial" {
+                return None;
+            }
+            components.push(origin.to_owned());
+            if clip != origin {
+                components.push(clip.to_owned());
+            }
+        }
+        if index + 1 == lists[0].len() && color != "initial" {
+            components.push(color.to_owned());
+        }
+        if components.is_empty() {
+            return None;
+        }
+        layers.push(components.join(" "));
+    }
+    Some(layers.join(", "))
+}
+
+fn synthesize_view_timeline(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let names = value_list(record_value(records, "view-timeline-name", safe)?)?;
+    let axes = repeat_list(
+        value_list(record_value(records, "view-timeline-axis", safe)?)?,
+        names.len(),
+    )?;
+    let insets = repeat_list(
+        value_list(record_value(records, "view-timeline-inset", safe)?)?,
+        names.len(),
+    )?;
+    Some(
+        names
+            .iter()
+            .enumerate()
+            .map(|(index, name)| {
+                let mut components = vec![*name];
+                if axes[index] != "block" {
+                    components.push(axes[index]);
+                }
+                if insets[index] != "auto" {
+                    components.push(insets[index]);
+                }
+                components.join(" ")
+            })
+            .collect::<Vec<_>>()
+            .join(", "),
+    )
+}
+
+fn synthesize_repeated_pair(
+    name: &str,
+    records: &[&DeclarationRecord],
+    safe: bool,
+) -> Option<String> {
+    let pair_names = [
+        "background-position",
+        "border-block-color",
+        "border-block-style",
+        "border-block-width",
+        "border-inline-color",
+        "border-inline-style",
+        "border-inline-width",
+        "overscroll-behavior",
+    ];
+    if !pair_names.contains(&name) || records.len() != 2 {
+        return None;
+    }
+    let first = if safe {
+        &records[0].safe_value
+    } else {
+        &records[0].observable_value
+    };
+    let second = if safe {
+        &records[1].safe_value
+    } else {
+        &records[1].observable_value
+    };
+    Some(if first == second {
+        first.clone()
+    } else {
+        format!("{first} {second}")
+    })
 }
 
 pub(crate) fn parse_value(
@@ -103,7 +377,12 @@ pub(crate) fn parse_value(
             .value_to_css_string(PrinterOptions::default())
             .map_err(|_| MutationOutcome::InvalidValue)?;
         return Ok(ParsedValue {
-            observable_value: value.trim().to_owned(),
+            observable_value: serialize_observable_value(
+                name,
+                value,
+                &safe_value,
+                ObservableCategory::Custom,
+            ),
             safe_value,
             longhands: None,
             pending_substitution: substitutions.found,
@@ -118,10 +397,24 @@ pub(crate) fn parse_value(
             .value_to_css_string(PrinterOptions::default())
             .map_err(|_| MutationOutcome::InvalidValue)?;
         return Ok(ParsedValue {
-            observable_value: recover_pending_observable(value),
+            observable_value: serialize_observable_value(
+                name,
+                value,
+                &safe_value,
+                ObservableCategory::PendingSubstitution,
+            ),
             safe_value,
             longhands: None,
             pending_substitution: true,
+        });
+    }
+
+    if let Some(grammar) = parse_browser_grammar_gap(name, value) {
+        return Ok(ParsedValue {
+            observable_value: grammar.observable_value,
+            safe_value: grammar.safe_value,
+            longhands: None,
+            pending_substitution: false,
         });
     }
 
@@ -159,7 +452,12 @@ pub(crate) fn parse_value(
 
     let Some(longhand_names) = shorthand_longhands(name) else {
         return Ok(ParsedValue {
-            observable_value: inspection.canonical_value.clone(),
+            observable_value: serialize_observable_value(
+                name,
+                value,
+                &inspection.canonical_value,
+                ObservableCategory::Typed,
+            ),
             safe_value: inspection.canonical_value,
             longhands: None,
             pending_substitution: false,
@@ -211,26 +509,16 @@ pub(crate) fn parse_value(
     }
 
     Ok(ParsedValue {
-        observable_value: inspection.canonical_value.clone(),
+        observable_value: serialize_observable_value(
+            name,
+            value,
+            &inspection.canonical_value,
+            ObservableCategory::Typed,
+        ),
         safe_value: inspection.canonical_value,
         longhands: Some(longhands),
         pending_substitution: false,
     })
-}
-
-fn recover_pending_observable(value: &str) -> String {
-    let mut recovered = value.trim().to_owned();
-    if let Some(comment) = recovered.rfind("/*") {
-        if !recovered[comment + 2..].contains("*/") {
-            recovered.truncate(comment);
-            recovered = recovered.trim_end().to_owned();
-        }
-    }
-    if recovered.ends_with('\\') {
-        recovered.pop();
-        recovered.push('\u{fffd}');
-    }
-    recovered
 }
 
 fn observable_shorthand_longhand(name: &str, safe_value: &str, shorthand_input: &str) -> String {
@@ -924,6 +1212,11 @@ fn expand_view_timeline(value: &str) -> Option<Vec<(&'static str, String)>> {
             .map(|index| components.remove(index))
             .unwrap_or("block");
         if components.len() > 2 {
+            return None;
+        }
+        if components.iter().any(|component| {
+            *component != "auto" && typed_longhand_value("padding-top", component).is_none()
+        }) {
             return None;
         }
         names.push(name);
