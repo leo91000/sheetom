@@ -3,6 +3,12 @@
     deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)
 )]
 
+mod catalog;
+mod declaration_state;
+
+pub use catalog::{CHROMIUM_BASELINE, SOURCE_SHA256 as PROPERTY_CATALOG_SOURCE_SHA256};
+pub use declaration_state::{DeclarationRecord, DeclarationState, MutationOutcome};
+
 #[cfg(panic = "abort")]
 compile_error!("sheetom-core must be compiled with panic=unwind");
 

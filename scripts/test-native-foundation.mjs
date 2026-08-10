@@ -24,4 +24,18 @@ const result = binding.canonicalizeDeclarationBlock(
 assert.match(result, /background:/u);
 assert.match(result, /image-set\(/u);
 
+const state = new binding.NativeDeclarationState();
+assert.equal(state.setProperty("color", "red", ""), "applied");
+assert.equal(state.setProperty("overflow", "hidden auto", "important"), "applied");
+assert.equal(state.length, 3);
+assert.equal(state.item(0), "color");
+assert.equal(state.item(1), "overflow-x");
+assert.equal(state.item(2), "overflow-y");
+assert.equal(state.getPropertyValue("overflow"), "hidden auto");
+assert.equal(state.getPropertyPriority("overflow"), "important");
+assert.equal(state.setProperty("color", "blue; width: 1px", ""), "invalid-value");
+assert.equal(state.getPropertyValue("color"), "red");
+assert.equal(state.removeProperty("overflow"), "hidden auto");
+assert.equal(state.serializeLonghands(), "color: red;");
+
 console.log(`Native foundation loaded ${nativeArtifacts[0]} successfully.`);
