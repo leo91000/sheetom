@@ -1,4 +1,10 @@
 use crate::{inspect_property, syntax::split_top_level_whitespace, PropertyParseKind};
+use cssparser::{Parser, ParserInput};
+use lightningcss::{
+    stylesheet::PrinterOptions,
+    traits::{Parse, ToCss},
+    values::number::CSSNumber,
+};
 
 pub(crate) struct GrammarValue {
     pub(crate) observable_value: String,
@@ -24,7 +30,7 @@ pub(crate) fn parse_browser_grammar_gap(name: &str, value: &str) -> Option<Gramm
     {
         return parse_contrast_color(input);
     }
-    if name == "z-index" && input.to_ascii_lowercase().starts_with("calc(") {
+    if name == "z-index" && input.contains('(') {
         return parse_integer_calculation(input);
     }
     if name == "-webkit-box-reflect" {
@@ -267,27 +273,24 @@ fn parse_contrast_color(value: &str) -> Option<GrammarValue> {
 }
 
 fn parse_integer_calculation(value: &str) -> Option<GrammarValue> {
-    let body = function_body(value, "calc")?;
-    for operator in ['+', '-'] {
-        let Some((left, right)) = body.split_once(operator) else {
-            continue;
-        };
-        let left = left.trim().parse::<f64>().ok()?;
-        let right = right.trim().parse::<f64>().ok()?;
-        let result = if operator == '+' {
-            left + right
-        } else {
-            left - right
-        };
-        if result.fract() == 0.0 {
-            let value = format!("calc({result:.0})");
-            return Some(GrammarValue {
-                observable_value: value.clone(),
-                safe_value: value,
-            });
-        }
-    }
-    None
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    let number = CSSNumber::parse(&mut parser).ok()?;
+    parser.expect_exhausted().ok()?;
+    let number = if number.is_nan() {
+        "NaN".to_owned()
+    } else if number == f32::INFINITY {
+        "infinity".to_owned()
+    } else if number == f32::NEG_INFINITY {
+        "-infinity".to_owned()
+    } else {
+        number.to_css_string(PrinterOptions::default()).ok()?
+    };
+    let value = format!("calc({number})");
+    Some(GrammarValue {
+        observable_value: value.clone(),
+        safe_value: value,
+    })
 }
 
 fn function_body<'a>(value: &'a str, name: &str) -> Option<&'a str> {
@@ -325,6 +328,35 @@ mod tests {
             assert!(
                 parse_browser_grammar_gap(name, value).is_some(),
                 "{name}: {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn canonicalizes_reparsable_z_index_math() {
+        for (input, expected) in [
+            ("calc(2)", "calc(2)"),
+            ("calc(1 + 1 + 1)", "calc(3)"),
+            ("calc(2 * (1 + 1))", "calc(4)"),
+            ("min(1, 2)", "calc(1)"),
+            ("round(1.5, 1)", "calc(2)"),
+            ("hypot(3, 4)", "calc(5)"),
+            ("calc(pi)", "calc(3.14159)"),
+            ("calc(infinity)", "calc(infinity)"),
+            ("calc(-infinity)", "calc(-infinity)"),
+            ("calc(NaN)", "calc(NaN)"),
+        ] {
+            let parsed = parse_browser_grammar_gap("z-index", input);
+            assert_eq!(
+                parsed.map(|value| (value.observable_value, value.safe_value)),
+                Some((expected.to_owned(), expected.to_owned())),
+                "{input}"
+            );
+        }
+        for input in ["calc(1px)", "calc()", "unknown(1)"] {
+            assert!(
+                parse_browser_grammar_gap("z-index", input).is_none(),
+                "{input}"
             );
         }
     }
