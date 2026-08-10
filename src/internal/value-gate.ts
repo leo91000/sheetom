@@ -1,4 +1,4 @@
-import { transform, transformStyleAttribute } from "lightningcss";
+import { transformStyleAttribute } from "lightningcss";
 import * as csstree from "css-tree";
 
 import {
@@ -445,45 +445,6 @@ export function parsePropertyValue(
             : "grammar",
         declaration,
       },
-    };
-  } catch {
-    return null;
-  }
-}
-export function parseAtruleDescriptorValue(
-  atrule: string,
-  name: string,
-  observableValue: string,
-): ParsedPropertyValue | null {
-  if (containsTopLevelDeclarationBoundary(observableValue)) return null;
-  try {
-    const match = csstree.lexer.matchAtruleDescriptor(
-      atrule,
-      name,
-      observableValue,
-    );
-    if (match.error) return null;
-
-    const prelude = atrule === "counter-style" ? " sheetom" : "";
-    const result = transform({
-      filename: "sheetom-descriptor.css",
-      code: encoder.encode(`@${atrule}${prelude} { ${name}: ${observableValue}; }`),
-    });
-    const serializedSheet = decoder.decode(result.code);
-    const parsed = csstree.parse(serializedSheet, { positions: true });
-    if (parsed.type !== "StyleSheet") return null;
-    const rule = parsed.children.first;
-    if (rule?.type !== "Atrule" || !rule.block) return null;
-    const declaration = rule.block.children.first;
-    if (declaration?.type !== "Declaration") return null;
-    const valueLocation = declaration.value.loc;
-    const serializedValue = valueLocation
-      ? serializedSheet.slice(valueLocation.start.offset, valueLocation.end.offset)
-      : csstree.generate(declaration.value);
-    return {
-      observableValue: serializedValue,
-      safeValue: serializedValue,
-      pendingSubstitution: false,
     };
   } catch {
     return null;

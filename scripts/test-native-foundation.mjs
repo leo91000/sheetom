@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.7");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.8");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
@@ -79,6 +79,23 @@ assert.deepEqual(
     JSON.parse(binding.parseScopePreludeJson("(.a,.b) to (.c)")),
     { start: ".a, .b", end: ".c" },
 );
+assert.equal(binding.parseCounterStyleDescriptorValue("system", "fixed"), "fixed 1");
+assert.equal(binding.parseCounterStyleDescriptorValue("range", "10 1"), null);
+assert.deepEqual(
+    JSON.parse(binding.parseCounterStyleDescriptorsJson(
+        'system: fixed; symbols: "a" "b"; range: 1 10; symbols: var(--invalid);',
+    )),
+    [
+        { name: "system", value: "fixed 1" },
+        { name: "symbols", value: '"a" "b"' },
+        { name: "range", value: "1 10" },
+    ],
+);
+assert.deepEqual(JSON.parse(binding.parseCounterStyleNameJson("\\78")), {
+    name: "x",
+    serialized: "x",
+});
+assert.equal(binding.parseCounterStyleNameJson("bad name"), null);
 
 const state = new binding.NativeDeclarationState();
 assert.equal(state.setProperty("color", "red", ""), "applied");

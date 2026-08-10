@@ -116,6 +116,27 @@ const crashCases = [
         source: "(.a, :is(.b, .c)) to (.d)",
     },
     {
+        name: "symbols",
+        mode: "counter-descriptor",
+        source: `"a" ${"fn(".repeat(64)}value`,
+    },
+    {
+        name: "counter descriptor declaration recovery",
+        mode: "counter-descriptors",
+        source: 'system: fixed; symbols: "a;b"; range: 10 1; suffix: "}";',
+    },
+    {
+        name: "counter name escapes",
+        mode: "counter-name",
+        source: "\\78",
+    },
+    {
+        name: "symbols",
+        mode: "counter-descriptor",
+        source: `${"fn(".repeat(4097)}value`,
+        expectError: "SHEETOM_NESTING_LIMIT",
+    },
+    {
         name: "rule parser nesting above the supported limit",
         mode: "rule",
         source: `${"@media all{".repeat(4097)}.x{color:red}${"}".repeat(4097)}`,

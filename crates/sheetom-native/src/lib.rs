@@ -5,10 +5,11 @@ compile_error!("sheetom-native must be compiled with panic=unwind");
 
 use napi_derive::napi;
 use sheetom_core::{
-    canonicalize_declaration_block as canonicalize, normalize_media_text, normalize_selector_text,
-    normalize_supports_text, parse_container_prelude, parse_recovered_rule_tree, parse_rule_tree,
-    parse_scope_prelude, parse_stylesheet_tree, scan_top_level_rules, DeclarationContext,
-    DeclarationState, MutationOutcome, ENGINE_REVISION,
+    canonicalize_declaration_block as canonicalize, inspect_property, normalize_media_text,
+    normalize_selector_text, normalize_supports_text, parse_container_prelude,
+    parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
+    parse_recovered_rule_tree, parse_rule_tree, parse_scope_prelude, parse_stylesheet_tree,
+    scan_top_level_rules, DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -171,6 +172,33 @@ pub fn parse_scope_prelude_json(source: String) -> napi::Result<String> {
     let parsed = parse_scope_prelude(&source)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
     serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn parse_counter_style_descriptor_value(
+    name: String,
+    value: String,
+) -> napi::Result<Option<String>> {
+    inspect_property("--sheetom-counter-style", &value)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    Ok(parse_counter_style_descriptor(&name, &value))
+}
+
+#[napi]
+pub fn parse_counter_style_descriptors_json(source: String) -> napi::Result<String> {
+    canonicalize(&source).map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    serde_json::to_string(&parse_counter_style_descriptors(&source))
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn parse_counter_style_name_json(source: String) -> napi::Result<Option<String>> {
+    inspect_property("--sheetom-counter-style-name", &source)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+    parse_counter_style_name(&source)
+        .map(|parsed| serde_json::to_string(&parsed))
+        .transpose()
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Parses a stylesheet and returns owned, parser-independent JSON DTOs.

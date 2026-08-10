@@ -426,6 +426,14 @@ fn split_top_level(
             continue;
         }
         if byte == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            if depth == 0 && is_separator(b' ') {
+                if let Some(component_start) = start.take() {
+                    let component = value[component_start..index].trim();
+                    if !component.is_empty() {
+                        components.push(component);
+                    }
+                }
+            }
             in_comment = true;
             index += 2;
             continue;

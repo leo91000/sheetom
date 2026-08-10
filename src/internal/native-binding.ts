@@ -26,6 +26,9 @@ interface NativeBinding {
   normalizeSelector(source: string): string;
   normalizeSupports(source: string): string;
   parseContainerPreludeJson(source: string): string;
+  parseCounterStyleDescriptorValue(name: string, value: string): string | null;
+  parseCounterStyleDescriptorsJson(source: string): string;
+  parseCounterStyleNameJson(source: string): string | null;
   NativeDeclarationState: new (
     context?: "style" | "font-face",
   ) => NativeDeclarationStateHandle;

@@ -78,6 +78,49 @@ test("counter-style descriptors are live properties", () => {
     rule.cssText,
     '@counter-style icons { system: cyclic; symbols: "a" "b"; prefix: "["; suffix: " "; }',
   );
+
+  rule.name = "bad name";
+  assert.equal(rule.name, "icons");
+  rule.name = "\\69 cons";
+  assert.equal(rule.name, "icons");
+});
+
+test("counter-style descriptors use Chromium canonicalization and mutation rules", () => {
+  const sheet = parseStyleSheet(
+    '@counter-style digits { system: fixed; symbols: "a" "b"; additive-symbols: +010 "x", 001 "i"; negative: "(" ")"; prefix: "["; suffix: "]"; range: infinite -02, +004 infinite; pad: +03 "0"; speak-as: SPELL-OUT; fallback: DECIMAL; }',
+  );
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSCounterStyleRule);
+  assert.equal(rule.system, "fixed 1");
+  assert.equal(rule.additiveSymbols, '10 "x", 1 "i"');
+  assert.equal(rule.range, "infinite -2, 4 infinite");
+  assert.equal(rule.pad, '3 "0"');
+  assert.equal(rule.speakAs, "SPELL-OUT");
+  assert.equal(rule.fallback, "decimal");
+
+  rule.system = "numeric";
+  rule.symbols = '"z"';
+  rule.range = "auto";
+  rule.fallback = "disc";
+  assert.equal(rule.system, "fixed 1");
+  assert.equal(
+    rule.cssText,
+    '@counter-style digits { system: fixed 1; symbols: "z"; additive-symbols: 10 "x", 1 "i"; negative: "(" ")"; prefix: "["; suffix: "]"; pad: 3 "0"; range: auto; fallback: disc; speak-as: SPELL-OUT; }',
+  );
+});
+
+test("counter-style descriptor mutations reject invalid and empty values atomically", () => {
+  const sheet = parseStyleSheet('@counter-style marks { symbols: "a"; range: 1 10; }');
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSCounterStyleRule);
+
+  for (const value of ["", "var(--symbols)", '"x"; suffix: "evil"']) {
+    rule.symbols = value;
+  }
+  rule.range = "10 1";
+  assert.equal(rule.symbols, '"a"');
+  assert.equal(rule.range, "1 10");
+  assert.equal(rule.cssText, '@counter-style marks { symbols: "a"; range: 1 10; }');
 });
 
 test("font feature value maps expose mutable map behavior", () => {

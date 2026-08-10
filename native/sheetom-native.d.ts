@@ -35,6 +35,12 @@ export declare function normalizeSupports(source: string): string
 
 export declare function parseContainerPreludeJson(source: string): string
 
+export declare function parseCounterStyleDescriptorsJson(source: string): string
+
+export declare function parseCounterStyleDescriptorValue(name: string, value: string): string | null
+
+export declare function parseCounterStyleNameJson(source: string): string | null
+
 /** Parses exactly one rule with browser-style declaration recovery. */
 export declare function parseRecoveredRuleTreeJson(source: string): string
 

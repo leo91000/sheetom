@@ -15,12 +15,14 @@ import {
 } from "./internal/native-rule-syntax.js";
 import { RuleTree } from "./internal/rule-tree.js";
 import {
+  parseNativeCounterStyleDescriptor,
+  parseNativeCounterStyleDescriptors,
+  parseNativeCounterStyleName,
+} from "./internal/native-counter-style.js";
+import {
   Serializer,
   type RuleSerializationPlan,
 } from "./internal/serializer.js";
-import {
-  parseAtruleDescriptorValue,
-} from "./internal/value-gate.js";
 import {
   assertInternalConstructor,
   constructInternally,
@@ -961,27 +963,35 @@ const counterDescriptorNames = [
   "negative",
   "prefix",
   "suffix",
-  "range",
   "pad",
-  "speak-as",
+  "range",
   "fallback",
+  "speak-as",
 ] as const;
 
 /** A mutable `@counter-style` descriptor rule. */
 export class CSSCounterStyleRule extends CSSRule {
   readonly #descriptors = new Map<string, string>();
   #name: string;
+  #serializedName: string;
 
   constructor(name: string) {
     super(CSSRule.COUNTER_STYLE_RULE);
-    this.#name = name;
+    const parsed = parseNativeCounterStyleName(name);
+    this.#name = parsed?.name ?? name;
+    this.#serializedName = parsed?.serialized ?? name;
   }
 
   get name(): string { return this.#name; }
-  set name(value: string) { this.#name = `${value}`; }
+  set name(value: string) {
+    const parsed = parseNativeCounterStyleName(`${value}`);
+    if (!parsed) return;
+    this.#name = parsed.name;
+    this.#serializedName = parsed.serialized;
+  }
 
   get system(): string { return this.#get("system"); }
-  set system(value: string) { this.#set("system", value); }
+  set system(_value: string) {}
   get symbols(): string { return this.#get("symbols"); }
   set symbols(value: string) { this.#set("symbols", value); }
   get additiveSymbols(): string { return this.#get("additive-symbols"); }
@@ -1007,19 +1017,15 @@ export class CSSCounterStyleRule extends CSSRule {
 
   #set(name: string, value: string): void {
     const text = `${value}`;
-    if (text === "") {
-      this.#descriptors.delete(name);
-      return;
-    }
-    const parsed = parseAtruleDescriptorValue("counter-style", name, text);
+    const parsed = parseNativeCounterStyleDescriptor(name, text);
     if (!parsed) return;
-    this.#descriptors.set(name, parsed.observableValue);
+    this.#descriptors.set(name, parsed);
   }
 
   /** @internal */
   setParsedDescriptor(name: string, value: string): void {
     if (!(counterDescriptorNames as readonly string[]).includes(name)) return;
-    this.#set(name, value);
+    this.#descriptors.set(name, value);
   }
 
   override get cssText(): string {
@@ -1028,7 +1034,7 @@ export class CSSCounterStyleRule extends CSSRule {
       const value = this.#descriptors.get(name);
       if (value !== undefined) declarations.push(`${name}: ${value};`);
     }
-    return `@counter-style ${this.name} {${declarations.length === 0 ? "" : ` ${declarations.join(" ")}`} }`;
+    return `@counter-style ${this.#serializedName} {${declarations.length === 0 ? "" : ` ${declarations.join(" ")}`} }`;
   }
 
   set cssText(_value: string) {}
@@ -1728,18 +1734,9 @@ function hydrateCounterStyleDescriptors(
   rule: CSSCounterStyleRule,
   declarations: string,
 ): void {
-  try {
-    const parsed = csstree.parse(`.sheetom-counter-style { ${declarations} }`);
-    const style = parsed.type === "StyleSheet" ? parsed.children.first : null;
-    if (style?.type !== "Rule") return;
-    for (const child of style.block.children) {
-      if (child.type !== "Declaration") continue;
-      rule.setParsedDescriptor(
-        child.property.toLowerCase(),
-        generateDescriptorInput(child.value),
-      );
-    }
-  } catch {}
+  for (const descriptor of parseNativeCounterStyleDescriptors(declarations)) {
+    rule.setParsedDescriptor(descriptor.name, descriptor.value);
+  }
 }
 
 function createNativeChildren(

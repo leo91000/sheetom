@@ -4,6 +4,7 @@
 )]
 
 mod catalog;
+mod counter_style;
 mod declaration_state;
 mod font_face;
 mod observable;
@@ -15,6 +16,10 @@ mod value_grammar;
 pub use catalog::{
     CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256,
     SOURCE_SHA256 as PROPERTY_CATALOG_SOURCE_SHA256,
+};
+pub use counter_style::{
+    parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
+    ParsedCounterStyleDescriptor, ParsedCounterStyleName, COUNTER_STYLE_DESCRIPTORS,
 };
 pub use declaration_state::{
     DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
@@ -41,7 +46,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.7";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.8";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -367,7 +372,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.7");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.8");
     }
 
     #[test]
