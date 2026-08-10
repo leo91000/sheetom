@@ -1,5 +1,9 @@
 name: Native browser oracles
 
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+
 on:
   workflow_call:
     inputs:
