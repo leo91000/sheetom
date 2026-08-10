@@ -8,6 +8,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -22,6 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
+      actions: read
       contents: write
       pull-requests: write
     outputs:
@@ -30,6 +32,7 @@ jobs:
       head-ref: ${{ steps.release-pr.outputs.head_ref }}
       head-sha: ${{ steps.release-pr.outputs.head_sha }}
       version-changed: ${{ steps.release-version.outputs.version_changed }}
+      ci-run-id: ${{ steps.ci-run.outputs.run_id }}
 
     steps:
       - name: Check out the successful main commit
@@ -76,6 +79,24 @@ jobs:
       - name: Detect a versioned release commit
         id: release-version
         run: node scripts/detect-release-version-change.mjs
+
+      - name: Resolve the successful CI artifact run
+        id: ci-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRIGGERING_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          if [ -n "$TRIGGERING_RUN_ID" ]; then
+            run_id="$TRIGGERING_RUN_ID"
+          else
+            commit=$(git rev-parse HEAD)
+            run_id=$(gh run list --workflow ci.yml --commit "$commit" --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "No successful CI run with a package artifact exists for this release commit" >&2
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
   native-oracles:
     needs: changesets
@@ -176,6 +197,7 @@ jobs:
     timeout-minutes: 30
     environment: npm
     permissions:
+      actions: read
       contents: write
       id-token: write
 
@@ -208,8 +230,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build the package
-        run: npm run build
+      - name: Download the tested multi-platform package
+        uses: actions/download-artifact@v8
+        with:
+          name: sheetom-package
+          path: release-artifact
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.changesets.outputs.ci-run-id }}
 
       - name: Verify release inputs
         run: npm run release:verify
@@ -219,4 +246,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHEETOM_RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           SHEETOM_RELEASE_RUNTIMES: node,bun,deno
+          SHEETOM_RELEASE_TARBALL: release-artifact
         run: node scripts/publish-release.mjs

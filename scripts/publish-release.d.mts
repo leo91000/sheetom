@@ -8,6 +8,14 @@ export function parsePackResult(output: string): {
   [key: string]: unknown;
 };
 
+export function packMetadataForTarball(tarball: string): Promise<{
+  filename: string;
+  integrity: string;
+  size: number;
+}>;
+
+export function resolveSingleTarball(input: string): Promise<string>;
+
 export function assessReleaseChannels(
   packageMetadata: {
     "dist-tags"?: Record<string, string>;
