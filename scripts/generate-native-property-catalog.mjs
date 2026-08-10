@@ -35,9 +35,27 @@ const properties = [...chromiumSupportedProperties].sort();
 const aliases = Object.entries(chromiumPropertyAliases).sort(([left], [right]) =>
   left.localeCompare(right),
 );
-const shorthands = Object.entries(chromiumShorthandLonghands).sort(([left], [right]) =>
-  left.localeCompare(right),
+const observedLonghandOrder = new Map(
+  capabilities.cases.map(shorthandCase => [
+    shorthandCase.property,
+    shorthandCase.chromium.items,
+  ]),
 );
+const shorthands = Object.entries(chromiumShorthandLonghands)
+  .map(([shorthand, longhands]) => {
+    const observed = observedLonghandOrder.get(shorthand);
+    if (!observed) return [shorthand, longhands];
+    const declaredSet = [...longhands].sort().join("\0");
+    const observedSet = [...observed].sort().join("\0");
+    if (declaredSet !== observedSet) {
+      throw new Error(
+        `Chromium longhand membership drifted for ${shorthand}; ` +
+        "review the property manifest before recording a new order",
+      );
+    }
+    return [shorthand, observed];
+  })
+  .sort(([left], [right]) => left.localeCompare(right));
 const initialLonghandValues = new Map();
 for (const shorthandCase of capabilities.cases) {
   for (const longhand of shorthandCase.chromium.longhands) {

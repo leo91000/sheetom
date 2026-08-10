@@ -1297,8 +1297,24 @@ mod tests {
                 let input = case["input"].as_str()?;
                 let mut state = DeclarationState::new();
                 let outcome = state.set_property(property, input, "");
-                (outcome != MutationOutcome::Applied)
-                    .then(|| format!("{property}: {input} ({outcome:?})"))
+                if outcome != MutationOutcome::Applied {
+                    return Some(format!("{property}: {input} ({outcome:?})"));
+                }
+                let expected_items = case["chromium"]["items"]
+                    .as_array()?
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .collect::<Vec<_>>();
+                let actual_items = state
+                    .records()
+                    .iter()
+                    .map(|record| record.name.as_str())
+                    .collect::<Vec<_>>();
+                (actual_items != expected_items).then(|| {
+                    format!(
+                        "{property}: expected item order {expected_items:?}, got {actual_items:?}"
+                    )
+                })
             })
             .collect::<Vec<_>>();
         assert!(
