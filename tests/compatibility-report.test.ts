@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -34,6 +35,24 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         })),
       })),
     }));
+    const nativeCorpusReportPath = path.join(directory, "native-corpus.json");
+    await writeFile(nativeCorpusReportPath, JSON.stringify({
+      schemaVersion: 1,
+      shorthandProperties: { passed: 129, total: 129 },
+      grammarBranches: { passed: 96, total: 96, positive: 72, negative: 24 },
+      propertyBranches: { passed: 10, total: 10, positive: 5, negative: 5 },
+      valueCapabilities: { passed: 36, total: 36, positive: 27, negative: 9 },
+    }));
+    const processSafetyReportPath = path.join(directory, "process-safety.json");
+    const processSafetyContractSha256 = createHash("sha256")
+      .update(await readFile("scripts/test-native-crash-safety.mjs"))
+      .digest("hex");
+    await writeFile(processSafetyReportPath, JSON.stringify({
+      schemaVersion: 1,
+      contractSha256: processSafetyContractSha256,
+      native: { passed: 33, total: 33 },
+      public: { passed: 7, total: 7 },
+    }));
     const argumentsList: string[] = [];
     for (const engine of ["chrome", "firefox", "safari"]) {
       const reportPath = path.join(directory, `${engine}.json`);
@@ -55,17 +74,25 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         "--output",
         output,
         `--operation-report=${operationReportPath}`,
+        `--native-corpus-report=${nativeCorpusReportPath}`,
+        `--process-safety-report=${processSafetyReportPath}`,
         ...argumentsList,
       ],
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
-    assert.equal(report.schemaVersion, 4);
-    assert.deepEqual(report.baseline.syntaxEngineSet, {
-      lightningcss: "1.33.0",
-      cssTree: "3.2.1",
-      cssTokenizer: "4.0.0",
+    assert.equal(report.schemaVersion, 5);
+    assert.deepEqual(report.baseline.nativeEngine.upstream, {
+      repository: "https://github.com/parcel-bundler/lightningcss",
+      version: "1.33.0",
+      commit: "c6a0c3cebf3395635e61075d2c81a96a710d4910",
     });
+    assert.equal(
+      report.baseline.nativeEngine.revision,
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.12",
+    );
+    assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
+    assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
     assert.deepEqual(
       report.evidence.nativeWpt.map((evidence: { engine: string }) => evidence.engine),
       ["chrome", "firefox", "safari"],
@@ -84,14 +111,39 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     assert.match(report.evidence.operationFixtures.sha256, /^[0-9a-f]{64}$/);
     assert.deepEqual(
       {
-        profiles: report.evidence.shorthandGrammar.profiles,
-        passed: report.evidence.shorthandGrammar.passed,
-        total: report.evidence.shorthandGrammar.total,
+        profiles: report.evidence.nativeGrammar.codecProfiles,
+        passed: report.evidence.nativeGrammar.grammarBranches.passed,
+        total: report.evidence.nativeGrammar.grammarBranches.total,
       },
       { profiles: 24, passed: 96, total: 96 },
     );
-    assert.match(report.evidence.shorthandGrammar.contractsSha256, /^[0-9a-f]{64}$/);
-    assert.match(report.evidence.shorthandGrammar.observationsSha256, /^[0-9a-f]{64}$/);
+    assert.deepEqual(
+      report.evidence.nativeGrammar.shorthandProperties,
+      { passed: 129, total: 129 },
+    );
+    assert.deepEqual(
+      report.evidence.nativeGrammar.propertyBranches,
+      { passed: 10, total: 10, positive: 5, negative: 5 },
+    );
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.valueCapabilities.passed,
+        total: report.evidence.nativeGrammar.valueCapabilities.total,
+        positive: report.evidence.nativeGrammar.valueCapabilities.positive,
+        negative: report.evidence.nativeGrammar.valueCapabilities.negative,
+      },
+      { passed: 36, total: 36, positive: 27, negative: 9 },
+    );
+    assert.match(
+      report.evidence.nativeGrammar.grammarBranches.contractsSha256,
+      /^[0-9a-f]{64}$/,
+    );
+    assert.match(
+      report.evidence.nativeGrammar.grammarBranches.observationsSha256,
+      /^[0-9a-f]{64}$/,
+    );
+    assert.deepEqual(report.evidence.processSafety.native, { passed: 33, total: 33 });
+    assert.deepEqual(report.evidence.processSafety.public, { passed: 7, total: 7 });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

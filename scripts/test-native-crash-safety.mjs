@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const contractSha256 = createHash("sha256")
+    .update(await readFile(fileURLToPath(import.meta.url)))
+    .digest("hex");
 const nativeDirectory = path.join(repositoryRoot, "native");
 const nativeArtifacts = (await readdir(nativeDirectory)).filter(
     entry => entry.startsWith("sheetom-native.") && entry.endsWith(".node"),
@@ -230,6 +234,17 @@ for (const crashCase of publicCrashCases) {
         0,
         `public ${crashCase.name} exited ${child.status}\nstdout:\n${child.stdout}\nstderr:\n${child.stderr}`,
     );
+}
+
+const reportArgument = process.argv.find(argument => argument.startsWith("--report="));
+if (reportArgument) {
+    const reportPath = path.resolve(reportArgument.slice("--report=".length));
+    await writeFile(reportPath, `${JSON.stringify({
+        schemaVersion: 1,
+        contractSha256,
+        native: { passed: nativeCrashCases.length, total: nativeCrashCases.length },
+        public: { passed: publicCrashCases.length, total: publicCrashCases.length },
+    }, null, 2)}\n`);
 }
 
 console.log(

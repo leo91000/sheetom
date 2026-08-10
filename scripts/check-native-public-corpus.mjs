@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import { CSSStyleRule, CSSStyleSheet } from "../dist/index.js";
 
@@ -14,6 +15,9 @@ const observations = JSON.parse(
 );
 const nativeInventory = JSON.parse(
   await readFile(new URL("../compatibility/native-grammar-inventory.json", import.meta.url)),
+);
+const valueCapabilities = JSON.parse(
+  await readFile(new URL("../compatibility/value-capabilities.json", import.meta.url)),
 );
 const observationsById = new Map(observations.cases.map(candidate => [candidate.id, candidate]));
 const contractCasesById = new Map(
@@ -148,13 +152,83 @@ for (const candidate of nativeInventory.propertyBranches) {
   });
 }
 
+for (const candidate of valueCapabilities.cases) {
+  capture(candidate.id, () => {
+    const { sheet, rule } = createRule();
+    if (!candidate.accepted) {
+      rule.style.setProperty(candidate.property, "initial");
+      const before = {
+        state: state(rule),
+        value: rule.style.getPropertyValue(candidate.property),
+        cssText: rule.style.cssText,
+        serialized: sheet.serialize(),
+      };
+      rule.style.setProperty(candidate.property, candidate.input);
+      assert.deepEqual(state(rule), before.state);
+      assert.equal(rule.style.getPropertyValue(candidate.property), before.value);
+      assert.equal(rule.style.cssText, before.cssText);
+      assert.equal(sheet.serialize(), before.serialized);
+      return;
+    }
+
+    rule.style.setProperty(candidate.property, candidate.input);
+    assert.equal(rule.style.getPropertyValue(candidate.property), candidate.observable);
+    const serialized = sheet.serialize();
+    const reparsed = new CSSStyleSheet();
+    reparsed.replaceSync(serialized);
+    assert.equal(reparsed.serialize(), serialized);
+  });
+}
+
 if (failures.length > 0) {
   throw new Error(`Native public corpus failures (${failures.length}):\n${failures.join("\n")}`);
 }
 
+const grammarCases = contracts.profiles.flatMap(profile => profile.cases);
+const positiveGrammarCases = grammarCases.filter(candidate => candidate.accepted).length;
+const negativeGrammarCases = grammarCases.length - positiveGrammarCases;
+const positivePropertyBranches = nativeInventory.propertyBranches
+  .filter(candidate => candidate.accepted).length;
+const negativePropertyBranches = nativeInventory.propertyBranches.length
+  - positivePropertyBranches;
+const positiveValueCapabilities = valueCapabilities.cases
+  .filter(candidate => candidate.accepted).length;
+const negativeValueCapabilities = valueCapabilities.cases.length
+  - positiveValueCapabilities;
+const reportArgument = process.argv.find(argument => argument.startsWith("--report="));
+if (reportArgument) {
+  const reportPath = path.resolve(reportArgument.slice("--report=".length));
+  await writeFile(reportPath, `${JSON.stringify({
+    schemaVersion: 1,
+    shorthandProperties: {
+      passed: capabilities.cases.length,
+      total: capabilities.cases.length,
+    },
+    grammarBranches: {
+      passed: grammarCases.length,
+      total: grammarCases.length,
+      positive: positiveGrammarCases,
+      negative: negativeGrammarCases,
+    },
+    propertyBranches: {
+      passed: nativeInventory.propertyBranches.length,
+      total: nativeInventory.propertyBranches.length,
+      positive: positivePropertyBranches,
+      negative: negativePropertyBranches,
+    },
+    valueCapabilities: {
+      passed: valueCapabilities.cases.length,
+      total: valueCapabilities.cases.length,
+      positive: positiveValueCapabilities,
+      negative: negativeValueCapabilities,
+    },
+  }, null, 2)}\n`);
+}
+
 console.log(
   `Verified ${capabilities.cases.length} shorthand capabilities and ` +
-    `${contracts.profiles.flatMap(profile => profile.cases).filter(candidate => candidate.accepted).length} positive plus ` +
-    `${contracts.profiles.flatMap(profile => profile.cases).filter(candidate => !candidate.accepted).length} atomic rejection branches and ` +
-    `${nativeInventory.propertyBranches.length} RC6 property branches.`,
+    `${positiveGrammarCases} positive plus ` +
+    `${negativeGrammarCases} atomic rejection branches and ` +
+    `${nativeInventory.propertyBranches.length} property plus ` +
+    `${valueCapabilities.cases.length} value branches.`,
 );

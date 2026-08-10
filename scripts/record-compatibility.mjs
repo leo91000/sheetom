@@ -3,10 +3,11 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { nativeEngineEvidence } from "./native-engine-evidence.mjs";
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const compatibilityRoot = path.join(repositoryRoot, "compatibility");
 const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
-const packageLock = JSON.parse(await readFile(path.join(repositoryRoot, "package-lock.json"), "utf8"));
 const wptLock = JSON.parse(await readFile(path.join(compatibilityRoot, "wpt.lock.json"), "utf8"));
 const wptMappings = JSON.parse(await readFile(
   path.join(compatibilityRoot, "wpt-mappings.json"),
@@ -18,6 +19,15 @@ const shorthandGrammarContractsBytes = await readFile(
 const shorthandGrammarObservationsBytes = await readFile(
   path.join(compatibilityRoot, "shorthand-grammar-observations.json"),
 );
+const shorthandCapabilitiesBytes = await readFile(
+  path.join(compatibilityRoot, "shorthand-capabilities.json"),
+);
+const nativeGrammarInventoryBytes = await readFile(
+  path.join(compatibilityRoot, "native-grammar-inventory.json"),
+);
+const valueCapabilitiesBytes = await readFile(
+  path.join(compatibilityRoot, "value-capabilities.json"),
+);
 const shorthandGrammarContracts = JSON.parse(shorthandGrammarContractsBytes.toString("utf8"));
 const shorthandGrammarObservations = JSON.parse(
   shorthandGrammarObservationsBytes.toString("utf8"),
@@ -25,6 +35,9 @@ const shorthandGrammarObservations = JSON.parse(
 const shorthandGrammarCases = shorthandGrammarContracts.profiles.flatMap(
   profile => profile.cases,
 );
+const shorthandCapabilities = JSON.parse(shorthandCapabilitiesBytes.toString("utf8"));
+const nativeGrammarInventory = JSON.parse(nativeGrammarInventoryBytes.toString("utf8"));
+const valueCapabilities = JSON.parse(valueCapabilitiesBytes.toString("utf8"));
 if (
   shorthandGrammarContracts.profiles.length !== 24 ||
   shorthandGrammarCases.length !== 96 ||
@@ -108,6 +121,70 @@ if (operationFixtureAdapters.length !== expectedOperationAdapters.length) {
   throw new Error("Operation Fixture evidence contains an unknown adapter result");
 }
 
+async function requiredEvidenceReport(argumentName) {
+  const argument = process.argv.find(candidate => candidate.startsWith(`--${argumentName}=`));
+  if (!argument) throw new Error(`Compatibility recording requires --${argumentName}=path`);
+  const reportPath = path.resolve(argument.slice(`--${argumentName}=`.length));
+  const bytes = await readFile(reportPath);
+  return { bytes, report: JSON.parse(bytes.toString("utf8")) };
+}
+
+const nativeCorpusEvidence = await requiredEvidenceReport("native-corpus-report");
+const nativeCorpusReport = nativeCorpusEvidence.report;
+const grammarPositive = shorthandGrammarCases.filter(candidate => candidate.accepted).length;
+const grammarNegative = shorthandGrammarCases.length - grammarPositive;
+const propertyPositive = nativeGrammarInventory.propertyBranches
+  .filter(candidate => candidate.accepted).length;
+const propertyNegative = nativeGrammarInventory.propertyBranches.length - propertyPositive;
+const valuePositive = valueCapabilities.cases.filter(candidate => candidate.accepted).length;
+const valueNegative = valueCapabilities.cases.length - valuePositive;
+const expectedNativeCorpus = {
+  schemaVersion: 1,
+  shorthandProperties: {
+    passed: shorthandCapabilities.cases.length,
+    total: shorthandCapabilities.cases.length,
+  },
+  grammarBranches: {
+    passed: shorthandGrammarCases.length,
+    total: shorthandGrammarCases.length,
+    positive: grammarPositive,
+    negative: grammarNegative,
+  },
+  propertyBranches: {
+    passed: nativeGrammarInventory.propertyBranches.length,
+    total: nativeGrammarInventory.propertyBranches.length,
+    positive: propertyPositive,
+    negative: propertyNegative,
+  },
+  valueCapabilities: {
+    passed: valueCapabilities.cases.length,
+    total: valueCapabilities.cases.length,
+    positive: valuePositive,
+    negative: valueNegative,
+  },
+};
+if (JSON.stringify(nativeCorpusReport) !== JSON.stringify(expectedNativeCorpus)) {
+  throw new Error("Native Grammar Inventory execution evidence is incomplete");
+}
+
+const processSafetyEvidence = await requiredEvidenceReport("process-safety-report");
+const processSafetyReport = processSafetyEvidence.report;
+const processSafetyContractSha256 = createHash("sha256")
+  .update(await readFile(path.join(repositoryRoot, "scripts/test-native-crash-safety.mjs")))
+  .digest("hex");
+for (const adapter of ["native", "public"]) {
+  const evidence = processSafetyReport[adapter];
+  if (
+    processSafetyReport.schemaVersion !== 1
+    || processSafetyReport.contractSha256 !== processSafetyContractSha256
+    || !evidence
+    || evidence.total < 1
+    || evidence.passed !== evidence.total
+  ) {
+    throw new Error(`Process Safety evidence is incomplete for ${adapter}`);
+  }
+}
+
 const reportArguments = process.argv
   .filter(argument => argument.startsWith("--wpt-report="))
   .map(argument => argument.slice("--wpt-report=".length));
@@ -156,15 +233,11 @@ for (const reportArgument of reportArguments) {
 }
 const report = {
   $schema: "../schemas/compatibility-report.schema.json",
-  schemaVersion: 4,
+  schemaVersion: 5,
   packageVersion: packageManifest.version,
   baseline: {
     wptCommit: wptLock.commit,
-    syntaxEngineSet: {
-      lightningcss: packageLock.packages["node_modules/lightningcss"].version,
-      cssTree: packageLock.packages["node_modules/css-tree"].version,
-      cssTokenizer: packageLock.packages["node_modules/@csstools/css-tokenizer"].version,
-    },
+    nativeEngine: await nativeEngineEvidence(repositoryRoot),
     runtimes: {
       node: process.version,
       bun: "1.3.1",
@@ -189,16 +262,31 @@ const report = {
       sha256: createHash("sha256").update(operationReportBytes).digest("hex"),
       adapters: operationFixtureAdapters
     },
-    shorthandGrammar: {
-      profiles: shorthandGrammarContracts.profiles.length,
-      passed: shorthandGrammarCases.length,
-      total: shorthandGrammarCases.length,
-      contractsSha256: createHash("sha256")
-        .update(shorthandGrammarContractsBytes)
-        .digest("hex"),
-      observationsSha256: createHash("sha256")
-        .update(shorthandGrammarObservationsBytes)
-        .digest("hex")
+    nativeGrammar: {
+      inventorySha256: createHash("sha256").update(nativeGrammarInventoryBytes).digest("hex"),
+      executionSha256: createHash("sha256").update(nativeCorpusEvidence.bytes).digest("hex"),
+      shorthandProperties: nativeCorpusReport.shorthandProperties,
+      codecProfiles: shorthandGrammarContracts.profiles.length,
+      grammarBranches: {
+        ...nativeCorpusReport.grammarBranches,
+        contractsSha256: createHash("sha256")
+          .update(shorthandGrammarContractsBytes)
+          .digest("hex"),
+        observationsSha256: createHash("sha256")
+          .update(shorthandGrammarObservationsBytes)
+          .digest("hex"),
+      },
+      propertyBranches: nativeCorpusReport.propertyBranches,
+      valueCapabilities: {
+        ...nativeCorpusReport.valueCapabilities,
+        sha256: createHash("sha256").update(valueCapabilitiesBytes).digest("hex"),
+      },
+    },
+    processSafety: {
+      contractSha256: processSafetyReport.contractSha256,
+      executionSha256: createHash("sha256").update(processSafetyEvidence.bytes).digest("hex"),
+      native: processSafetyReport.native,
+      public: processSafetyReport.public,
     },
     nativeWpt
   },
