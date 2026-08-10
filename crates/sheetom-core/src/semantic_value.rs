@@ -7,14 +7,17 @@ use lightningcss::{
 };
 
 use crate::{
+    analyze_recovered_substitutions,
     catalog::{property_grammar, PropertyGrammarOwner},
     recover_component_values_with_limits, EngineError, PropertyParseKind, RecoveredValue,
-    ResourceLimits,
+    ResourceLimits, SemanticSubstitutionValue,
 };
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SemanticPropertyValue {
     Standard(Property<'static>),
+    PendingSubstitution(SemanticSubstitutionValue),
+    CustomTokenStream,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -47,8 +50,47 @@ impl SemanticDeclaration {
             SemanticPropertyValue::Standard(property) => property
                 .value_to_css_string(PrinterOptions::default())
                 .map_err(|error| EngineError::Serialize(error.to_string())),
+            SemanticPropertyValue::PendingSubstitution(_)
+            | SemanticPropertyValue::CustomTokenStream => self.recovered.reparsable_css(),
         }
     }
+}
+
+pub fn parse_semantic_property(
+    name: &str,
+    source: &str,
+) -> Result<SemanticDeclaration, EngineError> {
+    parse_semantic_property_with_limits(name, source, ResourceLimits::default())
+}
+
+pub fn parse_semantic_property_with_limits(
+    name: &str,
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<SemanticDeclaration, EngineError> {
+    let grammar = property_grammar(name)
+        .ok_or_else(|| EngineError::Parse(format!("unsupported property: {name}")))?;
+    let recovered = recover_component_values_with_limits(source, limits)?;
+    let substitution = analyze_recovered_substitutions(&recovered)?;
+
+    if grammar.owner() == PropertyGrammarOwner::CustomTokenStream {
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::CustomTokenStream,
+            recovered,
+            parse_kind: PropertyParseKind::Custom,
+        });
+    }
+    if let Some(substitution) = substitution {
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::PendingSubstitution(substitution),
+            recovered,
+            parse_kind: PropertyParseKind::Unparsed,
+        });
+    }
+
+    parse_standard_with_recovered(grammar, source, recovered)
 }
 
 pub fn parse_standard_semantic_property(
@@ -63,13 +105,20 @@ pub fn parse_standard_semantic_property_with_limits(
     source: &str,
     limits: ResourceLimits,
 ) -> Result<SemanticDeclaration, EngineError> {
-    let grammar = property_grammar(name)
-        .ok_or_else(|| EngineError::Parse(format!("unsupported property: {name}")))?;
-    if grammar.owner() == PropertyGrammarOwner::CustomTokenStream {
-        return Err(EngineError::Parse(format!(
-            "custom property requires token-stream semantics: {name}"
-        )));
+    let declaration = parse_semantic_property_with_limits(name, source, limits)?;
+    if matches!(declaration.value(), SemanticPropertyValue::Standard(_)) {
+        return Ok(declaration);
     }
+    Err(EngineError::Parse(format!(
+        "property requires non-standard semantics: {name}: {source}"
+    )))
+}
+
+fn parse_standard_with_recovered(
+    grammar: crate::catalog::PropertyGrammar,
+    source: &str,
+    recovered: RecoveredValue,
+) -> Result<SemanticDeclaration, EngineError> {
     if !grammar.has_standard_parser() {
         let requirement = if grammar.extensions().is_empty() {
             "an unimplemented grammar"
@@ -77,11 +126,11 @@ pub fn parse_standard_semantic_property_with_limits(
             "a SheetOM extension grammar"
         };
         return Err(EngineError::Parse(format!(
-            "property requires {requirement}: {name}: {source}"
+            "property requires {requirement}: {}: {source}",
+            grammar.canonical_name()
         )));
     }
 
-    let recovered = recover_component_values_with_limits(source, limits)?;
     let property = Property::parse_string(
         PropertyId::from(grammar.parser_name()),
         source,
@@ -181,6 +230,70 @@ mod tests {
         ] {
             assert!(
                 parse_standard_semantic_property(name, source).is_err(),
+                "{name}: {source}"
+            );
+        }
+    }
+
+    #[test]
+    fn owns_pending_substitutions_without_using_the_lightning_unparsed_variant() {
+        let declaration =
+            parse_semantic_property("padding", "72px var(--space, var(--space,").unwrap();
+
+        assert_eq!(declaration.parse_kind(), PropertyParseKind::Unparsed);
+        assert!(matches!(
+            declaration.value(),
+            SemanticPropertyValue::PendingSubstitution(substitution)
+                if substitution.functions().len() == 2
+        ));
+        assert_eq!(
+            declaration.canonical_value().unwrap(),
+            "72px var(--space, var(--space,))"
+        );
+    }
+
+    #[test]
+    fn classifies_attr_if_and_custom_functions_from_recovered_tokens() {
+        for (name, source, expected_functions) in [
+            ("width", "attr(data-width type(<length>), 1px)", 1),
+            ("color", "if(style(--theme: dark): white; else: black)", 1),
+            ("width", "calc(--double(1px) + var(--base))", 2),
+            ("content", "var(--content", 1),
+        ] {
+            let declaration = parse_semantic_property(name, source).unwrap();
+            assert!(matches!(
+                declaration.value(),
+                SemanticPropertyValue::PendingSubstitution(substitution)
+                    if substitution.functions().len() == expected_functions
+            ));
+        }
+    }
+
+    #[test]
+    fn owns_custom_property_tokens_and_repairs_only_reparsable_output() {
+        let declaration = parse_semantic_property("--Theme", "\"dark").unwrap();
+
+        assert_eq!(declaration.property_name(), "--Theme");
+        assert_eq!(declaration.parse_kind(), PropertyParseKind::Custom);
+        assert!(matches!(
+            declaration.value(),
+            SemanticPropertyValue::CustomTokenStream
+        ));
+        assert_eq!(declaration.recovered().source(), "\"dark");
+        assert_eq!(declaration.canonical_value().unwrap(), "\"dark\"");
+    }
+
+    #[test]
+    fn rejects_invalid_substitutions_before_any_property_parser() {
+        for (name, source) in [
+            ("width", "var(foo)"),
+            ("width", "attr()"),
+            ("color", "if()"),
+            ("padding", "--spacing(1px,)"),
+            ("--theme", "red; color: blue"),
+        ] {
+            assert!(
+                parse_semantic_property(name, source).is_err(),
                 "{name}: {source}"
             );
         }
