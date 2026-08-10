@@ -5,7 +5,7 @@ SheetOM builds its Rust CSS Engine from complete upstream source snapshots store
 | Directory | Upstream | Version | Commit | Source import commit |
 | --- | --- | --- | --- | --- |
 | `vendor/lightningcss` | `https://github.com/parcel-bundler/lightningcss` | 1.33.0 | `c6a0c3cebf3395635e61075d2c81a96a710d4910` | `bf2bb9711d9198c159568d6ab8cebe636f2f88f3` |
-| `vendor/cssparser` | `https://github.com/servo/rust-cssparser` | 0.37.0 | `4c49486494fb24dc01390e3baca9698ef1744c71` | `0ee2f7c1fcd23002535b4c8a27fffa02dd97b864` |
+| `vendor/cssparser` | `https://github.com/servo/rust-cssparser` | 0.37.0 | `4c49486494fb24dc01390e3baca9698ef1744c71` | `51acfde57f79dfea8333a0e6f39654d7d671d7b5` |
 
 To verify an untouched import, clone the upstream repository, check out the recorded commit, and compare it with the corresponding directory while excluding only upstream `.git` metadata:
 
