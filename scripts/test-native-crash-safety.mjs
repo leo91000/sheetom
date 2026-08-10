@@ -71,6 +71,21 @@ const crashCases = [
         expectError: "SHEETOM_NESTING_LIMIT",
     },
     {
+        name: "public stylesheet at the resource boundary",
+        mode: "stylesheet-resource",
+        nestingDepth: 4095,
+        public: true,
+        publicOnly: true,
+    },
+    {
+        name: "public stylesheet above the resource boundary",
+        mode: "stylesheet-resource",
+        nestingDepth: 4096,
+        expectError: "SHEETOM_NESTING_LIMIT",
+        public: true,
+        publicOnly: true,
+    },
+    {
         name: "declaration count above the supported limit",
         declarationCount: 100_001,
         expectError: "SHEETOM_DECLARATION_LIMIT",
@@ -185,7 +200,8 @@ const crashCases = [
     },
 ];
 
-for (const crashCase of crashCases) {
+const nativeCrashCases = crashCases.filter(candidate => !candidate.publicOnly);
+for (const crashCase of nativeCrashCases) {
     const encodedCase = Buffer.from(JSON.stringify(crashCase)).toString("base64url");
     const child = spawnSync(process.execPath, [workerPath, artifactPath, encodedCase], {
         encoding: "utf8",
@@ -217,5 +233,5 @@ for (const crashCase of publicCrashCases) {
 }
 
 console.log(
-    `${crashCases.length} native and ${publicCrashCases.length} public crash-safety subprocesses passed.`,
+    `${nativeCrashCases.length} native and ${publicCrashCases.length} public crash-safety subprocesses passed.`,
 );

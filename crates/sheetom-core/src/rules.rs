@@ -809,21 +809,21 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             .ok_or_else(|| EngineError::Parse("the rule has no recoverable block".to_owned()));
     };
     if function_rule {
-        let prelude = parse_function_prelude(&header)
+        let prelude = parse_function_prelude(header)
             .ok_or_else(|| EngineError::Parse("invalid @function prelude".to_owned()))?;
-        return parse_function_rule(prelude, &body, depth);
+        return parse_function_rule(prelude, body, depth);
     }
     let strict = parse_rule_tree_active(source).ok();
     if let Some(parsed) = strict.as_ref() {
         if parsed.kind == "property" {
             let mut parsed = parsed.clone();
-            preserve_property_descriptor_values(&mut parsed, &body);
+            preserve_property_descriptor_values(&mut parsed, body);
             return Ok(parsed);
         }
         if let Some(recovered) = recover_single_child_group_chain(parsed.clone(), source, depth) {
             return recovered;
         }
-        let raw_items = scan_recovered_block_items(&body).len();
+        let raw_items = scan_recovered_block_items(body).len();
         let recover_from_source = matches!(
             parsed.kind.as_str(),
             "style"
@@ -852,7 +852,7 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
         ) || parsed.children.len() == raw_items;
         if !recover_from_source && child_count_matches {
             let mut parsed = parsed.clone();
-            preserve_source_prelude(&mut parsed, &header);
+            preserve_source_prelude(&mut parsed, header);
             preserve_source_text(&mut parsed, source);
             return Ok(parsed);
         }
@@ -860,8 +860,8 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
 
     let probe_source = format!("{header}{{}}");
     let mut probe = parse_rule_tree_active(&probe_source)?;
-    preserve_source_prelude(&mut probe, &header);
-    recover_block_rule(probe, &body, depth)
+    preserve_source_prelude(&mut probe, header);
+    recover_block_rule(probe, body, depth)
 }
 
 /// Recovers a valid, deeply nested grouping-rule chain without reparsing every
@@ -1059,9 +1059,9 @@ fn parse_function_conditional_rule(
     if !matches!(probe.kind.as_str(), "media" | "supports" | "container") {
         return Ok(None);
     }
-    preserve_source_prelude(&mut probe, &header);
+    preserve_source_prelude(&mut probe, header);
     probe.declarations.clear();
-    probe.children = parse_function_body(&body, depth + 1)?;
+    probe.children = parse_function_body(body, depth + 1)?;
     probe.css_text.clear();
     Ok(Some(probe))
 }
@@ -1271,13 +1271,13 @@ fn recover_block_rule(
 fn recover_font_feature_values_body(probe: &mut ParsedRule, body: &str) {
     probe.children.clear();
     for fragment in scan_recovered_block_items(body) {
-        let Some((header, declarations)) = split_outer_block(&fragment) else {
+        let Some((header, declarations)) = split_outer_block(fragment) else {
             continue;
         };
-        let Some(name) = font_feature_subrule_name(&header) else {
+        let Some(name) = font_feature_subrule_name(header) else {
             continue;
         };
-        let Some(entries) = parse_font_feature_entries(&declarations) else {
+        let Some(entries) = parse_font_feature_entries(declarations) else {
             continue;
         };
         let map_index = probe.children.iter().position(|candidate| {
@@ -1334,7 +1334,7 @@ fn font_feature_subrule_name(header: &str) -> Option<String> {
 fn parse_font_feature_entries(source: &str) -> Option<Vec<ParsedRule>> {
     let mut entries = Vec::<ParsedRule>::new();
     for fragment in scan_recovered_block_items(source) {
-        let declarations = parse_declaration_list(&fragment);
+        let declarations = parse_declaration_list(fragment);
         let [declaration] = declarations.as_slice() else {
             return None;
         };
@@ -1377,7 +1377,7 @@ fn recover_style_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Resul
     let mut declarations = Vec::new();
     let mut found_child = false;
     for fragment in fragments {
-        match parse_recovered_rule_tree_inner(&fragment, depth + 1) {
+        match parse_recovered_rule_tree_inner(fragment, depth + 1) {
             Ok(child) => {
                 flush_nested_declarations(probe, &mut declarations, found_child);
                 found_child = true;
@@ -1412,7 +1412,7 @@ fn flush_nested_declarations(probe: &mut ParsedRule, declarations: &mut Vec<&str
 fn recover_child_rules(body: &str, depth: usize) -> Result<Vec<ParsedRule>, EngineError> {
     let mut children = Vec::new();
     for fragment in scan_recovered_block_items(body) {
-        children.push(parse_recovered_rule_tree_inner(&fragment, depth)?);
+        children.push(parse_recovered_rule_tree_inner(fragment, depth)?);
     }
     Ok(children)
 }
@@ -1420,10 +1420,10 @@ fn recover_child_rules(body: &str, depth: usize) -> Result<Vec<ParsedRule>, Engi
 fn recover_page_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result<(), EngineError> {
     let mut declarations = Vec::new();
     for fragment in scan_recovered_block_items(body) {
-        if trim_start_css_whitespace(&fragment).starts_with('@') {
-            let (_, margin_body) = split_outer_block(&fragment)
+        if trim_start_css_whitespace(fragment).starts_with('@') {
+            let (_, margin_body) = split_outer_block(fragment)
                 .ok_or_else(|| EngineError::Parse("invalid page margin rule".to_owned()))?;
-            let name = trim_start_css_whitespace(&fragment)
+            let name = trim_start_css_whitespace(fragment)
                 .strip_prefix('@')
                 .and_then(|value| {
                     value
@@ -1434,7 +1434,7 @@ fn recover_page_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result
             probe.children.push(ParsedRule {
                 kind: "margin".to_owned(),
                 prelude: name.to_ascii_lowercase(),
-                declarations: trim_css_whitespace(&margin_body).to_owned(),
+                declarations: trim_css_whitespace(margin_body).to_owned(),
                 children: Vec::new(),
                 css_text: String::new(),
             });
@@ -1459,7 +1459,7 @@ fn recover_keyframes_body(
     depth: usize,
 ) -> Result<(), EngineError> {
     for fragment in scan_recovered_block_items(body) {
-        let (header, declarations) = split_outer_block(&fragment)
+        let (header, declarations) = split_outer_block(fragment)
             .ok_or_else(|| EngineError::Parse("invalid keyframe rule".to_owned()))?;
         let wrapper = format!("@keyframes sheetom{{{header}{{}}}}");
         let parsed = parse_rule_tree_active(&wrapper)?;
@@ -1469,7 +1469,7 @@ fn recover_keyframes_body(
             .next()
             .ok_or_else(|| EngineError::Parse("invalid keyframe selector".to_owned()))?;
         probe.children.push(ParsedRule {
-            declarations: trim_css_whitespace(&declarations).to_owned(),
+            declarations: trim_css_whitespace(declarations).to_owned(),
             css_text: String::new(),
             ..keyframe
         });
@@ -1992,11 +1992,11 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
         CssRule::Ignored => return Ok(None),
         _ => {
             if let Some((header, body)) = split_outer_block(&css_text) {
-                if is_function_rule_header(&header) {
-                    let Some(prelude) = parse_function_prelude(&header) else {
+                if is_function_rule_header(header) {
+                    let Some(prelude) = parse_function_prelude(header) else {
                         return Ok(None);
                     };
-                    let parsed_function = parse_function_rule(prelude, &body, 0)?;
+                    let parsed_function = parse_function_rule(prelude, body, 0)?;
                     add_parsed_descendant_count(&parsed_function, count)?;
                     parsed_function
                 } else {

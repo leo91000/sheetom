@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import {
+  CSSKeyframesRule,
   CSSMediaRule,
   CSSStyleRule,
   CSSStyleSheet,
@@ -178,4 +179,56 @@ test("internal parser wrappers do not consume the caller's source budget", () =>
   assert.ok(media instanceof CSSMediaRule);
   media.media.mediaText = "print";
   assert.equal(media.conditionText, "print");
+});
+
+test("sequential declaration mutations cannot exceed the block budget", () => {
+  const sheet = new CSSStyleSheet({
+    resourceBudget: { maxDeclarationsPerBlock: 1 },
+  });
+  sheet.replaceSync(".card { width: 1px; }");
+  const style = firstStyleRule(sheet).style;
+  assert.throws(
+    () => style.setProperty("height", "2px"),
+    error => error instanceof RangeError && error.message.includes("SHEETOM_DECLARATION_LIMIT"),
+  );
+  assert.equal(style.cssText, "width: 1px;");
+
+  style.removeProperty("width");
+  assert.throws(
+    () => style.setProperty("padding", "1px"),
+    error => error instanceof RangeError && error.message.includes("SHEETOM_DECLARATION_LIMIT"),
+  );
+  assert.equal(style.cssText, "");
+});
+
+test("sequential sheet, grouping and keyframe insertions cannot exceed the rule budget", () => {
+  const sheet = new CSSStyleSheet({ resourceBudget: { maxRuleCount: 1 } });
+  sheet.replaceSync(".old {}");
+  const previousRule = sheet.cssRules[0];
+  assert.throws(
+    () => sheet.insertRule(".new {}", 1),
+    error => error instanceof RangeError && error.message.includes("SHEETOM_RULE_LIMIT"),
+  );
+  assert.equal(sheet.cssRules.length, 1);
+  assert.equal(sheet.cssRules[0], previousRule);
+
+  const groupingSheet = new CSSStyleSheet({ resourceBudget: { maxRuleCount: 2 } });
+  groupingSheet.replaceSync("@media all { .old {} }");
+  const media = groupingSheet.cssRules[0];
+  assert.ok(media instanceof CSSMediaRule);
+  const previousChild = media.cssRules[0];
+  assert.throws(() => media.insertRule(".new {}", 1), RangeError);
+  assert.equal(media.cssRules.length, 1);
+  assert.equal(media.cssRules[0], previousChild);
+
+  groupingSheet.deleteRule(0);
+  assert.throws(() => media.insertRule(".detached {}", 1), RangeError);
+  assert.equal(media.cssRules.length, 1);
+
+  const keyframesSheet = new CSSStyleSheet({ resourceBudget: { maxRuleCount: 2 } });
+  keyframesSheet.replaceSync("@keyframes fade { from {} }");
+  const keyframes = keyframesSheet.cssRules[0];
+  assert.ok(keyframes instanceof CSSKeyframesRule);
+  assert.throws(() => keyframes.appendRule("to {}"), RangeError);
+  assert.equal(keyframes.cssRules.length, 1);
 });

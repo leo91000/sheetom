@@ -54,23 +54,12 @@ pub enum DeclarationContext {
     Function,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct DeclarationState {
     records: Vec<DeclarationRecord>,
     next_pending_group_id: u64,
     context: DeclarationContext,
     limits: ResourceLimits,
-}
-
-impl Default for DeclarationState {
-    fn default() -> Self {
-        Self {
-            records: Vec::new(),
-            next_pending_group_id: 0,
-            context: DeclarationContext::default(),
-            limits: ResourceLimits::default(),
-        }
-    }
 }
 
 impl DeclarationState {
@@ -168,29 +157,36 @@ impl DeclarationState {
         priority: &str,
     ) -> Result<MutationOutcome, EngineError> {
         validate_declaration_value_input(value, self.limits)?;
+        let mut candidate = self.clone();
+        let outcome = candidate.apply_property(name, value, priority);
+        if outcome != MutationOutcome::Applied {
+            return Ok(outcome);
+        }
+        candidate.validate_record_limit()?;
+        *self = candidate;
+        Ok(outcome)
+    }
+
+    fn apply_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
         let Some(name) = self.canonical_name(name) else {
-            return Ok(MutationOutcome::InvalidName);
+            return MutationOutcome::InvalidName;
         };
         let priority = priority.to_ascii_lowercase();
         if !matches!(priority.as_str(), "" | "important") {
-            return Ok(MutationOutcome::InvalidPriority);
+            return MutationOutcome::InvalidPriority;
         }
         if value.is_empty() {
             self.remove_property(&name);
-            return Ok(MutationOutcome::Applied);
+            return MutationOutcome::Applied;
         }
         if self.context == DeclarationContext::Function && name == "result" {
-            return Ok(MutationOutcome::Applied);
+            return MutationOutcome::Applied;
         }
 
         let important = priority == "important";
         let mut parsed = match self.parse_value(&name, value, important) {
             Ok(parsed) => parsed,
-            Err(MutationOutcome::InvalidValue) => return Ok(MutationOutcome::InvalidValue),
-            Err(MutationOutcome::UnsupportedShorthand) => {
-                return Ok(MutationOutcome::UnsupportedShorthand);
-            }
-            Err(outcome) => return Ok(outcome),
+            Err(outcome) => return outcome,
         };
 
         if parsed.pending_substitution {
@@ -207,7 +203,7 @@ impl DeclarationState {
                         pending_group: Some(group.clone()),
                     });
                 }
-                return Ok(MutationOutcome::Applied);
+                return MutationOutcome::Applied;
             }
         }
 
@@ -216,7 +212,7 @@ impl DeclarationState {
             for record in longhands {
                 self.commit(record);
             }
-            return Ok(MutationOutcome::Applied);
+            return MutationOutcome::Applied;
         }
 
         self.commit(DeclarationRecord {
@@ -227,7 +223,7 @@ impl DeclarationState {
             pending_substitution: parsed.pending_substitution,
             pending_group: None,
         });
-        Ok(MutationOutcome::Applied)
+        MutationOutcome::Applied
     }
 
     pub fn replace_declarations(&mut self, declarations: &[ParsedDeclaration]) {
@@ -280,7 +276,10 @@ impl DeclarationState {
         for declaration in &declarations {
             validate_declaration_value_input(&declaration.value, self.limits)?;
         }
-        self.replace_declarations(&declarations);
+        let mut candidate = self.clone();
+        candidate.replace_declarations(&declarations);
+        candidate.validate_record_limit()?;
+        *self = candidate;
         Ok(())
     }
 
@@ -382,6 +381,16 @@ impl DeclarationState {
             return;
         }
         self.records.push(record);
+    }
+
+    fn validate_record_limit(&self) -> Result<(), EngineError> {
+        if self.records.len() <= self.limits.max_declarations_per_block {
+            return Ok(());
+        }
+        Err(EngineError::DeclarationLimitExceeded {
+            actual: self.records.len(),
+            limit: self.limits.max_declarations_per_block,
+        })
     }
 
     fn records_for_parsed(
@@ -704,6 +713,7 @@ fn format_declaration(name: &str, value: &str, important: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::{DeclarationContext, DeclarationState, MutationOutcome, ParsedDeclaration};
+    use crate::{EngineError, ResourceLimits};
     use serde_json::Value;
 
     #[test]
@@ -740,6 +750,35 @@ mod tests {
         );
         assert_eq!(state.get_property_value("width"), "10px");
         assert_eq!(state.len(), 1);
+    }
+
+    #[test]
+    fn enforces_the_expanded_record_limit_atomically() {
+        let limits = ResourceLimits {
+            max_declarations_per_block: 1,
+            ..ResourceLimits::default()
+        };
+        let mut state =
+            DeclarationState::new_with_context_and_limits(DeclarationContext::Style, limits);
+        state.set_property_checked("width", "1px", "").unwrap();
+
+        assert!(matches!(
+            state.set_property_checked("height", "2px", ""),
+            Err(EngineError::DeclarationLimitExceeded {
+                actual: 2,
+                limit: 1
+            })
+        ));
+        assert_eq!(state.css_text(), "width: 1px;");
+
+        assert!(matches!(
+            state.replace_css_text_checked("padding: 1px"),
+            Err(EngineError::DeclarationLimitExceeded {
+                actual: 4,
+                limit: 1
+            })
+        ));
+        assert_eq!(state.css_text(), "width: 1px;");
     }
 
     #[test]
