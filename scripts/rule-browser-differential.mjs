@@ -49,6 +49,27 @@ const cases = [
     id: "scope-selector-list",
     source: "@scope (.a,.b) to (:is(.c,.d)) { .x { color: red; } }",
   },
+  {
+    id: "counter-style-descriptors",
+    source: '@counter-style digits { system: fixed; symbols: "a" "b"; additive-symbols: +010 "x", 001 "i"; negative: "(" ")"; prefix: "["; suffix: "]"; range: infinite -02, +004 infinite; pad: +03 "0"; speak-as: SPELL-OUT; fallback: DECIMAL; }',
+  },
+  {
+    id: "counter-style-grammar-branches",
+    source: '@counter-style \\62 ranches { system: extends none; symbols: foo/**/bar; additive-symbols: "x" 10, "i" 1; pad: "0" 2; fallback: none; speak-as: default; }',
+  },
+];
+
+const counterStyleFields = [
+  "system",
+  "symbols",
+  "additiveSymbols",
+  "negative",
+  "prefix",
+  "suffix",
+  "pad",
+  "range",
+  "fallback",
+  "speakAs",
 ];
 
 function styleSnapshot(style) {
@@ -76,6 +97,10 @@ function ruleSnapshot(rule) {
   }
   if (rule.media && typeof rule.media.mediaText === "string") {
     snapshot.mediaText = rule.media.mediaText;
+  }
+  if (rule.constructor.name === "CSSCounterStyleRule") {
+    snapshot.cssText = rule.cssText;
+    for (const field of counterStyleFields) snapshot[field] = rule[field];
   }
   return snapshot;
 }
@@ -114,6 +139,21 @@ try {
       if (rule.media && typeof rule.media.mediaText === "string") {
         snapshot.mediaText = rule.media.mediaText;
       }
+      if (rule.constructor.name === "CSSCounterStyleRule") {
+        snapshot.cssText = rule.cssText;
+        for (const field of [
+          "system",
+          "symbols",
+          "additiveSymbols",
+          "negative",
+          "prefix",
+          "suffix",
+          "pad",
+          "range",
+          "fallback",
+          "speakAs",
+        ]) snapshot[field] = rule[field];
+      }
       return snapshot;
     };
     return testCases.map(testCase => {
@@ -129,6 +169,48 @@ try {
   for (let index = 0; index < cases.length; index += 1) {
     assert.deepEqual(actual[index], expected[index], cases[index].id);
   }
+
+  const mutationSource = '@counter-style marks { system: cyclic; symbols: "a"; range: 1 10; }';
+  const mutationOperations = [
+    ["name", "bad name"],
+    ["name", "--marks"],
+    ["system", "numeric"],
+    ["symbols", '"z"'],
+    ["symbols", ""],
+    ["symbols", '"x"; suffix: "evil"'],
+    ["range", "auto"],
+    ["range", "10 1"],
+    ["fallback", "disc"],
+  ];
+  const sheet = parseStyleSheet(mutationSource);
+  const rule = sheet.cssRules[0];
+  const actualMutations = [];
+  for (const [field, value] of mutationOperations) {
+    rule[field] = value;
+    actualMutations.push(ruleSnapshot(rule));
+  }
+  const expectedMutations = await page.evaluate(({ source, operations }) => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(source);
+    const rule = sheet.cssRules[0];
+    const fields = [
+      "system", "symbols", "additiveSymbols", "negative", "prefix", "suffix",
+      "pad", "range", "fallback", "speakAs",
+    ];
+    const snapshot = () => ({
+      type: rule.constructor.name,
+      style: null,
+      children: [],
+      name: rule.name,
+      cssText: rule.cssText,
+      ...Object.fromEntries(fields.map(field => [field, rule[field]])),
+    });
+    return operations.map(([field, value]) => {
+      rule[field] = value;
+      return snapshot();
+    });
+  }, { source: mutationSource, operations: mutationOperations });
+  assert.deepEqual(actualMutations, expectedMutations, "counter-style descriptor mutations");
 } finally {
   await browser.close();
 }

@@ -29,6 +29,15 @@ if (crashCase.mode === "container") {
     execute = () => binding.parseContainerPreludeJson(source);
 }
 if (crashCase.mode === "scope") execute = () => binding.parseScopePreludeJson(source);
+if (crashCase.mode === "counter-descriptor") {
+    execute = () => binding.parseCounterStyleDescriptorValue(crashCase.name, source) ?? "";
+}
+if (crashCase.mode === "counter-descriptors") {
+    execute = () => binding.parseCounterStyleDescriptorsJson(source);
+}
+if (crashCase.mode === "counter-name") {
+    execute = () => binding.parseCounterStyleNameJson(source) ?? "";
+}
 
 if (crashCase.expectError) {
     assert.throws(
@@ -39,5 +48,5 @@ if (crashCase.expectError) {
     assert.equal(typeof execute(), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.7");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.8");
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

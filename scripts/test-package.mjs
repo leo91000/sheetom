@@ -32,7 +32,7 @@ try {
     const require = createRequire(import.meta.url);
     const packageRoot = path.resolve(path.dirname(require.resolve("sheetom")), "..");
     const native = require(path.join(packageRoot, "native/index.cjs"));
-    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.7") {
+    if (native.nativeEngineRevision() !== "lightningcss-1.33.0-c6a0c3ce-sheetom.8") {
       throw new Error("native engine revision mismatch");
     }
     const nativeTree = JSON.parse(native.parseRuleTreeJson("@media screen {.x {width:1px;}}"));
