@@ -2,7 +2,7 @@ mod generated {
     include!("generated/chromium_properties.rs");
 }
 
-pub use generated::{CHROMIUM_BASELINE, SOURCE_SHA256};
+pub use generated::{CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256};
 
 pub(crate) fn canonical_property_name(name: &str) -> Option<String> {
     if name.starts_with("--") {
@@ -28,9 +28,19 @@ pub(crate) fn shorthand_longhands(name: &str) -> Option<&'static [&'static str]>
     Some(generated::SHORTHAND_LONGHANDS[index].1)
 }
 
+pub(crate) fn initial_longhand_value(name: &str) -> Option<&'static str> {
+    let index = generated::INITIAL_LONGHAND_VALUES
+        .binary_search_by_key(&name, |(longhand, _)| *longhand)
+        .ok()?;
+    Some(generated::INITIAL_LONGHAND_VALUES[index].1)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{canonical_property_name, shorthand_longhands, CHROMIUM_BASELINE, SOURCE_SHA256};
+    use super::{
+        canonical_property_name, initial_longhand_value, shorthand_longhands, CHROMIUM_BASELINE,
+        INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
+    };
 
     #[test]
     fn catalog_is_pinned_to_the_chromium_manifest() {
@@ -39,6 +49,10 @@ mod tests {
             "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1"
         );
         assert!(CHROMIUM_BASELINE.contains("Chrome/151."));
+        assert_eq!(
+            INITIAL_VALUES_SOURCE_SHA256,
+            "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33"
+        );
     }
 
     #[test]
@@ -62,5 +76,6 @@ mod tests {
             Some(["overflow-x", "overflow-y"].as_slice())
         );
         assert_eq!(shorthand_longhands("width"), None);
+        assert_eq!(initial_longhand_value("animation-timeline"), Some("auto"));
     }
 }

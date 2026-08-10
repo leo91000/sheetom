@@ -1,5 +1,5 @@
 use crate::{
-    catalog::{canonical_property_name, shorthand_longhands},
+    catalog::{canonical_property_name, initial_longhand_value, shorthand_longhands},
     inspect_property, EngineError, PropertyParseKind,
 };
 use lightningcss::{
@@ -245,12 +245,15 @@ fn parse_value(name: &str, value: &str, important: bool) -> Result<ParsedValue, 
     let mut longhands = Vec::with_capacity(longhand_names.len());
     for longhand_name in longhand_names {
         let longhand_id = PropertyId::from(*longhand_name);
-        let Some(longhand) = property.longhand(&longhand_id) else {
+        let canonical_value = if let Some(longhand) = property.longhand(&longhand_id) {
+            longhand
+                .value_to_css_string(PrinterOptions::default())
+                .map_err(|_| MutationOutcome::InvalidValue)?
+        } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
+            initial_value.to_owned()
+        } else {
             return Err(MutationOutcome::UnsupportedShorthand);
         };
-        let canonical_value = longhand
-            .value_to_css_string(PrinterOptions::default())
-            .map_err(|_| MutationOutcome::InvalidValue)?;
         longhands.push(DeclarationRecord {
             name: (*longhand_name).to_owned(),
             observable_value: canonical_value.clone(),
@@ -361,5 +364,40 @@ mod tests {
             MutationOutcome::Applied
         );
         assert!(state.is_empty());
+    }
+
+    #[test]
+    fn typed_shorthands_reset_every_chromium_longhand() {
+        let cases = [
+            ("animation", "1s ease slide", 11),
+            ("border", "2px dashed blue", 17),
+            ("font", "italic 700 16px / 1.5 serif", 19),
+        ];
+
+        for (property, input, expected_length) in cases {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(property, input, ""),
+                MutationOutcome::Applied,
+                "{property} should expand"
+            );
+            assert_eq!(state.len(), expected_length, "{property} longhand count");
+        }
+
+        let mut animation = DeclarationState::new();
+        animation.set_property("animation", "1s ease slide", "");
+        assert_eq!(animation.get_property_value("animation-timeline"), "auto");
+        assert_eq!(
+            animation.get_property_value("animation-range-start"),
+            "normal"
+        );
+
+        let mut border = DeclarationState::new();
+        border.set_property("border", "2px dashed blue", "");
+        assert_eq!(border.get_property_value("border-image-source"), "none");
+
+        let mut font = DeclarationState::new();
+        font.set_property("font", "italic 700 16px / 1.5 serif", "");
+        assert_eq!(font.get_property_value("font-kerning"), "auto");
     }
 }
