@@ -57,6 +57,14 @@ const cases = [
     id: "counter-style-grammar-branches",
     source: '@counter-style \\62 ranches { system: extends none; symbols: foo/**/bar; additive-symbols: "x" 10, "i" 1; pad: "0" 2; fallback: none; speak-as: default; }',
   },
+  {
+    id: "font-feature-values-maps",
+    source: '@font-feature-values "A B", Test { @styleset { a: 1; } @styleset { b: 2; a: 3; } @annotation { mark: 0; } @swash { good: 1; bad: -1; } }',
+  },
+  {
+    id: "property-rule-descriptors",
+    source: '@property --dynamic-width { syntax: "<length>"; inherits: false; initial-value: 0px; }',
+  },
 ];
 
 const counterStyleFields = [
@@ -70,6 +78,14 @@ const counterStyleFields = [
   "range",
   "fallback",
   "speakAs",
+];
+const fontFeatureMapFields = [
+  "annotation",
+  "ornaments",
+  "stylistic",
+  "swash",
+  "characterVariant",
+  "styleset",
 ];
 
 function styleSnapshot(style) {
@@ -101,6 +117,20 @@ function ruleSnapshot(rule) {
   if (rule.constructor.name === "CSSCounterStyleRule") {
     snapshot.cssText = rule.cssText;
     for (const field of counterStyleFields) snapshot[field] = rule[field];
+  }
+  if (rule.constructor.name === "CSSFontFeatureValuesRule") {
+    snapshot.cssText = rule.cssText;
+    snapshot.fontFamily = rule.fontFamily;
+    snapshot.featureMaps = Object.fromEntries(fontFeatureMapFields.map(field => [
+      field,
+      Array.from(rule[field], ([name, values]) => [name, [...values]]),
+    ]));
+  }
+  if (rule.constructor.name === "CSSPropertyRule") {
+    snapshot.cssText = rule.cssText;
+    for (const field of ["name", "syntax", "inherits", "initialValue"]) {
+      snapshot[field] = rule[field];
+    }
   }
   return snapshot;
 }
@@ -153,6 +183,23 @@ try {
           "fallback",
           "speakAs",
         ]) snapshot[field] = rule[field];
+      }
+      if (rule.constructor.name === "CSSFontFeatureValuesRule") {
+        const fields = [
+          "annotation", "ornaments", "stylistic", "swash", "characterVariant", "styleset",
+        ];
+        snapshot.cssText = rule.cssText;
+        snapshot.fontFamily = rule.fontFamily;
+        snapshot.featureMaps = Object.fromEntries(fields.map(field => [
+          field,
+          Array.from(rule[field], ([name, values]) => [name, [...values]]),
+        ]));
+      }
+      if (rule.constructor.name === "CSSPropertyRule") {
+        snapshot.cssText = rule.cssText;
+        for (const field of ["name", "syntax", "inherits", "initialValue"]) {
+          snapshot[field] = rule[field];
+        }
       }
       return snapshot;
     };
@@ -211,6 +258,43 @@ try {
     });
   }, { source: mutationSource, operations: mutationOperations });
   assert.deepEqual(actualMutations, expectedMutations, "counter-style descriptor mutations");
+
+  const featureSource = "@font-feature-values Test { @styleset { base: 1; } }";
+  const featureSheet = parseStyleSheet(featureSource);
+  const featureRule = featureSheet.cssRules[0];
+  featureRule.styleset.set("bad name", [-1, 1.5, Number.NaN]);
+  featureRule.annotation.set("", []);
+  featureRule.styleset.delete("base");
+  featureRule.fontFamily = '"A B", Test';
+  const actualFeatureMutation = ruleSnapshot(featureRule);
+  const expectedFeatureMutation = await page.evaluate(source => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(source);
+    const rule = sheet.cssRules[0];
+    rule.styleset.set("bad name", [-1, 1.5, Number.NaN]);
+    rule.annotation.set("", []);
+    rule.styleset.delete("base");
+    rule.fontFamily = '"A B", Test';
+    const fields = [
+      "annotation", "ornaments", "stylistic", "swash", "characterVariant", "styleset",
+    ];
+    return {
+      type: rule.constructor.name,
+      style: null,
+      children: [],
+      cssText: rule.cssText,
+      fontFamily: rule.fontFamily,
+      featureMaps: Object.fromEntries(fields.map(field => [
+        field,
+        Array.from(rule[field], ([name, values]) => [name, [...values]]),
+      ])),
+    };
+  }, featureSource);
+  assert.deepEqual(
+    actualFeatureMutation,
+    expectedFeatureMutation,
+    "font-feature-values map mutations",
+  );
 } finally {
   await browser.close();
 }

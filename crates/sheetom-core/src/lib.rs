@@ -28,9 +28,14 @@ pub use declaration_state::{
 pub use rules::{
     normalize_media_text, normalize_selector_text, normalize_supports_text,
     parse_container_prelude, parse_recovered_rule_tree, parse_rule_tree, parse_scope_prelude,
-    parse_stylesheet_tree, scan_top_level_rules, ParsedContainerPrelude, ParsedRule,
-    ParsedScopePrelude,
+    parse_stylesheet_tree, scan_top_level_rules, serialize_font_family_setter,
+    ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
 };
+
+#[doc(hidden)]
+pub fn serialize_css_identifier(value: &str) -> String {
+    syntax::serialize_identifier(value)
+}
 
 #[cfg(panic = "abort")]
 compile_error!("sheetom-core must be compiled with panic=unwind");
@@ -46,7 +51,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.8";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.9";
 const MAX_DECLARATION_BYTES: usize = 1024 * 1024;
 const MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 const MAX_NESTING_DEPTH: usize = 4096;
@@ -372,7 +377,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.8");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.9");
     }
 
     #[test]

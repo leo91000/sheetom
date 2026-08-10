@@ -54,3 +54,7 @@ export declare function parseStylesheetTreeJson(source: string, errorRecovery: b
 
 /** Scans exact top-level CSS rule source without exposing native parser nodes. */
 export declare function scanTopLevelRulesJson(source: string): string
+
+export declare function serializeFontFamilyValue(value: string): string
+
+export declare function serializeIdentifierValue(value: string): string

@@ -1,4 +1,3 @@
-import * as csstree from "css-tree";
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
@@ -18,6 +17,8 @@ import {
   parseNativeCounterStyleDescriptor,
   parseNativeCounterStyleDescriptors,
   parseNativeCounterStyleName,
+  serializeNativeIdentifier,
+  serializeNativeFontFamily,
 } from "./internal/native-counter-style.js";
 import {
   Serializer,
@@ -615,6 +616,34 @@ class CSSGenericRule extends CSSRule {
 
 class CSSOpaqueRule extends CSSGenericRule {}
 
+/** An immutable `@property` registration rule. */
+export class CSSPropertyRule extends CSSRule {
+  readonly name: string;
+  readonly syntax: string;
+  readonly inherits: boolean;
+  readonly initialValue: string;
+  readonly #cssText: string;
+
+  constructor(
+    name: string,
+    syntax: string,
+    inherits: boolean,
+    initialValue: string,
+    cssText: string,
+  ) {
+    super(0);
+    this.name = name;
+    this.syntax = syntax;
+    this.inherits = inherits;
+    this.initialValue = initialValue;
+    this.#cssText = cssText;
+    lockOwnProperties(this, "name", "syntax", "inherits", "initialValue");
+  }
+
+  override get cssText(): string { return this.#cssText; }
+  set cssText(_value: string) {}
+}
+
 /** A live declaration block with indexed, named, and method-based access. */
 export class CSSStyleDeclaration {
   readonly [index: number]: string | undefined;
@@ -1043,6 +1072,7 @@ export class CSSCounterStyleRule extends CSSRule {
 /** A live map exposed by one font-feature-values category. */
 export class CSSFontFeatureValuesMap implements Iterable<[string, number[]]> {
   readonly #values = new Map<string, number[]>();
+  readonly #serializedNames = new Map<string, string>();
 
   constructor() {
     assertInternalConstructor("CSSFontFeatureValuesMap");
@@ -1053,20 +1083,23 @@ export class CSSFontFeatureValuesMap implements Iterable<[string, number[]]> {
   }
 
   set(featureValueName: string, values: number[]): this {
+    requireArguments(arguments.length, 2, "CSSFontFeatureValuesMap", "set");
     const name = `${featureValueName}`;
-    if (!/^[-_a-zA-Z][-_a-zA-Z0-9]*$/.test(name)) {
-      throw new DOMException("The feature value name is invalid.", "SyntaxError");
-    }
-    const normalized = Array.from(values, value => Math.trunc(Number(value)));
-    if (normalized.some(value => !Number.isFinite(value) || value < 0)) {
-      throw new TypeError("Feature values must be non-negative integers.");
-    }
+    const normalized = Array.from(values, value => toUnsignedLong(value));
     this.#values.set(name, normalized);
+    this.#serializedNames.set(name, serializeNativeIdentifier(name));
     return this;
   }
 
-  clear(): void { this.#values.clear(); }
-  delete(name: string): boolean { return this.#values.delete(`${name}`); }
+  clear(): void {
+    this.#values.clear();
+    this.#serializedNames.clear();
+  }
+  delete(name: string): boolean {
+    const key = `${name}`;
+    this.#serializedNames.delete(key);
+    return this.#values.delete(key);
+  }
   get(name: string): number[] | undefined {
     const value = this.#values.get(`${name}`);
     return value ? [...value] : undefined;
@@ -1092,6 +1125,20 @@ export class CSSFontFeatureValuesMap implements Iterable<[string, number[]]> {
     }
   }
   [Symbol.iterator](): MapIterator<[string, number[]]> { return this.entries(); }
+
+  /** @internal */
+  setParsed(name: string, serializedName: string, values: number[]): void {
+    this.#values.set(name, [...values]);
+    this.#serializedNames.set(name, serializedName);
+  }
+
+  /** @internal */
+  serializedEntries(): Array<[string, number[]]> {
+    return [...this.#values].map(([name, values]) => [
+      this.#serializedNames.get(name) ?? serializeNativeIdentifier(name),
+      values,
+    ]);
+  }
 }
 
 const fontFeatureMapNames = [
@@ -1128,7 +1175,9 @@ export class CSSFontFeatureValuesRule extends CSSRule {
   }
 
   get fontFamily(): string { return this.#fontFamily; }
-  set fontFamily(value: string) { this.#fontFamily = `${value}`.trim(); }
+  set fontFamily(value: string) {
+    this.#fontFamily = serializeNativeFontFamily(`${value}`);
+  }
 
   /** @internal */
   featureMap(name: string): CSSFontFeatureValuesMap | null {
@@ -1148,8 +1197,8 @@ export class CSSFontFeatureValuesRule extends CSSRule {
     for (const name of fontFeatureMapNames) {
       const map = this.featureMap(name);
       if (!map || map.size === 0) continue;
-      const declarations = [...map]
-        .map(([key, values]) => `${key}: ${values.join(" ")};`)
+      const declarations = map.serializedEntries()
+        .map(([key, values]) => `${key}:${values.length === 0 ? "" : ` ${values.join(" ")}`};`)
         .join(" ");
       blocks.push(`@${name} { ${declarations} }`);
     }
@@ -1198,89 +1247,6 @@ export class CSSStyleRule extends CSSGroupingRule {
 
   set cssText(_value: string) {}
 
-}
-
-function createStyleRule(
-  node: csstree.Rule,
-  reportDiagnostic: ReportDiagnostic,
-): CSSStyleRule | null {
-  const selectorText = normalizeSelectorText(csstree.generate(node.prelude));
-  if (selectorText === null) return null;
-  const rule = new CSSStyleRule(selectorText);
-  ruleDiagnostics.set(rule, reportDiagnostic);
-  let declarationNodes: csstree.Declaration[] = [];
-  const childRules: CSSRule[] = [];
-  let foundNestedRule = false;
-
-  const flushDeclarations = (): void => {
-    if (declarationNodes.length === 0) return;
-    const declarationText = declarationNodes
-      .map(declarationTextFromNode)
-      .join(";");
-    if (!foundNestedRule) {
-      rule.style.cssText = declarationText;
-      declarationNodes = [];
-      return;
-    }
-
-    const nestedDeclarations = new CSSNestedDeclarations();
-    ruleDiagnostics.set(nestedDeclarations, reportDiagnostic);
-    nestedDeclarations.style.cssText = declarationText;
-    childRules.push(nestedDeclarations);
-    declarationNodes = [];
-  };
-
-  for (const child of node.block.children) {
-    if (child.type === "Declaration") {
-      declarationNodes.push(child);
-      continue;
-    }
-    if (child.type !== "Rule" && child.type !== "Atrule") continue;
-    flushDeclarations();
-    foundNestedRule = true;
-    const parsedChild = createRuleFromNode(child, reportDiagnostic, true);
-    if (parsedChild) childRules.push(parsedChild);
-  }
-  flushDeclarations();
-  replaceGroupingRules(rule, childRules);
-  return rule;
-}
-
-function declarationTextFromBlock(block: csstree.Block): string {
-  const declarations: string[] = [];
-  for (const child of block.children) {
-    if (child.type !== "Declaration") continue;
-    declarations.push(declarationTextFromNode(child));
-  }
-  return declarations.join(";");
-}
-
-function declarationTextFromNode(declaration: csstree.Declaration): string {
-  const priority = declaration.important === true || declaration.important === "important"
-    ? " !important"
-    : "";
-  return `${declaration.property}:${generateDescriptorInput(declaration.value)}${priority}`;
-}
-
-function generateDescriptorInput(value: csstree.Value | csstree.Raw): string {
-  if (value.type === "Raw") return value.value;
-  return value.children.toArray()
-    .map(child => csstree.generate(child))
-    .join(" ")
-    .replace(/\s+,\s*/g, ", ")
-    .replace(/\s*\/\s*/g, " / ");
-}
-
-function createKeyframeRuleFromNode(
-  node: csstree.Rule,
-  reportDiagnostic: ReportDiagnostic,
-): CSSKeyframeRule {
-  return constructInternally(() => {
-    const rule = new CSSKeyframeRule(csstree.generate(node.prelude));
-    ruleDiagnostics.set(rule, reportDiagnostic);
-    rule.style.cssText = declarationTextFromBlock(node.block);
-    return rule;
-  });
 }
 
 function parseKeyframeRule(
@@ -1409,185 +1375,6 @@ function parseImportPrelude(
   return { href, media: remainder, layer, supports };
 }
 
-function createRuleFromNode(
-  node: csstree.Rule | csstree.Atrule,
-  reportDiagnostic: ReportDiagnostic,
-  preserveImports: boolean,
-): CSSRule | null {
-  return constructInternally(() =>
-    createRuleFromNodeInternal(node, reportDiagnostic, preserveImports),
-  );
-}
-
-function createRuleFromNodeInternal(
-  node: csstree.Rule | csstree.Atrule,
-  reportDiagnostic: ReportDiagnostic,
-  preserveImports: boolean,
-): CSSRule | null {
-  if (node.type === "Rule") return createStyleRule(node, reportDiagnostic);
-
-  const name = node.name.toLowerCase();
-  if (name === "import" && !preserveImports) return null;
-  const prelude = node.prelude ? csstree.generate(node.prelude) : "";
-  let rule: CSSRule;
-
-  switch (name) {
-    case "import": {
-      const parsedImport = parseImportPrelude(prelude);
-      if (!parsedImport) return null;
-      rule = new CSSImportRule(
-        parsedImport.href,
-        parsedImport.media,
-        parsedImport.layer,
-        parsedImport.supports,
-      );
-      break;
-    }
-    case "font-face": {
-      const fontFace = new CSSFontFaceRule();
-      if (node.block) fontFace.style.cssText = declarationTextFromBlock(node.block);
-      rule = fontFace;
-      break;
-    }
-    case "page": {
-      const page = new CSSPageRule(prelude);
-      if (node.block) {
-        page.style.cssText = declarationTextFromBlock(node.block);
-        const margins: CSSMarginRule[] = [];
-        for (const child of node.block.children) {
-          if (child.type !== "Atrule" || !child.block) continue;
-          const margin = new CSSMarginRule(child.name.toLowerCase());
-          margin.style.cssText = declarationTextFromBlock(child.block);
-          ruleDiagnostics.set(margin, reportDiagnostic);
-          margins.push(margin);
-        }
-        replaceGroupingRules(page, margins);
-      }
-      rule = page;
-      break;
-    }
-    case "position-try": {
-      if (!prelude.startsWith("--")) return null;
-      const positionTry = new CSSPositionTryRule(prelude);
-      if (node.block) positionTry.style.cssText = declarationTextFromBlock(node.block);
-      rule = positionTry;
-      break;
-    }
-    case "keyframes":
-    case "-webkit-keyframes": {
-      if (prelude === "") return null;
-      const keyframes = new CSSKeyframesRule(prelude);
-      if (node.block) {
-        const frames: CSSKeyframeRule[] = [];
-        for (const child of node.block.children) {
-          if (child.type === "Rule") {
-            frames.push(createKeyframeRuleFromNode(child, reportDiagnostic));
-          }
-        }
-        replaceKeyframeRules(keyframes, frames);
-      }
-      rule = keyframes;
-      break;
-    }
-    case "counter-style": {
-      if (prelude === "") return null;
-      const counterStyle = new CSSCounterStyleRule(prelude);
-      if (node.block) {
-        for (const child of node.block.children) {
-          if (child.type !== "Declaration") continue;
-          counterStyle.setParsedDescriptor(
-            child.property.toLowerCase(),
-            generateDescriptorInput(child.value),
-          );
-        }
-      }
-      rule = counterStyle;
-      break;
-    }
-    case "font-feature-values": {
-      if (prelude === "") return null;
-      const featureValues = new CSSFontFeatureValuesRule(prelude);
-      if (node.block) {
-        for (const child of node.block.children) {
-          if (child.type !== "Atrule" || !child.block) continue;
-          const map = featureValues.featureMap(child.name.toLowerCase());
-          if (!map) continue;
-          for (const declaration of child.block.children) {
-            if (declaration.type !== "Declaration") continue;
-            const values = csstree.generate(declaration.value)
-              .trim()
-              .split(/\s+/)
-              .map(value => Number(value));
-            if (values.some(value => !Number.isFinite(value))) continue;
-            map.set(declaration.property, values);
-          }
-        }
-      }
-      rule = featureValues;
-      break;
-    }
-    case "media":
-      if (prelude === "") return null;
-      rule = new CSSMediaRule(prelude);
-      break;
-    case "supports":
-      if (prelude === "") return null;
-      rule = new CSSSupportsRule(prelude);
-      break;
-    case "container":
-      if (prelude === "") return null;
-      rule = new CSSContainerRule(prelude);
-      break;
-    case "layer":
-      if (!node.block) {
-        const names = prelude.split(",").map(part => part.trim()).join(", ");
-        return new CSSGenericRule(0, `@layer ${names};`);
-      }
-      rule = new CSSLayerBlockRule(prelude);
-      break;
-    case "property": {
-      if (!node.block || !prelude.startsWith("--")) return null;
-      const descriptors: string[] = [];
-      for (const child of node.block.children) {
-        if (child.type !== "Declaration") continue;
-        descriptors.push(
-          `${child.property}: ${generateDescriptorInput(child.value)}${child.important ? " !important" : ""};`,
-        );
-      }
-      return new CSSGenericRule(
-        genericRuleType(name),
-        `@property ${prelude} {${descriptors.length === 0 ? "" : ` ${descriptors.join(" ")}`} }`,
-      );
-    }
-    case "scope": {
-      const [start, end] = parseScopePrelude(prelude);
-      rule = new CSSScopeRule(start, end);
-      break;
-    }
-    case "starting-style":
-      rule = new CSSStartingStyleRule();
-      break;
-    default:
-      return new CSSGenericRule(genericRuleType(name), csstree.generate(node));
-  }
-
-  ruleDiagnostics.set(rule, reportDiagnostic);
-  if (
-    !(rule instanceof CSSGroupingRule) ||
-    rule instanceof CSSPageRule ||
-    !node.block
-  ) return rule;
-
-  const children: CSSRule[] = [];
-  for (const child of node.block.children) {
-    if (child.type !== "Rule" && child.type !== "Atrule") continue;
-    const parsedChild = createRuleFromNode(child, reportDiagnostic, true);
-    if (parsedChild) children.push(parsedChild);
-  }
-  replaceGroupingRules(rule, children);
-  return rule;
-}
-
 function createRuleFromNative(
   description: NativeRuleDescription,
   reportDiagnostic: ReportDiagnostic,
@@ -1682,6 +1469,35 @@ function createRuleFromNativeInternal(
       rule = counterStyle;
       break;
     }
+    case "font-feature-values": {
+      const featureValues = new CSSFontFeatureValuesRule(description.prelude);
+      for (const mapDescription of description.children) {
+        if (mapDescription.kind !== "font-feature-map") continue;
+        const map = featureValues.featureMap(mapDescription.prelude);
+        if (!map) continue;
+        for (const entry of mapDescription.children) {
+          if (entry.kind !== "font-feature-entry") continue;
+          const values = entry.declarations === ""
+            ? []
+            : entry.declarations.split(" ").map(value => Number(value));
+          map.setParsed(entry.prelude, entry.cssText, values);
+        }
+      }
+      rule = featureValues;
+      break;
+    }
+    case "property": {
+      const descriptor = (name: string): string => description.children
+        .find(candidate => candidate.kind === "property-descriptor" && candidate.prelude === name)
+        ?.declarations ?? "";
+      return new CSSPropertyRule(
+        description.prelude,
+        descriptor("syntax"),
+        descriptor("inherits") === "true",
+        descriptor("initial-value"),
+        description.cssText,
+      );
+    }
     case "media":
       rule = new CSSMediaRule(description.prelude);
       break;
@@ -1712,7 +1528,10 @@ function createRuleFromNativeInternal(
       return new CSSGenericRule(0, `@layer ${names};`);
     }
     default:
-      return createLegacyRule(description.cssText, reportDiagnostic, preserveImports);
+      return new CSSGenericRule(
+        genericRuleType(description.cssText.match(/^@([^\s{;]+)/u)?.[1] ?? ""),
+        description.cssText,
+      );
   }
 
   ruleDiagnostics.set(rule, reportDiagnostic);
@@ -1750,23 +1569,6 @@ function createNativeChildren(
     if (rule) children.push(rule);
   }
   return children;
-}
-
-function createLegacyRule(
-  ruleText: string,
-  reportDiagnostic: ReportDiagnostic,
-  preserveImports: boolean,
-): CSSRule | null {
-  if (ruleText === "") return null;
-  try {
-    const parsed = csstree.parse(ruleText);
-    if (parsed.type !== "StyleSheet" || parsed.children.size !== 1) return null;
-    const node = parsed.children.first;
-    if (node?.type !== "Rule" && node?.type !== "Atrule") return null;
-    return createRuleFromNode(node, reportDiagnostic, preserveImports);
-  } catch {
-    return null;
-  }
 }
 
 function parseStrictRule(

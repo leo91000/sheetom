@@ -24,6 +24,14 @@ export function parseNativeCounterStyleName(source: string): NativeCounterStyleN
   }
 }
 
+export function serializeNativeIdentifier(value: string): string {
+  return nativeBinding.serializeIdentifierValue(value);
+}
+
+export function serializeNativeFontFamily(value: string): string {
+  return nativeBinding.serializeFontFamilyValue(value);
+}
+
 export function parseNativeCounterStyleDescriptor(
   name: string,
   value: string,

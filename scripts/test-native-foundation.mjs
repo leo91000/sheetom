@@ -8,7 +8,7 @@ const nativeDirectory = path.join(repositoryRoot, "native");
 const require = createRequire(import.meta.url);
 const binding = require(path.join(nativeDirectory, "index.cjs"));
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.8");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.9");
 
 const result = binding.canonicalizeDeclarationBlock(
     "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover no-repeat red",
@@ -96,6 +96,18 @@ assert.deepEqual(JSON.parse(binding.parseCounterStyleNameJson("\\78")), {
     serialized: "x",
 });
 assert.equal(binding.parseCounterStyleNameJson("bad name"), null);
+assert.equal(binding.serializeIdentifierValue("bad name"), "bad\\ name");
+assert.equal(binding.serializeFontFamilyValue('"A B", Test'), '"\\\"A B\\\"", Test');
+
+const fontFeatureValues = JSON.parse(binding.parseRecoveredRuleTreeJson(
+    '@font-feature-values Test { @styleset { a: 1; } @styleset { b: 2; a: 3; } }',
+));
+assert.equal(fontFeatureValues.kind, "font-feature-values");
+assert.equal(fontFeatureValues.children[0].kind, "font-feature-map");
+assert.deepEqual(
+    fontFeatureValues.children[0].children.map(entry => [entry.prelude, entry.declarations]),
+    [["a", "3"], ["b", "2"]],
+);
 
 const state = new binding.NativeDeclarationState();
 assert.equal(state.setProperty("color", "red", ""), "applied");

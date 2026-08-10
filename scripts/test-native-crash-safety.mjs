@@ -137,6 +137,16 @@ const crashCases = [
         expectError: "SHEETOM_NESTING_LIMIT",
     },
     {
+        name: "arbitrary identifier serialization",
+        mode: "identifier",
+        source: "123 bad\u0000name",
+    },
+    {
+        name: "font family setter serialization",
+        mode: "font-family",
+        source: '"A,B", var(--family), serif, é',
+    },
+    {
         name: "rule parser nesting above the supported limit",
         mode: "rule",
         source: `${"@media all{".repeat(4097)}.x{color:red}${"}".repeat(4097)}`,

@@ -5,6 +5,7 @@ import {
   CSSKeyframesRule,
   CSSLayerBlockRule,
   CSSMediaRule,
+  CSSPropertyRule,
   CSSStyleRule,
   parseStyleSheet,
 } from "../src/index.js";
@@ -35,10 +36,16 @@ test("a WeWeb authoring tree remains live, detachable, and reparsable", () => {
     sheet.cssRules[0]?.cssText,
     "@layer ww-style-reset, ww-style-library, ww-style-section, ww-style-element;",
   );
+  const property = sheet.cssRules[1];
   assert.equal(
-    sheet.cssRules[1]?.cssText,
+    property?.cssText,
     "@property --dynamic-width { syntax: \"<length>\"; inherits: false; initial-value: 0px; }",
   );
+  assert.ok(property instanceof CSSPropertyRule);
+  assert.equal(property.name, "--dynamic-width");
+  assert.equal(property.syntax, "<length>");
+  assert.equal(property.inherits, false);
+  assert.equal(property.initialValue, "0px");
 
   const layer = sheet.cssRules[2];
   const keyframes = sheet.cssRules[3];

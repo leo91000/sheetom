@@ -38,6 +38,8 @@ if (crashCase.mode === "counter-descriptors") {
 if (crashCase.mode === "counter-name") {
     execute = () => binding.parseCounterStyleNameJson(source) ?? "";
 }
+if (crashCase.mode === "identifier") execute = () => binding.serializeIdentifierValue(source);
+if (crashCase.mode === "font-family") execute = () => binding.serializeFontFamilyValue(source);
 
 if (crashCase.expectError) {
     assert.throws(
@@ -48,5 +50,5 @@ if (crashCase.expectError) {
     assert.equal(typeof execute(), "string");
 }
 
-assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.8");
+assert.equal(binding.nativeEngineRevision(), "lightningcss-1.33.0-c6a0c3ce-sheetom.9");
 assert.match(binding.canonicalizeDeclarationBlock("color: red"), /color:/u);

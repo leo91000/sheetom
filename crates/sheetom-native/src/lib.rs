@@ -9,7 +9,8 @@ use sheetom_core::{
     normalize_selector_text, normalize_supports_text, parse_container_prelude,
     parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
     parse_recovered_rule_tree, parse_rule_tree, parse_scope_prelude, parse_stylesheet_tree,
-    scan_top_level_rules, DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
+    scan_top_level_rules, serialize_css_identifier, serialize_font_family_setter,
+    DeclarationContext, DeclarationState, MutationOutcome, ENGINE_REVISION,
 };
 
 #[napi]
@@ -199,6 +200,16 @@ pub fn parse_counter_style_name_json(source: String) -> napi::Result<Option<Stri
         .map(|parsed| serde_json::to_string(&parsed))
         .transpose()
         .map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn serialize_identifier_value(value: String) -> String {
+    serialize_css_identifier(&value)
+}
+
+#[napi]
+pub fn serialize_font_family_value(value: String) -> String {
+    serialize_font_family_setter(&value)
 }
 
 /// Parses a stylesheet and returns owned, parser-independent JSON DTOs.

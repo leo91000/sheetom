@@ -144,4 +144,25 @@ test("font feature value maps expose mutable map behavior", () => {
     rule.cssText,
     "@font-feature-values Other { @styleset { other: 3; new: 4 5; } }",
   );
+
+  rule.annotation.set("bad name", [-1, 1.5, Number.NaN]);
+  rule.annotation.set("", []);
+  rule.fontFamily = '"A B", Test';
+  assert.deepEqual(rule.annotation.get("bad name"), [4_294_967_295, 1, 0]);
+  assert.equal(
+    rule.cssText,
+    '@font-feature-values "\\\"A B\\\"", Test { @annotation { bad\\ name: 4294967295 1 0; :; } @styleset { other: 3; new: 4 5; } }',
+  );
+});
+
+test("font feature parsing merges valid maps and rejects invalid subrules", () => {
+  const sheet = parseStyleSheet(
+    '@font-feature-values "A B", Test { @styleset { a: 1; } @styleset { b: 2; a: 3; } @annotation { mark: 0; } @swash { good: 1; bad: -1; } }',
+  );
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSFontFeatureValuesRule);
+  assert.equal(rule.fontFamily, '"A B", Test');
+  assert.deepEqual([...rule.styleset], [["a", [3]], ["b", [2]]]);
+  assert.deepEqual([...rule.annotation], [["mark", [0]]]);
+  assert.deepEqual([...rule.swash], []);
 });

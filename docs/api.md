@@ -87,7 +87,10 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
 - `CSSKeyframesRule` provides `appendRule`, `deleteRule`, and last-match
   `findRule`; each `CSSKeyframeRule` exposes mutable `keyText` and `style`.
 - `CSSCounterStyleRule` validates mutable descriptors.
-- `CSSFontFeatureValuesRule` exposes six live map-like categories.
+- `CSSFontFeatureValuesRule` exposes six live map-like categories with WebIDL
+  `unsigned long` value conversion.
+- `CSSPropertyRule` exposes immutable `name`, `syntax`, `inherits`, and
+  `initialValue` descriptors.
 
 Unknown metadata and future rules can be retained and serialized, but are
 read-only until a standards-defined mutable interface is implemented.
