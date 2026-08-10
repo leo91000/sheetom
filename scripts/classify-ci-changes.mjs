@@ -54,6 +54,10 @@ const isPackagePath = filePath =>
 
 const isPerformancePath = filePath =>
     filePath.startsWith("src/") ||
+    filePath.startsWith("crates/sheetom-core/") ||
+    filePath.startsWith("crates/sheetom-native/src/") ||
+    filePath.startsWith("vendor/cssparser/src/") ||
+    filePath.startsWith("vendor/lightningcss/src/") ||
     filePath.startsWith("scripts/benchmark") ||
     filePath.startsWith("scripts/compare-benchmarks") ||
     ["package.json", "package-lock.json", "tsdown.config.ts"].includes(filePath);

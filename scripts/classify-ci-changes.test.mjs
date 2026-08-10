@@ -21,6 +21,7 @@ test("vendored source changes rebuild native validation and package artifacts", 
         ...none,
         native: true,
         package: true,
+        performance: true,
     });
 });
 
@@ -29,6 +30,7 @@ test("native engine changes rebuild native validation and package artifacts", ()
         ...none,
         native: true,
         package: true,
+        performance: true,
     });
 });
 
@@ -38,7 +40,7 @@ test("the generated native property catalog does not trigger browser jobs", () =
             "scripts/generate-native-property-catalog.mjs",
             "crates/sheetom-core/src/generated/chromium_properties.rs",
         ]),
-        { ...none, native: true, package: true },
+        { ...none, native: true, package: true, performance: true },
     );
 });
 
