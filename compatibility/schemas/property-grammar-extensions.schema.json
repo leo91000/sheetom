@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sheetom.dev/schemas/property-grammar-extensions.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "baseline", "families"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "baseline": { "type": "string", "minLength": 1 },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "properties"],
+        "properties": {
+          "id": {
+            "enum": [
+              "anchor-size",
+              "content",
+              "contrast-color",
+              "integer-calculation",
+              "offset-position",
+              "offset-rotate",
+              "page-size",
+              "subgrid",
+              "webkit-box-reflect"
+            ]
+          },
+          "properties": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "propertySuffixes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  }
+}

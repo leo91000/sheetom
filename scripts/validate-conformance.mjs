@@ -50,6 +50,7 @@ const shorthandGrammarContractsSchema = await readJson(path.join(compatibilityRo
 const shorthandGrammarObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/shorthand-grammar-observations.schema.json"));
 const nativeGrammarInventorySchema = await readJson(path.join(compatibilityRoot, "schemas/native-grammar-inventory.schema.json"));
 const functionRuleCasesSchema = await readJson(path.join(compatibilityRoot, "schemas/function-rule-cases.schema.json"));
+const propertyGrammarExtensionsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-grammar-extensions.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -60,6 +61,23 @@ const validateShorthandGrammarContracts = ajv.compile(shorthandGrammarContractsS
 const validateShorthandGrammarObservations = ajv.compile(shorthandGrammarObservationsSchema);
 const validateNativeGrammarInventory = ajv.compile(nativeGrammarInventorySchema);
 const validateFunctionRuleCases = ajv.compile(functionRuleCasesSchema);
+const validatePropertyGrammarExtensions = ajv.compile(propertyGrammarExtensionsSchema);
+
+const propertyGrammarExtensionsFile = path.join(
+  compatibilityRoot,
+  "property-grammar-extensions.json",
+);
+const propertyGrammarExtensions = await readJson(propertyGrammarExtensionsFile);
+validateOrThrow(
+  validatePropertyGrammarExtensions,
+  propertyGrammarExtensions,
+  propertyGrammarExtensionsFile,
+);
+assert.equal(
+  new Set(propertyGrammarExtensions.families.map(family => family.id)).size,
+  propertyGrammarExtensions.families.length,
+  "Property Grammar Extension family IDs must be unique",
+);
 
 const valueCapabilitiesFile = path.join(compatibilityRoot, "value-capabilities.json");
 validateOrThrow(
