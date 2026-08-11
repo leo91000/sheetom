@@ -11,7 +11,6 @@ pub(crate) enum PropertyGrammarExtension {
     OffsetPosition,
     OffsetRotate,
     PageSize,
-    Subgrid,
     WebkitBoxReflect,
     WebkitBorderImage,
     WebkitMaskBoxImageSlice,

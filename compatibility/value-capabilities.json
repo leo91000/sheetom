@@ -909,6 +909,249 @@
       "input": "sign(1deg)",
       "accepted": true,
       "observable": "calc(1)"
+    },
+    {
+      "id": "content.static-normal",
+      "property": "content",
+      "input": "normal",
+      "accepted": true,
+      "observable": "normal"
+    },
+    {
+      "id": "content.static-none",
+      "property": "content",
+      "input": "none",
+      "accepted": true,
+      "observable": "none"
+    },
+    {
+      "id": "content.static-quote-keyword",
+      "property": "content",
+      "input": "OPEN-QUOTE",
+      "accepted": true,
+      "observable": "open-quote"
+    },
+    {
+      "id": "content.static-string-list",
+      "property": "content",
+      "input": "\"a\" \"b\"",
+      "accepted": true,
+      "observable": "\"a\" \"b\""
+    },
+    {
+      "id": "content.static-url-image",
+      "property": "content",
+      "input": "url(a.png)",
+      "accepted": true,
+      "observable": "url(\"a.png\")"
+    },
+    {
+      "id": "content.static-counter-default",
+      "property": "content",
+      "input": "counter(chapter, decimal)",
+      "accepted": true,
+      "observable": "counter(chapter)"
+    },
+    {
+      "id": "content.static-counter-style",
+      "property": "content",
+      "input": "counter(chapter, upper-roman)",
+      "accepted": true,
+      "observable": "counter(chapter, upper-roman)"
+    },
+    {
+      "id": "content.static-counters-default",
+      "property": "content",
+      "input": "counters(chapter, \".\", decimal)",
+      "accepted": true,
+      "observable": "counters(chapter, \".\")"
+    },
+    {
+      "id": "content.static-counters-style",
+      "property": "content",
+      "input": "counters(chapter, \".\", upper-roman)",
+      "accepted": true,
+      "observable": "counters(chapter, \".\", upper-roman)"
+    },
+    {
+      "id": "content.static-string-alternative",
+      "property": "content",
+      "input": "\"hello\" / \"alt\"",
+      "accepted": true,
+      "observable": "\"hello\" / \"alt\""
+    },
+    {
+      "id": "content.static-counter-alternative",
+      "property": "content",
+      "input": "url(a.png) / counter(label)",
+      "accepted": true,
+      "observable": "url(\"a.png\") / counter(label)"
+    },
+    {
+      "id": "content.static-mixed-list",
+      "property": "content",
+      "input": "\"a\" url(a.png) open-quote counter(chapter)",
+      "accepted": true,
+      "observable": "\"a\" url(\"a.png\") open-quote counter(chapter)"
+    },
+    {
+      "id": "content.recovered-string-eof",
+      "property": "content",
+      "input": "\"Gotham",
+      "accepted": true,
+      "observable": "\"Gotham\""
+    },
+    {
+      "id": "content.recovered-url-eof",
+      "property": "content",
+      "input": "url(a",
+      "accepted": true,
+      "observable": "url(\"a\")"
+    },
+    {
+      "id": "content.recovered-counter-eof",
+      "property": "content",
+      "input": "counter(chapter",
+      "accepted": true,
+      "observable": "counter(chapter)"
+    },
+    {
+      "id": "content.recovered-counters-eof",
+      "property": "content",
+      "input": "counters(chapter, \".\"",
+      "accepted": true,
+      "observable": "counters(chapter, \".\")"
+    },
+    {
+      "id": "content.invalid-contents-keyword",
+      "property": "content",
+      "input": "contents",
+      "accepted": false
+    },
+    {
+      "id": "content.invalid-keyword-list",
+      "property": "content",
+      "input": "normal \"text\"",
+      "accepted": false
+    },
+    {
+      "id": "content.invalid-counter-symbols",
+      "property": "content",
+      "input": "counter(chapter, symbols(cyclic \"a\"))",
+      "accepted": false
+    },
+    {
+      "id": "content.invalid-image-alternative",
+      "property": "content",
+      "input": "url(a.png) / url(alt.png)",
+      "accepted": false
+    },
+    {
+      "id": "content.invalid-empty-alternative",
+      "property": "content",
+      "input": "\"text\" /",
+      "accepted": false
+    },
+    {
+      "id": "webkit-reflect.default-offset",
+      "property": "-webkit-box-reflect",
+      "input": "below",
+      "accepted": true,
+      "observable": "below 0px"
+    },
+    {
+      "id": "webkit-reflect.length-offset",
+      "property": "-webkit-box-reflect",
+      "input": "above 10px",
+      "accepted": true,
+      "observable": "above 10px"
+    },
+    {
+      "id": "webkit-reflect.percentage-offset",
+      "property": "-webkit-box-reflect",
+      "input": "left 5%",
+      "accepted": true,
+      "observable": "left 5%"
+    },
+    {
+      "id": "webkit-reflect.calculated-offset",
+      "property": "-webkit-box-reflect",
+      "input": "right calc(1px + 2%)",
+      "accepted": true,
+      "observable": "right calc(2% + 1px)"
+    },
+    {
+      "id": "webkit-reflect.image-mask",
+      "property": "-webkit-box-reflect",
+      "input": "below 0 url(mask.png)",
+      "accepted": true,
+      "observable": "below 0px url(\"mask.png\")"
+    },
+    {
+      "id": "webkit-reflect.complete-mask",
+      "property": "-webkit-box-reflect",
+      "input": "below 0 url(mask.png) 30 / 10 / 0 stretch",
+      "accepted": true,
+      "observable": "below 0px url(\"mask.png\") 30 fill / 10 / 0 stretch"
+    },
+    {
+      "id": "webkit-reflect.slice-mask",
+      "property": "-webkit-box-reflect",
+      "input": "below 0 30",
+      "accepted": true,
+      "observable": "below 0px 30 fill"
+    },
+    {
+      "id": "webkit-reflect.repeat-mask",
+      "property": "-webkit-box-reflect",
+      "input": "below 0 stretch",
+      "accepted": true,
+      "observable": "below 0px stretch"
+    },
+    {
+      "id": "webkit-reflect.outset-with-default-width",
+      "property": "-webkit-box-reflect",
+      "input": "below 0 30 / / 2",
+      "accepted": true,
+      "observable": "below 0px 30 fill / 2"
+    },
+    {
+      "id": "webkit-reflect.case-insensitive-direction",
+      "property": "-webkit-box-reflect",
+      "input": "BELOW",
+      "accepted": true,
+      "observable": "below 0px"
+    },
+    {
+      "id": "webkit-reflect.negative-offset",
+      "property": "-webkit-box-reflect",
+      "input": "below -1px",
+      "accepted": true,
+      "observable": "below -1px"
+    },
+    {
+      "id": "webkit-reflect.invalid-none",
+      "property": "-webkit-box-reflect",
+      "input": "none",
+      "accepted": false
+    },
+    {
+      "id": "webkit-reflect.invalid-mask-without-offset",
+      "property": "-webkit-box-reflect",
+      "input": "below url(mask.png)",
+      "accepted": false
+    },
+    {
+      "id": "webkit-reflect.invalid-fill-only-mask",
+      "property": "-webkit-box-reflect",
+      "input": "below 0 fill",
+      "accepted": false
+    },
+    {
+      "id": "webkit-reflect.invalid-trailing-token",
+      "property": "-webkit-box-reflect",
+      "input": "below 0px junk",
+      "accepted": false
     }
   ]
 }

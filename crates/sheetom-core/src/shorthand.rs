@@ -5,7 +5,6 @@ use crate::{
     observable::{serialize_observable_value, ObservableCategory},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
-    value_grammar::parse_browser_grammar_gap,
     EngineError, PropertyParseKind, ResourceLimits,
 };
 use lightningcss::{
@@ -927,15 +926,6 @@ pub(crate) fn parse_value_with_limits(
             safe_value,
             longhands: None,
             pending_substitution: true,
-        });
-    }
-
-    if let Some(grammar) = parse_browser_grammar_gap(name, value) {
-        return Ok(ParsedValue {
-            observable_value: grammar.observable_value,
-            safe_value: grammar.safe_value,
-            longhands: None,
-            pending_substitution: false,
         });
     }
 
@@ -1968,9 +1958,6 @@ fn offset_rotate_value(components: &[&str]) -> Option<String> {
 }
 
 fn typed_longhand_value(name: &str, value: &str) -> Option<String> {
-    if let Some(grammar) = parse_browser_grammar_gap(name, value) {
-        return Some(grammar.safe_value);
-    }
     let declaration =
         parse_semantic_property_with_limits(name, value, ResourceLimits::default()).ok()?;
     if !matches!(

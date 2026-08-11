@@ -1,13 +1,23 @@
 use cssparser::{Parser, ParserInput};
 use lightningcss::{
+    properties::{
+        border_image::{BorderImageRepeat, BorderImageSideWidth, BorderImageSlice},
+        list::{CounterStyle, PredefinedCounterStyle},
+    },
     stylesheet::PrinterOptions,
-    traits::{Parse, Sign, ToCss},
+    traits::{IntoOwned, Parse, Sign, ToCss},
     values::{
         angle::Angle,
         calc::Calc,
-        length::{Length, LengthValue, PreservedLengthPercentage},
+        ident::CustomIdent,
+        image::Image,
+        length::{
+            Length, LengthOrNumber, LengthPercentage, LengthValue, PreservedLengthPercentage,
+        },
         number::CSSNumber,
         position::{HorizontalPosition, Position, PositionComponent, VerticalPosition},
+        rect::Rect,
+        string::CSSString,
     },
 };
 
@@ -21,12 +31,14 @@ use crate::{
 #[derive(Clone, Debug, PartialEq)]
 pub enum SemanticExtensionValue {
     AspectRatio(AspectRatioValue),
+    Content(ContentValue),
     IntegerCalculation(IntegerCalculationValue),
     CrossDimensionCalculation(CrossDimensionCalculationValue),
     OffsetPosition(OffsetPositionValue),
     OffsetRotate(OffsetRotateValue),
     PageSize(PageSizeValue),
     WebkitBorderImage(WebkitBorderImageValue),
+    WebkitBoxReflect(WebkitBoxReflectValue),
     WebkitMaskBoxImageSlice(WebkitBorderImageValue),
 }
 
@@ -34,12 +46,14 @@ impl SemanticExtensionValue {
     pub fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             SemanticExtensionValue::AspectRatio(value) => value.canonical_value(),
+            SemanticExtensionValue::Content(value) => value.canonical_value(),
             SemanticExtensionValue::IntegerCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::CrossDimensionCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetPosition(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetRotate(value) => value.canonical_value(),
             SemanticExtensionValue::PageSize(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitBorderImage(value) => value.canonical_value(),
+            SemanticExtensionValue::WebkitBoxReflect(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => value.canonical_value(),
         }
     }
@@ -58,6 +72,245 @@ impl SemanticExtensionValue {
             }
             _ => false,
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ContentValue {
+    Normal,
+    None,
+    List {
+        items: Vec<ContentItem>,
+        alternative: Vec<ContentAlternative>,
+    },
+}
+
+impl ContentValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            ContentValue::Normal => Ok("normal".to_owned()),
+            ContentValue::None => Ok("none".to_owned()),
+            ContentValue::List { items, alternative } => {
+                let mut output = serialize_space_separated(items)?;
+                if !alternative.is_empty() {
+                    output.push_str(" / ");
+                    output.push_str(&serialize_space_separated(alternative)?);
+                }
+                Ok(output)
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ContentItem {
+    Image(Image<'static>),
+    String(CSSString<'static>),
+    Quote(ContentQuote),
+    Counter(ContentCounter),
+}
+
+impl ToCss for ContentItem {
+    fn to_css<W>(
+        &self,
+        dest: &mut lightningcss::printer::Printer<W>,
+    ) -> Result<(), lightningcss::error::PrinterError>
+    where
+        W: std::fmt::Write,
+    {
+        match self {
+            ContentItem::Image(value) => value.to_css(dest),
+            ContentItem::String(value) => lightningcss::traits::ToCss::to_css(value, dest),
+            ContentItem::Quote(value) => value.to_css(dest),
+            ContentItem::Counter(value) => value.to_css(dest),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ContentAlternative {
+    String(CSSString<'static>),
+    Counter(ContentCounter),
+}
+
+impl ToCss for ContentAlternative {
+    fn to_css<W>(
+        &self,
+        dest: &mut lightningcss::printer::Printer<W>,
+    ) -> Result<(), lightningcss::error::PrinterError>
+    where
+        W: std::fmt::Write,
+    {
+        match self {
+            ContentAlternative::String(value) => lightningcss::traits::ToCss::to_css(value, dest),
+            ContentAlternative::Counter(value) => value.to_css(dest),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContentQuote {
+    Open,
+    Close,
+    NoOpen,
+    NoClose,
+}
+
+impl ToCss for ContentQuote {
+    fn to_css<W>(
+        &self,
+        dest: &mut lightningcss::printer::Printer<W>,
+    ) -> Result<(), lightningcss::error::PrinterError>
+    where
+        W: std::fmt::Write,
+    {
+        dest.write_str(match self {
+            ContentQuote::Open => "open-quote",
+            ContentQuote::Close => "close-quote",
+            ContentQuote::NoOpen => "no-open-quote",
+            ContentQuote::NoClose => "no-close-quote",
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ContentCounter {
+    name: CustomIdent<'static>,
+    separator: Option<CSSString<'static>>,
+    style: CounterStyle<'static>,
+}
+
+impl ToCss for ContentCounter {
+    fn to_css<W>(
+        &self,
+        dest: &mut lightningcss::printer::Printer<W>,
+    ) -> Result<(), lightningcss::error::PrinterError>
+    where
+        W: std::fmt::Write,
+    {
+        let function = if self.separator.is_some() {
+            "counters("
+        } else {
+            "counter("
+        };
+        dest.write_str(function)?;
+        self.name.to_css(dest)?;
+        if let Some(separator) = &self.separator {
+            dest.delim(',', false)?;
+            lightningcss::traits::ToCss::to_css(separator, dest)?;
+        }
+        if !matches!(
+            self.style,
+            CounterStyle::Predefined(PredefinedCounterStyle::Decimal)
+        ) {
+            dest.delim(',', false)?;
+            self.style.to_css(dest)?;
+        }
+        dest.write_char(')')
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WebkitBoxReflectDirection {
+    Above,
+    Below,
+    Left,
+    Right,
+}
+
+impl ToCss for WebkitBoxReflectDirection {
+    fn to_css<W>(
+        &self,
+        dest: &mut lightningcss::printer::Printer<W>,
+    ) -> Result<(), lightningcss::error::PrinterError>
+    where
+        W: std::fmt::Write,
+    {
+        dest.write_str(match self {
+            WebkitBoxReflectDirection::Above => "above",
+            WebkitBoxReflectDirection::Below => "below",
+            WebkitBoxReflectDirection::Left => "left",
+            WebkitBoxReflectDirection::Right => "right",
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct WebkitBoxReflectValue {
+    direction: WebkitBoxReflectDirection,
+    offset: LengthPercentage,
+    mask: Option<WebkitReflectMaskValue>,
+}
+
+impl WebkitBoxReflectValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let mut output = serialize_typed(&self.direction)?;
+        output.push(' ');
+        let offset = serialize_typed(&self.offset)?;
+        output.push_str(if offset == "0" { "0px" } else { &offset });
+        if let Some(mask) = &self.mask {
+            output.push(' ');
+            output.push_str(&serialize_typed(mask)?);
+        }
+        Ok(output)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct WebkitReflectMaskValue {
+    source: Option<Image<'static>>,
+    slice: Option<BorderImageSlice>,
+    width: Option<Rect<BorderImageSideWidth>>,
+    outset: Option<Rect<LengthOrNumber>>,
+    repeat: Option<BorderImageRepeat>,
+}
+
+type PropertyParseError<'i> = cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>;
+type WebkitReflectWidthOutset = (
+    Option<Rect<BorderImageSideWidth>>,
+    Option<Rect<LengthOrNumber>>,
+);
+
+impl ToCss for WebkitReflectMaskValue {
+    fn to_css<W>(
+        &self,
+        dest: &mut lightningcss::printer::Printer<W>,
+    ) -> Result<(), lightningcss::error::PrinterError>
+    where
+        W: std::fmt::Write,
+    {
+        let mut wrote_value = false;
+        if let Some(source) = &self.source {
+            source.to_css(dest)?;
+            wrote_value = true;
+        }
+        if let Some(slice) = &self.slice {
+            if wrote_value {
+                dest.write_str(" ")?;
+            }
+            let mut slice = slice.clone();
+            slice.fill = true;
+            slice.to_css(dest)?;
+            wrote_value = true;
+        }
+        if let Some(width) = &self.width {
+            dest.delim('/', true)?;
+            width.to_css(dest)?;
+            if let Some(outset) = &self.outset {
+                dest.delim('/', true)?;
+                outset.to_css(dest)?;
+            }
+        } else if let Some(outset) = &self.outset {
+            dest.delim('/', true)?;
+            outset.to_css(dest)?;
+        }
+        if let Some(repeat) = &self.repeat {
+            if wrote_value || self.width.is_some() || self.outset.is_some() {
+                dest.write_str(" ")?;
+            }
+            repeat.to_css(dest)?;
+        }
+        Ok(())
     }
 }
 
@@ -369,6 +622,7 @@ pub(crate) fn parse_extension_value(
     for extension in extensions {
         let value = match extension {
             PropertyGrammarExtension::AspectRatio => Some(parse_aspect_ratio(source)),
+            PropertyGrammarExtension::Content => Some(parse_content(source)),
             PropertyGrammarExtension::IntegerCalculation => Some(parse_integer_calculation(source)),
             PropertyGrammarExtension::LengthNumberCalculation => {
                 Some(parse_length_number_calculation(source))
@@ -385,10 +639,10 @@ pub(crate) fn parse_extension_value(
             PropertyGrammarExtension::OffsetRotate => Some(parse_offset_rotate(source)),
             PropertyGrammarExtension::PageSize => Some(parse_page_size(source)),
             PropertyGrammarExtension::WebkitBorderImage => Some(parse_webkit_border_image(source)),
+            PropertyGrammarExtension::WebkitBoxReflect => Some(parse_webkit_box_reflect(source)),
             PropertyGrammarExtension::WebkitMaskBoxImageSlice => {
                 Some(parse_webkit_mask_box_image_slice(source))
             }
-            _ => None,
         };
         match value {
             Some(Ok(value)) => return Ok(Some(value)),
@@ -400,6 +654,253 @@ pub(crate) fn parse_extension_value(
         Some(error) => Err(error),
         None => Ok(None),
     }
+}
+
+fn parse_content(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let value = parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("normal"))
+            .is_ok()
+        {
+            return Ok(ContentValue::Normal);
+        }
+        if input
+            .try_parse(|input| input.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(ContentValue::None);
+        }
+
+        let mut items = Vec::new();
+        let mut has_alternative = false;
+        while !input.is_exhausted() {
+            if input.try_parse(|input| input.expect_delim('/')).is_ok() {
+                has_alternative = true;
+                break;
+            }
+            items.push(parse_content_item(input)?);
+        }
+        if items.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+
+        let mut alternative = Vec::new();
+        while !input.is_exhausted() {
+            alternative.push(parse_content_alternative(input)?);
+        }
+        if has_alternative && alternative.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(ContentValue::List { items, alternative })
+    })?;
+    Ok(SemanticExtensionValue::Content(value))
+}
+
+fn parse_content_item<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<ContentItem, cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>> {
+    if let Ok(image) = input.try_parse(Image::parse) {
+        if !matches!(image, Image::None) {
+            return Ok(ContentItem::Image(image.into_owned()));
+        }
+    }
+    if let Ok(value) = input.try_parse(CSSString::parse) {
+        return Ok(ContentItem::String(value.into_owned()));
+    }
+    if let Ok(value) = input.try_parse(parse_content_quote) {
+        return Ok(ContentItem::Quote(value));
+    }
+    parse_content_counter(input).map(ContentItem::Counter)
+}
+
+fn parse_content_alternative<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<ContentAlternative, cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>> {
+    if let Ok(value) = input.try_parse(CSSString::parse) {
+        return Ok(ContentAlternative::String(value.into_owned()));
+    }
+    parse_content_counter(input).map(ContentAlternative::Counter)
+}
+
+fn parse_content_quote<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<ContentQuote, cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>> {
+    let location = input.current_source_location();
+    let identifier = input.expect_ident_cloned()?;
+    if identifier.eq_ignore_ascii_case("open-quote") {
+        return Ok(ContentQuote::Open);
+    }
+    if identifier.eq_ignore_ascii_case("close-quote") {
+        return Ok(ContentQuote::Close);
+    }
+    if identifier.eq_ignore_ascii_case("no-open-quote") {
+        return Ok(ContentQuote::NoOpen);
+    }
+    if identifier.eq_ignore_ascii_case("no-close-quote") {
+        return Ok(ContentQuote::NoClose);
+    }
+    Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+}
+
+fn parse_content_counter<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<ContentCounter, cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>> {
+    let location = input.current_source_location();
+    let function = input.expect_function()?.clone();
+    let counters = if function.eq_ignore_ascii_case("counter") {
+        false
+    } else if function.eq_ignore_ascii_case("counters") {
+        true
+    } else {
+        return Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    };
+    input.parse_nested_block(|input| {
+        let name = CustomIdent::parse(input)?.into_owned();
+        let separator = if counters {
+            input.expect_comma()?;
+            Some(CSSString::parse(input)?.into_owned())
+        } else {
+            None
+        };
+        let style = if input.try_parse(|input| input.expect_comma()).is_ok() {
+            let style = CounterStyle::parse(input)?;
+            if matches!(style, CounterStyle::Symbols { .. }) {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            style.into_owned()
+        } else {
+            CounterStyle::Predefined(PredefinedCounterStyle::Decimal)
+        };
+        Ok(ContentCounter {
+            name,
+            separator,
+            style,
+        })
+    })
+}
+
+fn parse_webkit_box_reflect(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let value = parse_entire(source, |input| {
+        let direction = parse_webkit_box_reflect_direction(input)?;
+        if input.is_exhausted() {
+            return Ok(WebkitBoxReflectValue {
+                direction,
+                offset: LengthPercentage::px(0.0),
+                mask: None,
+            });
+        }
+        let offset = LengthPercentage::parse(input)?;
+        let mask = if input.is_exhausted() {
+            None
+        } else {
+            Some(parse_webkit_reflect_mask(input)?)
+        };
+        Ok(WebkitBoxReflectValue {
+            direction,
+            offset,
+            mask,
+        })
+    })?;
+    Ok(SemanticExtensionValue::WebkitBoxReflect(value))
+}
+
+fn parse_webkit_reflect_mask<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<WebkitReflectMaskValue, cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>>
+{
+    let mut source = None;
+    let mut slice = None;
+    let mut width = None;
+    let mut outset = None;
+    let mut repeat = None;
+
+    loop {
+        if slice.is_none() {
+            if let Ok(value) = input.try_parse(BorderImageSlice::parse) {
+                slice = Some(value);
+                let width_outset = input.try_parse(parse_webkit_reflect_width_outset);
+                if let Ok((parsed_width, parsed_outset)) = width_outset {
+                    width = parsed_width;
+                    outset = parsed_outset;
+                }
+                continue;
+            }
+        }
+        if source.is_none() {
+            if let Ok(value) = input.try_parse(Image::parse) {
+                if !matches!(value, Image::None) {
+                    source = Some(value.into_owned());
+                    continue;
+                }
+            }
+        }
+        if repeat.is_none() {
+            if let Ok(value) = input.try_parse(BorderImageRepeat::parse) {
+                repeat = Some(value);
+                continue;
+            }
+        }
+        break;
+    }
+
+    if source.is_none() && slice.is_none() && repeat.is_none() {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    Ok(WebkitReflectMaskValue {
+        source,
+        slice,
+        width,
+        outset,
+        repeat,
+    })
+}
+
+fn parse_webkit_reflect_width_outset<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<WebkitReflectWidthOutset, PropertyParseError<'i>> {
+    input.expect_delim('/')?;
+    let width = input.try_parse(Rect::parse).ok();
+    let outset = input
+        .try_parse(|input| {
+            input.expect_delim('/')?;
+            Rect::parse(input)
+        })
+        .ok();
+    if width.is_none() && outset.is_none() {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    Ok((width, outset))
+}
+
+fn parse_webkit_box_reflect_direction<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<
+    WebkitBoxReflectDirection,
+    cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>,
+> {
+    let location = input.current_source_location();
+    let identifier = input.expect_ident_cloned()?;
+    if identifier.eq_ignore_ascii_case("above") {
+        return Ok(WebkitBoxReflectDirection::Above);
+    }
+    if identifier.eq_ignore_ascii_case("below") {
+        return Ok(WebkitBoxReflectDirection::Below);
+    }
+    if identifier.eq_ignore_ascii_case("left") {
+        return Ok(WebkitBoxReflectDirection::Left);
+    }
+    if identifier.eq_ignore_ascii_case("right") {
+        return Ok(WebkitBoxReflectDirection::Right);
+    }
+    Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+}
+
+fn serialize_space_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
+    let mut serialized = Vec::with_capacity(values.len());
+    for value in values {
+        serialized.push(serialize_typed(value)?);
+    }
+    Ok(serialized.join(" "))
 }
 
 pub(crate) fn parse_preferred_extension_value(
@@ -783,6 +1284,87 @@ mod tests {
         )
         .unwrap();
         assert_eq!(image.canonical_value().unwrap(), "sign(1em) fill");
+    }
+
+    #[test]
+    fn parses_static_content_from_typed_component_values() {
+        for (source, expected) in [
+            ("normal", "normal"),
+            ("none", "none"),
+            ("open-quote", "open-quote"),
+            ("\"a\" \"b\"", "\"a\" \"b\""),
+            ("url(a.png)", "url(\"a.png\")"),
+            ("linear-gradient(red,blue)", "linear-gradient(red, #00f)"),
+            ("counter(chapter, decimal)", "counter(chapter)"),
+            (
+                "counters(chapter, \".\", upper-roman)",
+                "counters(chapter, \".\", upper-roman)",
+            ),
+            (
+                "url(a.png) / counter(label)",
+                "url(\"a.png\") / counter(label)",
+            ),
+        ] {
+            let value = parse(PropertyGrammarExtension::Content, "content", source).unwrap();
+            assert_eq!(value.canonical_value().unwrap(), expected, "{source}");
+        }
+        for source in [
+            "contents",
+            "normal \"text\"",
+            "leader(\".\")",
+            "target-text(url(#target))",
+            "counter()",
+            "counters(name)",
+            "\"text\" /",
+            "url(a.png) / url(alt.png)",
+        ] {
+            assert!(
+                parse(PropertyGrammarExtension::Content, "content", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn parses_webkit_box_reflect_without_erasing_mask_presence() {
+        for (source, expected) in [
+            ("below", "below 0px"),
+            ("above 10px", "above 10px"),
+            ("left 5%", "left 5%"),
+            ("right calc(1px + 2%)", "right calc(2% + 1px)"),
+            ("below 0 url(mask.png)", "below 0px url(\"mask.png\")"),
+            (
+                "below 0 url(mask.png) 30 / 10 / 0 stretch",
+                "below 0px url(\"mask.png\") 30 fill / 10 / 0 stretch",
+            ),
+            ("below 0 30", "below 0px 30 fill"),
+            ("below 0 stretch", "below 0px stretch"),
+            ("below 0 30 / / 2", "below 0px 30 fill / 2"),
+        ] {
+            let value = parse(
+                PropertyGrammarExtension::WebkitBoxReflect,
+                "-webkit-box-reflect",
+                source,
+            )
+            .unwrap();
+            assert_eq!(value.canonical_value().unwrap(), expected, "{source}");
+        }
+        for source in [
+            "none",
+            "below url(mask.png)",
+            "below 0 fill",
+            "below 0px junk",
+        ] {
+            assert!(
+                parse(
+                    PropertyGrammarExtension::WebkitBoxReflect,
+                    "-webkit-box-reflect",
+                    source,
+                )
+                .is_err(),
+                "{source}"
+            );
+        }
     }
 
     #[test]

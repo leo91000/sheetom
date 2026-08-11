@@ -97,10 +97,6 @@
       "properties": ["size"]
     },
     {
-      "id": "subgrid",
-      "properties": ["grid-template-columns", "grid-template-rows"]
-    },
-    {
       "id": "webkit-box-reflect",
       "properties": ["-webkit-box-reflect"]
     },
