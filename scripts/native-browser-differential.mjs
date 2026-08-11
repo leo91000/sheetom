@@ -101,6 +101,38 @@ const cases = [
         probes: ["flex-basis"],
     },
     {
+        id: "rule-inset-canonicalization",
+        operations: [[
+            "set",
+            "rule-inset",
+            "calc(10px + 5%) -2px / overlap-join 4%",
+            "important",
+        ]],
+        probes: [
+            "rule-inset",
+            "row-rule-inset-cap-start",
+            "column-rule-inset-junction-end",
+        ],
+    },
+    {
+        id: "rule-inset-reduced-math-canonicalization",
+        operations: [["set", "rule-inset", "min(1px, 2px)", ""]],
+        probes: ["rule-inset", "column-rule-inset", "row-rule-inset"],
+    },
+    {
+        id: "invalid-rule-inset-is-atomic",
+        operations: [
+            ["set", "rule-inset", "1px 2px / 3px 4px", "important"],
+            ["set", "rule-inset", "1px / 2px / 3px", "important"],
+        ],
+        probes: ["rule-inset", "row-rule-inset-cap-start"],
+    },
+    {
+        id: "pending-rule-inset",
+        operations: [["set", "rule-inset", "var(--inset)", "important"]],
+        probes: ["rule-inset", "row-rule-inset-cap-start"],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",
@@ -184,6 +216,27 @@ const cases = [
         probes: ["width"],
     },
 ];
+
+for (const longhand of [
+    "column-rule-inset-cap-start",
+    "column-rule-inset-cap-end",
+    "column-rule-inset-junction-start",
+    "column-rule-inset-junction-end",
+    "row-rule-inset-cap-start",
+    "row-rule-inset-cap-end",
+    "row-rule-inset-junction-start",
+    "row-rule-inset-junction-end",
+]) {
+    cases.push({
+        id: `rule-inset-remove:${longhand}`,
+        operations: [
+            ["set", "rule-inset", "1px 2px / 3px 4px", "important"],
+            ["set", longhand, "5px", "important"],
+            ["remove", longhand],
+        ],
+        probes: ["rule-inset", "column-rule-inset", "row-rule-inset"],
+    });
+}
 
 const customFunctionNames = ["--f", "---f", "--\\66", "--"];
 const customFunctionArguments = [
