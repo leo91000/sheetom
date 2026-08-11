@@ -613,8 +613,11 @@ impl<'i> Parse<'i> for TrackList<'i> {
     if items.is_empty() {
       return Err(input.new_custom_error(ParserError::InvalidDeclaration));
     }
-
-    Ok(TrackList { line_names, items })
+    let list = TrackList { line_names, items };
+    if !list.has_valid_repeats() {
+      return Err(input.new_custom_error(ParserError::InvalidDeclaration));
+    }
+    Ok(list)
   }
 }
 
@@ -655,6 +658,45 @@ impl<'i> ToCss for TrackList<'i> {
 impl<'i> TrackList<'i> {
   fn is_explicit(&self) -> bool {
     self.items.iter().all(|item| matches!(item, TrackListItem::TrackSize(_)))
+  }
+
+  fn has_valid_repeats(&self) -> bool {
+    let auto_repeat_count = self
+      .items
+      .iter()
+      .filter(|item| {
+        matches!(
+          item,
+          TrackListItem::TrackRepeat(TrackRepeat {
+            count: RepeatCount::AutoFill | RepeatCount::AutoFit,
+            ..
+          })
+        )
+      })
+      .count();
+    if auto_repeat_count > 1 {
+      return false;
+    }
+
+    self.items.iter().all(|item| match item {
+      TrackListItem::TrackSize(size) => auto_repeat_count == 0 || size.is_fixed(),
+      TrackListItem::TrackRepeat(repeat) => {
+        !repeat.track_sizes.is_empty()
+          && (auto_repeat_count == 0 || repeat.track_sizes.iter().all(TrackSize::is_fixed))
+      }
+    })
+  }
+}
+
+impl TrackSize {
+  fn is_fixed(&self) -> bool {
+    match self {
+      TrackSize::TrackBreadth(TrackBreadth::Length(_)) => true,
+      TrackSize::MinMax { min, max } => {
+        matches!(min, TrackBreadth::Length(_)) || matches!(max, TrackBreadth::Length(_))
+      }
+      TrackSize::TrackBreadth(_) | TrackSize::FitContent(_) => false,
+    }
   }
 }
 
@@ -2067,5 +2109,37 @@ fn is_grid_property(property_id: &PropertyId) -> bool {
     | PropertyId::GridColumn
     | PropertyId::GridArea => true,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn parses_track_sizing(source: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser.parse_entirely(TrackSizing::parse).is_ok()
+  }
+
+  #[test]
+  fn auto_repeat_requires_a_single_fixed_track_sequence() {
+    for source in [
+      "repeat(auto-fill, 10px)",
+      "10px repeat(auto-fit, minmax(10px, 1fr)) 20%",
+      "repeat(auto-fill, minmax(auto, 10px))",
+    ] {
+      assert!(parses_track_sizing(source), "{source}");
+    }
+
+    for source in [
+      "repeat(auto-fill, auto)",
+      "repeat(auto-fit, 1fr)",
+      "repeat(auto-fill, fit-content(10px))",
+      "auto repeat(auto-fill, 10px)",
+      "repeat(auto-fill, 10px) repeat(auto-fit, 20px)",
+    ] {
+      assert!(!parses_track_sizing(source), "{source}");
+    }
   }
 }
