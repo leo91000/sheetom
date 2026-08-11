@@ -4,7 +4,7 @@
   "title": "Chromium Webref Property Branch Observations",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schemaVersion", "baseline", "coverage", "profiles", "accepted"],
+  "required": ["$schema", "schemaVersion", "baseline", "coverage", "profiles", "seeds", "accepted"],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
@@ -25,7 +25,7 @@
     "coverage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["manifestedProperties", "webrefProperties", "profiles", "samples", "branches", "checks", "accepted", "rejected", "missingInvalidNeighborCount", "missingProperties", "representativeTerminals"],
+      "required": ["manifestedProperties", "webrefProperties", "profiles", "samples", "branches", "checks", "accepted", "rejected", "missingInvalidNeighborCount", "rejectedAtomicNoOpCount", "invalidNeighborAtomicNoOpCount", "missingProperties", "representativeTerminals"],
       "properties": {
         "manifestedProperties": { "type": "integer", "minimum": 1 },
         "webrefProperties": { "type": "integer", "minimum": 1 },
@@ -36,6 +36,8 @@
         "accepted": { "type": "integer", "minimum": 1 },
         "rejected": { "type": "integer", "minimum": 1 },
         "missingInvalidNeighborCount": { "const": 0 },
+        "rejectedAtomicNoOpCount": { "type": "integer", "minimum": 1 },
+        "invalidNeighborAtomicNoOpCount": { "type": "integer", "minimum": 1 },
         "missingProperties": {
           "type": "array",
           "uniqueItems": true,
@@ -52,6 +54,35 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/profile" }
+    },
+    "seeds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 5,
+        "maxItems": 5,
+        "prefixItems": [
+          { "type": "string", "minLength": 1 },
+          { "type": "string", "minLength": 1 },
+          { "type": "string" },
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                { "type": "string", "minLength": 1 },
+                { "type": "string" },
+                { "type": "string" }
+              ]
+            }
+          }
+        ]
+      }
     },
     "accepted": {
       "type": "array",

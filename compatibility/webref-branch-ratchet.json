@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
-  "corpusSha256": "7498e34a7bf7a9a5c70178d774259e8e761f5e6fb31b265d630699518f9459d2",
+  "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
   "mismatchCases": 5857,
   "summary": {
     "acceptance": 3398,
     "observable": 2125,
     "cssText": 2125,
     "items": 1826,
-    "atomicity": 4,
+    "atomicity": 420,
     "reparse": 27
   },
   "unresolved": [
@@ -16,28 +16,32 @@
       "property": "-webkit-align-content",
       "sample": "webref-sample.915ba2033cfb1341",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.00a99257103aed7d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.019f11302250d585",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.01cf21b36c366bf5",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -51,28 +55,32 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.0925176fc9a8ccdd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.0954f6048328c8f7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.0b9ebc991c906318",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.0c3592f3c0a4873b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -86,7 +94,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.1136229428621adc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -102,7 +111,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.13d7a57d48959e69",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -116,28 +126,32 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.1b0e216dfb790b35",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.1b8a85761a7127d1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.1d3facc29ab70308",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.21c9491ae3a088ac",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -158,7 +172,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.2a247ff9ab68d1f6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -179,7 +194,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.3501990fbc752c72",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -200,21 +216,24 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.3d644ff95b20d808",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.40d766759e826dbb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.412f97d9f1745897",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -235,14 +254,16 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.47cbc5099cf1f09d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.480112b09695b097",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -256,42 +277,48 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.49f298347eb4e343",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.4b2a6ff6bfff5576",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.4eae0ad8e4f9fbd9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.520a3fa1efa56518",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.53a6fe291894a89f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.551be383c46717c2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -305,21 +332,24 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.59f0636d4bfb87f2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.602189ee89e63880",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.67f581c0bc068881",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -333,7 +363,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.73c98afafa195df3",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -347,14 +378,16 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.78abde8c2fa1a0ec",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.7b010269043923d2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -368,7 +401,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.7bebd9ab87015299",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -382,21 +416,24 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.7d8e8bfbea791fd5",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.7dd197b45711c123",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.86ac349ccc9900cd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -417,7 +454,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.a3e7de956ea55cad",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -438,7 +476,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.a9c254ac3d10e31c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -459,42 +498,48 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.b535bbe4ecd7cb3b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.b879172675e87961",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.bbb8606ffba8e83a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.bbe4264da4b4d1f1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.bf607a37d6939dff",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.c0037e4c361c29a7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -508,7 +553,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.c59042c01a4e38e6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -522,7 +568,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.c6c2e24f8ae479d0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -536,56 +583,64 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.cb4cb7e8aded0151",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.cc142917b454b9d9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.cccc0ca7b1d0ab0d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.d6c5cf98823e24c0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.d6f6cb463cacac66",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.d75831ac69744dbf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.db907b325a1d1e7f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.ddc1889f18a29d2a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -599,7 +654,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.e9739a9a824e0def",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -613,14 +669,16 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.ed366582d9276539",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.eedcd14ec8c6b4f1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -655,7 +713,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.fbca878fbacb2b39",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -669,7 +728,8 @@
       "property": "-webkit-animation",
       "sample": "webref-sample.fc6427429b07f963",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -683,7 +743,8 @@
       "property": "-webkit-animation-duration",
       "sample": "webref-sample.ef8c0db5fa641427",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -783,21 +844,24 @@
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.0ac0f7bb0ae762d7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.44394c133725b7eb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.55f653c96d2a09e7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -811,56 +875,64 @@
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.9f5a740b176c24c2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.abf2aa4f3b6a359a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.afae3de62a250ac6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.c0dc24c11b3d5583",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-after",
       "sample": "webref-sample.d867ac8d7e7dc775",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.0ac0f7bb0ae762d7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.44394c133725b7eb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.55f653c96d2a09e7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -874,49 +946,56 @@
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.9f5a740b176c24c2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.abf2aa4f3b6a359a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.afae3de62a250ac6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.c0dc24c11b3d5583",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.d867ac8d7e7dc775",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-inside",
       "sample": "webref-sample.01ec50e49d6d33bc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-column-break-inside",
       "sample": "webref-sample.c5665183b15b4689",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2043,7 +2122,8 @@
       "property": "-webkit-logical-height",
       "sample": "webref-sample.5971279cdeff73b6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2057,21 +2137,24 @@
       "property": "-webkit-logical-height",
       "sample": "webref-sample.9cd4f65b4884aa2e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-logical-height",
       "sample": "webref-sample.b321d19cf2458eda",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-logical-width",
       "sample": "webref-sample.5971279cdeff73b6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2085,14 +2168,16 @@
       "property": "-webkit-logical-width",
       "sample": "webref-sample.9cd4f65b4884aa2e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-logical-width",
       "sample": "webref-sample.b321d19cf2458eda",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2117,7 +2202,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.03acde4ea525aba7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2156,7 +2242,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.0cc179caf1b3ccb7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2229,7 +2316,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.2f9b4d514b6050af",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2245,7 +2333,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.38840f91246f97a0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2345,14 +2434,16 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.60a26bc95d8467b1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.612114b8f38a1f8d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2416,7 +2507,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.72ede434c485fee8",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2432,7 +2524,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.775d582e1d38d258",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2464,7 +2557,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.85d536361a62bcdd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2605,7 +2699,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.c4b8863fbb9fa926",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2621,7 +2716,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.c6d52a6405b4eef0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2646,14 +2742,16 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.caddb6170d8d25e1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.cc37141b46f36cb0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -2838,7 +2936,8 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.ff305a8e795b8f82",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3105,84 +3204,96 @@
       "property": "-webkit-mask-clip",
       "sample": "webref-sample.1a3e3ce03d69f260",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-clip",
       "sample": "webref-sample.394a83229e93d035",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-clip",
       "sample": "webref-sample.d06d0b382fec4143",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-clip",
       "sample": "webref-sample.fa4d99cdc771b8bf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-composite",
       "sample": "webref-sample.4738911cc950a9eb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-composite",
       "sample": "webref-sample.6f22742c73c09078",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-composite",
       "sample": "webref-sample.81b478256d0e8bbd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-composite",
       "sample": "webref-sample.c4f9b367e6232614",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-composite",
       "sample": "webref-sample.c89030308a3bb7ff",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-origin",
       "sample": "webref-sample.ce89329f32626a4e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-origin",
       "sample": "webref-sample.ec52eeb2bb56c26e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-mask-origin",
       "sample": "webref-sample.fdf9c0e4b4ffd206",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3219,49 +3330,56 @@
       "property": "-webkit-max-logical-height",
       "sample": "webref-sample.1b893a693b897bac",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-max-logical-height",
       "sample": "webref-sample.53790ac4cfb0123b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-max-logical-height",
       "sample": "webref-sample.9def1f1215f78f5c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-max-logical-width",
       "sample": "webref-sample.1b893a693b897bac",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-max-logical-width",
       "sample": "webref-sample.53790ac4cfb0123b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-max-logical-width",
       "sample": "webref-sample.9def1f1215f78f5c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-min-logical-height",
       "sample": "webref-sample.186b518536acda95",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3275,21 +3393,24 @@
       "property": "-webkit-min-logical-height",
       "sample": "webref-sample.b6a97f8525bce248",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-min-logical-height",
       "sample": "webref-sample.b979962ef63508dc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-min-logical-width",
       "sample": "webref-sample.186b518536acda95",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3303,14 +3424,16 @@
       "property": "-webkit-min-logical-width",
       "sample": "webref-sample.b6a97f8525bce248",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "-webkit-min-logical-width",
       "sample": "webref-sample.b979962ef63508dc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3634,7 +3757,8 @@
       "property": "-webkit-transition",
       "sample": "webref-sample.a7895683bdbb6034",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3689,14 +3813,16 @@
       "property": "-webkit-transition-duration",
       "sample": "webref-sample.ef8c0db5fa641427",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "align-content",
       "sample": "webref-sample.915ba2033cfb1341",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3717,21 +3843,24 @@
       "property": "animation",
       "sample": "webref-sample.00a99257103aed7d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.019f11302250d585",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.01cf21b36c366bf5",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3745,28 +3874,32 @@
       "property": "animation",
       "sample": "webref-sample.0925176fc9a8ccdd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.0954f6048328c8f7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.0b9ebc991c906318",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.0c3592f3c0a4873b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3780,7 +3913,8 @@
       "property": "animation",
       "sample": "webref-sample.1136229428621adc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3796,7 +3930,8 @@
       "property": "animation",
       "sample": "webref-sample.13d7a57d48959e69",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3810,28 +3945,32 @@
       "property": "animation",
       "sample": "webref-sample.1b0e216dfb790b35",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.1b8a85761a7127d1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.1d3facc29ab70308",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.21c9491ae3a088ac",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3852,7 +3991,8 @@
       "property": "animation",
       "sample": "webref-sample.2a247ff9ab68d1f6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3873,7 +4013,8 @@
       "property": "animation",
       "sample": "webref-sample.3501990fbc752c72",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3894,21 +4035,24 @@
       "property": "animation",
       "sample": "webref-sample.3d644ff95b20d808",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.40d766759e826dbb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.412f97d9f1745897",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3929,14 +4073,16 @@
       "property": "animation",
       "sample": "webref-sample.47cbc5099cf1f09d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.480112b09695b097",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3950,42 +4096,48 @@
       "property": "animation",
       "sample": "webref-sample.49f298347eb4e343",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.4b2a6ff6bfff5576",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.4eae0ad8e4f9fbd9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.520a3fa1efa56518",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.53a6fe291894a89f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.551be383c46717c2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -3999,21 +4151,24 @@
       "property": "animation",
       "sample": "webref-sample.59f0636d4bfb87f2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.602189ee89e63880",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.67f581c0bc068881",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4027,7 +4182,8 @@
       "property": "animation",
       "sample": "webref-sample.73c98afafa195df3",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4041,14 +4197,16 @@
       "property": "animation",
       "sample": "webref-sample.78abde8c2fa1a0ec",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.7b010269043923d2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4062,7 +4220,8 @@
       "property": "animation",
       "sample": "webref-sample.7bebd9ab87015299",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4076,21 +4235,24 @@
       "property": "animation",
       "sample": "webref-sample.7d8e8bfbea791fd5",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.7dd197b45711c123",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.86ac349ccc9900cd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4111,7 +4273,8 @@
       "property": "animation",
       "sample": "webref-sample.a3e7de956ea55cad",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4132,7 +4295,8 @@
       "property": "animation",
       "sample": "webref-sample.a9c254ac3d10e31c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4153,42 +4317,48 @@
       "property": "animation",
       "sample": "webref-sample.b535bbe4ecd7cb3b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.b879172675e87961",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.bbb8606ffba8e83a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.bbe4264da4b4d1f1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.bf607a37d6939dff",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.c0037e4c361c29a7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4202,7 +4372,8 @@
       "property": "animation",
       "sample": "webref-sample.c59042c01a4e38e6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4216,7 +4387,8 @@
       "property": "animation",
       "sample": "webref-sample.c6c2e24f8ae479d0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4230,56 +4402,64 @@
       "property": "animation",
       "sample": "webref-sample.cb4cb7e8aded0151",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.cc142917b454b9d9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.cccc0ca7b1d0ab0d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.d6c5cf98823e24c0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.d6f6cb463cacac66",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.d75831ac69744dbf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.db907b325a1d1e7f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.ddc1889f18a29d2a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4293,7 +4473,8 @@
       "property": "animation",
       "sample": "webref-sample.e9739a9a824e0def",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4307,14 +4488,16 @@
       "property": "animation",
       "sample": "webref-sample.ed366582d9276539",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "animation",
       "sample": "webref-sample.eedcd14ec8c6b4f1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4349,7 +4532,8 @@
       "property": "animation",
       "sample": "webref-sample.fbca878fbacb2b39",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4363,7 +4547,8 @@
       "property": "animation",
       "sample": "webref-sample.fc6427429b07f963",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -4377,7 +4562,8 @@
       "property": "animation-duration",
       "sample": "webref-sample.6a219c4c3b964524",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -5421,7 +5607,8 @@
       "property": "block-size",
       "sample": "webref-sample.5971279cdeff73b6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -5435,14 +5622,16 @@
       "property": "block-size",
       "sample": "webref-sample.9cd4f65b4884aa2e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "block-size",
       "sample": "webref-sample.b321d19cf2458eda",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -11720,616 +11909,704 @@
       "property": "content",
       "sample": "webref-sample.01ce0e3175b72da9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.047cb64e7e7c7456",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.05ada7f0c662dfaf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.06c9565281f58467",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.0a2d7e6a9236069f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.0c397f99beabd237",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.0e2a95585becbfe8",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.0fbbecb989ee6459",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.123653a7e1ee8cce",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.1d0cc9126b9f1b70",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.1f43f7ba750cb42d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.1fe0b4bf52e7c4c3",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.25551cbbe9a1587e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.27ad404c51649d6b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.28ce7c6f9b733e06",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.2c8ea7f6fa94dce9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.2dcca189690cbd9b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.2ff8aca02eb861c8",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.34c1b0a89ac8721e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.3a27de63152bcba7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.405f88d51a3b2c58",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.413ee877f44cc95b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.45847893704328c4",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.46b37955a02768fd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.494cbef40496c5f0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.49f73d8d602bbc34",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.4a47959ab4d18d21",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.4b8920437604ea89",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.4dbd4ee296a87342",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.4df8ed35c7d58187",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.4f63cf69bfefd7cd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.5231ad8f6668212d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.5588320f8cd0fe99",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.55ec0cd8e11be36e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.592e49eee47ce9a0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.5daaae385a95a31b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.5f5c28709bf9f3f6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.675201b1bdf87d75",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.68f44a7ea3a22395",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.69a0333afce37703",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.6be92861f6401232",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.73731280bc465f85",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.74a38b94b73cf274",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.7a3004daa5f58d77",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.7da3823287516b2e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.7e403fcfd4c3bc7b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.80983b645372771a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.8b2cab5b92df2fa6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.8c246131bc9c2def",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.9311ff6ffc76af26",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.9383e9f196bd2c28",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.93d21a7218f7a2eb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.9876a4c28c5d6a53",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.9949f730d89d199b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.9f10835a4c3b46f9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.9fc4dc247fced439",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.a3a950f2a0b42f18",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.a79b6af74d86c16f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.a921ee1428bfd47e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.a9b0b15bb2efbecf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.aec6a9fb38c5dd8e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.b6ea2524b0509da4",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.b822ede7f5daba6b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.b882337af7b34286",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.bd7b180ec1a5f4b9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.c015ed97c781a7bc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.c0432895ef89c9bf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.c24ae994132a7cec",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.c5a0bc3e81a23504",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.c9ea865ec44db168",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.cba9263f8fa600b2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.d4b5682de2848603",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.d8099b962ee0de27",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.da00eb8b993dc49e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.da174f9209f57776",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.daa92ccbdee7c275",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.db7ee802585e7f52",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.ddbae57f2e95a75c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.e24c314a24984290",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.e781d6d3e57db773",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.f02b521432893f5b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.f6f950331d29c952",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.f83bc255c8d960fd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.f95c11cdc9a581f5",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.fa8565a95e692d83",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.fce4f300f1290acb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.fe8a435cadd539bb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "content",
       "sample": "webref-sample.fea28a377e4b4a3e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -12684,42 +12961,48 @@
       "property": "display",
       "sample": "webref-sample.602f3c1bb367f11f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "display",
       "sample": "webref-sample.64544a418ae74bf9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "display",
       "sample": "webref-sample.659b936452dd362a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "display",
       "sample": "webref-sample.b25e56d52a599b2b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "display",
       "sample": "webref-sample.bb250fe05c2243e7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "display",
       "sample": "webref-sample.cf064148cdfe29b9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -15993,7 +16276,8 @@
       "property": "grid",
       "sample": "webref-sample.0eed11af8b334a37",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -17044,7 +17328,8 @@
       "property": "grid",
       "sample": "webref-sample.354977e95ba30d9d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -17169,7 +17454,8 @@
       "property": "grid",
       "sample": "webref-sample.37a36830e645c73e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18073,7 +18359,8 @@
       "property": "grid",
       "sample": "webref-sample.565addcfd2d32679",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18191,7 +18478,8 @@
       "property": "grid",
       "sample": "webref-sample.5b0887316c3a20fb",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18408,7 +18696,8 @@
       "property": "grid",
       "sample": "webref-sample.611d656e3703b53a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18463,7 +18752,8 @@
       "property": "grid",
       "sample": "webref-sample.6278518160ae508f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18557,7 +18847,8 @@
       "property": "grid",
       "sample": "webref-sample.65084bd36c72a3c2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18868,7 +19159,8 @@
       "property": "grid",
       "sample": "webref-sample.6f4d196f2ba6c479",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -18970,7 +19262,8 @@
       "property": "grid",
       "sample": "webref-sample.71f434766ea03de8",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -19846,7 +20139,8 @@
       "property": "grid",
       "sample": "webref-sample.92a65fdf252c1814",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -19912,7 +20206,8 @@
       "property": "grid",
       "sample": "webref-sample.94af92265a4390cc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -20039,7 +20334,8 @@
       "property": "grid",
       "sample": "webref-sample.994901a816a8136c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -20134,7 +20430,8 @@
       "property": "grid",
       "sample": "webref-sample.9b848578eacb7ba0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -20445,7 +20742,8 @@
       "property": "grid",
       "sample": "webref-sample.a7d0e22662a87e48",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -20554,7 +20852,8 @@
       "property": "grid",
       "sample": "webref-sample.aaaddf82d84f9456",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -20662,7 +20961,8 @@
       "property": "grid",
       "sample": "webref-sample.afcd595e07f5d109",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -21045,7 +21345,8 @@
       "property": "grid",
       "sample": "webref-sample.bc4d488b338f72c9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -21726,7 +22027,8 @@
       "property": "grid",
       "sample": "webref-sample.d426077c552c4868",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -22166,7 +22468,8 @@
       "property": "grid",
       "sample": "webref-sample.e23aa3d8d619f25d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -22251,7 +22554,8 @@
       "property": "grid",
       "sample": "webref-sample.e3fcd237344d0925",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -22292,7 +22596,8 @@
       "property": "grid",
       "sample": "webref-sample.e5046a6e9d2418bd",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -22492,14 +22797,16 @@
       "property": "grid",
       "sample": "webref-sample.eb684056198f7f83",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "grid",
       "sample": "webref-sample.eb75c8fc3e7a4f86",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -23853,7 +24160,8 @@
       "property": "grid-template",
       "sample": "webref-sample.0ee1db1b32dde4a4",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -23878,7 +24186,8 @@
       "property": "grid-template",
       "sample": "webref-sample.100c6d622472851e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -24144,7 +24453,8 @@
       "property": "grid-template",
       "sample": "webref-sample.21b1e13344e1057c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -25136,7 +25446,8 @@
       "property": "grid-template",
       "sample": "webref-sample.6434aad0427ecf2b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -25681,7 +25992,8 @@
       "property": "grid-template",
       "sample": "webref-sample.8f43f004e43b356b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -25750,7 +26062,8 @@
       "property": "grid-template",
       "sample": "webref-sample.956282b0e7ad1e37",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -25841,7 +26154,8 @@
       "property": "grid-template",
       "sample": "webref-sample.9d6f40844f025430",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -26992,7 +27306,8 @@
       "property": "grid-template",
       "sample": "webref-sample.f4f088308305e944",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -27580,7 +27895,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.3ca774c3a1ed9fe3",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -27650,7 +27966,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.42c8528d2a659e8e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -27855,7 +28172,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.6bc004cca680c6ae",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -27934,7 +28252,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.78672d54628fc2d6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -27977,7 +28296,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.7e8ef902b7eefb22",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -28146,7 +28466,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.9642fe64dc7c5c47",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -28288,7 +28609,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.a97f5e6e729ca460",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -28448,7 +28770,8 @@
       "property": "grid-template-columns",
       "sample": "webref-sample.c671b41230de47c0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29220,7 +29543,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.3ca774c3a1ed9fe3",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29290,7 +29614,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.42c8528d2a659e8e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29495,7 +29820,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.6bc004cca680c6ae",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29574,7 +29900,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.78672d54628fc2d6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29617,7 +29944,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.7e8ef902b7eefb22",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29786,7 +30114,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.9642fe64dc7c5c47",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -29928,7 +30257,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.a97f5e6e729ca460",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -30088,7 +30418,8 @@
       "property": "grid-template-rows",
       "sample": "webref-sample.c671b41230de47c0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -30482,14 +30813,16 @@
       "property": "height",
       "sample": "webref-sample.ac6b180bf2e2186c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "height",
       "sample": "webref-sample.d4144265ab397eb7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -30503,7 +30836,8 @@
       "property": "height",
       "sample": "webref-sample.eaa2660b0923e0a9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -30580,7 +30914,8 @@
       "property": "inline-size",
       "sample": "webref-sample.5971279cdeff73b6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -30594,14 +30929,16 @@
       "property": "inline-size",
       "sample": "webref-sample.9cd4f65b4884aa2e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "inline-size",
       "sample": "webref-sample.b321d19cf2458eda",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31138,7 +31475,8 @@
       "property": "list-style",
       "sample": "webref-sample.0625c5aa9211b443",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31153,7 +31491,8 @@
       "property": "list-style",
       "sample": "webref-sample.0952b9d9655dae47",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31167,7 +31506,8 @@
       "property": "list-style",
       "sample": "webref-sample.0fd3f9a5972e386a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31181,7 +31521,8 @@
       "property": "list-style",
       "sample": "webref-sample.25f721e3674badbe",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31197,21 +31538,24 @@
       "property": "list-style",
       "sample": "webref-sample.3c62b86a5a1e759f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.4739ba6be152b32f",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.4917ff05ba505897",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31233,7 +31577,8 @@
       "property": "list-style",
       "sample": "webref-sample.56eed0cb41ef70f9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31247,28 +31592,32 @@
       "property": "list-style",
       "sample": "webref-sample.6b0367124f3e4999",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.6b3ac97475c438f2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.72fbf7126ad824bf",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.75fcf5152bf6cc87",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31282,7 +31631,8 @@
       "property": "list-style",
       "sample": "webref-sample.82c19cce12a9562d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31310,28 +31660,32 @@
       "property": "list-style",
       "sample": "webref-sample.a5d0b018bf85620e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.ae8ec95fbc12030a",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.b38097ee7b1ed531",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.cc6e5db979a34e65",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31361,91 +31715,104 @@
       "property": "list-style",
       "sample": "webref-sample.ddaf713c93f31e5d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.ec90313f9ff66088",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style",
       "sample": "webref-sample.f4e570f0e17547b6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.2b8d863aeec73ba3",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.324a447b387e9c51",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.4f70fad1cf3e7f12",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.5e008aa5048e1e39",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.5e22264ffd5c6339",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.7c3762df4d35dd96",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.822beb8a9b4cb823",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.976fe6cf3b5b98cc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.c6a618b5939a693d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "list-style-type",
       "sample": "webref-sample.db586d10bcbd52e5",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -31625,7 +31992,8 @@
       "property": "mask",
       "sample": "webref-sample.2f9b4d514b6050af",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -32054,14 +32422,16 @@
       "property": "mask",
       "sample": "webref-sample.caddb6170d8d25e1",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "mask",
       "sample": "webref-sample.cc37141b46f36cb0",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -32311,91 +32681,104 @@
       "property": "max-block-size",
       "sample": "webref-sample.1b893a693b897bac",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-block-size",
       "sample": "webref-sample.53790ac4cfb0123b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-block-size",
       "sample": "webref-sample.9def1f1215f78f5c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-height",
       "sample": "webref-sample.1ced7724362f4f02",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-height",
       "sample": "webref-sample.3dea12d78a38838e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-height",
       "sample": "webref-sample.3ff9a75769bfa36b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-inline-size",
       "sample": "webref-sample.1b893a693b897bac",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-inline-size",
       "sample": "webref-sample.53790ac4cfb0123b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-inline-size",
       "sample": "webref-sample.9def1f1215f78f5c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-width",
       "sample": "webref-sample.1ced7724362f4f02",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-width",
       "sample": "webref-sample.3dea12d78a38838e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "max-width",
       "sample": "webref-sample.3ff9a75769bfa36b",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-block-size",
       "sample": "webref-sample.186b518536acda95",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -32409,28 +32792,32 @@
       "property": "min-block-size",
       "sample": "webref-sample.b6a97f8525bce248",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-block-size",
       "sample": "webref-sample.b979962ef63508dc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-height",
       "sample": "webref-sample.ac6b180bf2e2186c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-height",
       "sample": "webref-sample.d4144265ab397eb7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -32444,14 +32831,16 @@
       "property": "min-height",
       "sample": "webref-sample.eaa2660b0923e0a9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-inline-size",
       "sample": "webref-sample.186b518536acda95",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -32465,28 +32854,32 @@
       "property": "min-inline-size",
       "sample": "webref-sample.b6a97f8525bce248",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-inline-size",
       "sample": "webref-sample.b979962ef63508dc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-width",
       "sample": "webref-sample.ac6b180bf2e2186c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "min-width",
       "sample": "webref-sample.d4144265ab397eb7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -32500,7 +32893,8 @@
       "property": "min-width",
       "sample": "webref-sample.eaa2660b0923e0a9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -33564,7 +33958,8 @@
       "property": "place-content",
       "sample": "webref-sample.bbe2ddd9561550f4",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -42002,7 +42397,8 @@
       "property": "stroke-linejoin",
       "sample": "webref-sample.bb8f549b6da13b29",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -42018,21 +42414,24 @@
       "property": "text-align",
       "sample": "webref-sample.13f644c14d5775f6",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-align",
       "sample": "webref-sample.a0c8db470d6c38a2",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-align-last",
       "sample": "webref-sample.698c4d6f1cb53e28",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -42867,14 +43266,16 @@
       "property": "text-transform",
       "sample": "webref-sample.08e7a4f25a2fd013",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.14d3c2405517c73d",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -42888,70 +43289,80 @@
       "property": "text-transform",
       "sample": "webref-sample.3306167f2e6a8991",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.506016152f345c43",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.5d0ef22fc9e11538",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.693638606e4b1038",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.c19048480971c59e",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.c4fa12afa281a279",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.cf019181f11d1443",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.e4a354378e254e17",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.e8bd73b6841500fc",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "text-transform",
       "sample": "webref-sample.f9af166aeee33943",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -44483,7 +44894,8 @@
       "property": "transition",
       "sample": "webref-sample.a7895683bdbb6034",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -44538,7 +44950,8 @@
       "property": "transition-duration",
       "sample": "webref-sample.ef8c0db5fa641427",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -44628,14 +45041,16 @@
       "property": "width",
       "sample": "webref-sample.ac6b180bf2e2186c",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
       "property": "width",
       "sample": "webref-sample.d4144265ab397eb7",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
@@ -44649,7 +45064,8 @@
       "property": "width",
       "sample": "webref-sample.eaa2660b0923e0a9",
       "kinds": [
-        "acceptance"
+        "acceptance",
+        "atomicity"
       ]
     },
     {
