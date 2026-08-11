@@ -1,0 +1,82 @@
+{
+  "$schema": "./schemas/browser-geometric-contracts.schema.json",
+  "schemaVersion": 1,
+  "baseline": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "properties": [
+    {
+      "property": "d",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "auto" },
+        { "id": "empty-path", "input": "path(\"\")", "invalidNeighbor": "path()" },
+        { "id": "implicit-lineto", "input": "path(\"M0 0 10 10 20 20\")", "invalidNeighbor": "path(\"M0 0 Z 1 2\")" },
+        { "id": "relative-and-close", "input": "path(\"M10-20l30.1.5.1-20z\")", "invalidNeighbor": "path(\"M0\")" },
+        { "id": "horizontal-vertical", "input": "path(\"M0 0 H10 v20 h-5 V0\")", "invalidNeighbor": "path(\"M0 0 H\")" },
+        { "id": "cubic-and-smooth", "input": "path(\"M0 0 C1 2 3 4 5 6 s7 8 9 10\")", "invalidNeighbor": "path(\"M0 0 C1 2\")" },
+        { "id": "quadratic-and-smooth", "input": "path(\"M0 0 Q1 2 3 4 t5 6\")", "invalidNeighbor": "path(\"M0 0 Q1\")" },
+        { "id": "arc", "input": "path(\"M1e2 2e-2 A3 4 5 0 1 6 7\")", "invalidNeighbor": "path(\"M0 0 A1 1 0 2 0 3 3\")" },
+        { "id": "small-number", "input": "path(\"M.0000000000000000001 -.0\")", "invalidNeighbor": "path(\"M1e309 0\")" }
+      ]
+    },
+    {
+      "property": "object-view-box",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "circle()" },
+        { "id": "inset-one", "input": "inset(1px)", "invalidNeighbor": "inset()" },
+        { "id": "inset-four-round", "input": "inset(1px 2% -3px 4% round 5px 6px / 7px 8px)", "invalidNeighbor": "inset(1px round -1px)" },
+        { "id": "rect", "input": "rect(auto 1px 20% -3px round 5px)", "invalidNeighbor": "rect(auto 1px 2px)" },
+        { "id": "xywh", "input": "xywh(-1px -2% 3px 4% round 5px / 10px)", "invalidNeighbor": "xywh(1px 2px -3px 4px)" },
+        { "id": "calculation", "input": "xywh(calc(1px + 2%) 0 min(3px, 4px) clamp(1px, 2px, 3px))", "invalidNeighbor": "xywh(0 0 calc(1s) 2px)" }
+      ]
+    },
+    {
+      "property": "shape-outside",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "auto" },
+        { "id": "url-image", "input": "url(\"shape.svg#clip\")", "invalidNeighbor": "url(\"x\") circle()" },
+        { "id": "image-set", "input": "image-set(url(a.png) 1x, url(b.png) 2x)", "invalidNeighbor": "image-set()" },
+        { "id": "webkit-image-set-alias", "input": "-webkit-image-set(url(a.png) 1x, url(b.png) 2x)", "invalidNeighbor": "-webkit-image-set()" },
+        { "id": "webkit-gradient", "input": "-webkit-gradient(linear, left top, right bottom, from(red), to(blue))", "invalidNeighbor": "-webkit-gradient(linear, left top)" },
+        { "id": "linear-gradient", "input": "linear-gradient(red 0%, rgb(0 0 255) 100%)", "invalidNeighbor": "linear-gradient()" },
+        { "id": "linear-gradient-interpolation", "input": "linear-gradient(in oklab to right, red 0 10%, 20%, blue)", "invalidNeighbor": "linear-gradient(in oklab longer hue, red, blue)" },
+        { "id": "radial-gradient", "input": "radial-gradient(circle, currentColor, color(display-p3 1 0 0))", "invalidNeighbor": "radial-gradient(circle)" },
+        { "id": "radial-gradient-position", "input": "radial-gradient(ellipse farthest-corner at left top, red, blue)", "invalidNeighbor": "radial-gradient(at left top right, red, blue)" },
+        { "id": "radial-gradient-interpolation", "input": "radial-gradient(in hsl longer hue circle at center, red, blue)", "invalidNeighbor": "radial-gradient(circle in hsl longer hue at center, red, blue)" },
+        { "id": "repeating-conic-gradient", "input": "repeating-conic-gradient(from .5turn, red 0 10deg, blue 10deg 20deg)", "invalidNeighbor": "conic-gradient()" },
+        { "id": "conic-gradient-interpolation", "input": "conic-gradient(in oklab from 10deg at left top, red 0, blue .5turn)", "invalidNeighbor": "conic-gradient(in unknown, red, blue)" },
+        { "id": "shape-box", "input": "padding-box", "invalidNeighbor": "fill-box" },
+        { "id": "inset", "input": "inset(1px 2% -3px 4% round 5px / 10px) border-box", "invalidNeighbor": "inset()" },
+        { "id": "circle", "input": "circle(farthest-side at right 10px bottom 20%)", "invalidNeighbor": "circle(-1px)" },
+        { "id": "circle-explicit-center", "input": "circle(at center)", "invalidNeighbor": "circle(at)" },
+        { "id": "ellipse", "input": "ellipse(10px 20% at left top)", "invalidNeighbor": "ellipse(10px)" },
+        { "id": "ellipse-explicit-center", "input": "ellipse(at center)", "invalidNeighbor": "ellipse(at)" },
+        { "id": "polygon", "input": "polygon(evenodd, 0 0, 10px 20px, 30% 40%)", "invalidNeighbor": "polygon(evenodd 0 0, 10px 20px)" },
+        { "id": "rect", "input": "rect(auto 1px 20% -3px round 5px)", "invalidNeighbor": "rect(auto 1px 2px)" },
+        { "id": "xywh-deferred-range", "input": "xywh(0 0 calc(3px - 4px) 2px)", "invalidNeighbor": "xywh(0 0 -1px 2px)" },
+        { "id": "path", "input": "path(evenodd, \"M0 0 L10 20 Z\")", "invalidNeighbor": "path(evenodd, \"M0\")" },
+        { "id": "shape-move-line", "input": "shape(evenodd from center, move by 1px 2px, line to 10px 20px, close)", "invalidNeighbor": "shape(from 0 0, move 1px 2px)" },
+        { "id": "shape-logical-axis", "input": "shape(from 0 0, hline to x-start, hline to x-end, vline to y-start, vline to y-end)", "invalidNeighbor": "shape(from 0 0, hline to left 2px)" },
+        { "id": "shape-relative-axis", "input": "shape(from 0 0, hline by 10%, vline by -2px)", "invalidNeighbor": "shape(from 0 0, hline by left)" },
+        { "id": "shape-quadratic-curve", "input": "shape(from 0 0, curve to 10px 20px with 1px 2px)", "invalidNeighbor": "shape(from 0 0, curve to 1px 2px)" },
+        { "id": "shape-cubic-curve", "input": "shape(from 0 0, curve by 10px 20px with 1px 2px from end / 3px 4px from origin)", "invalidNeighbor": "shape(from 0 0, curve by 1px 2px with 3px 4px /)" },
+        { "id": "shape-absolute-control-offset", "input": "shape(from 0 0, curve to 1px 2px with left 3px top 4px from start)", "invalidNeighbor": "shape(from 0 0, curve to left top with center from start)" },
+        { "id": "shape-smooth", "input": "shape(from 0 0, smooth to 10px 20px with 1px 2px from end, smooth by 3px 4px)", "invalidNeighbor": "shape(from 0 0, smooth to 1px 2px with center from start)" },
+        { "id": "shape-arc-single-radius", "input": "shape(from 0 0, arc to 10px 20px of 5px)", "invalidNeighbor": "shape(from 0 0, arc to 1px 2px)" },
+        { "id": "shape-arc-unordered-options", "input": "shape(from 0 0, arc to 10px 20px large rotate 30deg of 5px 6px cw)", "invalidNeighbor": "shape(from 0 0, arc to 1px 2px cw ccw of 3px)" },
+        { "id": "shape-math", "input": "shape(from 0 0, line by calc(1px + 2px) min(3px, 10%))", "invalidNeighbor": "shape(from 0 0, line by calc(1 + 2) 3px)" }
+      ]
+    },
+    {
+      "property": "border-shape",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "auto" },
+        { "id": "single", "input": "circle()", "invalidNeighbor": "border-box" },
+        { "id": "two-shapes", "input": "circle() ellipse()", "invalidNeighbor": "circle() ellipse() inset(1px)" },
+        { "id": "identical-explicit-pair", "input": "circle() border-box circle() border-box", "invalidNeighbor": "circle() unknown-box" },
+        { "id": "distinct-explicit-pair", "input": "circle() border-box circle() padding-box", "invalidNeighbor": "circle() border-box padding-box" },
+        { "id": "geometry-boxes", "input": "inset(1px) half-border-box path(\"M0 0 L1 1\") view-box", "invalidNeighbor": "circle() shape-box" },
+        { "id": "shape-functions", "input": "shape(from 0 0, line to 1px 2px) fill-box polygon(0 0, 1px 2px) stroke-box", "invalidNeighbor": "shape(from 0 0, close) margin-box none" },
+        { "id": "rectangular-shapes", "input": "rect(auto 1px 2px 3px) content-box xywh(0 0 1px 2px) margin-box", "invalidNeighbor": "xywh(0 0 -1px 2px)" }
+      ]
+    }
+  ]
+}

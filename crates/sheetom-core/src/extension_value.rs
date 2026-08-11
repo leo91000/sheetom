@@ -24,6 +24,7 @@ use lightningcss::{
 use crate::{
     browser_longhand::{parse_browser_longhand, BrowserLonghandValue},
     catalog::PropertyGrammarExtension,
+    geometric_value::{parse_geometric_property, GeometricValue},
     shorthand::canonicalize_webkit_border_image,
     syntax::{split_top_level_delimiter, split_top_level_whitespace},
     EngineError,
@@ -34,6 +35,7 @@ pub enum SemanticExtensionValue {
     AspectRatio(AspectRatioValue),
     BrowserLonghand(BrowserLonghandValue),
     Content(ContentValue),
+    Geometric(Box<GeometricValue>),
     IntegerCalculation(IntegerCalculationValue),
     CrossDimensionCalculation(CrossDimensionCalculationValue),
     OffsetPosition(OffsetPositionValue),
@@ -50,6 +52,7 @@ impl SemanticExtensionValue {
             SemanticExtensionValue::AspectRatio(value) => value.canonical_value(),
             SemanticExtensionValue::BrowserLonghand(value) => value.canonical_value(),
             SemanticExtensionValue::Content(value) => value.canonical_value(),
+            SemanticExtensionValue::Geometric(value) => value.canonical_value(),
             SemanticExtensionValue::IntegerCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::CrossDimensionCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetPosition(value) => value.canonical_value(),
@@ -633,6 +636,13 @@ pub(crate) fn parse_extension_value(
                 }
             }
             PropertyGrammarExtension::Content => Some(parse_content(source)),
+            PropertyGrammarExtension::Geometric => {
+                match parse_geometric_property(property_name, source) {
+                    Ok(Some(value)) => Some(Ok(SemanticExtensionValue::Geometric(Box::new(value)))),
+                    Ok(None) => None,
+                    Err(error) => Some(Err(error)),
+                }
+            }
             PropertyGrammarExtension::IntegerCalculation => Some(parse_integer_calculation(source)),
             PropertyGrammarExtension::LengthNumberCalculation => {
                 Some(parse_length_number_calculation(source))

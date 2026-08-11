@@ -60,6 +60,7 @@ const propertyValueProbesSchema = await readJson(path.join(compatibilityRoot, "s
 const propertyValueObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-observations.schema.json"));
 const browserLonghandKeywordContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-keyword-contracts.schema.json"));
 const browserLonghandCompositeContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-composite-contracts.schema.json"));
+const browserGeometricContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-geometric-contracts.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -77,6 +78,7 @@ const validatePropertyValueProbes = ajv.compile(propertyValueProbesSchema);
 const validatePropertyValueObservations = ajv.compile(propertyValueObservationsSchema);
 const validateBrowserLonghandKeywordContracts = ajv.compile(browserLonghandKeywordContractsSchema);
 const validateBrowserLonghandCompositeContracts = ajv.compile(browserLonghandCompositeContractsSchema);
+const validateBrowserGeometricContracts = ajv.compile(browserGeometricContractsSchema);
 
 const propertyValueProbesFile = path.join(
   compatibilityRoot,
@@ -94,6 +96,10 @@ const browserLonghandCompositeContractsFile = path.join(
   compatibilityRoot,
   "browser-longhand-composite-contracts.json",
 );
+const browserGeometricContractsFile = path.join(
+  compatibilityRoot,
+  "browser-geometric-contracts.json",
+);
 const propertyValueProbesBytes = await readFile(propertyValueProbesFile);
 const propertyValueProbes = JSON.parse(propertyValueProbesBytes.toString("utf8"));
 const propertyValueObservations = await readJson(propertyValueObservationsFile);
@@ -103,6 +109,29 @@ const browserLonghandKeywordContracts = await readJson(
 const browserLonghandCompositeContracts = await readJson(
   browserLonghandCompositeContractsFile,
 );
+const browserGeometricContracts = await readJson(browserGeometricContractsFile);
+validateOrThrow(
+  validateBrowserGeometricContracts,
+  browserGeometricContracts,
+  browserGeometricContractsFile,
+);
+assert.equal(
+  browserGeometricContracts.baseline,
+  propertyValueObservations.baseline.userAgent,
+  "Browser Geometric contracts must use the Property Value Chromium baseline",
+);
+assert.deepEqual(
+  browserGeometricContracts.properties.map(entry => entry.property).sort(),
+  ["border-shape", "d", "object-view-box", "shape-outside"],
+  "Browser Geometric contracts must cover every SheetOM-owned geometric property exactly once",
+);
+for (const entry of browserGeometricContracts.properties) {
+  assert.equal(
+    new Set(entry.branches.map(branch => branch.id)).size,
+    entry.branches.length,
+    `${entry.property} geometric branch IDs must be unique`,
+  );
+}
 validateOrThrow(
   validatePropertyValueProbes,
   propertyValueProbes,

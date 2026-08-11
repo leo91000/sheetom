@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/browser-geometric-contracts.schema.json",
+  "title": "Browser Geometric Value Contracts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "baseline", "properties"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "baseline": { "type": "string", "minLength": 1 },
+    "properties": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["property", "branches"],
+        "properties": {
+          "property": { "type": "string", "minLength": 1 },
+          "branches": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "input", "invalidNeighbor"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+                "input": { "type": "string", "minLength": 1 },
+                "invalidNeighbor": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

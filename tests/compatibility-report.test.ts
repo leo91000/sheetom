@@ -55,6 +55,21 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       native: { passed: 33, total: 33 },
       public: { passed: 7, total: 7 },
     }));
+    const geometricReportPath = path.join(directory, "geometric.json");
+    await writeFile(geometricReportPath, JSON.stringify({
+      schemaVersion: 1,
+      userAgent: "HeadlessChrome/151.0.7922.34",
+      passed: 199,
+      total: 199,
+      reviewed: 55,
+      generated: 144,
+      contractsSha256: createHash("sha256")
+        .update(await readFile("compatibility/browser-geometric-contracts.json"))
+        .digest("hex"),
+      generatorSha256: createHash("sha256")
+        .update(await readFile("scripts/browser-geometric-differential.mjs"))
+        .digest("hex"),
+    }));
     const argumentsList: string[] = [];
     for (const engine of ["chrome", "firefox", "safari"]) {
       const reportPath = path.join(directory, `${engine}.json`);
@@ -78,6 +93,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         `--operation-report=${operationReportPath}`,
         `--native-corpus-report=${nativeCorpusReportPath}`,
         `--process-safety-report=${processSafetyReportPath}`,
+        `--geometric-report=${geometricReportPath}`,
         ...argumentsList,
       ],
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
@@ -96,7 +112,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.37",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.38",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -158,6 +174,15 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         negative: report.evidence.nativeGrammar.relativeColors.negative,
       },
       { passed: 1306, total: 1306, positive: 1146, negative: 160 },
+    );
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.geometricBranches.passed,
+        total: report.evidence.nativeGrammar.geometricBranches.total,
+        reviewed: report.evidence.nativeGrammar.geometricBranches.reviewed,
+        generated: report.evidence.nativeGrammar.geometricBranches.generated,
+      },
+      { passed: 199, total: 199, reviewed: 55, generated: 144 },
     );
     assert.match(
       report.evidence.nativeGrammar.grammarBranches.contractsSha256,

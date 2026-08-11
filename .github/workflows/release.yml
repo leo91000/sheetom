@@ -180,6 +180,8 @@ jobs:
             --report="$RUNNER_TEMP/process-safety.json"
           node scripts/check-native-public-corpus.mjs \
             --report="$RUNNER_TEMP/native-corpus.json"
+          node scripts/browser-geometric-differential.mjs \
+            --report="$RUNNER_TEMP/geometric.json"
           SHEETOM_RECORD_BASELINE=1 node scripts/record-operation-fixtures.mjs \
             --output "$RUNNER_TEMP/operation-fixtures.json"
           SHEETOM_RECORD_BASELINE=1 npm run conformance:record -- \
@@ -187,6 +189,7 @@ jobs:
             --operation-report="$RUNNER_TEMP/operation-fixtures.json" \
             --native-corpus-report="$RUNNER_TEMP/native-corpus.json" \
             --process-safety-report="$RUNNER_TEMP/process-safety.json" \
+            --geometric-report="$RUNNER_TEMP/geometric.json" \
             --wpt-report=chrome=reports/chrome/wpt-chrome.json \
             --wpt-report=firefox=reports/firefox/wpt-firefox.json
           cp "$RUNNER_TEMP/$version.json" "compatibility/baselines/$version.json"

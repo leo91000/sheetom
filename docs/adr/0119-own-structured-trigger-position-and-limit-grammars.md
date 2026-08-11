@@ -25,7 +25,7 @@ Declaration mutations reserve the syntax depth occupied by their live rule ances
 
 ## Consequences
 
-- Only the four shared geometric properties remain explicitly unsupported by the ordinary-property catalog.
+- The four shared geometric properties remain the final separately owned grammar family in the ordinary-property catalog.
 - Quirks-mode-only nonzero unitless `clip` lengths are not accepted by SheetOM's document-independent standards profile.
 - Deep recursive values are exercised in isolated native and public subprocesses at the configured resource boundary.
 - A mutation may now throw the documented nesting `RangeError` earlier when its containing rule blocks consume part of the configured syntax-depth budget.

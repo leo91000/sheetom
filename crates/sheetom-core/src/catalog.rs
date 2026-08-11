@@ -1,12 +1,15 @@
 use lightningcss::properties::PropertyId;
 
-use crate::browser_longhand::has_browser_longhand_grammar;
+use crate::{
+    browser_longhand::has_browser_longhand_grammar, geometric_value::has_geometric_property_grammar,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PropertyGrammarExtension {
     AspectRatio,
     BrowserLonghand,
     Content,
+    Geometric,
     IntegerCalculation,
     LengthNumberCalculation,
     LengthPercentageNumberCalculation,
@@ -155,6 +158,9 @@ pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
 }
 
 fn property_grammar_extensions(name: &str) -> &'static [PropertyGrammarExtension] {
+    if has_geometric_property_grammar(name) {
+        return &[PropertyGrammarExtension::Geometric];
+    }
     if has_browser_longhand_grammar(name) {
         return &[PropertyGrammarExtension::BrowserLonghand];
     }
@@ -307,11 +313,11 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 22, 213, 47]);
+        assert_eq!(owner_counts, [0, 429, 22, 218, 42]);
     }
 
     #[test]
-    fn tracks_the_remaining_complex_ordinary_grammars() {
+    fn has_no_unowned_complex_ordinary_grammars() {
         let unsupported = super::generated::SUPPORTED_PROPERTIES
             .iter()
             .copied()
@@ -321,10 +327,7 @@ mod tests {
                     .is_some_and(|grammar| grammar.owner() == PropertyGrammarOwner::Unsupported)
             })
             .collect::<Vec<_>>();
-        assert_eq!(
-            unsupported,
-            ["border-shape", "d", "object-view-box", "shape-outside",]
-        );
+        assert!(unsupported.is_empty());
     }
 
     #[test]
@@ -367,8 +370,12 @@ mod tests {
             &[PropertyGrammarExtension::BrowserLonghand]
         );
 
-        let unsupported = property_grammar("border-shape").unwrap();
-        assert_eq!(unsupported.owner(), PropertyGrammarOwner::Unsupported);
+        let geometric = property_grammar("border-shape").unwrap();
+        assert_eq!(geometric.owner(), PropertyGrammarOwner::SheetomExtension);
+        assert_eq!(
+            geometric.extensions(),
+            &[PropertyGrammarExtension::Geometric]
+        );
 
         let custom = property_grammar("--Theme").unwrap();
         assert_eq!(custom.owner(), PropertyGrammarOwner::CustomTokenStream);
