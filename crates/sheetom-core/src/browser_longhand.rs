@@ -86,6 +86,10 @@ pub enum BrowserLonghandValue {
     Quotes(QuotesValue),
     PaintOrder(Vec<&'static str>),
     WillChange(Option<Vec<CustomIdent<'static>>>),
+    Clip(ClipValue),
+    DynamicRangeLimit(DynamicRangeLimitValue),
+    AnimationTrigger(Vec<AnimationTriggerValue>),
+    PositionArea(PositionAreaValue),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -240,6 +244,72 @@ pub enum QuotesValue {
     Auto,
     None,
     Pairs(Vec<(CSSString<'static>, CSSString<'static>)>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ClipValue {
+    Auto,
+    Rect([ClipComponent; 4]),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ClipComponent {
+    Auto,
+    Length {
+        value: Length,
+        authored_function: Option<String>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DynamicRangeLimitValue {
+    Keyword(&'static str),
+    Mix(Vec<DynamicRangeLimitMixEntry>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DynamicRangeLimitMixEntry {
+    limit: DynamicRangeLimitValue,
+    percentage: Calc<Percentage>,
+    authored_calculation: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationTriggerValue {
+    None,
+    Attachment {
+        name: DashedIdent<'static>,
+        enter: &'static str,
+        exit: Option<&'static str>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PositionAreaAxis {
+    General,
+    Horizontal,
+    Vertical,
+    Block,
+    Inline,
+    SelfBlock,
+    SelfInline,
+    StartEnd,
+    SelfStartEnd,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct PositionAreaKeyword {
+    value: &'static str,
+    axis: PositionAreaAxis,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PositionAreaValue {
+    None,
+    Area {
+        first: &'static str,
+        second: Option<&'static str>,
+    },
 }
 
 impl BrowserLonghandValue {
@@ -475,6 +545,77 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::PaintOrder(values) => Ok(values.join(" ")),
             BrowserLonghandValue::WillChange(None) => Ok("auto".to_owned()),
             BrowserLonghandValue::WillChange(Some(values)) => serialize_comma_separated(values),
+            BrowserLonghandValue::Clip(value) => value.canonical_value(),
+            BrowserLonghandValue::DynamicRangeLimit(value) => value.canonical_value(),
+            BrowserLonghandValue::AnimationTrigger(values) => {
+                let mut serialized = Vec::with_capacity(values.len());
+                for value in values {
+                    serialized.push(match value {
+                        AnimationTriggerValue::None => "none".to_owned(),
+                        AnimationTriggerValue::Attachment { name, enter, exit } => {
+                            let mut value = format!("{} {enter}", serialize_typed(name)?);
+                            if let Some(exit) = exit {
+                                value.push(' ');
+                                value.push_str(exit);
+                            }
+                            value
+                        }
+                    });
+                }
+                Ok(serialized.join(", "))
+            }
+            BrowserLonghandValue::PositionArea(PositionAreaValue::None) => Ok("none".to_owned()),
+            BrowserLonghandValue::PositionArea(PositionAreaValue::Area { first, second }) => Ok(
+                second.map_or_else(|| (*first).to_owned(), |second| format!("{first} {second}")),
+            ),
+        }
+    }
+}
+
+impl ClipValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            ClipValue::Auto => Ok("auto".to_owned()),
+            ClipValue::Rect(components) => {
+                let mut values = Vec::with_capacity(components.len());
+                for component in components {
+                    values.push(match component {
+                        ClipComponent::Auto => "auto".to_owned(),
+                        ClipComponent::Length {
+                            value,
+                            authored_function,
+                        } => {
+                            let mut serialized = serialize_zero_length(value)?;
+                            if let Some(function) = authored_function {
+                                if !serialized.contains('(') {
+                                    serialized = format!("{function}({serialized})");
+                                }
+                            }
+                            serialized
+                        }
+                    });
+                }
+                Ok(format!("rect({})", values.join(", ")))
+            }
+        }
+    }
+}
+
+impl DynamicRangeLimitValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            DynamicRangeLimitValue::Keyword(value) => Ok((*value).to_owned()),
+            DynamicRangeLimitValue::Mix(entries) => {
+                let mut values = Vec::with_capacity(entries.len());
+                for entry in entries {
+                    let mut percentage = serialize_typed(&entry.percentage)?;
+                    if entry.authored_calculation && !percentage.contains('(') {
+                        percentage = format!("calc({percentage})");
+                    }
+                    values.push(format!("{} {percentage}", entry.limit.canonical_value()?));
+                }
+                Ok(format!("dynamic-range-limit-mix({})", values.join(", ")))
+            }
         }
     }
 }
@@ -710,6 +851,10 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::Quotes) => parse_quotes(source),
         Some(BrowserLonghandGrammar::PaintOrder) => parse_paint_order(source),
         Some(BrowserLonghandGrammar::WillChange) => parse_will_change(source),
+        Some(BrowserLonghandGrammar::Clip) => parse_clip(source),
+        Some(BrowserLonghandGrammar::DynamicRangeLimit) => parse_dynamic_range_limit(source),
+        Some(BrowserLonghandGrammar::AnimationTrigger) => parse_animation_trigger(source),
+        Some(BrowserLonghandGrammar::PositionArea) => parse_position_area(source),
         None => return Ok(None),
     }?;
     Ok(Some(value))
@@ -761,6 +906,10 @@ enum BrowserLonghandGrammar {
     Quotes,
     PaintOrder,
     WillChange,
+    Clip,
+    DynamicRangeLimit,
+    AnimationTrigger,
+    PositionArea,
 }
 
 macro_rules! define_browser_longhand_registry {
@@ -898,6 +1047,10 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::Quotes => ["quotes"],
     BrowserLonghandGrammar::PaintOrder => ["paint-order"],
     BrowserLonghandGrammar::WillChange => ["will-change"],
+    BrowserLonghandGrammar::Clip => ["clip"],
+    BrowserLonghandGrammar::DynamicRangeLimit => ["dynamic-range-limit"],
+    BrowserLonghandGrammar::AnimationTrigger => ["animation-trigger"],
+    BrowserLonghandGrammar::PositionArea => ["position-area"],
     BrowserLonghandGrammar::KeywordAliases(&[
         ("auto", "auto"),
         ("none", "spaces"),
@@ -2371,6 +2524,322 @@ fn parse_timeline_trigger_source(source: &str) -> Result<BrowserLonghandValue, E
     })
 }
 
+fn parse_clip(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::Clip(ClipValue::Auto));
+        }
+
+        let location = input.current_source_location();
+        let function = input.expect_function()?.clone();
+        if !function.eq_ignore_ascii_case("rect") {
+            return Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        let components = input.parse_nested_block(|input| {
+            let top = parse_clip_component(input)?;
+            let comma_separated = input.try_parse(|input| input.expect_comma()).is_ok();
+            let right = parse_clip_component(input)?;
+            if comma_separated {
+                input.expect_comma()?;
+            }
+            let bottom = parse_clip_component(input)?;
+            if comma_separated {
+                input.expect_comma()?;
+            }
+            let left = parse_clip_component(input)?;
+            Ok([top, right, bottom, left])
+        })?;
+        Ok(BrowserLonghandValue::Clip(ClipValue::Rect(components)))
+    })
+}
+
+fn parse_clip_component<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<ClipComponent, ParseError<'i>> {
+    if input
+        .try_parse(|input| input.expect_ident_matching("auto"))
+        .is_ok()
+    {
+        return Ok(ClipComponent::Auto);
+    }
+    let state = input.state();
+    let authored_function = match input.next()?.clone() {
+        Token::Function(name) => Some(name.to_string()),
+        _ => None,
+    };
+    input.reset(&state);
+    let value = if authored_function.is_some() {
+        let calculation = Calc::<Length>::parse_preserving_math_functions(input)?;
+        if calculation.resolves_to_number() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        match calculation {
+            Calc::Value(value) => *value,
+            value => Length::Calc(Box::new(value)),
+        }
+    } else {
+        parse_strict_length(input)?
+    };
+    Ok(ClipComponent::Length {
+        value,
+        authored_function,
+    })
+}
+
+fn parse_dynamic_range_limit(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        parse_dynamic_range_limit_value(input).map(BrowserLonghandValue::DynamicRangeLimit)
+    })
+}
+
+fn parse_dynamic_range_limit_value<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<DynamicRangeLimitValue, ParseError<'i>> {
+    if let Ok(keyword) =
+        input.try_parse(|input| parse_one_keyword(input, &["standard", "no-limit", "constrained"]))
+    {
+        return Ok(DynamicRangeLimitValue::Keyword(keyword));
+    }
+
+    let location = input.current_source_location();
+    let function = input.expect_function()?.clone();
+    if !function.eq_ignore_ascii_case("dynamic-range-limit-mix") {
+        return Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    let entries = input.parse_nested_block(|input| {
+        let entries = input.parse_comma_separated(|input| {
+            let limit = parse_dynamic_range_limit_value(input)?;
+            let state = input.state();
+            let authored_calculation = matches!(input.next()?.clone(), Token::Function(_));
+            input.reset(&state);
+            let percentage = if authored_calculation {
+                Calc::<Percentage>::parse_preserving_math_functions(input)?
+            } else {
+                Percentage::parse(input)?.into()
+            };
+            if !authored_calculation
+                && matches!(&percentage, Calc::Value(value) if value.0 < 0.0 || value.0 > 1.0)
+            {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            Ok(DynamicRangeLimitMixEntry {
+                limit,
+                percentage,
+                authored_calculation,
+            })
+        })?;
+        let all_literal_zero = entries.iter().all(|entry| {
+            !entry.authored_calculation
+                && matches!(&entry.percentage, Calc::Value(value) if value.0 == 0.0)
+        });
+        if all_literal_zero {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(entries)
+    })?;
+    Ok(DynamicRangeLimitValue::Mix(entries))
+}
+
+fn parse_animation_trigger(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let values = input.parse_comma_separated(|input| {
+            if input
+                .try_parse(|input| input.expect_ident_matching("none"))
+                .is_ok()
+            {
+                return Ok(AnimationTriggerValue::None);
+            }
+            let name = DashedIdent::parse(input)?.into_owned();
+            let enter = parse_animation_trigger_behavior(input)?;
+            let exit = input.try_parse(parse_animation_trigger_behavior).ok();
+            Ok(AnimationTriggerValue::Attachment { name, enter, exit })
+        })?;
+        Ok(BrowserLonghandValue::AnimationTrigger(values))
+    })
+}
+
+fn parse_animation_trigger_behavior<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<&'static str, ParseError<'i>> {
+    parse_one_keyword(
+        input,
+        &[
+            "play",
+            "pause",
+            "reset",
+            "play-once",
+            "play-alternate",
+            "play-forwards",
+            "play-backwards",
+            "play-pause",
+            "replay",
+            "none",
+        ],
+    )
+}
+
+fn parse_position_area(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::PositionArea(PositionAreaValue::None));
+        }
+        let mut first = parse_position_area_keyword(input)?;
+        let Some(mut second) = input.try_parse(parse_position_area_keyword).ok() else {
+            return Ok(BrowserLonghandValue::PositionArea(
+                PositionAreaValue::Area {
+                    first: first.value,
+                    second: None,
+                },
+            ));
+        };
+        if matches!(
+            first.axis,
+            PositionAreaAxis::Vertical | PositionAreaAxis::Inline | PositionAreaAxis::SelfInline
+        ) || matches!(
+            second.axis,
+            PositionAreaAxis::Horizontal | PositionAreaAxis::Block | PositionAreaAxis::SelfBlock
+        ) {
+            std::mem::swap(&mut first, &mut second);
+        }
+        if !position_area_pair_is_compatible(first.axis, second.axis) {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        if first.value == second.value {
+            return Ok(BrowserLonghandValue::PositionArea(
+                PositionAreaValue::Area {
+                    first: first.value,
+                    second: None,
+                },
+            ));
+        }
+        if first.value == "span-all" && !position_area_value_repeats(second.value) {
+            return Ok(BrowserLonghandValue::PositionArea(
+                PositionAreaValue::Area {
+                    first: second.value,
+                    second: None,
+                },
+            ));
+        }
+        if second.value == "span-all" && !position_area_value_repeats(first.value) {
+            return Ok(BrowserLonghandValue::PositionArea(
+                PositionAreaValue::Area {
+                    first: first.value,
+                    second: None,
+                },
+            ));
+        }
+        Ok(BrowserLonghandValue::PositionArea(
+            PositionAreaValue::Area {
+                first: first.value,
+                second: Some(second.value),
+            },
+        ))
+    })
+}
+
+fn parse_position_area_keyword<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<PositionAreaKeyword, ParseError<'i>> {
+    const KEYWORDS: &[(&str, PositionAreaAxis)] = &[
+        ("span-all", PositionAreaAxis::General),
+        ("center", PositionAreaAxis::General),
+        ("left", PositionAreaAxis::Horizontal),
+        ("right", PositionAreaAxis::Horizontal),
+        ("span-left", PositionAreaAxis::Horizontal),
+        ("span-right", PositionAreaAxis::Horizontal),
+        ("x-start", PositionAreaAxis::Horizontal),
+        ("x-end", PositionAreaAxis::Horizontal),
+        ("span-x-start", PositionAreaAxis::Horizontal),
+        ("span-x-end", PositionAreaAxis::Horizontal),
+        ("self-x-start", PositionAreaAxis::Horizontal),
+        ("self-x-end", PositionAreaAxis::Horizontal),
+        ("span-self-x-start", PositionAreaAxis::Horizontal),
+        ("span-self-x-end", PositionAreaAxis::Horizontal),
+        ("top", PositionAreaAxis::Vertical),
+        ("bottom", PositionAreaAxis::Vertical),
+        ("span-top", PositionAreaAxis::Vertical),
+        ("span-bottom", PositionAreaAxis::Vertical),
+        ("y-start", PositionAreaAxis::Vertical),
+        ("y-end", PositionAreaAxis::Vertical),
+        ("span-y-start", PositionAreaAxis::Vertical),
+        ("span-y-end", PositionAreaAxis::Vertical),
+        ("self-y-start", PositionAreaAxis::Vertical),
+        ("self-y-end", PositionAreaAxis::Vertical),
+        ("span-self-y-start", PositionAreaAxis::Vertical),
+        ("span-self-y-end", PositionAreaAxis::Vertical),
+        ("block-start", PositionAreaAxis::Block),
+        ("block-end", PositionAreaAxis::Block),
+        ("span-block-start", PositionAreaAxis::Block),
+        ("span-block-end", PositionAreaAxis::Block),
+        ("inline-start", PositionAreaAxis::Inline),
+        ("inline-end", PositionAreaAxis::Inline),
+        ("span-inline-start", PositionAreaAxis::Inline),
+        ("span-inline-end", PositionAreaAxis::Inline),
+        ("self-block-start", PositionAreaAxis::SelfBlock),
+        ("self-block-end", PositionAreaAxis::SelfBlock),
+        ("span-self-block-start", PositionAreaAxis::SelfBlock),
+        ("span-self-block-end", PositionAreaAxis::SelfBlock),
+        ("self-inline-start", PositionAreaAxis::SelfInline),
+        ("self-inline-end", PositionAreaAxis::SelfInline),
+        ("span-self-inline-start", PositionAreaAxis::SelfInline),
+        ("span-self-inline-end", PositionAreaAxis::SelfInline),
+        ("start", PositionAreaAxis::StartEnd),
+        ("end", PositionAreaAxis::StartEnd),
+        ("span-start", PositionAreaAxis::StartEnd),
+        ("span-end", PositionAreaAxis::StartEnd),
+        ("self-start", PositionAreaAxis::SelfStartEnd),
+        ("self-end", PositionAreaAxis::SelfStartEnd),
+        ("span-self-start", PositionAreaAxis::SelfStartEnd),
+        ("span-self-end", PositionAreaAxis::SelfStartEnd),
+    ];
+    let location = input.current_source_location();
+    let identifier = input.expect_ident_cloned()?;
+    KEYWORDS
+        .iter()
+        .find_map(|(value, axis)| {
+            identifier
+                .eq_ignore_ascii_case(value)
+                .then_some(PositionAreaKeyword { value, axis: *axis })
+        })
+        .ok_or_else(|| location.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+}
+
+fn position_area_pair_is_compatible(first: PositionAreaAxis, second: PositionAreaAxis) -> bool {
+    use PositionAreaAxis::*;
+    matches!(first, General)
+        || matches!(second, General)
+        || matches!(
+            (first, second),
+            (Horizontal, Vertical)
+                | (Block, Inline)
+                | (SelfBlock, SelfInline)
+                | (StartEnd, StartEnd)
+                | (SelfStartEnd, SelfStartEnd)
+        )
+}
+
+fn position_area_value_repeats(value: &str) -> bool {
+    matches!(
+        value,
+        "span-all"
+            | "center"
+            | "start"
+            | "end"
+            | "span-start"
+            | "span-end"
+            | "self-start"
+            | "self-end"
+            | "span-self-start"
+            | "span-self-end"
+    )
+}
+
 fn parse_one_keyword<'i, 't>(
     input: &mut Parser<'i, 't>,
     accepted: &'static [&'static str],
@@ -2572,8 +3041,8 @@ mod tests {
             );
             branch_count += entry["branches"].as_array().unwrap().len();
         }
-        assert_eq!(properties.len(), 39);
-        assert_eq!(branch_count, 165);
+        assert_eq!(properties.len(), 43);
+        assert_eq!(branch_count, 204);
     }
 
     #[test]
@@ -2655,7 +3124,12 @@ mod tests {
                 "pan-left pan-y pinch-zoom",
             ),
         ] {
-            assert_eq!(canonical(property, source).unwrap(), expected, "{property}");
+            let actual = canonical(property, source);
+            assert_eq!(
+                actual.as_deref(),
+                Ok(expected),
+                "{property}: {source}: {actual:?}"
+            );
         }
 
         for (property, source) in [
@@ -2734,6 +3208,67 @@ mod tests {
             ("text-autospace", "auto"),
             ("will-change", "will-change"),
             ("hyphenate-character", "-"),
+        ] {
+            assert!(canonical(property, source).is_err(), "{property}: {source}");
+        }
+    }
+
+    #[test]
+    fn parses_clip_mixes_triggers_and_position_areas() {
+        for (property, source, expected) in [
+            (
+                "clip",
+                "rect(auto 1px 2px 3px)",
+                "rect(auto, 1px, 2px, 3px)",
+            ),
+            ("clip", "rect(0 0 0 0)", "rect(0px, 0px, 0px, 0px)"),
+            (
+                "dynamic-range-limit",
+                "dynamic-range-limit-mix(standard calc(50%), no-limit 50%)",
+                "dynamic-range-limit-mix(standard calc(50%), no-limit 50%)",
+            ),
+            (
+                "dynamic-range-limit",
+                "dynamic-range-limit-mix(standard min(20%, 30%), constrained 80%)",
+                "dynamic-range-limit-mix(standard min(20%, 30%), constrained 80%)",
+            ),
+            (
+                "animation-trigger",
+                "--x play pause,--y reset",
+                "--x play pause, --y reset",
+            ),
+            ("position-area", "bottom right", "right bottom"),
+            (
+                "position-area",
+                "inline-end block-start",
+                "block-start inline-end",
+            ),
+            ("position-area", "span-all top", "top"),
+            ("position-area", "start start", "start"),
+        ] {
+            let actual = canonical(property, source);
+            assert_eq!(
+                actual.as_deref(),
+                Ok(expected),
+                "{property}: {source}: {actual:?}"
+            );
+        }
+
+        for (property, source) in [
+            ("clip", "rect(1px, 2px 3px, 4px)"),
+            ("clip", "inset(1px)"),
+            (
+                "dynamic-range-limit",
+                "dynamic-range-limit-mix(standard 0%, no-limit 0%)",
+            ),
+            (
+                "dynamic-range-limit",
+                "dynamic-range-limit-mix(standard 101%)",
+            ),
+            ("animation-trigger", "--x play pause reset"),
+            ("animation-trigger", "foo play"),
+            ("position-area", "left right"),
+            ("position-area", "block-start block-end"),
         ] {
             assert!(canonical(property, source).is_err(), "{property}: {source}");
         }

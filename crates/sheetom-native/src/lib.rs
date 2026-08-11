@@ -88,9 +88,15 @@ impl NativeDeclarationState {
         name: String,
         value: String,
         priority: String,
+        reserved_nesting_depth: Option<u32>,
     ) -> napi::Result<String> {
         self.state
-            .set_property_checked(&name, &value, &priority)
+            .set_property_checked_with_reserved_depth(
+                &name,
+                &value,
+                &priority,
+                reserved_nesting_depth.unwrap_or(0) as usize,
+            )
             .map(|outcome| mutation_outcome_name(outcome).to_owned())
             .map_err(|error| napi::Error::from_reason(error.to_string()))
     }
@@ -106,9 +112,16 @@ impl NativeDeclarationState {
     }
 
     #[napi]
-    pub fn replace_css_text(&mut self, source: String) -> napi::Result<()> {
+    pub fn replace_css_text(
+        &mut self,
+        source: String,
+        reserved_nesting_depth: Option<u32>,
+    ) -> napi::Result<()> {
         self.state
-            .replace_css_text_checked(&source)
+            .replace_css_text_checked_with_reserved_depth(
+                &source,
+                reserved_nesting_depth.unwrap_or(0) as usize,
+            )
             .map_err(|error| napi::Error::from_reason(error.to_string()))
     }
 

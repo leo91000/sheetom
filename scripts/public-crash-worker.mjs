@@ -40,10 +40,24 @@ if (crashCase.mode === "stylesheet-resource") {
     const rule = sheet.cssRules[0];
     assert.ok(rule instanceof CSSStyleRule);
 
-    const separator = crashCase.source.indexOf(":");
+    const source = crashCase.mode === "dynamic-range-depth"
+        ? `dynamic-range-limit: ${"dynamic-range-limit-mix(".repeat(crashCase.nestingDepth)}standard${" 100%)".repeat(crashCase.nestingDepth)}`
+        : crashCase.source;
+    const separator = source.indexOf(":");
     assert.notEqual(separator, -1, "crash case must contain a property delimiter");
-    const property = crashCase.source.slice(0, separator).trim();
-    const value = crashCase.source.slice(separator + 1).trim();
+    const property = source.slice(0, separator).trim();
+    const value = source.slice(separator + 1).trim();
+    if (crashCase.expectPublicError) {
+        rule.style.setProperty(property, "initial");
+        const before = rule.style.cssText;
+        assert.throws(
+            () => rule.style.setProperty(property, value),
+            error => error instanceof RangeError
+                && error.message.includes(crashCase.expectPublicError),
+        );
+        assert.equal(rule.style.cssText, before, `${property} must reject atomically`);
+        process.exit(0);
+    }
     if (crashCase.expectRejected) {
         rule.style.setProperty(property, "initial");
         const before = rule.style.cssText;

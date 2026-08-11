@@ -14,6 +14,67 @@ const cases = contracts.properties.flatMap(({ property, branches }) =>
   })),
 );
 
+const positionAreaKeywords = [
+  "span-all",
+  "center",
+  "left",
+  "right",
+  "span-left",
+  "span-right",
+  "x-start",
+  "x-end",
+  "span-x-start",
+  "span-x-end",
+  "self-x-start",
+  "self-x-end",
+  "span-self-x-start",
+  "span-self-x-end",
+  "top",
+  "bottom",
+  "span-top",
+  "span-bottom",
+  "y-start",
+  "y-end",
+  "span-y-start",
+  "span-y-end",
+  "self-y-start",
+  "self-y-end",
+  "span-self-y-start",
+  "span-self-y-end",
+  "block-start",
+  "block-end",
+  "span-block-start",
+  "span-block-end",
+  "inline-start",
+  "inline-end",
+  "span-inline-start",
+  "span-inline-end",
+  "self-block-start",
+  "self-block-end",
+  "span-self-block-start",
+  "span-self-block-end",
+  "self-inline-start",
+  "self-inline-end",
+  "span-self-inline-start",
+  "span-self-inline-end",
+  "start",
+  "end",
+  "span-start",
+  "span-end",
+  "self-start",
+  "self-end",
+  "span-self-start",
+  "span-self-end",
+];
+
+const positionAreaMatrix = [
+  "none",
+  ...positionAreaKeywords,
+  ...positionAreaKeywords.flatMap(first =>
+    positionAreaKeywords.map(second => `${first} ${second}`),
+  ),
+];
+
 function observe(style, property) {
   const entries = [];
   for (let index = 0; index < style.length; index += 1) {
@@ -53,8 +114,20 @@ function runCases(style, candidates) {
   return results;
 }
 
+function runAcceptanceMatrix(style, property, values) {
+  return values.map(input => {
+    style.cssText = "";
+    style.setProperty(property, input);
+    return {
+      input,
+      state: observe(style, property),
+    };
+  });
+}
+
 const browser = await chromium.launch({ headless: true });
 let chromiumRun;
+let chromiumPositionAreaMatrix;
 try {
   const page = await browser.newPage();
   await page.setContent("<!doctype html><title>SheetOM composite longhand differential</title>");
@@ -96,6 +169,32 @@ try {
     }
     return { userAgent: navigator.userAgent, results };
   }, cases);
+  chromiumPositionAreaMatrix = await page.evaluate(values => {
+    const style = document.createElement("div").style;
+    return values.map(input => {
+      style.cssText = "";
+      style.setProperty("position-area", input);
+      const entries = [];
+      for (let index = 0; index < style.length; index += 1) {
+        const name = style.item(index);
+        entries.push({
+          name,
+          value: style.getPropertyValue(name),
+          priority: style.getPropertyPriority(name),
+        });
+      }
+      return {
+        input,
+        state: {
+          cssText: style.cssText,
+          length: style.length,
+          entries,
+          value: style.getPropertyValue("position-area"),
+          priority: style.getPropertyPriority("position-area"),
+        },
+      };
+    });
+  }, positionAreaMatrix);
 } finally {
   await browser.close();
 }
@@ -109,6 +208,11 @@ sheet.insertRule(".probe {}", 0);
 const rule = sheet.cssRules[0];
 assert.ok(rule instanceof CSSStyleRule);
 const sheetomById = new Map(runCases(rule.style, cases).map(result => [result.id, result]));
+const sheetomPositionAreaMatrix = runAcceptanceMatrix(
+  rule.style,
+  "position-area",
+  positionAreaMatrix,
+);
 
 const mismatches = [];
 for (const chromiumResult of chromiumRun.results) {
@@ -140,6 +244,12 @@ if (mismatches.length > 0) {
   throw new Error(`${mismatches.length} composite browser longhand branches diverged`);
 }
 
+assert.deepEqual(
+  sheetomPositionAreaMatrix,
+  chromiumPositionAreaMatrix,
+  "position-area single-keyword and keyword-pair matrix diverged",
+);
+
 console.log(
-  `Verified ${cases.length} composite browser longhand branches and invalid neighbors against Chromium.`,
+  `Verified ${cases.length} composite browser longhand branches, invalid neighbors, and ${positionAreaMatrix.length} position-area sequences against Chromium.`,
 );

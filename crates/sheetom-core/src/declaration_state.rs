@@ -191,13 +191,26 @@ impl DeclarationState {
         value: &str,
         priority: &str,
     ) -> Result<MutationOutcome, EngineError> {
-        validate_declaration_value_input(value, self.limits)?;
+        self.set_property_checked_with_reserved_depth(name, value, priority, 0)
+    }
+
+    pub fn set_property_checked_with_reserved_depth(
+        &mut self,
+        name: &str,
+        value: &str,
+        priority: &str,
+        reserved_depth: usize,
+    ) -> Result<MutationOutcome, EngineError> {
+        let parse_limits = self.limits_with_reserved_depth(reserved_depth)?;
+        validate_declaration_value_input(value, parse_limits)?;
         let mut candidate = self.clone();
+        candidate.limits = parse_limits;
         let outcome = candidate.apply_property(name, value, priority);
         if outcome != MutationOutcome::Applied {
             return Ok(outcome);
         }
         candidate.validate_record_limit()?;
+        candidate.limits = self.limits;
         *self = candidate;
         Ok(outcome)
     }
@@ -308,7 +321,16 @@ impl DeclarationState {
     }
 
     pub fn replace_css_text_checked(&mut self, source: &str) -> Result<(), EngineError> {
-        validate_declaration_block_input(source, self.limits)?;
+        self.replace_css_text_checked_with_reserved_depth(source, 0)
+    }
+
+    pub fn replace_css_text_checked_with_reserved_depth(
+        &mut self,
+        source: &str,
+        reserved_depth: usize,
+    ) -> Result<(), EngineError> {
+        let parse_limits = self.limits_with_reserved_depth(reserved_depth)?;
+        validate_declaration_block_input(source, parse_limits)?;
         let declarations = parse_declaration_list(source)
             .into_iter()
             .map(|declaration| ParsedDeclaration {
@@ -318,13 +340,31 @@ impl DeclarationState {
             })
             .collect::<Vec<_>>();
         for declaration in &declarations {
-            validate_declaration_value_input(&declaration.value, self.limits)?;
+            validate_declaration_value_input(&declaration.value, parse_limits)?;
         }
         let mut candidate = self.clone();
+        candidate.limits = parse_limits;
         candidate.replace_declarations(&declarations);
         candidate.validate_record_limit()?;
+        candidate.limits = self.limits;
         *self = candidate;
         Ok(())
+    }
+
+    fn limits_with_reserved_depth(
+        &self,
+        reserved_depth: usize,
+    ) -> Result<ResourceLimits, EngineError> {
+        if reserved_depth > self.limits.max_nesting_depth {
+            return Err(EngineError::NestingLimitExceeded {
+                actual: reserved_depth,
+                limit: self.limits.max_nesting_depth,
+            });
+        }
+        Ok(ResourceLimits {
+            max_nesting_depth: self.limits.max_nesting_depth - reserved_depth,
+            ..self.limits
+        })
     }
 
     pub fn clear(&mut self) {
@@ -956,6 +996,30 @@ mod tests {
             })
         ));
         assert_eq!(state.css_text(), "width: 1px;");
+    }
+
+    #[test]
+    fn reserves_container_depth_before_declaration_mutation() {
+        let limits = ResourceLimits {
+            max_nesting_depth: 2,
+            ..ResourceLimits::default()
+        };
+        let mut state =
+            DeclarationState::new_with_context_and_limits(DeclarationContext::Style, limits);
+        assert_eq!(
+            state
+                .set_property_checked_with_reserved_depth("--x", "fn(1)", "", 1)
+                .unwrap(),
+            MutationOutcome::Applied
+        );
+        assert!(matches!(
+            state.set_property_checked_with_reserved_depth("--x", "fn(fn(1))", "", 1),
+            Err(EngineError::NestingLimitExceeded {
+                actual: 2,
+                limit: 1
+            })
+        ));
+        assert_eq!(state.get_property_value("--x"), "fn(1)");
     }
 
     #[test]

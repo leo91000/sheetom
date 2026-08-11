@@ -183,6 +183,18 @@ function lockOwnProperties(target: object, ...properties: string[]): void {
   }
 }
 
+function declarationSerializationDepth(rule: CSSRule): number {
+  let depth = 0;
+  let current: CSSRule | null = rule;
+  while (current) {
+    if (!(current instanceof CSSNestedDeclarations) && !(current instanceof CSSFunctionDeclarations)) {
+      depth += 1;
+    }
+    current = current.parentRule;
+  }
+  return depth;
+}
+
 /** Base class for live stylesheet rules. */
 export class CSSRule {
   static readonly STYLE_RULE = 1;
@@ -1075,6 +1087,7 @@ export class CSSStyleDeclaration {
           ? "function"
           : "style",
       ruleResourceBudgets.get(parentRule) ?? defaultResourceBudget,
+      () => declarationSerializationDepth(parentRule),
     );
 
     return new Proxy(this, {

@@ -323,16 +323,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             unsupported,
-            [
-                "animation-trigger",
-                "border-shape",
-                "clip",
-                "d",
-                "dynamic-range-limit",
-                "object-view-box",
-                "position-area",
-                "shape-outside",
-            ]
+            ["border-shape", "d", "object-view-box", "shape-outside",]
         );
     }
 

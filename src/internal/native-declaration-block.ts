@@ -21,6 +21,7 @@ type ReportDeclarationDiagnostic = (
 export class NativeDeclarationBlock {
   readonly #state: NativeDeclarationStateHandle;
   readonly #reportDiagnostic: ReportDeclarationDiagnostic;
+  readonly #reservedNestingDepth: () => number;
   #observableCache: string | undefined;
   readonly #serializationCache = new Map<string, string>();
 
@@ -28,8 +29,10 @@ export class NativeDeclarationBlock {
     reportDiagnostic: ReportDeclarationDiagnostic,
     context: "style" | "font-face" | "function" = "style",
     resourceBudget: NativeResourceBudget = defaultResourceBudget,
+    reservedNestingDepth: () => number = () => 0,
   ) {
     this.#reportDiagnostic = reportDiagnostic;
+    this.#reservedNestingDepth = reservedNestingDepth;
     this.#state = new nativeBinding.NativeDeclarationState(
       context,
       ...nativeBudgetArguments(resourceBudget),
@@ -60,7 +63,7 @@ export class NativeDeclarationBlock {
   setProperty(name: string, value: string, priority: string): void {
     let outcome: NativeMutationOutcome;
     try {
-      outcome = this.#state.setProperty(name, value, priority);
+      outcome = this.#state.setProperty(name, value, priority, this.#reservedNestingDepth());
     } catch (error) {
       rethrowResourceBudgetError(error);
       throw error;
@@ -87,7 +90,7 @@ export class NativeDeclarationBlock {
 
   replaceCssText(source: string): void {
     try {
-      this.#state.replaceCssText(source);
+      this.#state.replaceCssText(source, this.#reservedNestingDepth());
     } catch (error) {
       rethrowResourceBudgetError(error);
       throw error;
