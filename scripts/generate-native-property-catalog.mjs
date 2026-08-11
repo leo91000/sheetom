@@ -93,7 +93,6 @@ const extensionVariants = new Map([
   ["offset-position", "OffsetPosition"],
   ["offset-rotate", "OffsetRotate"],
   ["page-size", "PageSize"],
-  ["subgrid", "Subgrid"],
   ["webkit-box-reflect", "WebkitBoxReflect"],
   ["webkit-border-image", "WebkitBorderImage"],
   ["webkit-mask-box-image-slice", "WebkitMaskBoxImageSlice"],

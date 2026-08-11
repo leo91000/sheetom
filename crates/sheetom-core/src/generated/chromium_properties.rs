@@ -3181,12 +3181,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("grid-row-start", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
-    ("grid-template-columns", &[
-        super::PropertyGrammarExtension::Subgrid,
-    ]),
-    ("grid-template-rows", &[
-        super::PropertyGrammarExtension::Subgrid,
-    ]),
     ("hyphenate-limit-chars", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
