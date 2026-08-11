@@ -337,6 +337,25 @@ impl LinearGradient {
   }
 }
 
+fn parse_conic_stop<'i, 't>(
+  input: &mut Parser<'i, 't>,
+) -> Result<AnglePercentage, ParseError<'i, ParserError<'i>>> {
+  if input
+    .try_parse(|input| -> Result<(), ParseError<'i, ParserError<'i>>> {
+      let location = input.current_source_location();
+      let token = input.next()?;
+      match token {
+        Token::Number { value, .. } if *value == 0.0 => Ok(()),
+        _ => Err(location.new_unexpected_token_error(token.clone())),
+      }
+    })
+    .is_ok()
+  {
+    return Ok(AnglePercentage::Dimension(Angle::zero()));
+  }
+  AnglePercentage::parse(input)
+}
+
 impl IsCompatible for LinearGradient {
   fn is_compatible(&self, browsers: Browsers) -> bool {
     self.items.iter().all(|item| item.is_compatible(browsers))
@@ -821,7 +840,7 @@ impl ConicGradient {
       input.expect_comma()?;
     }
 
-    let items = parse_items(input)?;
+    let items = parse_items_with(input, parse_conic_stop)?;
     Ok(ConicGradient {
       angle: angle.unwrap_or(Angle::Deg(0.0)),
       position: position.unwrap_or(Position::center()),
@@ -980,22 +999,35 @@ impl<D> IsCompatible for GradientItem<D> {
 fn parse_items<'i, 't, D: Parse<'i>>(
   input: &mut Parser<'i, 't>,
 ) -> Result<Vec<GradientItem<D>>, ParseError<'i, ParserError<'i>>> {
+  parse_items_with(input, D::parse)
+}
+
+fn parse_items_with<'i, 't, D, F>(
+  input: &mut Parser<'i, 't>,
+  parse_position: F,
+) -> Result<Vec<GradientItem<D>>, ParseError<'i, ParserError<'i>>>
+where
+  D: Parse<'i>,
+  F: Copy + for<'u> Fn(&mut Parser<'i, 'u>) -> Result<D, ParseError<'i, ParserError<'i>>>,
+{
   let mut items = Vec::new();
   let mut seen_stop = false;
 
   loop {
     input.parse_until_before(Delimiter::Comma, |input| {
       if seen_stop {
-        if let Ok(hint) = input.try_parse(D::parse) {
+        if let Ok(hint) = input.try_parse(parse_position) {
           seen_stop = false;
           items.push(GradientItem::Hint(hint));
           return Ok(());
         }
       }
 
-      let stop = ColorStop::parse(input)?;
+      let color = CssColor::parse(input)?;
+      let position = input.try_parse(parse_position).ok();
+      let stop = ColorStop { color, position };
 
-      if let Ok(position) = input.try_parse(D::parse) {
+      if let Ok(position) = input.try_parse(parse_position) {
         let color = stop.color.clone();
         items.push(GradientItem::ColorStop(stop));
 

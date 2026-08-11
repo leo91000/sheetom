@@ -13647,6 +13647,10 @@ mod tests {
       ".foo { background: repeating-conic-gradient(black 0deg 25%, white 0deg 50%) }",
       ".foo{background:repeating-conic-gradient(#000 0deg 25%,#fff 0deg 50%)}",
     );
+    minify_test(
+      ".foo { background: repeating-conic-gradient(red 0 10deg, blue 10deg 20deg) }",
+      ".foo{background:repeating-conic-gradient(red 0deg 10deg,#00f 10deg 20deg)}",
+    );
 
     test(
       r#"
