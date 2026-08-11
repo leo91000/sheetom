@@ -278,6 +278,7 @@ mod tests {
         assert!(parse_descriptor_value("font-display", "initial").is_none());
         assert!(parse_descriptor_value("font-family", "A, B").is_none());
         assert!(parse_descriptor_value("src", "none").is_none());
+        assert!(parse_descriptor_value("font-stretch", "condensed expanded").is_none());
         assert!(parse_descriptor_value("size-adjust", "-1%").is_none());
         assert!(parse_descriptor_value("font-display", "var(--x)").is_none());
     }
