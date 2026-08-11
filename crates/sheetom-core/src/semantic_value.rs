@@ -31,6 +31,19 @@ pub struct SemanticDeclaration {
 }
 
 impl SemanticDeclaration {
+    pub(crate) fn from_standard_property(
+        property_name: &str,
+        value: Property<'static>,
+        canonical_source: String,
+    ) -> Self {
+        Self {
+            property_name: Arc::from(property_name),
+            value: SemanticPropertyValue::Standard(value),
+            recovered: RecoveredValue::compacted_explicit_source(canonical_source),
+            parse_kind: PropertyParseKind::Typed,
+        }
+    }
+
     pub fn property_name(&self) -> &str {
         &self.property_name
     }
@@ -100,7 +113,7 @@ pub fn parse_semantic_property_with_limits(
             return Ok(SemanticDeclaration {
                 property_name: Arc::from(grammar.canonical_name()),
                 value: SemanticPropertyValue::Extension(value),
-                recovered,
+                recovered: recovered.compact_if_fully_explicit(),
                 parse_kind: PropertyParseKind::SheetomTyped,
             });
         }
@@ -117,7 +130,7 @@ pub fn parse_semantic_property_with_limits(
                 return Ok(SemanticDeclaration {
                     property_name: Arc::from(grammar.canonical_name()),
                     value: SemanticPropertyValue::Standard(value),
-                    recovered,
+                    recovered: recovered.compact_if_fully_explicit(),
                     parse_kind,
                 });
             }
@@ -133,7 +146,7 @@ pub fn parse_semantic_property_with_limits(
         return Ok(SemanticDeclaration {
             property_name: Arc::from(grammar.canonical_name()),
             value: SemanticPropertyValue::Extension(value),
-            recovered,
+            recovered: recovered.compact_if_fully_explicit(),
             parse_kind: PropertyParseKind::SheetomTyped,
         });
     }
@@ -201,7 +214,7 @@ fn unsupported_grammar_error(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{RecoveredClosure, RecoveredComponentKind};
+    use crate::RecoveredComponentKind;
 
     #[test]
     fn owns_typed_values_after_the_parser_input_is_dropped() {
@@ -302,13 +315,12 @@ mod tests {
     #[test]
     fn retains_explicit_nested_structure_without_reparsing_strings() {
         let declaration = parse_standard_semantic_property("width", "calc(100% - 2rem)").unwrap();
-        let RecoveredComponentKind::Function { closure, .. } =
-            &declaration.recovered().values()[0].kind
-        else {
-            panic!("expected recovered calc function")
-        };
-
-        assert_eq!(*closure, RecoveredClosure::Explicit);
+        assert!(declaration.recovered().is_compacted());
+        assert!(declaration.recovered().values().is_empty());
+        assert_eq!(
+            declaration.recovered().reparsable_css().unwrap(),
+            "calc(100% - 2rem)"
+        );
         assert_eq!(declaration.canonical_value().unwrap(), "calc(100% - 2rem)");
     }
 
@@ -504,7 +516,7 @@ mod tests {
         ));
         assert_eq!(
             declaration.canonical_value().unwrap(),
-            "72px var(--space, var(--space,))"
+            "72px var(--space, var(--space, ))"
         );
     }
 

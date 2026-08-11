@@ -121,15 +121,29 @@ pub struct RecoveredValue {
     source: Arc<str>,
     values: Arc<[RecoveredComponentValue]>,
     contains_context_dependent_sign: bool,
+    compacted: bool,
 }
 
 impl RecoveredValue {
+    pub(crate) fn compacted_explicit_source(source: String) -> Self {
+        Self {
+            source: Arc::from(source),
+            values: Arc::from([]),
+            contains_context_dependent_sign: false,
+            compacted: true,
+        }
+    }
+
     pub fn source(&self) -> &str {
         &self.source
     }
 
     pub fn values(&self) -> &[RecoveredComponentValue] {
         &self.values
+    }
+
+    pub fn is_compacted(&self) -> bool {
+        self.compacted
     }
 
     pub fn slice(&self, span: SourceSpan) -> Option<&str> {
@@ -140,10 +154,22 @@ impl RecoveredValue {
         self.contains_context_dependent_sign
     }
 
+    pub(crate) fn compact_if_fully_explicit(mut self) -> Self {
+        if requires_recovery_evidence(&self.values) {
+            return self;
+        }
+        self.values = Arc::from([]);
+        self.compacted = true;
+        self
+    }
+
     pub fn reparsable_css(&self) -> Result<String, EngineError> {
+        if self.compacted {
+            return Ok(self.source.to_string());
+        }
         enum SerializationEvent<'a> {
             Component(&'a RecoveredComponentValue),
-            Close(char),
+            Close { delimiter: char, implicit: bool },
         }
 
         let mut output = String::with_capacity(self.source.len());
@@ -154,16 +180,30 @@ impl RecoveredValue {
 
         while let Some(event) = pending.pop() {
             match event {
-                SerializationEvent::Close(delimiter) => output.push(delimiter),
+                SerializationEvent::Close {
+                    delimiter,
+                    implicit,
+                } => {
+                    if implicit && delimiter == ')' && output.ends_with(',') {
+                        output.push(' ');
+                    }
+                    output.push(delimiter);
+                }
                 SerializationEvent::Component(component) => match &component.kind {
                     RecoveredComponentKind::Token(token) => {
                         serialize_recovered_token(self, component.span, token, &mut output)?;
                     }
                     RecoveredComponentKind::Function {
-                        opening, values, ..
+                        opening,
+                        values,
+                        closure,
+                        ..
                     } => {
                         append_source_slice(self, *opening, &mut output)?;
-                        pending.push(SerializationEvent::Close(')'));
+                        pending.push(SerializationEvent::Close {
+                            delimiter: ')',
+                            implicit: *closure == RecoveredClosure::ImplicitEof,
+                        });
                         for child in values.iter().rev() {
                             pending.push(SerializationEvent::Component(child));
                         }
@@ -175,11 +215,14 @@ impl RecoveredValue {
                         ..
                     } => {
                         append_source_slice(self, *opening, &mut output)?;
-                        pending.push(SerializationEvent::Close(match delimiter {
-                            RecoveredBlockDelimiter::Parenthesis => ')',
-                            RecoveredBlockDelimiter::SquareBracket => ']',
-                            RecoveredBlockDelimiter::CurlyBracket => '}',
-                        }));
+                        pending.push(SerializationEvent::Close {
+                            delimiter: match delimiter {
+                                RecoveredBlockDelimiter::Parenthesis => ')',
+                                RecoveredBlockDelimiter::SquareBracket => ']',
+                                RecoveredBlockDelimiter::CurlyBracket => '}',
+                            },
+                            implicit: false,
+                        });
                         for child in values.iter().rev() {
                             pending.push(SerializationEvent::Component(child));
                         }
@@ -378,7 +421,38 @@ pub fn recover_component_values_with_limits(
         source: Arc::from(source),
         values: roots.into(),
         contains_context_dependent_sign,
+        compacted: false,
     })
+}
+
+fn requires_recovery_evidence(values: &[RecoveredComponentValue]) -> bool {
+    let mut pending = values.iter().collect::<Vec<_>>();
+    while let Some(component) = pending.pop() {
+        match &component.kind {
+            RecoveredComponentKind::Token(token) => {
+                if token.parse_error
+                    || matches!(
+                        token.termination,
+                        RecoveredTokenTermination::ImplicitEof | RecoveredTokenTermination::Invalid
+                    )
+                {
+                    return true;
+                }
+            }
+            RecoveredComponentKind::Function {
+                values, closure, ..
+            }
+            | RecoveredComponentKind::SimpleBlock {
+                values, closure, ..
+            } => {
+                if *closure == RecoveredClosure::ImplicitEof {
+                    return true;
+                }
+                pending.extend(values.iter());
+            }
+        }
+    }
+    false
 }
 
 fn push_simple_block(
@@ -780,7 +854,7 @@ mod tests {
         for (source, expected) in [
             (
                 "72px var(--space, var(--space,",
-                "72px var(--space, var(--space,))",
+                "72px var(--space, var(--space, ))",
             ),
             ("\"Gotham", "\"Gotham\""),
             ("url(image.png", "url(image.png)"),

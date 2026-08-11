@@ -5,19 +5,32 @@ use crate::{
     observable::{serialize_observable_value, ObservableCategory},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
-    EngineError, PropertyParseKind, ResourceLimits,
+    DeclarationValue, EngineError, PropertyParseKind, ResourceLimits,
 };
 use lightningcss::{
     declaration::DeclarationBlock,
     properties::{Property, PropertyId},
     stylesheet::{ParserOptions, PrinterOptions},
+    traits::IntoOwned,
 };
 
 pub(crate) struct ParsedValue {
-    pub(crate) observable_value: String,
-    pub(crate) safe_value: String,
+    pub(crate) value: DeclarationValue,
     pub(crate) longhands: Option<Vec<DeclarationRecord>>,
-    pub(crate) pending_substitution: bool,
+}
+
+impl ParsedValue {
+    pub(crate) fn observable_value(&self) -> &str {
+        self.value.observable_css()
+    }
+
+    pub(crate) fn safe_value(&self) -> &str {
+        self.value.safe_css()
+    }
+
+    pub(crate) fn pending_substitution(&self) -> bool {
+        self.value.is_pending_substitution()
+    }
 }
 
 pub(crate) fn synthesize_shorthand(
@@ -48,9 +61,9 @@ pub(crate) fn synthesize_shorthand(
             })
         {
             return Some(if safe {
-                group.safe_value.clone()
+                group.value.safe_css().to_owned()
             } else {
-                group.observable_value.clone()
+                group.value.observable_css().to_owned()
             });
         }
     }
@@ -62,28 +75,28 @@ pub(crate) fn synthesize_shorthand(
         .iter()
         .map(|record| {
             if safe {
-                &record.safe_value
+                record.safe_value()
             } else {
-                &record.observable_value
+                record.observable_value()
             }
         })
         .collect::<Vec<_>>();
     let has_css_wide = records.iter().any(|record| {
         let selected = if safe {
-            &record.safe_value
+            record.safe_value()
         } else {
-            &record.observable_value
+            record.observable_value()
         };
         is_css_wide_keyword(selected)
-            && record.safe_value == record.observable_value
-            && is_css_wide_keyword(&record.safe_value)
+            && record.safe_value() == record.observable_value()
+            && is_css_wide_keyword(record.safe_value())
     });
     if let Some(first_value) = values.first() {
         if has_css_wide {
             return values
                 .iter()
                 .all(|value| *value == *first_value)
-                .then(|| (*first_value).clone());
+                .then(|| (*first_value).to_owned());
         }
     }
 
@@ -94,9 +107,9 @@ pub(crate) fn synthesize_shorthand(
     let mut declarations = DeclarationBlock::new();
     for record in records {
         let value = if safe {
-            &record.safe_value
+            record.safe_value()
         } else {
-            &record.observable_value
+            record.observable_value()
         };
         let property = parse_typed_property(&record.name, value).ok()?;
         declarations.set(property, record.important);
@@ -136,9 +149,9 @@ fn synthesize_special_shorthand(
 fn record_value<'a>(records: &'a [&DeclarationRecord], name: &str, safe: bool) -> Option<&'a str> {
     let record = records.iter().find(|record| record.name == name)?;
     Some(if safe {
-        &record.safe_value
+        record.safe_value()
     } else {
-        &record.observable_value
+        record.observable_value()
     })
 }
 
@@ -417,22 +430,22 @@ fn synthesize_grid_line(records: &[&DeclarationRecord], safe: bool) -> Option<St
         return None;
     }
     let start = if safe {
-        &records[0].safe_value
+        records[0].safe_value()
     } else {
-        &records[0].observable_value
+        records[0].observable_value()
     };
     let end = if safe {
-        &records[1].safe_value
+        records[1].safe_value()
     } else {
-        &records[1].observable_value
+        records[1].observable_value()
     };
     if !records.iter().any(|record| {
         parse_semantic_property_with_limits(
             &record.name,
             if safe {
-                &record.safe_value
+                record.safe_value()
             } else {
-                &record.observable_value
+                record.observable_value()
             },
             ResourceLimits::default(),
         )
@@ -441,7 +454,7 @@ fn synthesize_grid_line(records: &[&DeclarationRecord], safe: bool) -> Option<St
         return None;
     }
     Some(if end == "auto" {
-        start.clone()
+        start.to_owned()
     } else {
         format!("{start} / {end}")
     })
@@ -455,9 +468,9 @@ fn synthesize_grid_area(records: &[&DeclarationRecord], safe: bool) -> Option<St
         .iter()
         .map(|record| {
             if safe {
-                record.safe_value.as_str()
+                record.safe_value()
             } else {
-                record.observable_value.as_str()
+                record.observable_value()
             }
         })
         .collect::<Vec<_>>();
@@ -465,9 +478,9 @@ fn synthesize_grid_area(records: &[&DeclarationRecord], safe: bool) -> Option<St
         parse_semantic_property_with_limits(
             &record.name,
             if safe {
-                &record.safe_value
+                record.safe_value()
             } else {
-                &record.observable_value
+                record.observable_value()
             },
             ResourceLimits::default(),
         )
@@ -684,9 +697,9 @@ fn record_values(records: &[&DeclarationRecord], safe: bool) -> Option<Vec<Strin
             .iter()
             .map(|record| {
                 if safe {
-                    record.safe_value.clone()
+                    record.safe_value().to_owned()
                 } else {
-                    record.observable_value.clone()
+                    record.observable_value().to_owned()
                 }
             })
             .collect(),
@@ -715,9 +728,9 @@ fn synthesize_border_like(records: &[&DeclarationRecord], safe: bool) -> Option<
             .filter(|record| record.name.ends_with(suffix))
             .map(|record| {
                 if safe {
-                    record.safe_value.as_str()
+                    record.safe_value()
                 } else {
-                    record.observable_value.as_str()
+                    record.observable_value()
                 }
             })
             .collect::<Vec<_>>()
@@ -833,17 +846,17 @@ fn synthesize_repeated_pair(
         return None;
     }
     let first = if safe {
-        &records[0].safe_value
+        records[0].safe_value()
     } else {
-        &records[0].observable_value
+        records[0].observable_value()
     };
     let second = if safe {
-        &records[1].safe_value
+        records[1].safe_value()
     } else {
-        &records[1].observable_value
+        records[1].observable_value()
     };
     Some(if first == second {
-        first.clone()
+        first.to_owned()
     } else {
         format!("{first} {second}")
     })
@@ -868,22 +881,15 @@ pub(crate) fn parse_value_with_limits(
         return Err(MutationOutcome::InvalidValue);
     }
     if name.starts_with("--") {
-        let property =
-            Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
-                .map_err(|_| MutationOutcome::InvalidValue)?;
-        let safe_value = property
-            .value_to_css_string(PrinterOptions::default())
-            .map_err(|_| MutationOutcome::InvalidValue)?;
+        let semantic =
+            parse_semantic_property_with_limits(name, value, limits).map_err(map_engine_error)?;
+        let safe_value = semantic.canonical_value().map_err(map_engine_error)?;
+        let observable_value =
+            serialize_observable_value(name, value, &safe_value, ObservableCategory::Custom);
         return Ok(ParsedValue {
-            observable_value: serialize_observable_value(
-                name,
-                value,
-                &safe_value,
-                ObservableCategory::Custom,
-            ),
-            safe_value,
+            value: DeclarationValue::semantic(semantic, observable_value)
+                .map_err(map_engine_error)?,
             longhands: None,
-            pending_substitution: substitutions.found,
         });
     }
 
@@ -893,39 +899,32 @@ pub(crate) fn parse_value_with_limits(
                 .iter()
                 .map(|longhand| DeclarationRecord {
                     name: (*longhand).to_owned(),
-                    observable_value: keyword.clone(),
-                    safe_value: keyword.clone(),
+                    value: DeclarationValue::css_wide(keyword.clone()),
                     important,
-                    pending_substitution: false,
                     pending_group: None,
                 })
                 .collect()
         });
         return Ok(ParsedValue {
-            observable_value: keyword.clone(),
-            safe_value: keyword,
+            value: DeclarationValue::css_wide(keyword),
             longhands,
-            pending_substitution: false,
         });
     }
 
     if substitutions.found {
-        let property =
-            Property::parse_string(PropertyId::from(name), value, ParserOptions::default())
-                .map_err(|_| MutationOutcome::InvalidValue)?;
-        let safe_value = property
-            .value_to_css_string(PrinterOptions::default())
-            .map_err(|_| MutationOutcome::InvalidValue)?;
+        let semantic =
+            parse_semantic_property_with_limits(name, value, limits).map_err(map_engine_error)?;
+        let safe_value = semantic.canonical_value().map_err(map_engine_error)?;
+        let observable_value = serialize_observable_value(
+            name,
+            value,
+            &safe_value,
+            ObservableCategory::PendingSubstitution,
+        );
         return Ok(ParsedValue {
-            observable_value: serialize_observable_value(
-                name,
-                value,
-                &safe_value,
-                ObservableCategory::PendingSubstitution,
-            ),
-            safe_value,
+            value: DeclarationValue::semantic(semantic, observable_value)
+                .map_err(map_engine_error)?,
             longhands: None,
-            pending_substitution: true,
         });
     }
 
@@ -934,10 +933,8 @@ pub(crate) fn parse_value_with_limits(
     {
         let value = value.trim().to_owned();
         return Ok(ParsedValue {
-            observable_value: value.clone(),
-            safe_value: value,
+            value: DeclarationValue::codec(value.clone(), value),
             longhands: None,
-            pending_substitution: false,
         });
     }
 
@@ -946,19 +943,17 @@ pub(crate) fn parse_value_with_limits(
     }
 
     if let Some(longhands) = expand_special_shorthand(name, value, important) {
+        let value = value.trim().to_owned();
         return Ok(ParsedValue {
-            observable_value: value.trim().to_owned(),
-            safe_value: value.trim().to_owned(),
+            value: DeclarationValue::codec(value.clone(), value),
             longhands: Some(longhands),
-            pending_substitution: false,
         });
     }
     if let Some(longhands) = expand_structural_shorthand(name, value, important) {
+        let value = value.trim().to_owned();
         return Ok(ParsedValue {
-            observable_value: value.trim().to_owned(),
-            safe_value: value.trim().to_owned(),
+            value: DeclarationValue::codec(value.clone(), value),
             longhands: Some(longhands),
-            pending_substitution: false,
         });
     }
 
@@ -971,10 +966,8 @@ pub(crate) fn parse_value_with_limits(
     }) {
         return Err(MutationOutcome::InvalidValue);
     }
-    let canonical_value = semantic
-        .map_err(map_engine_error)?
-        .canonical_value()
-        .map_err(map_engine_error)?;
+    let semantic = semantic.map_err(map_engine_error)?;
+    let canonical_value = semantic.canonical_value().map_err(map_engine_error)?;
 
     let Some(longhand_names) = observed_shorthand_longhands(name) else {
         let mut observable_value =
@@ -984,18 +977,18 @@ pub(crate) fn parse_value_with_limits(
             observable_value = "0px".to_owned();
             safe_value = "0px".to_owned();
         }
+        let value =
+            DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value);
         return Ok(ParsedValue {
-            observable_value,
-            safe_value,
+            value,
             longhands: None,
-            pending_substitution: false,
         });
     };
 
     let property = parse_typed_property(name, value).map_err(|_| MutationOutcome::InvalidValue)?;
     let mut longhands = Vec::with_capacity(longhand_names.len());
     for longhand_name in longhand_names {
-        let (observable_value, safe_value) =
+        let declaration_value =
             if let Some(longhand) = shorthand_longhand(&property, name, longhand_name) {
                 let mut safe_value = longhand
                     .value_to_css_string(PrinterOptions::default())
@@ -1010,7 +1003,12 @@ pub(crate) fn parse_value_with_limits(
                         safe_value = safe;
                     }
                 }
-                (observable_value, safe_value)
+                let semantic = crate::SemanticDeclaration::from_standard_property(
+                    longhand_name,
+                    longhand.into_owned(),
+                    safe_value.clone(),
+                );
+                DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
             } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
                 let mut observable_value = initial_value.to_owned();
                 let mut safe_value = initial_value.to_owned();
@@ -1022,30 +1020,23 @@ pub(crate) fn parse_value_with_limits(
                         safe_value = safe;
                     }
                 }
-                (observable_value, safe_value)
+                DeclarationValue::codec(safe_value, observable_value)
             } else {
                 return Err(MutationOutcome::UnsupportedShorthand);
             };
         longhands.push(DeclarationRecord {
             name: (*longhand_name).to_owned(),
-            observable_value,
-            safe_value,
+            value: declaration_value,
             important,
-            pending_substitution: false,
             pending_group: None,
         });
     }
 
+    let observable_value =
+        serialize_observable_value(name, value, &canonical_value, ObservableCategory::Typed);
     Ok(ParsedValue {
-        observable_value: serialize_observable_value(
-            name,
-            value,
-            &canonical_value,
-            ObservableCategory::Typed,
-        ),
-        safe_value: canonical_value,
+        value: DeclarationValue::semantic(semantic, observable_value).map_err(map_engine_error)?,
         longhands: Some(longhands),
-        pending_substitution: false,
     })
 }
 
@@ -1319,10 +1310,8 @@ fn expand_special_shorthand(
                 .iter()
                 .map(|longhand| DeclarationRecord {
                     name: (*longhand).to_owned(),
-                    observable_value: String::new(),
-                    safe_value: String::new(),
+                    value: DeclarationValue::deferred(false),
                     important,
-                    pending_substitution: false,
                     pending_group: None,
                 })
                 .collect(),
@@ -1651,10 +1640,8 @@ fn records_from_values(
                 .find_map(|(name, value)| (*name == *longhand).then_some(value))?;
             Some(DeclarationRecord {
                 name: (*longhand).to_owned(),
-                observable_value: value.clone(),
-                safe_value: value.clone(),
+                value: DeclarationValue::codec(value.clone(), value.clone()),
                 important,
-                pending_substitution: false,
                 pending_group: None,
             })
         })
@@ -2308,10 +2295,8 @@ fn expand_structural_shorthand(
         let canonical = validate_structural_longhand(longhand, component)?;
         records.push(DeclarationRecord {
             name: (*longhand).to_owned(),
-            observable_value: component.trim().to_owned(),
-            safe_value: canonical,
+            value: DeclarationValue::codec(canonical, component.trim().to_owned()),
             important,
-            pending_substitution: false,
             pending_group: None,
         });
     }

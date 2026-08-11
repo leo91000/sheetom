@@ -6,6 +6,7 @@
 mod catalog;
 mod counter_style;
 mod declaration_state;
+mod declaration_value;
 mod extension_value;
 mod font_face;
 mod function_rule;
@@ -31,6 +32,8 @@ pub use declaration_state::{
     DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
     PendingSubstitutionGroup,
 };
+#[doc(hidden)]
+pub use declaration_value::{DeclarationValue, DeclarationValueKind};
 #[doc(hidden)]
 pub use extension_value::{
     CrossDimensionCalculationValue, IntegerCalculationValue, NamedPageSize, OffsetPositionValue,
@@ -84,7 +87,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.27";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.28";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -458,7 +461,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.27");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.28");
     }
 
     #[test]
