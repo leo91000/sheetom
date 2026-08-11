@@ -786,6 +786,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "container"
             | "flex"
             | "flex-flow"
+            | "font-variant"
             | "grid-area"
             | "grid-column"
             | "grid-row"
@@ -811,6 +812,7 @@ fn prefers_synthesized_safe_provenance(name: &str) -> bool {
     matches!(
         name,
         "border-image"
+            | "font-variant"
             | "flex-flow"
             | "grid-area"
             | "grid-column"
@@ -1500,6 +1502,103 @@ mod tests {
             state.get_property_value("rule-color"),
             "red, repeat(auto, oklch(0.5 0.2 120)), red"
         );
+    }
+
+    #[test]
+    fn font_variant_routes_each_component_through_its_longhand_grammar() {
+        let mut state = DeclarationState::new();
+        let source =
+            "text sub jis78 lining-nums stylistic(sheetom-ident) small-caps common-ligatures";
+        let expected =
+            "common-ligatures small-caps stylistic(sheetom-ident) lining-nums jis78 sub text";
+        assert_eq!(
+            state.set_property("font-variant", source, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("font-variant"), expected);
+        assert_eq!(
+            state.get_property_value("font-variant-ligatures"),
+            "common-ligatures"
+        );
+        assert_eq!(state.get_property_value("font-variant-caps"), "small-caps");
+        assert_eq!(
+            state.get_property_value("font-variant-alternates"),
+            "stylistic(sheetom-ident)"
+        );
+        assert_eq!(
+            state.get_property_value("font-variant-numeric"),
+            "lining-nums"
+        );
+        assert_eq!(state.get_property_value("font-variant-east-asian"), "jis78");
+        assert_eq!(state.get_property_value("font-variant-position"), "sub");
+        assert_eq!(state.get_property_value("font-variant-emoji"), "text");
+        assert_eq!(
+            (0..state.len())
+                .map(|index| state.item(index))
+                .collect::<Vec<_>>(),
+            vec![
+                "font-variant-ligatures",
+                "font-variant-numeric",
+                "font-variant-east-asian",
+                "font-variant-caps",
+                "font-variant-alternates",
+                "font-variant-position",
+                "font-variant-emoji",
+            ]
+        );
+        assert_eq!(state.css_text(), format!("font-variant: {expected};"));
+
+        let mut east_asian = DeclarationState::new();
+        assert_eq!(
+            east_asian.set_property("font-variant", "full-width jis78 common-ligatures", "",),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            east_asian.get_property_value("font-variant-east-asian"),
+            "jis78 full-width"
+        );
+        assert_eq!(
+            east_asian.get_property_value("font-variant"),
+            "common-ligatures jis78 full-width"
+        );
+
+        let mut keyword = DeclarationState::new();
+        assert_eq!(
+            keyword.set_property("font-variant", "normal", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            (0..keyword.len())
+                .map(|index| keyword.item(index))
+                .collect::<Vec<_>>(),
+            vec![
+                "font-variant-ligatures",
+                "font-variant-caps",
+                "font-variant-numeric",
+                "font-variant-east-asian",
+                "font-variant-alternates",
+                "font-variant-position",
+                "font-variant-emoji",
+            ]
+        );
+
+        let before = state.css_text();
+        assert_eq!(
+            state.set_property("font-variant", "lining-nums oldstyle-nums", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(state.css_text(), before);
+
+        assert_eq!(
+            state.set_property("font-variant-numeric", "slashed-zero ordinal", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.get_property_value("font-variant"),
+            "common-ligatures small-caps stylistic(sheetom-ident) slashed-zero ordinal jis78 sub text"
+        );
+        state.remove_property("font-variant-emoji");
+        assert_eq!(state.get_property_value("font-variant"), "");
     }
 
     #[test]

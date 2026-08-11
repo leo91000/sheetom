@@ -154,6 +154,7 @@ fn synthesize_special_shorthand(
         "container" => synthesize_container(records, safe),
         "flex" => synthesize_flex(records, safe),
         "font" => synthesize_font(records, safe),
+        "font-variant" => synthesize_font_variant(records, safe),
         "grid-area" => synthesize_grid_area(records, safe),
         "grid-column" | "grid-row" => synthesize_grid_line(records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
@@ -202,6 +203,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "container"
             | "flex"
             | "font"
+            | "font-variant"
             | "grid-area"
             | "grid-column"
             | "grid-row"
@@ -724,6 +726,31 @@ fn synthesize_font(records: &[&DeclarationRecord], safe: bool) -> Option<String>
     });
     components.push(record_value(records, "font-family", safe)?.to_owned());
     Some(components.join(" "))
+}
+
+fn synthesize_font_variant(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let values = [
+        record_value(records, "font-variant-ligatures", safe)?,
+        record_value(records, "font-variant-caps", safe)?,
+        record_value(records, "font-variant-alternates", safe)?,
+        record_value(records, "font-variant-numeric", safe)?,
+        record_value(records, "font-variant-east-asian", safe)?,
+        record_value(records, "font-variant-position", safe)?,
+        record_value(records, "font-variant-emoji", safe)?,
+    ];
+    if values.iter().all(|value| *value == "normal") {
+        return Some("normal".to_owned());
+    }
+    if values[0] == "none" && values[1..].iter().all(|value| *value == "normal") {
+        return Some("none".to_owned());
+    }
+    Some(
+        values
+            .into_iter()
+            .filter(|value| *value != "normal")
+            .collect::<Vec<_>>()
+            .join(" "),
+    )
 }
 
 fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -2120,7 +2147,13 @@ fn records_from_values(
     if values.len() != longhands.len() {
         return None;
     }
-    longhands
+    let expansion_order =
+        if shorthand == "font-variant" && !matches!(shorthand_input, "normal" | "none") {
+            values.iter().map(|(name, _)| *name).collect::<Vec<_>>()
+        } else {
+            longhands.to_vec()
+        };
+    expansion_order
         .iter()
         .map(|longhand| {
             let value = values
@@ -2366,15 +2399,53 @@ fn expand_font_variant(components: &[&str]) -> Option<Vec<(&'static str, String)
                 .collect(),
         );
     }
-    if components != ["normal"] {
-        return None;
+    if components == ["normal"] {
+        return Some(
+            shorthand_longhands("font-variant")?
+                .iter()
+                .map(|longhand| (*longhand, "normal".to_owned()))
+                .collect(),
+        );
     }
-    Some(
-        shorthand_longhands("font-variant")?
+    const COMPONENT_LONGHANDS: &[&str] = &[
+        "font-variant-ligatures",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-caps",
+        "font-variant-alternates",
+        "font-variant-position",
+        "font-variant-emoji",
+    ];
+    let mut grouped = COMPONENT_LONGHANDS
+        .iter()
+        .map(|longhand| (*longhand, Vec::new()))
+        .collect::<Vec<_>>();
+    for component in components {
+        let candidates = COMPONENT_LONGHANDS
             .iter()
-            .map(|longhand| (*longhand, "normal".to_owned()))
-            .collect(),
-    )
+            .filter(|longhand| typed_longhand_value(longhand, component).is_some())
+            .copied()
+            .collect::<Vec<_>>();
+        let [longhand] = candidates.as_slice() else {
+            return None;
+        };
+        grouped
+            .iter_mut()
+            .find(|(candidate, _)| candidate == longhand)?
+            .1
+            .push(*component);
+    }
+    grouped
+        .into_iter()
+        .map(|(longhand, components)| {
+            let source = if components.is_empty() {
+                "normal".to_owned()
+            } else {
+                components.join(" ")
+            };
+            typed_longhand_value(longhand, &source).map(|value| (longhand, value))
+        })
+        .collect()
 }
 
 fn expand_offset(value: &str) -> Option<Vec<(&'static str, String)>> {
