@@ -72,6 +72,11 @@
       { "id": "grammar.flex-flow.direction", "branch": "direction", "property": "flex-flow", "input": "column", "accepted": true },
       { "id": "grammar.flex-flow.wrap", "branch": "wrap", "property": "flex-flow", "input": "wrap", "accepted": true },
       { "id": "grammar.flex-flow.both", "branch": "direction and wrap", "property": "flex-flow", "input": "column wrap-reverse", "accepted": true },
+      { "id": "grammar.flex-flow.balance", "branch": "balanced wrapping", "property": "flex-flow", "input": "balance", "accepted": true },
+      { "id": "grammar.flex-flow.explicit-wrap-balance", "branch": "explicit wrap with balancing", "property": "flex-flow", "input": "wrap balance", "accepted": true },
+      { "id": "grammar.flex-flow.reordered-balance", "branch": "order-independent balancing", "property": "flex-flow", "input": "balance wrap", "accepted": true },
+      { "id": "grammar.flex-flow.reverse-balance", "branch": "reverse balanced wrapping", "property": "flex-flow", "input": "wrap-reverse balance", "accepted": true },
+      { "id": "grammar.flex-flow.nowrap-balance-invalid", "branch": "incompatible nowrap and balance", "property": "flex-flow", "input": "nowrap balance", "accepted": false, "preserves": "grammar.flex-flow.reverse-balance" },
       { "id": "grammar.flex-flow.duplicate-direction-invalid", "branch": "duplicate direction", "property": "flex-flow", "input": "row column", "accepted": false, "preserves": "grammar.flex-flow.both" }
     ] },
     { "codec": "font", "cases": [

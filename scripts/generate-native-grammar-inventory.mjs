@@ -61,7 +61,10 @@ for (const property of inventory.properties) {
 }
 for (const profile of inventory.profiles) {
   const contractCaseIds = profileContracts.get(profile.codec);
-  if (JSON.stringify(profile.contractCaseIds) !== JSON.stringify(contractCaseIds)) {
+  if (
+    mode === "--check"
+    && JSON.stringify(profile.contractCaseIds) !== JSON.stringify(contractCaseIds)
+  ) {
     throw new Error(`Native grammar contract drifted for ${profile.codec}`);
   }
   const properties = (propertiesByProfile.get(profile.codec) ?? []).sort();
@@ -142,6 +145,10 @@ const updatedInventory = {
     shorthandGrammarContractsSha256: sha256(contractsBytes),
     valueCapabilitiesSha256: sha256(valueCapabilitiesBytes),
   },
+  profiles: inventory.profiles.map(profile => ({
+    ...profile,
+    contractCaseIds: profileContracts.get(profile.codec),
+  })),
   propertyBranches,
 };
 const serialized = `${JSON.stringify(updatedInventory, null, 2)}\n`;

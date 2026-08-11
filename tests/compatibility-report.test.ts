@@ -39,7 +39,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     await writeFile(nativeCorpusReportPath, JSON.stringify({
       schemaVersion: 1,
       shorthandProperties: { passed: 129, total: 129 },
-      grammarBranches: { passed: 96, total: 96, positive: 72, negative: 24 },
+      grammarBranches: { passed: 101, total: 101, positive: 76, negative: 25 },
       propertyBranches: { passed: 10, total: 10, positive: 5, negative: 5 },
       valueCapabilities: { passed: 246, total: 246, positive: 164, negative: 82 },
       numberResultMath: { passed: 860, total: 860, positive: 616, negative: 244 },
@@ -62,6 +62,21 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       properties: 57,
       probes: 11,
       expectedAccepted: 309,
+      mismatches: {
+        acceptance: [],
+        observable: [],
+        cssText: [],
+        items: [],
+        atomicity: [],
+      },
+    }));
+    const propertyValueReportPath = path.join(directory, "property-values.json");
+    await writeFile(propertyValueReportPath, JSON.stringify({
+      schemaVersion: 1,
+      checks: ["acceptance", "observable", "cssText", "items", "atomicity"],
+      properties: 711,
+      probes: 93,
+      expectedAccepted: 11_107,
       mismatches: {
         acceptance: [],
         observable: [],
@@ -109,6 +124,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         `--native-corpus-report=${nativeCorpusReportPath}`,
         `--process-safety-report=${processSafetyReportPath}`,
         `--numeric-property-report=${numericPropertyReportPath}`,
+        `--property-value-report=${propertyValueReportPath}`,
         `--geometric-report=${geometricReportPath}`,
         ...argumentsList,
       ],
@@ -128,7 +144,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.39",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.40",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -149,6 +165,24 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         rejected: report.evidence.nativeGrammar.numericProperties.rejected,
       },
       { passed: 627, total: 627, accepted: 309, rejected: 318 },
+    );
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.propertyValues.passed,
+        total: report.evidence.nativeGrammar.propertyValues.total,
+        properties: report.evidence.nativeGrammar.propertyValues.properties,
+        probes: report.evidence.nativeGrammar.propertyValues.probes,
+        accepted: report.evidence.nativeGrammar.propertyValues.accepted,
+        rejected: report.evidence.nativeGrammar.propertyValues.rejected,
+      },
+      {
+        passed: 66_123,
+        total: 66_123,
+        properties: 711,
+        probes: 93,
+        accepted: 11_107,
+        rejected: 55_016,
+      },
     );
     assert.deepEqual(
       report.evidence.nativeWpt.map((evidence: { engine: string }) => evidence.engine),
@@ -172,7 +206,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         passed: report.evidence.nativeGrammar.grammarBranches.passed,
         total: report.evidence.nativeGrammar.grammarBranches.total,
       },
-      { profiles: 24, passed: 96, total: 96 },
+      { profiles: 24, passed: 101, total: 101 },
     );
     assert.deepEqual(
       report.evidence.nativeGrammar.shorthandProperties,

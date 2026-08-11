@@ -1603,6 +1603,107 @@
       "cssText": "flex-flow: column wrap-reverse;"
     },
     {
+      "id": "grammar.flex-flow.balance",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "row",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "balance",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "balance",
+      "priority": "",
+      "cssText": "flex-flow: balance;"
+    },
+    {
+      "id": "grammar.flex-flow.explicit-wrap-balance",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "row",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "balance",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "balance",
+      "priority": "",
+      "cssText": "flex-flow: balance;"
+    },
+    {
+      "id": "grammar.flex-flow.reordered-balance",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "row",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "balance",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "balance",
+      "priority": "",
+      "cssText": "flex-flow: balance;"
+    },
+    {
+      "id": "grammar.flex-flow.reverse-balance",
+      "accepted": true,
+      "items": [
+        "flex-direction",
+        "flex-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "flex-direction",
+          "value": "row",
+          "priority": ""
+        },
+        {
+          "name": "flex-wrap",
+          "value": "wrap-reverse balance",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "wrap-reverse balance",
+      "priority": "",
+      "cssText": "flex-flow: wrap-reverse balance;"
+    },
+    {
+      "id": "grammar.flex-flow.nowrap-balance-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
       "id": "grammar.flex-flow.duplicate-direction-invalid",
       "accepted": false,
       "items": [],
