@@ -7,8 +7,8 @@ use crate::{
     font_face::{canonical_descriptor_name, parse_descriptor_value},
     shorthand::{parse_value_with_limits, synthesize_shorthand},
     syntax::{parse_declaration_list, serialize_identifier},
-    validate_declaration_block_input, validate_declaration_value_input, EngineError,
-    ResourceLimits,
+    validate_declaration_block_input, validate_declaration_value_input, DeclarationValue,
+    EngineError, ResourceLimits,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -16,18 +16,29 @@ use std::collections::{HashMap, HashSet};
 pub struct PendingSubstitutionGroup {
     pub(crate) id: u64,
     pub(crate) shorthand: String,
-    pub(crate) observable_value: String,
-    pub(crate) safe_value: String,
+    pub(crate) value: DeclarationValue,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeclarationRecord {
     pub name: String,
-    pub observable_value: String,
-    pub safe_value: String,
+    pub value: DeclarationValue,
     pub important: bool,
-    pub pending_substitution: bool,
     pub pending_group: Option<PendingSubstitutionGroup>,
+}
+
+impl DeclarationRecord {
+    pub fn observable_value(&self) -> &str {
+        self.value.observable_css()
+    }
+
+    pub fn safe_value(&self) -> &str {
+        self.value.safe_css()
+    }
+
+    pub fn pending_substitution(&self) -> bool {
+        self.value.is_pending_substitution()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -112,7 +123,7 @@ impl DeclarationState {
         self.records
             .iter()
             .find(|record| record.name == name)
-            .map_or_else(String::new, |record| record.observable_value.clone())
+            .map_or_else(String::new, |record| record.observable_value().to_owned())
     }
 
     pub fn get_property_priority(&self, name: &str) -> &'static str {
@@ -189,17 +200,14 @@ impl DeclarationState {
             Err(outcome) => return outcome,
         };
 
-        if parsed.pending_substitution {
+        if parsed.pending_substitution() {
             if let Some(longhands) = self.shorthand_longhands(&name) {
-                let group =
-                    self.new_pending_group(name, parsed.observable_value, parsed.safe_value);
+                let group = self.new_pending_group(name, parsed.value.clone());
                 for longhand in longhands {
                     self.commit(DeclarationRecord {
                         name: (*longhand).to_owned(),
-                        observable_value: String::new(),
-                        safe_value: String::new(),
+                        value: DeclarationValue::deferred(true),
                         important,
-                        pending_substitution: true,
                         pending_group: Some(group.clone()),
                     });
                 }
@@ -217,10 +225,8 @@ impl DeclarationState {
 
         self.commit(DeclarationRecord {
             name,
-            observable_value: parsed.observable_value,
-            safe_value: parsed.safe_value,
+            value: parsed.value,
             important,
-            pending_substitution: parsed.pending_substitution,
             pending_group: None,
         });
         MutationOutcome::Applied
@@ -308,7 +314,7 @@ impl DeclarationState {
             .iter()
             .map(|record| {
                 let suffix = if record.important { " !important" } else { "" };
-                format!("{}: {}{};", record.name, record.safe_value, suffix)
+                format!("{}: {}{};", record.name, record.safe_value(), suffix)
             })
             .collect::<Vec<_>>()
             .join(" ")
@@ -399,18 +405,15 @@ impl DeclarationState {
         mut parsed: crate::shorthand::ParsedValue,
         important: bool,
     ) -> Vec<DeclarationRecord> {
-        if parsed.pending_substitution {
+        if parsed.pending_substitution() {
             if let Some(longhands) = self.shorthand_longhands(&name) {
-                let group =
-                    self.new_pending_group(name, parsed.observable_value, parsed.safe_value);
+                let group = self.new_pending_group(name, parsed.value.clone());
                 return longhands
                     .iter()
                     .map(|longhand| DeclarationRecord {
                         name: (*longhand).to_owned(),
-                        observable_value: String::new(),
-                        safe_value: String::new(),
+                        value: DeclarationValue::deferred(true),
                         important,
-                        pending_substitution: true,
                         pending_group: Some(group.clone()),
                     })
                     .collect();
@@ -422,10 +425,8 @@ impl DeclarationState {
         }
         vec![DeclarationRecord {
             name,
-            observable_value: parsed.observable_value,
-            safe_value: parsed.safe_value,
+            value: parsed.value,
             important,
-            pending_substitution: parsed.pending_substitution,
             pending_group: None,
         }]
     }
@@ -433,16 +434,14 @@ impl DeclarationState {
     fn new_pending_group(
         &mut self,
         shorthand: String,
-        observable_value: String,
-        safe_value: String,
+        value: DeclarationValue,
     ) -> PendingSubstitutionGroup {
         let id = self.next_pending_group_id;
         self.next_pending_group_id = self.next_pending_group_id.wrapping_add(1);
         PendingSubstitutionGroup {
             id,
             shorthand,
-            observable_value,
-            safe_value,
+            value,
         }
     }
 
@@ -463,17 +462,21 @@ impl DeclarationState {
         }
         let observable_value = if prefers_synthesized_provenance(name) {
             synthesize_shorthand(records, name, false)
-                .unwrap_or_else(|| parsed.observable_value.clone())
+                .unwrap_or_else(|| parsed.observable_value().to_owned())
         } else {
-            parsed.observable_value.clone()
+            parsed.observable_value().to_owned()
         };
         let safe_value = if prefers_synthesized_safe_provenance(name) {
-            synthesize_shorthand(records, name, true).unwrap_or_else(|| parsed.safe_value.clone())
+            synthesize_shorthand(records, name, true)
+                .unwrap_or_else(|| parsed.safe_value().to_owned())
         } else {
-            parsed.safe_value.clone()
+            parsed.safe_value().to_owned()
         };
         let safe_value = normalize_rgb_function_spacing(&safe_value);
-        let group = self.new_pending_group(name.to_owned(), observable_value, safe_value);
+        let group = self.new_pending_group(
+            name.to_owned(),
+            DeclarationValue::codec(safe_value, observable_value),
+        );
         for record in records {
             record.pending_group = Some(group.clone());
         }
@@ -498,9 +501,12 @@ impl DeclarationState {
                 .as_ref()
                 .is_some_and(|group| group.id == group_id)
             {
-                if !record.pending_substitution {
-                    record.observable_value =
-                        materialize_static_observable(&record.observable_value, &record.safe_value);
+                if !record.pending_substitution() {
+                    let observable = materialize_static_observable(
+                        record.observable_value(),
+                        record.safe_value(),
+                    );
+                    record.value.replace_observable(observable);
                 }
                 record.pending_group = None;
             }
@@ -529,9 +535,9 @@ impl DeclarationState {
                         || self.context == DeclarationContext::FontFace
                             && record.name == "font-variant"
                     {
-                        &record.safe_value
+                        record.safe_value()
                     } else {
-                        &record.observable_value
+                        record.observable_value()
                     };
                     format_declaration(&name, value, record.important)
                 })
@@ -616,9 +622,9 @@ impl DeclarationState {
                 record.name.clone()
             };
             let value = if safe {
-                &record.safe_value
+                record.safe_value()
             } else {
-                &record.observable_value
+                record.observable_value()
             };
             declarations.push(format_declaration(&name, value, record.important));
         }
@@ -719,7 +725,7 @@ fn format_declaration(name: &str, value: &str, important: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::{DeclarationContext, DeclarationState, MutationOutcome, ParsedDeclaration};
-    use crate::{EngineError, ResourceLimits};
+    use crate::{DeclarationValueKind, EngineError, ResourceLimits};
     use serde_json::Value;
 
     #[test]
@@ -813,6 +819,32 @@ mod tests {
         assert_eq!(state.get_property_value("--Theme"), "red");
         assert_eq!(state.get_property_value("--theme"), "blue");
         assert_eq!(state.len(), 2);
+    }
+
+    #[test]
+    fn ordinary_and_custom_declarations_retain_semantic_values() {
+        let mut state = DeclarationState::new();
+        state.set_property("width", "calc(1px + 2px)", "");
+        state.set_property("--theme", "var(--fallback, red)", "");
+
+        for record in state.records() {
+            assert_eq!(record.value.kind(), DeclarationValueKind::Semantic);
+            assert!(record.value.semantic_value().is_some());
+        }
+        assert_eq!(state.get_property_value("width"), "calc(3px)");
+        assert_eq!(
+            state.serialize_safe(),
+            "width: 3px; --theme: var(--fallback, red);"
+        );
+
+        state.set_property("padding", "1px 2px", "");
+        for record in state
+            .records()
+            .iter()
+            .filter(|record| record.name.starts_with("padding-"))
+        {
+            assert_eq!(record.value.kind(), DeclarationValueKind::Semantic);
+        }
     }
 
     #[test]
@@ -1135,10 +1167,11 @@ mod tests {
             for (actual, expected) in state.records().iter().zip(expected) {
                 let expected_name = expected["name"].as_str().unwrap_or_default();
                 let expected_value = expected["value"].as_str().unwrap_or_default();
-                if actual.name != expected_name || actual.observable_value != expected_value {
+                if actual.name != expected_name || actual.observable_value() != expected_value {
                     failures.push(format!(
                         "{property}: expected {expected_name}: {expected_value}, got {}: {}",
-                        actual.name, actual.observable_value
+                        actual.name,
+                        actual.observable_value()
                     ));
                 }
             }
@@ -1308,10 +1341,11 @@ mod tests {
             for (actual, expected) in state.records().iter().zip(expected_longhands) {
                 let expected_name = expected["name"].as_str().unwrap_or_default();
                 let expected_value = expected["value"].as_str().unwrap_or_default();
-                if actual.name != expected_name || actual.observable_value != expected_value {
+                if actual.name != expected_name || actual.observable_value() != expected_value {
                     failures.push(format!(
                         "{id}: expected {expected_name}: {expected_value}, got {}: {}",
-                        actual.name, actual.observable_value
+                        actual.name,
+                        actual.observable_value()
                     ));
                 }
             }

@@ -1,6 +1,7 @@
 use crate::{
     shorthand::ParsedValue,
     syntax::{analyze_substitutions, split_top_level_delimiter},
+    DeclarationValue,
 };
 use cssparser::{serialize_string, Parser, ParserInput};
 use lightningcss::{
@@ -66,10 +67,8 @@ pub(crate) fn parse_descriptor_value(name: &str, value: &str) -> Option<ParsedVa
     };
 
     Some(ParsedValue {
-        observable_value,
-        safe_value,
+        value: DeclarationValue::codec(safe_value, observable_value),
         longhands: None,
-        pending_substitution: false,
     })
 }
 
@@ -269,7 +268,7 @@ mod tests {
         for (name, input, expected) in cases {
             let parsed = parse_descriptor_value(name, input)
                 .unwrap_or_else(|| panic!("{name} descriptor should parse"));
-            assert_eq!(parsed.safe_value, expected, "{name}");
+            assert_eq!(parsed.safe_value(), expected, "{name}");
         }
     }
 
@@ -286,9 +285,9 @@ mod tests {
     #[test]
     fn preserves_custom_properties_and_font_variant_observability() {
         let custom = parse_descriptor_value("--x", "var(--y").expect("custom descriptor");
-        assert_eq!(custom.observable_value, "var(--y");
+        assert_eq!(custom.observable_value(), "var(--y");
         let variant = parse_descriptor_value("font-variant", "small-caps").expect("variant");
-        assert_eq!(variant.observable_value, "");
-        assert_eq!(variant.safe_value, "small-caps");
+        assert_eq!(variant.observable_value(), "");
+        assert_eq!(variant.safe_value(), "small-caps");
     }
 }

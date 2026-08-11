@@ -60,7 +60,8 @@ pub fn parse_counter_style_descriptor(name: &str, value: &str) -> Option<String>
     }
     let canonical = parse_value("--sheetom-counter-style", value, false)
         .ok()?
-        .safe_value;
+        .safe_value()
+        .to_owned();
     match name.as_str() {
         "system" => canonical_system(&canonical),
         "symbols" => canonical_symbols(&canonical),
