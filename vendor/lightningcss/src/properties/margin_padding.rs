@@ -7,14 +7,19 @@ use crate::macros::{define_shorthand, rect_shorthand, size_shorthand};
 use crate::printer::Printer;
 use crate::properties::{Property, PropertyId};
 use crate::traits::{IsCompatible, Parse, PropertyHandler, Shorthand, ToCss};
-use crate::values::{length::LengthPercentageOrAuto, rect::Rect, size::Size2D};
+use crate::values::{
+  length::LengthPercentageOrAuto,
+  rect::Rect,
+  size::Size2D,
+};
+use super::size::AnchorSizeOrAuto;
 #[cfg(feature = "visitor")]
 use crate::visitor::Visit;
 use cssparser::*;
 
 rect_shorthand! {
   /// A value for the [margin](https://drafts.csswg.org/css-box-4/#propdef-margin) shorthand property.
-  pub struct Margin<LengthPercentageOrAuto> {
+  pub struct Margin<AnchorSizeOrAuto> {
     MarginTop,
     MarginRight,
     MarginBottom,
@@ -54,7 +59,7 @@ rect_shorthand! {
 
 rect_shorthand! {
   /// A value for the [inset](https://drafts.csswg.org/css-logical/#propdef-inset) shorthand property.
-  pub struct Inset<LengthPercentageOrAuto> {
+  pub struct Inset<AnchorSizeOrAuto> {
     Top,
     Right,
     Bottom,
@@ -64,7 +69,7 @@ rect_shorthand! {
 
 size_shorthand! {
   /// A value for the [margin-block](https://drafts.csswg.org/css-logical/#propdef-margin-block) shorthand property.
-  pub struct MarginBlock<LengthPercentageOrAuto> {
+  pub struct MarginBlock<AnchorSizeOrAuto> {
     /// The block start value.
     block_start: MarginBlockStart,
     /// The block end value.
@@ -74,7 +79,7 @@ size_shorthand! {
 
 size_shorthand! {
   /// A value for the [margin-inline](https://drafts.csswg.org/css-logical/#propdef-margin-inline) shorthand property.
-  pub struct MarginInline<LengthPercentageOrAuto> {
+  pub struct MarginInline<AnchorSizeOrAuto> {
     /// The inline start value.
     inline_start: MarginInlineStart,
     /// The inline end value.
@@ -144,7 +149,7 @@ size_shorthand! {
 
 size_shorthand! {
   /// A value for the [inset-block](https://drafts.csswg.org/css-logical/#propdef-inset-block) shorthand property.
-  pub struct InsetBlock<LengthPercentageOrAuto> {
+  pub struct InsetBlock<AnchorSizeOrAuto> {
      /// The block start value.
     block_start: InsetBlockStart,
     /// The block end value.
@@ -154,7 +159,7 @@ size_shorthand! {
 
 size_shorthand! {
   /// A value for the [inset-inline](https://drafts.csswg.org/css-logical/#propdef-inset-inline) shorthand property.
-  pub struct InsetInline<LengthPercentageOrAuto> {
+  pub struct InsetInline<AnchorSizeOrAuto> {
     /// The inline start value.
     inline_start: InsetInlineStart,
     /// The inline end value.
@@ -163,13 +168,13 @@ size_shorthand! {
 }
 
 macro_rules! side_handler {
-  ($name: ident, $top: ident, $bottom: ident, $left: ident, $right: ident, $block_start: ident, $block_end: ident, $inline_start: ident, $inline_end: ident, $shorthand: ident, $block_shorthand: ident, $inline_shorthand: ident, $shorthand_category: ident $(, $feature: ident, $shorthand_feature: ident)?) => {
+  ($name: ident, $value: ty, $top: ident, $bottom: ident, $left: ident, $right: ident, $block_start: ident, $block_end: ident, $inline_start: ident, $inline_end: ident, $shorthand: ident, $block_shorthand: ident, $inline_shorthand: ident, $shorthand_category: ident $(, $feature: ident, $shorthand_feature: ident)?) => {
     #[derive(Debug, Default)]
     pub(crate) struct $name<'i> {
-      top: Option<LengthPercentageOrAuto>,
-      bottom: Option<LengthPercentageOrAuto>,
-      left: Option<LengthPercentageOrAuto>,
-      right: Option<LengthPercentageOrAuto>,
+      top: Option<$value>,
+      bottom: Option<$value>,
+      left: Option<$value>,
+      right: Option<$value>,
       block_start: Option<Property<'i>>,
       block_end: Option<Property<'i>>,
       inline_start: Option<Property<'i>>,
@@ -411,6 +416,7 @@ macro_rules! side_handler {
 
 side_handler!(
   MarginHandler,
+  AnchorSizeOrAuto,
   MarginTop,
   MarginBottom,
   MarginLeft,
@@ -429,6 +435,7 @@ side_handler!(
 
 side_handler!(
   PaddingHandler,
+  LengthPercentageOrAuto,
   PaddingTop,
   PaddingBottom,
   PaddingLeft,
@@ -447,6 +454,7 @@ side_handler!(
 
 side_handler!(
   ScrollMarginHandler,
+  LengthPercentageOrAuto,
   ScrollMarginTop,
   ScrollMarginBottom,
   ScrollMarginLeft,
@@ -463,6 +471,7 @@ side_handler!(
 
 side_handler!(
   ScrollPaddingHandler,
+  LengthPercentageOrAuto,
   ScrollPaddingTop,
   ScrollPaddingBottom,
   ScrollPaddingLeft,
@@ -479,6 +488,7 @@ side_handler!(
 
 side_handler!(
   InsetHandler,
+  AnchorSizeOrAuto,
   Top,
   Bottom,
   Left,

@@ -80,6 +80,35 @@ pub enum SizeLength {
 /// within math expressions.
 pub type SizeLengthPercentage = DimensionPercentage<SizeLength>;
 
+/// Either an anchor-aware `<length-percentage>`, or the `auto` keyword.
+///
+/// This is used by inset and margin properties, which accept `anchor-size()`
+/// in addition to the ordinary `<length-percentage>` grammar.
+#[derive(Debug, Clone, PartialEq, Parse, ToCss)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum AnchorSizeOrAuto {
+  /// The `auto` keyword.
+  Auto,
+  /// An anchor-aware `<length-percentage>` value.
+  LengthPercentage(SizeLengthPercentage),
+}
+
+impl IsCompatible for AnchorSizeOrAuto {
+  fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
+    match self {
+      AnchorSizeOrAuto::Auto => true,
+      AnchorSizeOrAuto::LengthPercentage(value) => value.is_compatible(browsers),
+    }
+  }
+}
+
 impl<'i> Parse<'i> for AnchorSize {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     input.expect_function_matching("anchor-size")?;

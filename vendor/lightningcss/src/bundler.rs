@@ -392,7 +392,10 @@ where
 
         if let Some(supports) = rule.supports {
           if let Some(existing_supports) = &mut entry.supports {
-            existing_supports.or(&supports)
+            existing_supports.or(&supports);
+            if let SupportsCondition::Or(conditions) = existing_supports {
+              conditions.sort_by_cached_key(supports_condition_sort_key);
+            }
           }
         } else {
           entry.supports = None;
@@ -832,6 +835,15 @@ fn media_query_sort_key(query: &MediaQuery<'_>) -> String {
       ..PrinterOptions::default()
     })
     .unwrap_or_else(|_| format!("{query:?}"))
+}
+
+fn supports_condition_sort_key(condition: &SupportsCondition<'_>) -> String {
+  condition
+    .to_css_string(PrinterOptions {
+      minify: true,
+      ..PrinterOptions::default()
+    })
+    .unwrap_or_else(|_| format!("{condition:?}"))
 }
 
 fn combine_supports<'a>(

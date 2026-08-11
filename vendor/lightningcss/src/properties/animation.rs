@@ -433,7 +433,7 @@ impl ToCss for ViewTimeline {
 }
 
 /// A [view progress timeline range](https://drafts.csswg.org/scroll-animations/#view-timelines-ranges)
-#[derive(Debug, Clone, PartialEq, Parse, ToCss)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
 #[cfg_attr(
   feature = "serde",
@@ -443,6 +443,8 @@ impl ToCss for ViewTimeline {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub enum TimelineRangeName {
+  /// Represents the full range of a scroll progress timeline.
+  Scroll,
   /// Represents the full range of the view progress timeline.
   Cover,
   /// Represents the range during which the principal box is either fully contained by,
@@ -456,6 +458,42 @@ pub enum TimelineRangeName {
   EntryCrossing,
   /// Represents the range during which the principal box crosses the start border edge.
   ExitCrossing,
+}
+
+impl<'i> Parse<'i> for TimelineRangeName {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    for (keyword, value) in [
+      ("scroll", Self::Scroll),
+      ("cover", Self::Cover),
+      ("contain", Self::Contain),
+      ("entry", Self::Entry),
+      ("exit", Self::Exit),
+      ("entry-crossing", Self::EntryCrossing),
+      ("exit-crossing", Self::ExitCrossing),
+    ] {
+      if input.try_parse(|input| input.expect_ident_matching(keyword)).is_ok() {
+        return Ok(value)
+      }
+    }
+    Err(input.new_custom_error(ParserError::InvalidValue))
+  }
+}
+
+impl ToCss for TimelineRangeName {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      Self::Scroll => dest.write_str("scroll"),
+      Self::Cover => dest.write_str("cover"),
+      Self::Contain => dest.write_str("contain"),
+      Self::Entry => dest.write_str("entry"),
+      Self::Exit => dest.write_str("exit"),
+      Self::EntryCrossing => dest.write_str("entry-crossing"),
+      Self::ExitCrossing => dest.write_str("exit-crossing"),
+    }
+  }
 }
 
 /// A value for the [animation-range-start](https://drafts.csswg.org/scroll-animations/#animation-range-start)
@@ -1216,6 +1254,37 @@ mod tests {
         duration,
         Property::AnimationDuration(ref values, _) if values.as_slice() == [expected]
       ));
+    }
+  }
+
+  #[test]
+  fn parses_only_supported_timeline_range_names() {
+    for (name, source, expected) in [
+      ("animation-range", "scroll", "scroll"),
+      ("animation-range-start", "cover 10%", "cover 10%"),
+      ("animation-range-end", "contain", "contain"),
+    ] {
+      let property = Property::parse_string(PropertyId::from(name), source, ParserOptions::default())
+        .expect("supported timeline range should parse");
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("timeline range should serialize"),
+        expected,
+        "{name}: {source}"
+      );
+    }
+
+    for source in ["red", "normal extra", "--custom"] {
+      let property = Property::parse_string(
+        PropertyId::from("animation-range-start"),
+        source,
+        ParserOptions::default(),
+      );
+      assert!(
+        property.is_err() || matches!(property, Ok(Property::Unparsed(_))),
+        "animation-range-start: {source}"
+      );
     }
   }
 }
