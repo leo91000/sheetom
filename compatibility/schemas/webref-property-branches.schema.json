@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/webref-property-branches.schema.json",
+  "title": "Chromium Webref Property Branch Observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "baseline", "coverage", "profiles", "accepted"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["browser", "userAgent", "webrefVersion", "webrefCssSha256", "propertyManifestSha256", "semanticTerminalsSha256", "generator"],
+      "properties": {
+        "browser": { "const": "chromium" },
+        "userAgent": { "type": "string", "minLength": 1 },
+        "webrefVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "webrefCssSha256": { "$ref": "#/$defs/sha256" },
+        "propertyManifestSha256": { "$ref": "#/$defs/sha256" },
+        "semanticTerminalsSha256": { "$ref": "#/$defs/sha256" },
+        "generator": { "const": "webref-value-definition-sampler@1" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifestedProperties", "webrefProperties", "profiles", "samples", "branches", "checks", "accepted", "rejected", "missingInvalidNeighborCount", "missingProperties", "representativeTerminals"],
+      "properties": {
+        "manifestedProperties": { "type": "integer", "minimum": 1 },
+        "webrefProperties": { "type": "integer", "minimum": 1 },
+        "profiles": { "type": "integer", "minimum": 1 },
+        "samples": { "type": "integer", "minimum": 1 },
+        "branches": { "type": "integer", "minimum": 1 },
+        "checks": { "type": "integer", "minimum": 1 },
+        "accepted": { "type": "integer", "minimum": 1 },
+        "rejected": { "type": "integer", "minimum": 1 },
+        "missingInvalidNeighborCount": { "const": 0 },
+        "missingProperties": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "representativeTerminals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/profile" }
+    },
+    "accepted": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 7,
+        "maxItems": 7,
+        "prefixItems": [
+          { "type": "string", "pattern": "^webref-profile\\.[a-f0-9]{16}$" },
+          { "type": "string", "minLength": 1 },
+          { "type": "string", "pattern": "^webref-sample\\.[a-f0-9]{16}$" },
+          { "type": "string" },
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                { "type": "string", "minLength": 1 },
+                { "type": "string" },
+                { "type": "string" }
+              ]
+            }
+          },
+          { "type": "string", "minLength": 1 }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "syntax", "href", "representativeProperty", "properties", "samples"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^webref-profile\\.[a-f0-9]{16}$" },
+        "syntax": { "type": "string", "minLength": 1 },
+        "href": { "type": "string", "minLength": 1 },
+        "representativeProperty": { "type": "string", "minLength": 1 },
+        "properties": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "samples": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "input", "branches"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^webref-sample\\.[a-f0-9]{16}$" },
+              "input": { "type": "string", "minLength": 1 },
+              "branches": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

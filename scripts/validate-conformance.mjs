@@ -62,6 +62,9 @@ const numericPropertyContractsSchema = await readJson(path.join(compatibilityRoo
 const browserLonghandKeywordContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-keyword-contracts.schema.json"));
 const browserLonghandCompositeContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-composite-contracts.schema.json"));
 const browserGeometricContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-geometric-contracts.schema.json"));
+const webrefSemanticTerminalsSchema = await readJson(path.join(compatibilityRoot, "schemas/webref-semantic-terminals.schema.json"));
+const webrefPropertyBranchesSchema = await readJson(path.join(compatibilityRoot, "schemas/webref-property-branches.schema.json"));
+const webrefBranchRatchetSchema = await readJson(path.join(compatibilityRoot, "schemas/webref-branch-ratchet.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -81,6 +84,9 @@ const validateNumericPropertyContracts = ajv.compile(numericPropertyContractsSch
 const validateBrowserLonghandKeywordContracts = ajv.compile(browserLonghandKeywordContractsSchema);
 const validateBrowserLonghandCompositeContracts = ajv.compile(browserLonghandCompositeContractsSchema);
 const validateBrowserGeometricContracts = ajv.compile(browserGeometricContractsSchema);
+const validateWebrefSemanticTerminals = ajv.compile(webrefSemanticTerminalsSchema);
+const validateWebrefPropertyBranches = ajv.compile(webrefPropertyBranchesSchema);
+const validateWebrefBranchRatchet = ajv.compile(webrefBranchRatchetSchema);
 
 const propertyValueProbesFile = path.join(
   compatibilityRoot,
@@ -287,6 +293,187 @@ assert.deepEqual(
   [...observedPropertyNames].sort(),
   [...chromiumSupportedProperties].sort(),
   "Every Chromium property must have at least one accepted Property Value probe",
+);
+
+const webrefSemanticTerminalsFile = path.join(
+  compatibilityRoot,
+  "webref-semantic-terminals.json",
+);
+const webrefPropertyBranchesFile = path.join(
+  compatibilityRoot,
+  "webref-property-branches.json",
+);
+const webrefBranchRatchetFile = path.join(
+  compatibilityRoot,
+  "webref-branch-ratchet.json",
+);
+const webrefSemanticTerminalsBytes = await readFile(webrefSemanticTerminalsFile);
+const webrefPropertyBranchesBytes = await readFile(webrefPropertyBranchesFile);
+const webrefSemanticTerminals = JSON.parse(webrefSemanticTerminalsBytes.toString("utf8"));
+const webrefPropertyBranches = JSON.parse(webrefPropertyBranchesBytes.toString("utf8"));
+const webrefBranchRatchet = await readJson(webrefBranchRatchetFile);
+validateOrThrow(
+  validateWebrefSemanticTerminals,
+  webrefSemanticTerminals,
+  webrefSemanticTerminalsFile,
+);
+validateOrThrow(
+  validateWebrefPropertyBranches,
+  webrefPropertyBranches,
+  webrefPropertyBranchesFile,
+);
+validateOrThrow(
+  validateWebrefBranchRatchet,
+  webrefBranchRatchet,
+  webrefBranchRatchetFile,
+);
+assert.equal(
+  new Set(webrefSemanticTerminals.terminals.map(terminal => terminal.type)).size,
+  webrefSemanticTerminals.terminals.length,
+  "Webref semantic terminal types must be unique",
+);
+assert.equal(
+  webrefPropertyBranches.baseline.userAgent,
+  propertyValueObservations.baseline.userAgent,
+  "Webref branches and Property Value observations must use the same Chromium baseline",
+);
+assert.equal(
+  webrefPropertyBranches.baseline.propertyManifestSha256,
+  createHash("sha256")
+    .update(await readFile(path.join(repositoryRoot, "src/chromium-properties.ts")))
+    .digest("hex"),
+  "Webref branches are stale for chromium-properties.ts",
+);
+assert.equal(
+  webrefPropertyBranches.baseline.semanticTerminalsSha256,
+  createHash("sha256").update(webrefSemanticTerminalsBytes).digest("hex"),
+  "Webref branches are stale for webref-semantic-terminals.json",
+);
+const webrefPackage = await readJson(path.join(
+  repositoryRoot,
+  "node_modules/@webref/css/package.json",
+));
+assert.equal(
+  webrefPropertyBranches.baseline.webrefVersion,
+  webrefPackage.version,
+  "Webref branch evidence must use the installed pinned @webref/css version",
+);
+assert.equal(
+  webrefPropertyBranches.baseline.webrefCssSha256,
+  createHash("sha256")
+    .update(await readFile(path.join(repositoryRoot, "node_modules/@webref/css/css.json")))
+    .digest("hex"),
+  "Webref branch evidence is stale for the installed @webref/css data",
+);
+
+const webrefProfileIds = new Set();
+const webrefProfileSyntaxes = new Set();
+const webrefCoveredProperties = new Set();
+const webrefCandidateKeys = new Set();
+let webrefSampleCount = 0;
+let webrefBranchCount = 0;
+let webrefCheckCount = 0;
+for (const profile of webrefPropertyBranches.profiles) {
+  assert.ok(!webrefProfileIds.has(profile.id), `Duplicate Webref profile ${profile.id}`);
+  assert.ok(
+    !webrefProfileSyntaxes.has(profile.syntax),
+    `Duplicate Webref syntax profile ${profile.syntax}`,
+  );
+  webrefProfileIds.add(profile.id);
+  webrefProfileSyntaxes.add(profile.syntax);
+  const sampleIds = new Set();
+  for (const sample of profile.samples) {
+    assert.ok(!sampleIds.has(sample.id), `Duplicate Webref sample ${sample.id}`);
+    sampleIds.add(sample.id);
+    webrefBranchCount += sample.branches.length;
+  }
+  webrefSampleCount += profile.samples.length;
+  webrefCheckCount += profile.properties.length * profile.samples.length;
+  for (const property of profile.properties) {
+    assert.ok(
+      chromiumSupportedProperties.has(property),
+      `Webref profile contains an unknown Chromium property: ${property}`,
+    );
+    assert.ok(
+      !webrefCoveredProperties.has(property),
+      `Webref property is assigned to multiple syntax profiles: ${property}`,
+    );
+    webrefCoveredProperties.add(property);
+    for (const sample of profile.samples) {
+      webrefCandidateKeys.add(`${property}\0${sample.id}`);
+    }
+  }
+}
+const expectedMissingWebrefProperties = [...chromiumSupportedProperties]
+  .filter(property => !webrefCoveredProperties.has(property))
+  .sort();
+assert.deepEqual(
+  webrefPropertyBranches.coverage.missingProperties,
+  expectedMissingWebrefProperties,
+  "Every manifested property absent from Webref must remain explicitly listed",
+);
+assert.equal(
+  webrefPropertyBranches.coverage.manifestedProperties,
+  chromiumSupportedProperties.size,
+  "Webref branch evidence must account for the complete Chromium property manifest",
+);
+assert.equal(webrefPropertyBranches.coverage.webrefProperties, webrefCoveredProperties.size);
+assert.equal(webrefPropertyBranches.coverage.profiles, webrefPropertyBranches.profiles.length);
+assert.equal(webrefPropertyBranches.coverage.samples, webrefSampleCount);
+assert.equal(webrefPropertyBranches.coverage.branches, webrefBranchCount);
+assert.equal(webrefPropertyBranches.coverage.checks, webrefCheckCount);
+assert.equal(
+  webrefPropertyBranches.coverage.accepted + webrefPropertyBranches.coverage.rejected,
+  webrefCheckCount,
+  "Webref Chromium evidence must classify every generated candidate",
+);
+assert.equal(
+  webrefPropertyBranches.coverage.accepted,
+  webrefPropertyBranches.accepted.length,
+  "Webref accepted count drifted",
+);
+const expectedRepresentativeTerminals = webrefSemanticTerminals.terminals
+  .filter(terminal => terminal.coverage === "representative")
+  .map(terminal => terminal.type);
+assert.deepEqual(
+  webrefPropertyBranches.coverage.representativeTerminals,
+  expectedRepresentativeTerminals,
+  "Webref representative terminal dispositions drifted",
+);
+const webrefAcceptedKeys = new Set();
+for (const observation of webrefPropertyBranches.accepted) {
+  const [profileId, property, sampleId] = observation;
+  assert.ok(webrefProfileIds.has(profileId), `Unknown Webref profile ${profileId}`);
+  const key = `${property}\0${sampleId}`;
+  assert.ok(webrefCandidateKeys.has(key), `Unknown Webref candidate ${property}/${sampleId}`);
+  assert.ok(!webrefAcceptedKeys.has(key), `Duplicate Webref observation ${property}/${sampleId}`);
+  webrefAcceptedKeys.add(key);
+}
+assert.equal(
+  webrefBranchRatchet.corpusSha256,
+  createHash("sha256").update(webrefPropertyBranchesBytes).digest("hex"),
+  "Webref mismatch ratchet is stale for the checked-in branch corpus",
+);
+assert.equal(
+  webrefBranchRatchet.mismatchCases,
+  webrefBranchRatchet.unresolved.length,
+  "Webref mismatch case count drifted",
+);
+const webrefMismatchKeys = new Set();
+const webrefMismatchSummary = Object.fromEntries(
+  Object.keys(webrefBranchRatchet.summary).map(kind => [kind, 0]),
+);
+for (const unresolved of webrefBranchRatchet.unresolved) {
+  const key = `${unresolved.property}\0${unresolved.sample}`;
+  assert.ok(webrefCandidateKeys.has(key), `Unknown Webref mismatch ${unresolved.property}/${unresolved.sample}`);
+  assert.ok(!webrefMismatchKeys.has(key), `Duplicate Webref mismatch ${unresolved.property}/${unresolved.sample}`);
+  webrefMismatchKeys.add(key);
+  for (const kind of unresolved.kinds) webrefMismatchSummary[kind] += 1;
+}
+assert.deepEqual(
+  webrefBranchRatchet.summary,
+  webrefMismatchSummary,
+  "Webref mismatch kind totals drifted",
 );
 
 const numberResultMathCorpusFile = path.join(
