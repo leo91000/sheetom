@@ -362,6 +362,65 @@
         { "id": "string", "input": "\"-\"", "invalidNeighbor": "-" },
         { "id": "empty-string", "input": "\"\"", "invalidNeighbor": "--hyphen" }
       ]
+    },
+    {
+      "property": "clip",
+      "branches": [
+        { "id": "auto", "input": "auto", "invalidNeighbor": "auto rect(0 0 0 0)" },
+        { "id": "comma-rect", "input": "rect(auto, 1px, 2px, 3px)", "invalidNeighbor": "rect(auto, 1px 2px, 3px)" },
+        { "id": "space-rect", "input": "rect(auto 1px 2px 3px)", "invalidNeighbor": "rect(auto 1px 2px)" },
+        { "id": "unitless-zero", "input": "rect(0 0 0 0)", "invalidNeighbor": "rect(1 2px 3px 4px)" },
+        { "id": "negative-length", "input": "rect(-1px -2px -3px -4px)", "invalidNeighbor": "rect(-1px -2px -3px none)" },
+        { "id": "calculation", "input": "rect(calc(1px + 2px), auto, 20px, 0)", "invalidNeighbor": "rect(calc(1% + 2px), auto, 20px, 0)" }
+      ]
+    },
+    {
+      "property": "dynamic-range-limit",
+      "branches": [
+        { "id": "standard", "input": "standard", "invalidNeighbor": "standard no-limit" },
+        { "id": "no-limit", "input": "no-limit", "invalidNeighbor": "none" },
+        { "id": "constrained", "input": "constrained", "invalidNeighbor": "auto" },
+        { "id": "single-mix", "input": "dynamic-range-limit-mix(standard 100%)", "invalidNeighbor": "dynamic-range-limit-mix(standard 0%)" },
+        { "id": "multiple-mix", "input": "dynamic-range-limit-mix(standard 50%, no-limit 50%)", "invalidNeighbor": "dynamic-range-limit-mix(standard 101%)" },
+        { "id": "calculated-percentage", "input": "dynamic-range-limit-mix(standard calc(50%), no-limit 50%)", "invalidNeighbor": "dynamic-range-limit-mix(standard 50px)" },
+        { "id": "preserved-math-function", "input": "dynamic-range-limit-mix(standard min(20%, 30%), constrained 80%)", "invalidNeighbor": "dynamic-range-limit-mix(standard min(20px, 30px))" },
+        { "id": "recursive-mix", "input": "dynamic-range-limit-mix(dynamic-range-limit-mix(standard 50%, no-limit 50%) 40%, constrained 60%)", "invalidNeighbor": "dynamic-range-limit-mix(dynamic-range-limit-mix(standard 0%, no-limit 0%) 40%, constrained 60%)" }
+      ]
+    },
+    {
+      "property": "animation-trigger",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none play" },
+        { "id": "play", "input": "--x play", "invalidNeighbor": "--x" },
+        { "id": "pause", "input": "--x pause", "invalidNeighbor": "x pause" },
+        { "id": "reset", "input": "--x reset", "invalidNeighbor": "--x invalid" },
+        { "id": "play-once", "input": "--x play-once", "invalidNeighbor": "--x once" },
+        { "id": "play-alternate", "input": "--x play-alternate", "invalidNeighbor": "--x alternate" },
+        { "id": "play-forwards", "input": "--x play-forwards", "invalidNeighbor": "--x forwards" },
+        { "id": "play-backwards", "input": "--x play-backwards", "invalidNeighbor": "--x backwards" },
+        { "id": "play-pause", "input": "--x play-pause", "invalidNeighbor": "--x play pause reset" },
+        { "id": "replay", "input": "--x replay", "invalidNeighbor": "--x replay replay replay" },
+        { "id": "none-behavior", "input": "--x none none", "invalidNeighbor": "--x none none none" },
+        { "id": "enter-exit", "input": "--x play pause", "invalidNeighbor": "--x play invalid" },
+        { "id": "animation-list", "input": "--x play pause, --y reset", "invalidNeighbor": "--x play pause, foo reset" }
+      ]
+    },
+    {
+      "property": "position-area",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none top" },
+        { "id": "general", "input": "center", "invalidNeighbor": "auto" },
+        { "id": "horizontal-vertical", "input": "left top", "invalidNeighbor": "left right" },
+        { "id": "reordered-physical", "input": "bottom right", "invalidNeighbor": "top bottom" },
+        { "id": "block-inline", "input": "block-start inline-end", "invalidNeighbor": "block-start block-end" },
+        { "id": "reordered-logical", "input": "inline-end block-start", "invalidNeighbor": "inline-start inline-end" },
+        { "id": "self-block-inline", "input": "self-block-end self-inline-start", "invalidNeighbor": "self-block-start self-block-end" },
+        { "id": "start-end-pair", "input": "start end", "invalidNeighbor": "start left" },
+        { "id": "self-start-end-pair", "input": "self-start span-self-end", "invalidNeighbor": "self-start top" },
+        { "id": "repeated-collapse", "input": "start start", "invalidNeighbor": "start start end" },
+        { "id": "default-collapse", "input": "span-all top", "invalidNeighbor": "span-all top left" },
+        { "id": "repeated-general", "input": "center span-all", "invalidNeighbor": "center span-all top" }
+      ]
     }
   ]
 }

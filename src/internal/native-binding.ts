@@ -17,9 +17,14 @@ export interface NativeDeclarationStateHandle {
   item(index: number): string;
   getPropertyValue(name: string): string;
   getPropertyPriority(name: string): string;
-  setProperty(name: string, value: string, priority: string): NativeMutationOutcome;
+  setProperty(
+    name: string,
+    value: string,
+    priority: string,
+    reservedNestingDepth?: number,
+  ): NativeMutationOutcome;
   removeProperty(name: string): string;
-  replaceCssText(source: string): void;
+  replaceCssText(source: string, reservedNestingDepth?: number): void;
   serializeFormatted(safe: boolean, indent: string, separator: string): string;
 }
 

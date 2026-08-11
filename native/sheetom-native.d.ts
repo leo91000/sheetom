@@ -6,10 +6,10 @@ export declare class NativeDeclarationState {
   item(index: number): string
   getPropertyValue(name: string): string
   getPropertyPriority(name: string): string
-  setProperty(name: string, value: string, priority: string): string
+  setProperty(name: string, value: string, priority: string, reservedNestingDepth?: number | undefined | null): string
   removeProperty(name: string): string
   serializeLonghands(): string
-  replaceCssText(source: string): void
+  replaceCssText(source: string, reservedNestingDepth?: number | undefined | null): void
   clear(): void
   get cssText(): string
   serializeSafe(): string

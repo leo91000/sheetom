@@ -307,7 +307,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 22, 209, 51]);
+        assert_eq!(owner_counts, [0, 429, 22, 213, 47]);
     }
 
     #[test]
@@ -323,16 +323,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             unsupported,
-            [
-                "animation-trigger",
-                "border-shape",
-                "clip",
-                "d",
-                "dynamic-range-limit",
-                "object-view-box",
-                "position-area",
-                "shape-outside",
-            ]
+            ["border-shape", "d", "object-view-box", "shape-outside",]
         );
     }
 

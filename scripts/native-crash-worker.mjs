@@ -16,7 +16,9 @@ const crashCase = JSON.parse(Buffer.from(encodedCase, "base64url").toString("utf
 const require = createRequire(import.meta.url);
 const binding = require(artifactPath);
 let source = crashCase.source;
-if (crashCase.oversized) {
+if (crashCase.mode === "dynamic-range-depth") {
+    source = `dynamic-range-limit: ${"dynamic-range-limit-mix(".repeat(crashCase.nestingDepth)}standard${" 100%)".repeat(crashCase.nestingDepth)}`;
+} else if (crashCase.oversized) {
     source = "x".repeat((1024 * 1024) + 1);
 } else if (crashCase.nestingDepth) {
     source = `--x: ${"fn(".repeat(crashCase.nestingDepth)}value`;

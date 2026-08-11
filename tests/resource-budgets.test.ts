@@ -150,14 +150,35 @@ test("exact UTF-8 byte, syntax, rule and declaration boundaries remain usable", 
 
   const syntaxSheet = new CSSStyleSheet({
     resourceBudget: {
-      maxDeclarationValueBytes: 8,
-      maxSyntaxDepth: 2,
+      maxDeclarationValueBytes: 16,
+      maxSyntaxDepth: 3,
     },
   });
   syntaxSheet.replaceSync(".a{}");
   const syntaxRule = firstStyleRule(syntaxSheet);
   syntaxRule.style.setProperty("--value", "fn(fn())");
   assert.equal(syntaxRule.style.getPropertyValue("--value"), "fn(fn())");
+
+  assert.throws(
+    () => syntaxRule.style.setProperty("--value", "fn(fn(fn()))"),
+    error => error instanceof RangeError && error.message.includes("SHEETOM_NESTING_LIMIT"),
+  );
+  assert.equal(syntaxRule.style.getPropertyValue("--value"), "fn(fn())");
+
+  const nestedSheet = new CSSStyleSheet({
+    resourceBudget: { maxSyntaxDepth: 3 },
+  });
+  nestedSheet.replaceSync("@media all { .a {} }");
+  const media = nestedSheet.cssRules[0];
+  assert.ok(media instanceof CSSMediaRule);
+  const nestedRule = media.cssRules[0];
+  assert.ok(nestedRule instanceof CSSStyleRule);
+  nestedRule.style.setProperty("--value", "fn()");
+  assert.throws(
+    () => nestedRule.style.setProperty("--value", "fn(fn())"),
+    error => error instanceof RangeError && error.message.includes("SHEETOM_NESTING_LIMIT"),
+  );
+  assert.equal(nestedRule.style.getPropertyValue("--value"), "fn()");
 });
 
 test("internal parser wrappers do not consume the caller's source budget", () => {

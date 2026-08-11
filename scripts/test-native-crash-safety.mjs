@@ -130,6 +130,14 @@ const crashCases = [
         expectError: "SHEETOM_PARSE_ERROR",
     },
     {
+        name: "dynamic range mix at the resource limit remains process-safe",
+        mode: "dynamic-range-depth",
+        nestingDepth: 4096,
+        expectError: "SHEETOM_PARSE_ERROR",
+        expectPublicError: "SHEETOM_NESTING_LIMIT",
+        public: true,
+    },
+    {
         name: "nesting above the supported limit",
         nestingDepth: 4097,
         expectError: "SHEETOM_NESTING_LIMIT",
