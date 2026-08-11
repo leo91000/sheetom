@@ -898,6 +898,7 @@ pub(crate) fn parse_value_with_limits(
                     value: DeclarationValue::css_wide(keyword.clone()),
                     important,
                     pending_group: None,
+                    alias_value: None,
                 })
                 .collect()
         });
@@ -1008,6 +1009,7 @@ pub(crate) fn parse_value_with_limits(
             value: declaration_value,
             important,
             pending_group: None,
+            alias_value: None,
         });
     }
 
@@ -1291,6 +1293,7 @@ fn expand_special_shorthand(
                     value: DeclarationValue::deferred(false),
                     important,
                     pending_group: None,
+                    alias_value: None,
                 })
                 .collect(),
         );
@@ -1622,6 +1625,7 @@ fn records_from_values(
                 value: semantic_longhand_value(longhand, value, value, limits)?,
                 important,
                 pending_group: None,
+                alias_value: None,
             })
         })
         .collect()
@@ -2278,6 +2282,7 @@ fn expand_structural_shorthand(
             value: semantic_longhand_value(longhand, &canonical, component.trim(), limits)?,
             important,
             pending_group: None,
+            alias_value: None,
         });
     }
     Some(records)

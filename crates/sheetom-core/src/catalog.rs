@@ -1,5 +1,7 @@
 use lightningcss::properties::PropertyId;
 
+use crate::browser_longhand::has_browser_longhand_grammar;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PropertyGrammarExtension {
     AspectRatio,
@@ -107,6 +109,15 @@ pub(crate) fn canonical_property_name(name: &str) -> Option<String> {
         .then_some(lower)
 }
 
+pub(crate) fn property_alias_hides_value(name: &str) -> bool {
+    matches!(
+        name.to_ascii_lowercase().as_str(),
+        "-webkit-column-break-after"
+            | "-webkit-column-break-before"
+            | "-webkit-column-break-inside"
+    )
+}
+
 pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
     let canonical_name = canonical_property_name(name)?;
     if canonical_name.starts_with("--") {
@@ -144,6 +155,9 @@ pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
 }
 
 fn property_grammar_extensions(name: &str) -> &'static [PropertyGrammarExtension] {
+    if has_browser_longhand_grammar(name) {
+        return &[PropertyGrammarExtension::BrowserLonghand];
+    }
     let Ok(index) = generated::PROPERTY_GRAMMAR_EXTENSIONS
         .binary_search_by_key(&name, |(property, _)| *property)
     else {
@@ -293,7 +307,72 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 22, 97, 163]);
+        assert_eq!(owner_counts, [0, 429, 22, 168, 92]);
+    }
+
+    #[test]
+    fn tracks_the_remaining_complex_ordinary_grammars() {
+        let unsupported = super::generated::SUPPORTED_PROPERTIES
+            .iter()
+            .copied()
+            .filter(|name| shorthand_longhands(name).is_none())
+            .filter(|name| {
+                property_grammar(name)
+                    .is_some_and(|grammar| grammar.owner() == PropertyGrammarOwner::Unsupported)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            unsupported,
+            [
+                "-webkit-locale",
+                "-webkit-perspective-origin-x",
+                "-webkit-perspective-origin-y",
+                "-webkit-text-decorations-in-effect",
+                "-webkit-transform-origin-x",
+                "-webkit-transform-origin-y",
+                "-webkit-transform-origin-z",
+                "anchor-name",
+                "anchor-scope",
+                "animation-trigger",
+                "border-shape",
+                "clip",
+                "contain",
+                "contain-intrinsic-block-size",
+                "contain-intrinsic-inline-size",
+                "counter-increment",
+                "counter-reset",
+                "counter-set",
+                "d",
+                "dynamic-range-limit",
+                "hyphenate-character",
+                "object-position",
+                "object-view-box",
+                "outline-offset",
+                "overflow-clip-margin",
+                "page",
+                "page-orientation",
+                "paint-order",
+                "position-anchor",
+                "position-area",
+                "position-visibility",
+                "quotes",
+                "ruby-overhang",
+                "scroll-snap-align",
+                "scroll-snap-type",
+                "scrollbar-gutter",
+                "shape-margin",
+                "shape-outside",
+                "text-autospace",
+                "text-fit",
+                "text-underline-offset",
+                "text-underline-position",
+                "timeline-scope",
+                "touch-action",
+                "trigger-scope",
+                "view-transition-scope",
+                "will-change",
+            ]
+        );
     }
 
     #[test]
@@ -326,7 +405,17 @@ mod tests {
         assert_eq!(content.extensions(), &[PropertyGrammarExtension::Content]);
         assert!(!content.has_standard_parser());
 
-        let unsupported = property_grammar("-webkit-font-smoothing").unwrap();
+        let browser_longhand = property_grammar("-webkit-font-smoothing").unwrap();
+        assert_eq!(
+            browser_longhand.owner(),
+            PropertyGrammarOwner::SheetomExtension
+        );
+        assert_eq!(
+            browser_longhand.extensions(),
+            &[PropertyGrammarExtension::BrowserLonghand]
+        );
+
+        let unsupported = property_grammar("border-shape").unwrap();
         assert_eq!(unsupported.owner(), PropertyGrammarOwner::Unsupported);
 
         let custom = property_grammar("--Theme").unwrap();
