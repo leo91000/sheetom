@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use lightningcss::values::syntax::SyntaxString;
+
 use crate::{
     EngineError, RecoveredClosure, RecoveredComponentKind, RecoveredComponentValue,
     RecoveredTokenKind, RecoveredValue, SourceSpan,
@@ -87,7 +89,7 @@ pub fn analyze_recovered_substitutions(
                     ));
                 }
                 if let Some(kind) = substitution_kind(name) {
-                    validate_substitution_function(kind, values)?;
+                    validate_substitution_function(kind, values, recovered.source())?;
                     functions.push(SemanticSubstitutionFunction {
                         name: Arc::from(name.as_str()),
                         kind,
@@ -133,14 +135,59 @@ fn substitution_kind(name: &str) -> Option<SubstitutionFunctionKind> {
 fn validate_substitution_function(
     kind: SubstitutionFunctionKind,
     values: &[RecoveredComponentValue],
+    source: &str,
 ) -> Result<(), EngineError> {
     match kind {
         SubstitutionFunctionKind::Var => validate_var(values),
-        SubstitutionFunctionKind::Env | SubstitutionFunctionKind::Attr => {
-            validate_named_substitution(values)
-        }
+        SubstitutionFunctionKind::Env => validate_named_substitution(values),
+        SubstitutionFunctionKind::Attr => validate_attr(values, source),
         SubstitutionFunctionKind::If => validate_if(values),
         SubstitutionFunctionKind::Custom => validate_custom_function(values),
+    }
+}
+
+fn validate_attr(values: &[RecoveredComponentValue], source: &str) -> Result<(), EngineError> {
+    reject_direct_delimiters(values)?;
+    let first_segment = significant_components(segment_before_first_comma(values));
+    let [name, optional_type @ ..] = first_segment.as_slice() else {
+        return Err(invalid_substitution("attr() requires an attribute name"));
+    };
+    if !matches!(
+        &name.kind,
+        RecoveredComponentKind::Token(token)
+            if matches!(token.kind, RecoveredTokenKind::Ident(_))
+    ) {
+        return Err(invalid_substitution(
+            "attr() requires one unqualified attribute name",
+        ));
+    }
+    match optional_type {
+        [] => Ok(()),
+        [component] if is_attr_type(component, source) => Ok(()),
+        _ => Err(invalid_substitution(
+            "attr() accepts at most one unit or type() after its name",
+        )),
+    }
+}
+
+fn is_attr_type(component: &RecoveredComponentValue, source: &str) -> bool {
+    match &component.kind {
+        RecoveredComponentKind::Token(token) => matches!(
+            token.kind,
+            RecoveredTokenKind::Ident(_) | RecoveredTokenKind::Delimiter('%')
+        ),
+        RecoveredComponentKind::Function { name, values, .. }
+            if name.eq_ignore_ascii_case("type") =>
+        {
+            let (Some(first), Some(last)) = (values.first(), values.last()) else {
+                return false;
+            };
+            let Some(syntax) = source.get(first.span.start..last.span.end) else {
+                return false;
+            };
+            SyntaxString::parse_string(syntax).is_ok()
+        }
+        _ => false,
     }
 }
 
@@ -176,9 +223,7 @@ fn validate_named_substitution(values: &[RecoveredComponentValue]) -> Result<(),
     if valid_name {
         return Ok(());
     }
-    Err(invalid_substitution(
-        "attr() and env() require a leading identifier",
-    ))
+    Err(invalid_substitution("env() requires a leading identifier"))
 }
 
 fn validate_if(values: &[RecoveredComponentValue]) -> Result<(), EngineError> {
@@ -344,6 +389,9 @@ mod tests {
             "var(--x,)",
             "env(safe-area-inset-top)",
             "attr(data-width type(<length>), 1px)",
+            "attr(data-label raw-string)",
+            "attr(data-ratio % , 0%)",
+            "attr(data-size type(<length> | <percentage>), 1px)",
             "if(style(--theme: dark): white; else: black)",
             "--scale()",
             "--scale(, 2)",
@@ -362,6 +410,11 @@ mod tests {
             "var(--x extra)",
             "env()",
             "attr()",
+            "attr(data-width | namespace)",
+            "attr(data-width px extra)",
+            "attr(data-width type())",
+            "attr(data-width type(<angle> #), 1deg)",
+            "attr(data-width type(<unknown>), 1px)",
             "if()",
             "if(style(--theme: dark):)",
             "if(: white)",
