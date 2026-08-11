@@ -19,7 +19,6 @@ pub struct DeclarationValue {
 pub enum DeclarationValueKind {
     Semantic,
     CssWideKeyword,
-    Codec,
     Deferred,
 }
 
@@ -27,9 +26,6 @@ pub enum DeclarationValueKind {
 enum DeclarationValueStorage {
     Semantic(Arc<SemanticDeclaration>),
     CssWideKeyword,
-    /// A canonical value produced by a shorthand or descriptor codec that has
-    /// not yet moved to a dedicated semantic AST.
-    Codec,
     /// An expanded shorthand member whose value is intentionally unobservable.
     Deferred {
         pending_substitution: bool,
@@ -65,10 +61,6 @@ impl DeclarationValue {
             keyword.clone(),
             keyword,
         )
-    }
-
-    pub(crate) fn codec(canonical: String, observable: String) -> Self {
-        Self::with_storage(DeclarationValueStorage::Codec, canonical, observable)
     }
 
     pub(crate) fn deferred(pending_substitution: bool) -> Self {
@@ -117,7 +109,6 @@ impl DeclarationValue {
         match &self.storage {
             DeclarationValueStorage::Semantic(_) => DeclarationValueKind::Semantic,
             DeclarationValueStorage::CssWideKeyword => DeclarationValueKind::CssWideKeyword,
-            DeclarationValueStorage::Codec => DeclarationValueKind::Codec,
             DeclarationValueStorage::Deferred { .. } => DeclarationValueKind::Deferred,
         }
     }

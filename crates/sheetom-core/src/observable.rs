@@ -24,7 +24,8 @@ pub(crate) fn project_declaration(
     let category = match declaration.value() {
         SemanticPropertyValue::Standard(_)
         | SemanticPropertyValue::Extension(_)
-        | SemanticPropertyValue::ExpandedShorthand => ObservableCategory::Typed,
+        | SemanticPropertyValue::ExpandedShorthand
+        | SemanticPropertyValue::FontFaceDescriptor(_) => ObservableCategory::Typed,
         SemanticPropertyValue::PendingSubstitution(_) => ObservableCategory::PendingSubstitution,
         SemanticPropertyValue::CustomTokenStream => ObservableCategory::Custom,
     };
@@ -39,7 +40,13 @@ pub(crate) fn project_declaration(
         trim_css_whitespace(&recovered.retained)
     };
     let closed = trim_css_whitespace(&recovered.closed);
-    let observable = if !matches!(category, ObservableCategory::Typed) {
+    let observable = if matches!(
+        declaration.value(),
+        SemanticPropertyValue::FontFaceDescriptor(_)
+    ) && name == "font-variant"
+    {
+        String::new()
+    } else if !matches!(category, ObservableCategory::Typed) {
         if matches!(category, ObservableCategory::Custom) && recovered.unterminated_url {
             closed.to_owned()
         } else {
