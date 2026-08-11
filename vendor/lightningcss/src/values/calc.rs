@@ -463,6 +463,13 @@ impl<
     Self::parse_with_options(input, parse_ident, false)
   }
 
+  pub(crate) fn parse_sum_with<'t, Parse: Copy + Fn(&str) -> Option<Calc<V>>>(
+    input: &mut Parser<'i, 't>,
+    parse_ident: Parse,
+  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    Self::parse_sum(input, parse_ident, false)
+  }
+
   fn parse_with_options<'t, Parse: Copy + Fn(&str) -> Option<Calc<V>>>(
     input: &mut Parser<'i, 't>,
     parse_ident: Parse,
@@ -865,13 +872,12 @@ impl<
       return Ok(Calc::Number(constant.into()));
     }
 
-    let location = input.current_source_location();
+    let identifier_start = input.state();
     if let Ok(ident) = input.try_parse(|input| input.expect_ident_cloned()) {
       if let Some(v) = parse_ident(ident.as_ref()) {
         return Ok(v);
       }
-
-      return Err(location.new_unexpected_token_error(Token::Ident(ident.clone())));
+      input.reset(&identifier_start);
     }
 
     let value = input.try_parse(V::parse)?;

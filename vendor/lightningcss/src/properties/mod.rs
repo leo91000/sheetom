@@ -1333,7 +1333,7 @@ define_properties! {
   "flex-flow": FlexFlow(FlexFlow, VendorPrefix) / WebKit / Ms shorthand: true,
   "flex-grow": FlexGrow(CSSNumber, VendorPrefix) / WebKit,
   "flex-shrink": FlexShrink(CSSNumber, VendorPrefix) / WebKit,
-  "flex-basis": FlexBasis(LengthPercentageOrAuto, VendorPrefix) / WebKit,
+  "flex-basis": FlexBasis(FlexBasis, VendorPrefix) / WebKit,
   "flex": Flex(Flex, VendorPrefix) / WebKit / Ms shorthand: true,
   "order": Order(CSSInteger, VendorPrefix) / WebKit,
 
