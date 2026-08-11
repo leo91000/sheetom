@@ -157,6 +157,8 @@ pub fn parse_semantic_property_with_limits(
         });
     }
 
+    crate::property_constraints::validate_authored_property_capability(name, source)?;
+
     if grammar
         .extensions()
         .contains(&crate::catalog::PropertyGrammarExtension::BrowserLonghand)
@@ -220,7 +222,7 @@ pub fn parse_semantic_property_with_limits(
     }
 
     let standard = if grammar.has_standard_parser() {
-        match parse_standard_value(&grammar, source) {
+        match parse_standard_value(&grammar, name, source) {
             Ok(value) => {
                 let parse_kind = if grammar.owner() == PropertyGrammarOwner::SheetomAlias {
                     PropertyParseKind::SheetomTyped
@@ -286,6 +288,7 @@ pub fn parse_standard_semantic_property_with_limits(
 
 fn parse_standard_value(
     grammar: &crate::catalog::PropertyGrammar,
+    authored_name: &str,
     source: &str,
 ) -> Result<Property<'static>, EngineError> {
     let property = Property::parse_string(
@@ -302,11 +305,7 @@ fn parse_standard_value(
         )));
     }
 
-    crate::property_constraints::validate_standard_property(
-        grammar.canonical_name(),
-        source,
-        &property,
-    )?;
+    crate::property_constraints::validate_standard_property(authored_name, source, &property)?;
 
     Ok(property.into_owned())
 }
