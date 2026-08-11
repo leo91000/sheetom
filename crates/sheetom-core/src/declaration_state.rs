@@ -1,11 +1,14 @@
 use crate::function_rule::{canonical_function_descriptor_name, parse_function_descriptor_value};
 use crate::{
     catalog::{
-        canonical_property_name as canonical_style_property_name, property_alias_hides_value,
+        canonical_property_name as canonical_style_property_name,
+        property_alias_defers_pending_value, property_alias_hides_value,
         shorthand_longhands as style_shorthand_longhands, shorthand_names,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
-    shorthand::{parse_value_for_source_with_limits, synthesize_shorthand},
+    shorthand::{
+        parse_value_for_source_with_limits, synthesize_authored_shorthand, synthesize_shorthand,
+    },
     syntax::{parse_declaration_list, serialize_identifier},
     validate_declaration_block_input, validate_declaration_value_input, DeclarationValue,
     EngineError, ResourceLimits,
@@ -532,7 +535,7 @@ impl DeclarationState {
     ) -> Option<AliasDeclarationValue> {
         (self.context == DeclarationContext::Style
             && source_name != canonical_name
-            && property_alias_hides_value(source_name)
+            && property_alias_defers_pending_value(source_name)
             && value.is_pending_substitution())
         .then(|| AliasDeclarationValue {
             name: source_name.to_owned(),
@@ -569,14 +572,22 @@ impl DeclarationState {
         if name == "-webkit-mask-box-image" {
             return;
         }
-        let observable_value = if prefers_synthesized_provenance(name) {
-            synthesize_shorthand(records, name, false)
-                .unwrap_or_else(|| parsed.observable_value().to_owned())
+        let default_synthesis =
+            requires_default_shorthand_synthesis(name, parsed.observable_value());
+        let observable_synthesis = prefers_synthesized_provenance(name)
+            || requires_observable_shorthand_synthesis(name, parsed.observable_value())
+            || default_synthesis;
+        let observable_value = if observable_synthesis {
+            let synthesized = synthesize_authored_shorthand(records, name, false);
+            if synthesized.is_none() && default_synthesis {
+                return;
+            }
+            synthesized.unwrap_or_else(|| parsed.observable_value().to_owned())
         } else {
             parsed.observable_value().to_owned()
         };
         let safe_value = if prefers_synthesized_safe_provenance(name) {
-            synthesize_shorthand(records, name, true)
+            synthesize_authored_shorthand(records, name, true)
                 .unwrap_or_else(|| parsed.safe_value().to_owned())
         } else {
             parsed.safe_value().to_owned()
@@ -833,6 +844,41 @@ fn normalize_rgb_function_spacing(value: &str) -> String {
     )
 }
 
+fn requires_default_shorthand_synthesis(name: &str, observable: &str) -> bool {
+    let border_like = matches!(
+        name,
+        "border"
+            | "border-block"
+            | "border-bottom"
+            | "border-inline"
+            | "border-left"
+            | "border-right"
+            | "border-top"
+            | "column-rule"
+            | "row-rule"
+            | "rule"
+    );
+    border_like && matches!(observable, "none" | "currentcolor")
+        || name == "text-decoration" && matches!(observable, "auto" | "solid" | "currentcolor")
+}
+
+fn requires_observable_shorthand_synthesis(name: &str, observable: &str) -> bool {
+    if name == "font" {
+        return !matches!(
+            observable,
+            "caption" | "icon" | "menu" | "message-box" | "small-caption" | "status-bar"
+        );
+    }
+    if matches!(name, "column-rule-inset" | "row-rule-inset" | "rule-inset") {
+        return !observable.contains('/')
+            && crate::syntax::split_top_level_whitespace(observable)
+                .is_some_and(|components| components.len() == 2);
+    }
+    name == "outline"
+        && crate::syntax::split_top_level_whitespace(observable)
+            .is_some_and(|components| components.len() > 1)
+}
+
 fn format_declaration(name: &str, value: &str, important: bool) -> String {
     let priority = if important { " !important" } else { "" };
     format!("{name}: {value}{priority};")
@@ -968,6 +1014,28 @@ mod tests {
                 "var(--value)",
                 "{alias} canonical substitution write"
             );
+        }
+    }
+
+    #[test]
+    fn page_break_aliases_hide_only_pending_values_from_the_canonical_property() {
+        for (alias, canonical) in [
+            ("page-break-after", "break-after"),
+            ("page-break-before", "break-before"),
+            ("page-break-inside", "break-inside"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(alias, "auto", ""),
+                MutationOutcome::Applied
+            );
+            assert_eq!(state.get_property_value(alias), "auto");
+            assert_eq!(state.get_property_value(canonical), "auto");
+
+            state.set_property(alias, "var(--value)", "");
+            assert_eq!(state.get_property_value(alias), "var(--value)");
+            assert_eq!(state.get_property_value(canonical), "");
+            assert_eq!(state.css_text(), format!("{canonical}: ;"));
         }
     }
 
@@ -1335,6 +1403,60 @@ mod tests {
         );
         assert_eq!(state.get_property_value("contain-intrinsic-width"), "none");
         assert_eq!(state.get_property_value("contain-intrinsic-height"), "none");
+    }
+
+    #[test]
+    fn observable_default_shorthands_match_chromium() {
+        for (name, input, expected) in [
+            ("border", "none", ""),
+            ("border", "currentcolor", ""),
+            ("border-block-end", "currentcolor", "currentcolor"),
+            ("text-decoration", "currentcolor", "none"),
+            ("text-decoration", "auto", "none"),
+            ("text-decoration", "solid", "none"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(name, input, ""),
+                MutationOutcome::Applied,
+                "{name}: {input}"
+            );
+            assert_eq!(
+                state.get_property_value(name),
+                expected,
+                "{name}: {input}; records: {:?}",
+                state.records
+            );
+        }
+    }
+
+    #[test]
+    fn observable_composite_branches_match_chromium() {
+        for (name, input, expected) in [
+            ("-webkit-border-radius", "1px 2px", "1px / 2px"),
+            ("column-rule-inset", "1px 2px", "1px 2px / 1px 2px"),
+            ("font", "italic 16px/1.5 serif", "italic 16px / 1.5 serif"),
+            ("font", "2px dashed red", "2px \"dashed red\""),
+            ("grid-template", "\"text\"", "\"text\""),
+            ("offset", "1px 2px", "1px 2px"),
+            ("offset", "left 10px top 20px", "left 10px top 20px"),
+            ("offset-anchor", "min(1px, 2px)", "calc(1px) center"),
+            ("outline", "2px dashed red", "red dashed 2px"),
+            ("scrollbar-color", "red blue", "red blue"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(name, input, ""),
+                MutationOutcome::Applied,
+                "{name}: {input}"
+            );
+            assert_eq!(
+                state.get_property_value(name),
+                expected,
+                "{name}: {input}; records: {:?}",
+                state.records
+            );
+        }
     }
 
     #[test]

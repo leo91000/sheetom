@@ -14,6 +14,15 @@ const expectedByKey = new Map(
   ]),
 );
 const contractArgument = process.argv.find(argument => argument.startsWith("--contract="));
+const knownChecks = ["acceptance", "observable", "cssText", "items", "atomicity"];
+const checksArgument = process.argv.find(argument => argument.startsWith("--checks="));
+const checkedMismatchKinds = checksArgument
+  ? checksArgument.slice("--checks=".length).split(",").filter(Boolean)
+  : knownChecks;
+const unknownChecks = checkedMismatchKinds.filter(check => !knownChecks.includes(check));
+if (checkedMismatchKinds.length === 0 || unknownChecks.length > 0) {
+  throw new Error(`Unknown Property Value Matrix checks: ${unknownChecks.join(", ")}`);
+}
 let propertiesToCheck = [...chromiumSupportedProperties];
 let probesToCheck = probes.values;
 let contractName = null;
@@ -143,6 +152,7 @@ for (const property of propertiesToCheck) {
 const report = {
   schemaVersion: 1,
   ...(contractName ? { contract: contractName } : {}),
+  checks: checkedMismatchKinds,
   properties: propertiesToCheck.length,
   probes: probesToCheck.length,
   expectedAccepted: propertiesToCheck.reduce(
@@ -172,7 +182,7 @@ const summary = Object.fromEntries(
 console.log(JSON.stringify({ ...report, mismatches: summary }, null, 2));
 if (
   !process.argv.includes("--allow-mismatches")
-  && Object.values(summary).some(count => count > 0)
+  && checkedMismatchKinds.some(kind => summary[kind] > 0)
 ) {
   throw new Error(
     `${contractName ?? "Property Value Matrix"} does not match the Chromium baseline`,

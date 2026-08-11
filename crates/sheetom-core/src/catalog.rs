@@ -122,6 +122,14 @@ pub(crate) fn property_alias_hides_value(name: &str) -> bool {
     )
 }
 
+pub(crate) fn property_alias_defers_pending_value(name: &str) -> bool {
+    property_alias_hides_value(name)
+        || matches!(
+            name.to_ascii_lowercase().as_str(),
+            "page-break-after" | "page-break-before" | "page-break-inside"
+        )
+}
+
 pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
     let canonical_name = canonical_property_name(name)?;
     if canonical_name.starts_with("--") {

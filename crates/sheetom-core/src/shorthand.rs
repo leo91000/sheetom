@@ -2,7 +2,7 @@ use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
     extension_value::parse_contextual_dimension_calculation,
-    observable::project_declaration,
+    observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
     DeclarationValue, EngineError, PropertyParseKind, ResourceLimits,
@@ -37,6 +37,23 @@ pub(crate) fn synthesize_shorthand(
     records: &[DeclarationRecord],
     name: &str,
     safe: bool,
+) -> Option<String> {
+    synthesize_shorthand_inner(records, name, safe, false)
+}
+
+pub(crate) fn synthesize_authored_shorthand(
+    records: &[DeclarationRecord],
+    name: &str,
+    safe: bool,
+) -> Option<String> {
+    synthesize_shorthand_inner(records, name, safe, true)
+}
+
+fn synthesize_shorthand_inner(
+    records: &[DeclarationRecord],
+    name: &str,
+    safe: bool,
+    authored_expansion: bool,
 ) -> Option<String> {
     let longhands = observed_shorthand_longhands(name)?;
     let records = longhands
@@ -93,15 +110,18 @@ pub(crate) fn synthesize_shorthand(
     });
     if let Some(first_value) = values.first() {
         if has_css_wide {
-            return values
-                .iter()
-                .all(|value| *value == *first_value)
-                .then(|| (*first_value).to_owned());
+            if values.iter().all(|value| *value == *first_value) {
+                return Some((*first_value).to_owned());
+            }
+            if !authored_expansion {
+                return None;
+            }
         }
     }
 
-    if let Some(value) = synthesize_special_shorthand(name, &records, safe) {
-        return Some(value);
+    let special = synthesize_special_shorthand(name, &records, safe);
+    if special.is_some() || has_authoritative_shorthand_synthesis(name) {
+        return special;
     }
 
     let mut declarations = DeclarationBlock::new();
@@ -132,18 +152,70 @@ fn synthesize_special_shorthand(
         "columns" => synthesize_columns(records, safe),
         "container" => synthesize_container(records, safe),
         "flex" => synthesize_flex(records, safe),
+        "font" => synthesize_font(records, safe),
         "grid-area" => synthesize_grid_area(records, safe),
         "grid-column" | "grid-row" => synthesize_grid_line(records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
         "mask" => synthesize_mask(records, safe),
         "offset" => synthesize_offset(records, safe),
+        "outline" => synthesize_outline(records, safe),
+        "column-rule-inset" | "row-rule-inset" | "rule-inset" => {
+            synthesize_rule_inset(records, safe)
+        }
         "scroll-timeline" => synthesize_scroll_timeline(records, safe),
+        "text-decoration" => synthesize_text_decoration(records, safe),
         "text-box" => synthesize_text_box(records, safe),
         "text-wrap" => synthesize_text_wrap(records, safe),
         "white-space" => synthesize_white_space(records, safe),
         "view-timeline" => synthesize_view_timeline(records, safe),
         _ => synthesize_structural_shorthand(name, records, safe),
     }
+}
+
+fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
+    matches!(
+        name,
+        "animation"
+            | "-webkit-animation"
+            | "transition"
+            | "-webkit-transition"
+            | "background"
+            | "border-image"
+            | "columns"
+            | "container"
+            | "flex"
+            | "font"
+            | "grid-area"
+            | "grid-column"
+            | "grid-row"
+            | "grid-template"
+            | "mask"
+            | "offset"
+            | "outline"
+            | "column-rule-inset"
+            | "row-rule-inset"
+            | "rule-inset"
+            | "scroll-timeline"
+            | "text-decoration"
+            | "text-box"
+            | "text-wrap"
+            | "white-space"
+            | "view-timeline"
+    ) || is_border_like(name)
+        || is_repeated_four_value(name)
+        || is_repeated_two_value(name)
+        || is_two_value(name)
+        || matches!(
+            name,
+            "background-position"
+                | "border-block-color"
+                | "border-block-style"
+                | "border-block-width"
+                | "border-inline-color"
+                | "border-inline-style"
+                | "border-inline-width"
+                | "overscroll-behavior"
+        )
 }
 
 fn record_value<'a>(records: &'a [&DeclarationRecord], name: &str, safe: bool) -> Option<&'a str> {
@@ -238,7 +310,10 @@ fn synthesize_transition(records: &[&DeclarationRecord], safe: bool) -> Option<S
         let timing = *lists[2].get(index)?;
         let delay = *lists[3].get(index)?;
         let property = *lists[4].get(index)?;
-        let mut components = vec![property];
+        let mut components = Vec::new();
+        if property != "all" {
+            components.push(property);
+        }
         if duration != "0s" || timing != "ease" || delay != "0s" || behavior != "normal" {
             components.push(duration);
         }
@@ -250,6 +325,9 @@ fn synthesize_transition(records: &[&DeclarationRecord], safe: bool) -> Option<S
         }
         if behavior != "normal" {
             components.push(behavior);
+        }
+        if components.is_empty() {
+            components.push("all");
         }
         transitions.push(components.join(" "));
     }
@@ -341,8 +419,8 @@ fn synthesize_border_image(records: &[&DeclarationRecord], safe: bool) -> Option
     let width = record_value(records, "border-image-width", safe)?;
     let outset = record_value(records, "border-image-outset", safe)?;
     let repeat = record_value(records, "border-image-repeat", safe)?;
-    if source == "none" && slice == "100%" && width == "1" && outset == "0" && repeat == "stretch" {
-        return Some("none".to_owned());
+    if slice == "100%" && width == "1" && outset == "0" && repeat == "stretch" {
+        return Some(source);
     }
     Some(format!("{source} {slice} / {width} / {outset} {repeat}"))
 }
@@ -505,6 +583,9 @@ fn synthesize_grid_template(records: &[&DeclarationRecord], safe: bool) -> Optio
     if areas == "none" {
         return Some(format!("{rows} / {columns}"));
     }
+    if rows == "auto" && columns == "none" {
+        return Some(areas.to_owned());
+    }
     let area_rows = split_top_level_whitespace(areas)?;
     let row_sizes = split_top_level_whitespace(rows)?;
     if area_rows.len() != row_sizes.len() {
@@ -519,6 +600,49 @@ fn synthesize_grid_template(records: &[&DeclarationRecord], safe: bool) -> Optio
             .collect::<Vec<_>>()
             .join(" ")
     ))
+}
+
+fn synthesize_font(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    for (longhand, expected) in [
+        ("font-variant-ligatures", "normal"),
+        ("font-variant-numeric", "normal"),
+        ("font-variant-east-asian", "normal"),
+        ("font-variant-alternates", "normal"),
+        ("font-size-adjust", "none"),
+        ("font-language-override", "normal"),
+        ("font-kerning", "auto"),
+        ("font-optical-sizing", "auto"),
+        ("font-feature-settings", "normal"),
+        ("font-variation-settings", "normal"),
+        ("font-variant-position", "normal"),
+        ("font-variant-emoji", "normal"),
+    ] {
+        if record_value(records, longhand, safe)? != expected {
+            return None;
+        }
+    }
+
+    let mut components = Vec::new();
+    for (longhand, initial) in [
+        ("font-style", "normal"),
+        ("font-variant-caps", "normal"),
+        ("font-weight", "normal"),
+        ("font-stretch", "normal"),
+    ] {
+        let value = record_value(records, longhand, safe)?;
+        if value != initial {
+            components.push(value.to_owned());
+        }
+    }
+    let size = record_value(records, "font-size", safe)?;
+    let line_height = record_value(records, "line-height", safe)?;
+    components.push(if line_height == "normal" {
+        size.to_owned()
+    } else {
+        format!("{size} / {line_height}")
+    });
+    components.push(record_value(records, "font-family", safe)?.to_owned());
+    Some(components.join(" "))
 }
 
 fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -545,7 +669,10 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
         let clip = *lists[6].get(index)?;
         let composite = *lists[7].get(index)?;
         let mode = *lists[8].get(index)?;
-        let mut components = vec![image.to_owned()];
+        let mut components = Vec::new();
+        if image != "none" {
+            components.push(image.to_owned());
+        }
         if x != "0%" || y != "0%" || size != "auto" {
             components.push(format!("{x} {y}"));
             if size != "auto" {
@@ -567,7 +694,11 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
         if mode != "match-source" {
             components.push(mode.to_owned());
         }
-        layers.push(components.join(" "));
+        layers.push(if components.is_empty() {
+            "none".to_owned()
+        } else {
+            components.join(" ")
+        });
     }
     Some(layers.join(", "))
 }
@@ -605,11 +736,58 @@ fn synthesize_offset(records: &[&DeclarationRecord], safe: bool) -> Option<Strin
     (!components.is_empty()).then(|| components.join(" "))
 }
 
+fn synthesize_outline(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let color = record_value(records, "outline-color", safe)?;
+    let style = record_value(records, "outline-style", safe)?;
+    let width = record_value(records, "outline-width", safe)?;
+    Some(format!("{color} {style} {width}"))
+}
+
+fn synthesize_rule_inset(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let values = record_values(records, safe)?;
+    let values = match values.as_slice() {
+        [cap_start, cap_end, junction_start, junction_end] => {
+            [cap_start, cap_end, junction_start, junction_end]
+        }
+        [column_cap_start, column_cap_end, column_junction_start, column_junction_end, row_cap_start, row_cap_end, row_junction_start, row_junction_end]
+            if column_cap_start == row_cap_start
+                && column_cap_end == row_cap_end
+                && column_junction_start == row_junction_start
+                && column_junction_end == row_junction_end =>
+        {
+            [
+                column_cap_start,
+                column_cap_end,
+                column_junction_start,
+                column_junction_end,
+            ]
+        }
+        _ => return None,
+    };
+    let cap = if values[0] == values[1] {
+        values[0].clone()
+    } else {
+        format!("{} {}", values[0], values[1])
+    };
+    let junction = if values[2] == values[3] {
+        values[2].clone()
+    } else {
+        format!("{} {}", values[2], values[3])
+    };
+    Some(format!("{cap} / {junction}"))
+}
+
 fn synthesize_text_wrap(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
     let mode = record_value(records, "text-wrap-mode", safe)?;
     let style = record_value(records, "text-wrap-style", safe)?;
     Some(if style == "initial" {
         mode.to_owned()
+    } else if style == "auto" {
+        if mode == "initial" {
+            "wrap".to_owned()
+        } else {
+            mode.to_owned()
+        }
     } else if matches!(mode, "wrap" | "initial") {
         style.to_owned()
     } else {
@@ -675,7 +853,7 @@ fn synthesize_structural_shorthand(
     safe: bool,
 ) -> Option<String> {
     if is_border_like(name) {
-        return synthesize_border_like(records, safe);
+        return synthesize_border_like(name, records, safe);
     }
     if is_repeated_four_value(name) && records.len() == 4 {
         return compress_four_values(record_values(records, safe)?);
@@ -721,7 +899,11 @@ fn compress_four_values(values: Vec<String>) -> Option<String> {
     })
 }
 
-fn synthesize_border_like(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+fn synthesize_border_like(
+    name: &str,
+    records: &[&DeclarationRecord],
+    safe: bool,
+) -> Option<String> {
     let collect_suffix = |suffix: &str| {
         records
             .iter()
@@ -741,6 +923,18 @@ fn synthesize_border_like(records: &[&DeclarationRecord], safe: bool) -> Option<
     let width = uniform_value(&widths)?;
     let style = uniform_value(&styles)?;
     let color = uniform_value(&colors)?;
+    if width == "medium" && style == "none" && color == "currentcolor" {
+        if matches!(
+            name,
+            "border-block-end" | "border-block-start" | "border-inline-end" | "border-inline-start"
+        ) {
+            return Some("medium none currentcolor".to_owned());
+        }
+        if name.starts_with("border") {
+            return None;
+        }
+        return Some("medium".to_owned());
+    }
     let mut components = Vec::new();
     if width != "medium" {
         components.push(width);
@@ -750,6 +944,31 @@ fn synthesize_border_like(records: &[&DeclarationRecord], safe: bool) -> Option<
         components.push(color);
     }
     Some(components.join(" "))
+}
+
+fn synthesize_text_decoration(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let line = record_value(records, "text-decoration-line", safe)?;
+    let thickness = record_value(records, "text-decoration-thickness", safe)?;
+    let style = record_value(records, "text-decoration-style", safe)?;
+    let color = record_value(records, "text-decoration-color", safe)?;
+    let mut components = Vec::new();
+    if line != "initial" {
+        components.push(line);
+    }
+    if thickness != "initial" && thickness != "auto" {
+        components.push(thickness);
+    }
+    if style != "initial" && style != "solid" {
+        components.push(style);
+    }
+    if color != "initial" && color != "currentcolor" {
+        components.push(color);
+    }
+    Some(if components.is_empty() {
+        "none".to_owned()
+    } else {
+        components.join(" ")
+    })
 }
 
 fn uniform_value<'a>(values: &[&'a str]) -> Option<&'a str> {
@@ -817,7 +1036,10 @@ fn is_repeated_two_value(name: &str) -> bool {
 }
 
 fn is_repeated_four_value(name: &str) -> bool {
-    name == "corner-shape"
+    matches!(
+        name,
+        "border-color" | "border-style" | "border-width" | "corner-shape"
+    )
 }
 
 fn is_css_wide_keyword(value: &str) -> bool {
@@ -932,6 +1154,18 @@ pub(crate) fn parse_value_for_source_with_limits(
         });
     }
 
+    let legacy_webkit_radius;
+    let value = if source_name == "-webkit-border-radius"
+        && !value.contains('/')
+        && split_top_level_whitespace(value).is_some_and(|components| components.len() == 2)
+    {
+        let components = split_top_level_whitespace(value).unwrap_or_default();
+        legacy_webkit_radius = format!("{} / {}", components[0], components[1]);
+        legacy_webkit_radius.as_str()
+    } else {
+        value
+    };
+
     if !validate_typed_shorthand_structure(name, value) {
         return Err(MutationOutcome::InvalidValue);
     }
@@ -963,14 +1197,15 @@ pub(crate) fn parse_value_for_source_with_limits(
     let semantic = semantic.map_err(map_engine_error)?;
     let Some(longhand_names) = observed_shorthand_longhands(name) else {
         let projection = project_declaration(&semantic).map_err(map_engine_error)?;
-        let mut observable_value = projection.observable;
-        let mut safe_value = projection.canonical;
-        if observable_value == "0" && is_zero_length_property(name) {
-            observable_value = "0px".to_owned();
-            safe_value = "0px".to_owned();
-        }
-        let value =
-            DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value);
+        let (canonical, observable) = if source_name == "-webkit-background-size" {
+            (
+                duplicate_single_component(&projection.canonical),
+                duplicate_single_component(&projection.observable),
+            )
+        } else {
+            (projection.canonical, projection.observable)
+        };
+        let value = DeclarationValue::semantic_with_canonical(semantic, canonical, observable);
         return Ok(ParsedValue {
             value,
             longhands: None,
@@ -985,8 +1220,16 @@ pub(crate) fn parse_value_for_source_with_limits(
                 let mut safe_value = longhand
                     .value_to_css_string(PrinterOptions::default())
                     .map_err(|_| MutationOutcome::InvalidValue)?;
-                let mut observable_value =
-                    observable_shorthand_longhand(longhand_name, &safe_value, value);
+                let source = authored_longhand_source(longhand_name, &safe_value, value);
+                let owned_longhand = longhand.into_owned();
+                let semantic = crate::SemanticDeclaration::from_standard_property(
+                    longhand_name,
+                    owned_longhand,
+                    source,
+                );
+                let mut observable_value = project_declaration(&semantic)
+                    .map_err(map_engine_error)?
+                    .observable;
                 if let Some((observable, safe)) =
                     observable_shorthand_override(name, longhand_name, value, &safe_value)
                 {
@@ -995,14 +1238,13 @@ pub(crate) fn parse_value_for_source_with_limits(
                         safe_value = safe;
                     }
                 }
-                let semantic = crate::SemanticDeclaration::from_standard_property(
-                    longhand_name,
-                    longhand.into_owned(),
-                    safe_value.clone(),
-                );
                 DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
             } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
-                let mut observable_value = initial_value.to_owned();
+                let semantic =
+                    parse_semantic_property_with_limits(longhand_name, initial_value, limits)
+                        .map_err(map_engine_error)?;
+                let projection = project_declaration(&semantic).map_err(map_engine_error)?;
+                let mut observable_value = projection.observable;
                 let mut safe_value = initial_value.to_owned();
                 if let Some((observable, safe)) =
                     observable_shorthand_override(name, longhand_name, value, &safe_value)
@@ -1012,9 +1254,6 @@ pub(crate) fn parse_value_for_source_with_limits(
                         safe_value = safe;
                     }
                 }
-                let semantic =
-                    parse_semantic_property_with_limits(longhand_name, initial_value, limits)
-                        .map_err(map_engine_error)?;
                 DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
             } else {
                 return Err(MutationOutcome::UnsupportedShorthand);
@@ -1034,6 +1273,16 @@ pub(crate) fn parse_value_for_source_with_limits(
     })
 }
 
+fn duplicate_single_component(value: &str) -> String {
+    if matches!(value, "contain" | "cover") {
+        return value.to_owned();
+    }
+    if split_top_level_whitespace(value).is_some_and(|components| components.len() == 1) {
+        return format!("{value} {value}");
+    }
+    value.to_owned()
+}
+
 fn css_wide_keyword(value: &str) -> Option<String> {
     let keyword = value.trim().to_ascii_lowercase();
     matches!(
@@ -1043,82 +1292,50 @@ fn css_wide_keyword(value: &str) -> Option<String> {
     .then_some(keyword)
 }
 
-fn is_zero_length_property(name: &str) -> bool {
-    matches!(
-        name,
-        "width"
-            | "height"
-            | "min-width"
-            | "min-height"
-            | "max-width"
-            | "max-height"
-            | "padding-top"
-            | "padding-right"
-            | "padding-bottom"
-            | "padding-left"
-            | "margin-top"
-            | "margin-right"
-            | "margin-bottom"
-            | "margin-left"
-            | "top"
-            | "right"
-            | "bottom"
-            | "left"
-    )
+fn authored_longhand_source(name: &str, safe_value: &str, shorthand_input: &str) -> String {
+    if semantic_value_matches(name, shorthand_input, safe_value) {
+        return shorthand_input.to_owned();
+    }
+
+    let safe_items = split_top_level_delimiter(safe_value, b',').unwrap_or_default();
+    let shorthand_items = split_top_level_delimiter(shorthand_input, b',').unwrap_or_default();
+    if safe_items.len() == shorthand_items.len() && !safe_items.is_empty() {
+        let authored = safe_items
+            .iter()
+            .zip(shorthand_items)
+            .map(|(safe_item, shorthand_item)| {
+                authored_item_source(name, safe_item.trim(), shorthand_item)
+            })
+            .collect::<Option<Vec<_>>>();
+        if let Some(authored) = authored {
+            return authored.join(", ");
+        }
+    }
+
+    authored_item_source(name, safe_value, shorthand_input).unwrap_or_else(|| safe_value.to_owned())
 }
 
-fn observable_shorthand_longhand(name: &str, safe_value: &str, shorthand_input: &str) -> String {
-    let components = split_top_level_whitespace(shorthand_input).unwrap_or_default();
-    if safe_value == "0" {
-        if let Some(component) = components
-            .iter()
-            .find(|component| is_zero_dimension(component))
-        {
-            return (*component).to_owned();
-        }
+fn authored_item_source(name: &str, safe_value: &str, shorthand_input: &str) -> Option<String> {
+    if semantic_value_matches(name, shorthand_input, safe_value) {
+        return Some(shorthand_input.trim().to_owned());
     }
-    if safe_value.starts_with('#') || safe_value == "transparent" {
-        if let Some(component) = components
-            .iter()
-            .find(|component| typed_longhand_value("color", component).is_some())
-        {
-            return (*component).to_owned();
-        }
-    }
-    if name.ends_with("-image") {
-        if let Some(component) = components.iter().find(|component| {
-            matches!(
-                component.split_once('(').map(|(function, _)| function),
-                Some(
-                    "url"
-                        | "image"
-                        | "image-set"
-                        | "cross-fade"
-                        | "linear-gradient"
-                        | "radial-gradient"
-                        | "conic-gradient"
-                        | "repeating-linear-gradient"
-                        | "repeating-radial-gradient"
-                        | "repeating-conic-gradient"
-                )
-            )
-        }) {
-            return (*component).to_owned();
-        }
-    }
-    if name == "font-family" {
-        if let Some(component) = components
-            .iter()
-            .rev()
-            .find(|component| component.starts_with(['\'', '"']))
-        {
-            return (*component).to_owned();
-        }
-    }
-    if safe_value == "currentColor" {
-        return "currentcolor".to_owned();
-    }
-    safe_value.to_owned()
+    split_top_level_whitespace(shorthand_input)?
+        .into_iter()
+        .find(|candidate| semantic_value_matches(name, candidate, safe_value))
+        .map(str::to_owned)
+}
+
+fn semantic_value_matches(name: &str, source: &str, canonical: &str) -> bool {
+    parse_semantic_property_with_limits(name, source.trim(), ResourceLimits::default())
+        .ok()
+        .and_then(|declaration| declaration.canonical_value().ok())
+        .is_some_and(|candidate| {
+            candidate == canonical
+                || candidate
+                    .strip_prefix("calc(")
+                    .and_then(|value| value.strip_suffix(')'))
+                    .is_some_and(|value| value == canonical)
+        })
 }
 
 fn observable_shorthand_override(
@@ -1128,7 +1345,10 @@ fn observable_shorthand_override(
     safe_value: &str,
 ) -> Option<(String, Option<String>)> {
     if shorthand == "background" {
-        return observable_background_longhand(longhand, input).map(|value| (value, None));
+        return observable_background_longhand(longhand, input).map(|value| {
+            let value = project_observable_value(longhand, &value).unwrap_or(value);
+            (value, None)
+        });
     }
     if matches!(shorthand, "mask" | "-webkit-mask")
         && matches!(
@@ -1136,13 +1356,13 @@ fn observable_shorthand_override(
             "-webkit-mask-position-x" | "-webkit-mask-position-y"
         )
     {
-        let positions = position_components(input);
-        let value = if longhand.ends_with("-x") {
-            positions.first().copied()
-        } else {
-            positions.get(1).or_else(|| positions.first()).copied()
-        }?;
-        return Some((value.to_owned(), Some(value.to_owned())));
+        let (x, y) = position_axis_components(input)?;
+        if x == "initial" && y == "initial" {
+            return None;
+        }
+        let value = if longhand.ends_with("-x") { x } else { y };
+        let observable = project_observable_value(longhand, &value).unwrap_or(value);
+        return Some((observable, None));
     }
     if shorthand == "list-style" && longhand == "list-style-image" && safe_value == "none" {
         let components = split_top_level_whitespace(input)?;
@@ -1159,7 +1379,7 @@ fn observable_shorthand_override(
 fn observable_background_longhand(longhand: &str, input: &str) -> Option<String> {
     let layers = split_top_level_delimiter(input, b',')?;
     if longhand == "background-color" {
-        return observable_background_layer_value(longhand, layers.last()?).map(str::to_owned);
+        return observable_background_layer_value(longhand, layers.last()?);
     }
     Some(
         layers
@@ -1170,7 +1390,7 @@ fn observable_background_longhand(longhand: &str, input: &str) -> Option<String>
     )
 }
 
-fn observable_background_layer_value<'a>(longhand: &str, input: &'a str) -> Option<&'a str> {
+fn observable_background_layer_value(longhand: &str, input: &str) -> Option<String> {
     let components = split_top_level_whitespace(input)?;
     let color = components
         .iter()
@@ -1196,58 +1416,66 @@ fn observable_background_layer_value<'a>(longhand: &str, input: &'a str) -> Opti
         .copied()
         .collect::<Vec<_>>();
     let slash = components.iter().position(|component| *component == "/");
-    let positions = position_components(input);
+    let (position_x, position_y) = position_axis_components(input)?;
     let value = match longhand {
-        "background-color" => color.unwrap_or("initial"),
-        "background-image" => image.unwrap_or("initial"),
-        "background-position-x" => positions.first().copied().unwrap_or("initial"),
-        "background-position-y" => positions
-            .get(1)
-            .or_else(|| positions.first())
-            .copied()
-            .unwrap_or("initial"),
+        "background-color" => color.unwrap_or("initial").to_owned(),
+        "background-image" => image.unwrap_or("initial").to_owned(),
+        "background-position-x" => position_x,
+        "background-position-y" => position_y,
         "background-size" => slash
             .and_then(|index| components.get(index + 1).copied())
-            .unwrap_or("initial"),
+            .unwrap_or("initial")
+            .to_owned(),
         "background-repeat" => components
             .iter()
             .find(|component| repeats.contains(component))
             .copied()
-            .unwrap_or("initial"),
+            .unwrap_or("initial")
+            .to_owned(),
         "background-attachment" => components
             .iter()
             .find(|component| attachments.contains(component))
             .copied()
-            .unwrap_or("initial"),
-        "background-origin" => box_values.first().copied().unwrap_or("initial"),
+            .unwrap_or("initial")
+            .to_owned(),
+        "background-origin" => box_values.first().copied().unwrap_or("initial").to_owned(),
         "background-clip" => box_values
             .get(1)
             .or_else(|| box_values.first())
             .copied()
-            .unwrap_or("initial"),
+            .unwrap_or("initial")
+            .to_owned(),
         _ => return None,
     };
     Some(value)
 }
 
-fn position_components(input: &str) -> Vec<&str> {
+fn position_axis_components(input: &str) -> Option<(String, String)> {
     let components = split_top_level_whitespace(input).unwrap_or_default();
     let slash = components
         .iter()
         .position(|component| *component == "/")
         .unwrap_or(components.len());
-    let keywords = ["left", "right", "top", "bottom", "center"];
-    components[..slash]
+    let positions = components[..slash]
         .iter()
         .filter(|component| {
-            keywords.contains(component)
-                || component.ends_with('%')
-                || component
-                    .find(|character: char| character.is_ascii_alphabetic())
-                    .is_some_and(|index| component[..index].parse::<f64>().is_ok())
+            matches!(**component, "left" | "right" | "top" | "bottom" | "center")
+                || typed_longhand_value("background-position-x", component).is_some()
+                || typed_longhand_value("background-position-y", component).is_some()
         })
         .copied()
-        .collect()
+        .collect::<Vec<_>>();
+    match positions.as_slice() {
+        [] => Some(("initial".to_owned(), "initial".to_owned())),
+        [value] if matches!(*value, "top" | "bottom") => {
+            Some(("center".to_owned(), (*value).to_owned()))
+        }
+        [value] => Some(((*value).to_owned(), "center".to_owned())),
+        [horizontal @ ("left" | "right"), x, vertical @ ("top" | "bottom"), y] => {
+            Some((format!("{horizontal} {x}"), format!("{vertical} {y}")))
+        }
+        [first, second, ..] => Some(((*first).to_owned(), (*second).to_owned())),
+    }
 }
 
 fn is_image_component(component: &str) -> bool {
@@ -1280,17 +1508,6 @@ fn has_explicit_border_image_source(value: &str) -> bool {
             .iter()
             .any(|component| is_image_component(component))
     })
-}
-
-fn is_zero_dimension(value: &str) -> bool {
-    let value = value.trim();
-    let split = value.find(|character: char| character.is_ascii_alphabetic() || character == '%');
-    let Some(split) = split else {
-        return false;
-    };
-    value[..split]
-        .parse::<f64>()
-        .is_ok_and(|number| number == 0.0)
 }
 
 fn expand_special_shorthand(
@@ -1340,7 +1557,8 @@ fn expand_special_shorthand(
                     && expanded_value == "none"
                     && !has_explicit_border_image_source(value);
                 let initial_component = expanded_value != "none"
-                    && expanded_value == initial_border_image_value(longhand);
+                    && expanded_value == initial_border_image_value(longhand)
+                    && !border_image_component_is_explicit(value, longhand);
                 let expanded_value = if omitted_source || initial_component {
                     "initial".to_owned()
                 } else if longhand == "-webkit-mask-box-image-slice" {
@@ -1378,7 +1596,50 @@ fn expand_special_shorthand(
         "white-space" => expand_white_space(&components)?,
         _ => return None,
     };
-    records_from_values(name, values, important, limits)
+    records_from_values(name, value, values, important, limits)
+}
+
+fn border_image_component_is_explicit(value: &str, longhand: &str) -> bool {
+    let Some(sections) = split_top_level_delimiter(value, b'/') else {
+        return false;
+    };
+    let first = sections
+        .first()
+        .and_then(|section| split_top_level_whitespace(section))
+        .unwrap_or_default();
+    match longhand {
+        "-webkit-mask-box-image-source" => has_explicit_border_image_source(value),
+        "-webkit-mask-box-image-slice" => first.iter().any(|component| {
+            !is_image_component(component)
+                && !matches!(
+                    *component,
+                    "fill" | "stretch" | "repeat" | "round" | "space"
+                )
+        }),
+        "-webkit-mask-box-image-width" => sections
+            .get(1)
+            .is_some_and(|value| !value.trim().is_empty()),
+        "-webkit-mask-box-image-outset" => sections.get(2).is_some_and(|section| {
+            split_top_level_whitespace(section).is_some_and(|components| {
+                components.iter().any(|component| {
+                    !matches!(*component, "stretch" | "repeat" | "round" | "space")
+                })
+            })
+        }),
+        "-webkit-mask-box-image-repeat" => {
+            first
+                .iter()
+                .any(|component| matches!(*component, "stretch" | "repeat" | "round" | "space"))
+                || sections.get(2).is_some_and(|section| {
+                    split_top_level_whitespace(section).is_some_and(|components| {
+                        components.iter().any(|component| {
+                            matches!(*component, "stretch" | "repeat" | "round" | "space")
+                        })
+                    })
+                })
+        }
+        _ => false,
+    }
 }
 
 fn contextual_longhand_value(name: &str, value: &str) -> Option<String> {
@@ -1621,6 +1882,7 @@ fn initial_border_image_value(longhand: &str) -> &'static str {
 
 fn records_from_values(
     shorthand: &str,
+    shorthand_input: &str,
     values: Vec<(&str, String)>,
     important: bool,
     limits: ResourceLimits,
@@ -1635,9 +1897,10 @@ fn records_from_values(
             let value = values
                 .iter()
                 .find_map(|(name, value)| (*name == *longhand).then_some(value))?;
+            let source = authored_longhand_source(longhand, value, shorthand_input);
             Some(DeclarationRecord {
                 name: (*longhand).to_owned(),
-                value: semantic_longhand_value(longhand, value, value, limits)?,
+                value: semantic_longhand_value(longhand, value, &source, limits)?,
                 important,
                 pending_group: None,
                 alias_value: None,
@@ -1700,17 +1963,39 @@ fn expand_border_image(value: &str) -> Option<Vec<(&'static str, String)>> {
         .map(|index| first.remove(index).to_owned())
         .unwrap_or_else(|| "none".to_owned());
     let source = typed_longhand_value("border-image-source", &source)?;
-    if first.is_empty() || first.len() > 5 {
+    let repeat_values = first
+        .iter()
+        .enumerate()
+        .filter(|(_, component)| matches!(**component, "stretch" | "repeat" | "round" | "space"))
+        .map(|(index, component)| (index, *component))
+        .collect::<Vec<_>>();
+    if repeat_values.len() > 2 {
         return None;
+    }
+    let mut repeat = if repeat_values.is_empty() {
+        "stretch".to_owned()
+    } else {
+        repeat_values
+            .iter()
+            .map(|(_, value)| *value)
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    for (index, _) in repeat_values.into_iter().rev() {
+        first.remove(index);
     }
     let fill = first
         .iter()
         .position(|component| *component == "fill")
         .map(|index| first.remove(index));
-    if first.is_empty() || first.len() > 4 {
+    if first.len() > 4 {
         return None;
     }
-    let slice = typed_longhand_value("border-image-slice", &first.join(" "))?;
+    let slice = if first.is_empty() {
+        "100%".to_owned()
+    } else {
+        typed_longhand_value("border-image-slice", &first.join(" "))?
+    };
     let slice = if fill.is_some() {
         format!("{slice} fill")
     } else {
@@ -1719,14 +2004,24 @@ fn expand_border_image(value: &str) -> Option<Vec<(&'static str, String)>> {
     let width = sections.get(1).copied().unwrap_or("1").trim();
     let width = validate_repeated_longhand_components("border-image-width", width, 4)?;
     let mut outset = "0".to_owned();
-    let mut repeat = "stretch".to_owned();
     if let Some(last) = sections.get(2) {
         let mut components = split_top_level_whitespace(last)?;
         if components
             .last()
             .is_some_and(|component| matches!(*component, "stretch" | "repeat" | "round" | "space"))
         {
-            repeat = components.pop()?.to_owned();
+            if repeat != "stretch" {
+                return None;
+            }
+            let trailing_repeat = components.pop()?.to_owned();
+            if components.last().is_some_and(|component| {
+                matches!(*component, "stretch" | "repeat" | "round" | "space")
+            }) {
+                let first_repeat = components.pop()?;
+                repeat = format!("{first_repeat} {trailing_repeat}");
+            } else {
+                repeat = trailing_repeat;
+            }
         }
         if !components.is_empty() {
             outset = validate_repeated_longhand_components(
@@ -1852,44 +2147,8 @@ fn expand_offset(value: &str) -> Option<Vec<(&'static str, String)>> {
     if slash.is_empty() || slash.len() > 2 {
         return None;
     }
-    let mut path = "none".to_owned();
-    let mut distance = "0px".to_owned();
-    let mut rotation = Vec::new();
-    let mut position = Vec::new();
-    for component in split_top_level_whitespace(slash[0])? {
-        if path == "none" {
-            if let Some(canonical) = offset_path_value(component) {
-                path = canonical;
-                continue;
-            }
-        }
-        if distance == "0px" {
-            if let Some(canonical) = offset_distance_value(component) {
-                distance = canonical;
-                continue;
-            }
-        }
-        if matches!(component, "auto" | "reverse")
-            || typed_longhand_value("rotate", component).is_some()
-        {
-            rotation.push(component);
-            continue;
-        }
-        position.push(component);
-    }
-    if path == "none" && position.is_empty() {
-        return None;
-    }
-    let offset_position = if position.is_empty() {
-        "normal".to_owned()
-    } else {
-        typed_longhand_value("offset-position", &position.join(" "))?
-    };
-    let offset_rotate = if rotation.is_empty() {
-        "auto".to_owned()
-    } else {
-        offset_rotate_value(&rotation)?
-    };
+    let components = split_top_level_whitespace(slash[0])?;
+    let (offset_position, path, distance, offset_rotate) = parse_offset_main(&components)?;
     let offset_anchor = if let Some(anchor) = slash.get(1) {
         typed_longhand_value("offset-anchor", anchor)?
     } else {
@@ -1904,16 +2163,68 @@ fn expand_offset(value: &str) -> Option<Vec<(&'static str, String)>> {
     ])
 }
 
+fn parse_offset_main(components: &[&str]) -> Option<(String, String, String, String)> {
+    for position_length in (1..=components.len()).rev() {
+        let position =
+            typed_longhand_value("offset-position", &components[..position_length].join(" "));
+        let Some(position) = position else {
+            continue;
+        };
+        if position_length == components.len() {
+            return Some((
+                position,
+                "none".to_owned(),
+                "0px".to_owned(),
+                "auto".to_owned(),
+            ));
+        }
+        if let Some((path, distance, rotation)) =
+            parse_offset_path_tail(&components[position_length..])
+        {
+            return Some((position, path, distance, rotation));
+        }
+    }
+
+    let (path, distance, rotation) = parse_offset_path_tail(components)?;
+    Some(("normal".to_owned(), path, distance, rotation))
+}
+
+fn parse_offset_path_tail(components: &[&str]) -> Option<(String, String, String)> {
+    for path_length in (1..=components.len()).rev() {
+        let Some(path) = offset_path_value(&components[..path_length].join(" ")) else {
+            continue;
+        };
+        let Some((distance, rotation)) = parse_offset_motion_components(&components[path_length..])
+        else {
+            continue;
+        };
+        return Some((path, distance, rotation));
+    }
+    None
+}
+
+fn parse_offset_motion_components(components: &[&str]) -> Option<(String, String)> {
+    let mut distance = None;
+    let mut rotation = Vec::new();
+    for component in components {
+        if distance.is_none() {
+            if let Some(value) = offset_distance_value(component) {
+                distance = Some(value);
+                continue;
+            }
+        }
+        rotation.push(*component);
+    }
+    let rotation = if rotation.is_empty() {
+        "auto".to_owned()
+    } else {
+        offset_rotate_value(&rotation)?
+    };
+    Some((distance.unwrap_or_else(|| "0px".to_owned()), rotation))
+}
+
 fn offset_path_value(value: &str) -> Option<String> {
-    typed_longhand_value("offset-path", value).or_else(|| {
-        (value == "none"
-            || [
-                "path(", "ray(", "url(", "circle(", "ellipse(", "inset(", "polygon(",
-            ]
-            .iter()
-            .any(|prefix| value.starts_with(prefix)))
-        .then(|| value.to_owned())
-    })
+    typed_longhand_value("offset-path", value)
 }
 
 fn offset_distance_value(value: &str) -> Option<String> {
@@ -2312,11 +2623,19 @@ fn semantic_longhand_value(
     if let Some(keyword) = css_wide_keyword(canonical) {
         return Some(DeclarationValue::css_wide(keyword));
     }
-    let semantic = parse_semantic_property_with_limits(name, canonical, limits).ok()?;
+    let semantic = parse_semantic_property_with_limits(name, observable, limits)
+        .or_else(|_| parse_semantic_property_with_limits(name, canonical, limits))
+        .ok()?;
+    let projection = project_declaration(&semantic).ok()?;
+    let observable_projection = if semantic.recovered().contains_context_dependent_sign() {
+        canonical.to_owned()
+    } else {
+        projection.observable
+    };
     Some(DeclarationValue::semantic_with_canonical(
         semantic,
         canonical.to_owned(),
-        observable.to_owned(),
+        observable_projection,
     ))
 }
 
@@ -2329,10 +2648,11 @@ fn validated_expanded_shorthand_value(
     let semantic =
         crate::SemanticDeclaration::from_validated_expanded_shorthand(name, source, limits)
             .map_err(map_engine_error)?;
+    let projection = project_declaration(&semantic).map_err(map_engine_error)?;
     Ok(DeclarationValue::semantic_with_canonical(
         semantic,
         source.to_owned(),
-        source.to_owned(),
+        projection.observable,
     ))
 }
 

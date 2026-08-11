@@ -1,6 +1,10 @@
 use crate::catalog::shorthand_longhands;
 use crate::recovered_value::RecoveredObservableText;
-use crate::{EngineError, SemanticDeclaration, SemanticExtensionValue, SemanticPropertyValue};
+use crate::syntax::split_top_level_delimiter;
+use crate::{
+    parse_semantic_property, EngineError, PropertyParseKind, SemanticDeclaration,
+    SemanticExtensionValue, SemanticPropertyValue,
+};
 use cssparser::{Token, TokenizerWithSpans};
 use lightningcss::{
     properties::{Property, PropertyId},
@@ -68,6 +72,20 @@ pub(crate) fn project_declaration(
     )) = declaration.value()
     {
         value.observable_value()?
+    } else if matches!(
+        declaration.value(),
+        SemanticPropertyValue::Extension(SemanticExtensionValue::WebkitBorderImage(_))
+    ) {
+        if declaration.recovered().contains_context_dependent_sign() {
+            canonical.clone()
+        } else {
+            serialize_webkit_border_image_observable(input, &canonical)
+        }
+    } else if matches!(
+        declaration.value(),
+        SemanticPropertyValue::Extension(SemanticExtensionValue::WebkitMaskBoxImageSlice(_))
+    ) {
+        serialize_webkit_mask_box_image_slice_observable(input, &canonical)
     } else if let SemanticPropertyValue::Extension(SemanticExtensionValue::Geometric(value)) =
         declaration.value()
     {
@@ -88,8 +106,16 @@ pub(crate) fn project_declaration(
     })
 }
 
+pub(crate) fn project_observable_value(name: &str, source: &str) -> Option<String> {
+    let declaration = parse_semantic_property(name, source).ok()?;
+    project_declaration(&declaration)
+        .ok()
+        .map(|projection| projection.observable)
+}
+
 fn serialize_gradient_observable(input: &str) -> String {
-    let mut value = replace_gradient_color_tokens(input);
+    let mut value = canonicalize_unquoted_urls(input);
+    value = replace_gradient_color_tokens(&value);
     value = replace_comments_with_space(&value);
     value = normalize_comma_whitespace(&value);
     value = canonicalize_leading_decimal(&value);
@@ -104,6 +130,27 @@ fn serialize_gradient_observable(input: &str) -> String {
         value[..open].make_ascii_lowercase();
     }
     value
+}
+
+fn canonicalize_unquoted_urls(input: &str) -> String {
+    let mut tokenizer = TokenizerWithSpans::new(input);
+    let mut replacements = Vec::new();
+    while let Ok(token) = tokenizer.next_token() {
+        let Token::UnquotedUrl(value) = token.token else {
+            continue;
+        };
+        let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
+        replacements.push((
+            token.start.byte_index(),
+            token.end.byte_index(),
+            format!("url(\"{escaped}\")"),
+        ));
+    }
+    let mut output = input.to_owned();
+    for (start, end, replacement) in replacements.into_iter().rev() {
+        output.replace_range(start..end, &replacement);
+    }
+    output
 }
 
 fn normalize_webkit_gradient_points(input: &str) -> String {
@@ -293,13 +340,31 @@ fn serialize_typed_observable(
             recovered.recovered,
         );
     }
+    if is_single_color_property(name) {
+        return serialize_color(closed, canonical);
+    }
+    if let Some(value) = serialize_plain_time_list(input) {
+        return value;
+    }
+    if let Some(value) = serialize_explicit_zero_dimension(name, input, canonical) {
+        return value;
+    }
+    if let Some(value) = serialize_dimensionless_zero(name, input) {
+        return value;
+    }
+    if is_position_pair_property(name) {
+        return serialize_position_pair(input, canonical);
+    }
+    if name == "scrollbar-color" {
+        return serialize_color_pair(input).unwrap_or_else(|| canonical.to_owned());
+    }
+    if name == "aspect-ratio" {
+        return serialize_aspect_ratio(input, canonical);
+    }
     if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
         && !recovered.recovered
     {
-        return input.to_owned();
-    }
-    if name == "color" || name.ends_with("-color") {
-        return serialize_color(closed, canonical);
+        return serialize_shorthand_observable(name, input, canonical);
     }
     if name == "z-index" {
         if let Some(value) = serialize_integer_calculation(closed) {
@@ -321,10 +386,166 @@ fn serialize_typed_observable(
         }
         return format!("calc({value})");
     }
+    if starts_image_set_function(closed) {
+        return serialize_gradient_observable(closed);
+    }
     if closed.contains("gradient(") {
         return closed.to_owned();
     }
     serialize_default_observable(input, closed, canonical, recovered)
+}
+
+fn is_position_pair_property(name: &str) -> bool {
+    matches!(
+        name,
+        "background-position"
+            | "mask-position"
+            | "offset-anchor"
+            | "offset-position"
+            | "perspective-origin"
+            | "transform-origin"
+    )
+}
+
+fn serialize_position_pair(input: &str, canonical: &str) -> String {
+    let components = crate::syntax::split_top_level_whitespace(input).unwrap_or_default();
+    if components.len() != 1 {
+        return canonicalize_leading_decimal(input);
+    }
+    let component = components[0];
+    if matches!(component, "auto" | "normal") {
+        return canonical.to_owned();
+    }
+    if component.eq_ignore_ascii_case("center") {
+        return "center center".to_owned();
+    }
+    if component.eq_ignore_ascii_case("top") || component.eq_ignore_ascii_case("bottom") {
+        return format!("center {}", component.to_ascii_lowercase());
+    }
+    if component.eq_ignore_ascii_case("left") || component.eq_ignore_ascii_case("right") {
+        return format!("{} center", component.to_ascii_lowercase());
+    }
+    let canonical_components =
+        crate::syntax::split_top_level_whitespace(canonical).unwrap_or_else(|| vec![canonical]);
+    let canonical_first = canonical_components.first().copied().unwrap_or(canonical);
+    let canonical_second = canonical_components.get(1).copied().unwrap_or("center");
+    let first = if starts_math_function(component) && !starts_math_function(canonical_first) {
+        format!("calc({canonical_first})")
+    } else {
+        canonicalize_leading_decimal(canonical_first)
+    };
+    format!("{first} {canonical_second}")
+}
+
+fn serialize_color_pair(input: &str) -> Option<String> {
+    let components = crate::syntax::split_top_level_whitespace(input)?;
+    if components.len() != 2 {
+        return None;
+    }
+    components
+        .into_iter()
+        .map(|component| project_observable_value("color", component))
+        .collect::<Option<Vec<_>>>()
+        .map(|values| values.join(" "))
+}
+
+fn serialize_aspect_ratio(input: &str, canonical: &str) -> String {
+    if input.eq_ignore_ascii_case("auto") || input.contains('/') || canonical.contains('/') {
+        return canonicalize_leading_decimal(canonical);
+    }
+    let ratio = if starts_math_function(input) && !starts_math_function(canonical) {
+        format!("calc({canonical})")
+    } else {
+        canonicalize_leading_decimal(canonical)
+    };
+    format!("{ratio} / 1")
+}
+
+fn starts_image_set_function(value: &str) -> bool {
+    let lower = value.to_ascii_lowercase();
+    lower.starts_with("image-set(") || lower.starts_with("-webkit-image-set(")
+}
+
+fn serialize_shorthand_observable(name: &str, input: &str, canonical: &str) -> String {
+    if crate::syntax::split_top_level_whitespace(input).is_some_and(|values| values.len() == 1) {
+        if let Some(value) = shorthand_longhands(name).and_then(|longhands| {
+            longhands
+                .iter()
+                .find_map(|longhand| project_observable_value(longhand, input))
+        }) {
+            return value;
+        }
+    }
+    if starts_math_function(input) && !starts_math_function(canonical) {
+        return format!("calc({canonical})");
+    }
+    serialize_shorthand_tokens(input)
+}
+
+fn serialize_shorthand_tokens(input: &str) -> String {
+    let value = canonicalize_unquoted_urls(input);
+    let value = replace_gradient_color_tokens(&value);
+    let value = replace_comments_with_space(&value);
+    let value = normalize_comma_whitespace(&value);
+    let value = canonicalize_leading_decimal(&value);
+    canonicalize_color_identifiers(&value)
+}
+
+fn serialize_webkit_border_image_observable(input: &str, canonical: &str) -> String {
+    let value = serialize_shorthand_tokens(input);
+    if split_top_level_delimiter(&value, b'/').is_some_and(|sections| sections.len() > 2) {
+        return canonical.to_owned();
+    }
+    let Some(components) = crate::syntax::split_top_level_whitespace(&value) else {
+        return value;
+    };
+    let Some(first) = components.first().copied() else {
+        return value;
+    };
+    if components.contains(&"fill") || !is_numeric_or_math_component(first) {
+        return value;
+    }
+    let authored_sections = split_top_level_delimiter(&value, b'/').unwrap_or_default();
+    let canonical_sections = split_top_level_delimiter(canonical, b'/').unwrap_or_default();
+    let Some(section) = canonical_sections.first().map(|section| section.trim()) else {
+        return canonical.to_owned();
+    };
+    let slice = section.strip_prefix("none ").unwrap_or(section);
+    let slice = if starts_math_function(first) && !starts_math_function(slice) {
+        slice
+            .strip_suffix(" fill")
+            .map_or_else(|| slice.to_owned(), |value| format!("calc({value}) fill"))
+    } else {
+        slice.to_owned()
+    };
+    if authored_sections.len() == 1 {
+        return slice;
+    }
+    if authored_sections.len() == 2 {
+        let Some(width) = canonical_sections.get(1).map(|section| section.trim()) else {
+            return canonical.to_owned();
+        };
+        return format!("{slice} / {width}");
+    }
+    value
+}
+
+fn is_numeric_or_math_component(value: &str) -> bool {
+    value
+        .chars()
+        .next()
+        .is_some_and(|character| character.is_ascii_digit() || matches!(character, '+' | '-' | '.'))
+        || starts_math_function(value)
+}
+
+fn serialize_webkit_mask_box_image_slice_observable(input: &str, canonical: &str) -> String {
+    if starts_math_function(input) && !starts_math_function(canonical) {
+        return canonical.strip_suffix(" fill").map_or_else(
+            || canonical.to_owned(),
+            |value| format!("calc({value}) fill"),
+        );
+    }
+    canonical.to_owned()
 }
 
 fn serialize_default_observable(
@@ -406,15 +627,36 @@ fn serialize_font_family(
     single_string: Option<&str>,
     recovered: bool,
 ) -> String {
-    let Some(value) = single_string else {
-        return safe_value.to_owned();
-    };
-    if is_identifier(value) && !is_generic_font_family(value) {
+    if let Some(value) = single_string {
+        if is_identifier(value) && !is_generic_font_family(value) {
+            return value.to_owned();
+        }
+        if !recovered && input.ends_with(['\'', '"']) && safe_value.starts_with(['\'', '"']) {
+            return safe_value.to_owned();
+        }
+        return quote_css_string(value);
+    }
+
+    split_top_level_delimiter(safe_value, b',')
+        .map(|families| {
+            families
+                .into_iter()
+                .map(serialize_font_family_member)
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .unwrap_or_else(|| safe_value.to_owned())
+}
+
+fn serialize_font_family_member(value: &str) -> String {
+    let value = trim_css_whitespace(value);
+    if value.starts_with(['\'', '"']) || is_identifier(value) {
         return value.to_owned();
     }
-    if !recovered && input.ends_with(['\'', '"']) && safe_value.starts_with(['\'', '"']) {
-        return safe_value.to_owned();
-    }
+    quote_css_string(value)
+}
+
+fn quote_css_string(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
@@ -463,15 +705,196 @@ fn serialize_color(value: &str, safe_value: &str) -> String {
     {
         return value.to_ascii_lowercase();
     }
-    if [
-        "hsl(", "hsla(", "hwb(", "lab(", "lch(", "oklab(", "oklch(", "color(",
-    ]
-    .iter()
-    .any(|prefix| value.to_ascii_lowercase().starts_with(prefix))
+    if ["hsl(", "hsla(", "hwb("]
+        .iter()
+        .any(|prefix| value.to_ascii_lowercase().starts_with(prefix))
     {
         return serialize_hex_color(safe_value).unwrap_or_else(|| value.to_owned());
     }
+    if ["lab(", "lch(", "oklab(", "oklch(", "color("]
+        .iter()
+        .any(|prefix| value.to_ascii_lowercase().starts_with(prefix))
+    {
+        return canonicalize_modern_color(safe_value);
+    }
     canonicalize_color_identifiers(value)
+}
+
+fn is_single_color_property(name: &str) -> bool {
+    if !(name == "color" || name.ends_with("-color") || matches!(name, "fill" | "stroke")) {
+        return false;
+    }
+    semantic_accepts(name, "red") && !semantic_accepts(name, "red blue")
+}
+
+fn semantic_accepts(name: &str, value: &str) -> bool {
+    parse_semantic_property(name, value).is_ok_and(|declaration| {
+        matches!(
+            declaration.parse_kind(),
+            PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
+        )
+    })
+}
+
+fn serialize_plain_time_list(input: &str) -> Option<String> {
+    split_top_level_delimiter(input, b',')?
+        .into_iter()
+        .map(|value| serialize_plain_time(value.trim()))
+        .collect::<Option<Vec<_>>>()
+        .map(|values| values.join(", "))
+}
+
+fn serialize_plain_time(input: &str) -> Option<String> {
+    let unit_start = input.find(|character: char| character.is_ascii_alphabetic())?;
+    let (number, unit) = input.split_at(unit_start);
+    if !matches!(unit.to_ascii_lowercase().as_str(), "s" | "ms") {
+        return None;
+    }
+    let number = number.parse::<f64>().ok()?;
+    number.is_finite().then(|| {
+        format!(
+            "{}{}",
+            serialize_finite_number(number),
+            unit.to_ascii_lowercase()
+        )
+    })
+}
+
+fn serialize_dimensionless_zero(name: &str, input: &str) -> Option<String> {
+    let number = input.trim().parse::<f64>().ok()?;
+    if number != 0.0 || semantic_accepts(name, "1") || !semantic_accepts(name, "1px") {
+        return None;
+    }
+    let one = parse_semantic_property(name, "1px")
+        .ok()?
+        .canonical_value()
+        .ok()?;
+    let zero = replace_one_pixel_with_zero(&one)?;
+    if is_position_pair_property(name) && !zero.contains(' ') {
+        return Some(format!("{zero} center"));
+    }
+    Some(zero)
+}
+
+fn serialize_explicit_zero_dimension(name: &str, input: &str, canonical: &str) -> Option<String> {
+    if canonical != "0" {
+        return None;
+    }
+    let input = input.trim();
+    let unit_start =
+        input.find(|character: char| character.is_ascii_alphabetic() || character == '%')?;
+    let (number, unit) = input.split_at(unit_start);
+    if number.parse::<f64>().ok()? != 0.0 || unit.is_empty() {
+        return None;
+    }
+    let value = format!("0{}", unit.to_ascii_lowercase());
+    if is_position_pair_property(name) {
+        return Some(format!("{value} center"));
+    }
+    Some(value)
+}
+
+fn replace_one_pixel_with_zero(input: &str) -> Option<String> {
+    let mut tokenizer = TokenizerWithSpans::new(input);
+    let mut replacements = Vec::new();
+    while let Ok(token) = tokenizer.next_token() {
+        let Token::Dimension {
+            value, ref unit, ..
+        } = token.token
+        else {
+            continue;
+        };
+        if value == 1.0 && unit.eq_ignore_ascii_case("px") {
+            replacements.push((token.start.byte_index(), token.end.byte_index()));
+        }
+    }
+    if replacements.is_empty() {
+        return None;
+    }
+    let mut output = input.to_owned();
+    for (start, end) in replacements.into_iter().rev() {
+        output.replace_range(start..end, "0px");
+    }
+    Some(output)
+}
+
+fn canonicalize_modern_color(input: &str) -> String {
+    let lower = input.to_ascii_lowercase();
+    let (scale_lightness, unscale_lightness) =
+        if lower.starts_with("oklab(") || lower.starts_with("oklch(") {
+            (true, false)
+        } else if lower.starts_with("lab(") || lower.starts_with("lch(") {
+            (false, true)
+        } else {
+            (false, false)
+        };
+    let mut tokenizer = TokenizerWithSpans::new(input);
+    let mut depth = 0usize;
+    let mut first_component = true;
+    let mut alpha_component = false;
+    let mut replacements = Vec::<(usize, usize, String)>::new();
+    while let Ok(token) = tokenizer.next_token() {
+        match token.token {
+            Token::Function(_)
+            | Token::ParenthesisBlock
+            | Token::SquareBracketBlock
+            | Token::CurlyBracketBlock => {
+                depth += 1;
+            }
+            Token::CloseParenthesis | Token::CloseSquareBracket | Token::CloseCurlyBracket => {
+                depth = depth.saturating_sub(1);
+            }
+            Token::Delim('/') if depth == 1 => alpha_component = true,
+            Token::Percentage { unit_value, .. }
+                if depth == 1 && (first_component || alpha_component) =>
+            {
+                let value = if first_component && unscale_lightness {
+                    f64::from(unit_value) * 100.0
+                } else if first_component && scale_lightness || alpha_component {
+                    f64::from(unit_value)
+                } else {
+                    continue;
+                };
+                replacements.push((
+                    token.start.byte_index(),
+                    token.end.byte_index(),
+                    serialize_finite_number(value),
+                ));
+                first_component = false;
+                alpha_component = false;
+            }
+            Token::WhiteSpace(_) | Token::Comment(_) if depth == 1 => {}
+            _ if depth == 1 => {
+                first_component = false;
+                alpha_component = false;
+            }
+            _ => {}
+        }
+    }
+    let mut output = input.to_owned();
+    for (start, end, replacement) in replacements.into_iter().rev() {
+        output.replace_range(start..end, &replacement);
+    }
+    if let Some(open) = output.find('(') {
+        output[..open].make_ascii_lowercase();
+    }
+    canonicalize_leading_decimal(&output)
+}
+
+fn serialize_finite_number(value: f64) -> String {
+    if value == 0.0 {
+        return "0".to_owned();
+    }
+    let mut output = value.to_string();
+    if output.contains('.') {
+        while output.ends_with('0') {
+            output.pop();
+        }
+        if output.ends_with('.') {
+            output.pop();
+        }
+    }
+    output
 }
 
 pub(crate) fn serialize_observable_color(value: &str) -> String {
@@ -677,12 +1100,53 @@ mod tests {
 
     #[test]
     fn preserves_numeric_units_and_per_item_math_provenance() {
-        assert_eq!(observable("stroke-width", "0"), "0");
-        assert_eq!(observable("stroke-width", "0px"), "0px");
+        for (name, input, expected) in [
+            ("width", "0", "0px"),
+            ("font-size", "-0", "0px"),
+            ("transform-origin", "0", "0px center"),
+            ("stroke-width", "0", "0"),
+            ("stroke-width", "0px", "0px"),
+        ] {
+            assert_eq!(observable(name, input), expected, "{name}: {input}");
+        }
         assert_eq!(
             observable("stroke-dasharray", "calc(1 + 1) 2"),
             "calc(2), 2"
         );
+    }
+
+    #[test]
+    fn preserves_authored_time_units_outside_math() {
+        for (input, expected) in [
+            ("100ms", "100ms"),
+            ("100MS", "100ms"),
+            (".1s", "0.1s"),
+            ("0.10s", "0.1s"),
+            ("100ms, .2S", "100ms, 0.2s"),
+            ("calc(100ms)", "calc(0.1s)"),
+        ] {
+            assert_eq!(observable("animation-duration", input), expected, "{input}");
+        }
+    }
+
+    #[test]
+    fn serializes_legacy_webkit_border_image_like_chromium() {
+        for (input, expected) in [
+            ("url(\"x.png\")", "url(\"x.png\")"),
+            ("10%", "10% fill"),
+            ("1 / 2", "1 fill / 2"),
+            ("calc(1 + 1)", "calc(2) fill"),
+            (
+                "url(\"x.png\") 30 / 10 / 0 stretch",
+                "url(\"x.png\") 30 fill / 10 / 0 stretch",
+            ),
+        ] {
+            assert_eq!(
+                observable("-webkit-border-image", input),
+                expected,
+                "{input}"
+            );
+        }
     }
 
     #[test]
@@ -750,6 +1214,36 @@ mod tests {
             ),
             "lab(from var(--mycolor) l a b / calc(alpha * 0.8))"
         );
+        for (name, input, expected) in [
+            ("fill", "#123456", "rgb(18, 52, 86)"),
+            ("stroke", "rgb(1 2 3 / 50%)", "rgba(1, 2, 3, 0.5)"),
+            ("color", "lab(50% 20 30 / 50%)", "lab(50 20 30 / 0.5)"),
+            (
+                "color",
+                "oklch(50% .2 120 / 50%)",
+                "oklch(0.5 0.2 120 / 0.5)",
+            ),
+            (
+                "color",
+                "color(display-p3 .1 .2 .3 / 50%)",
+                "color(display-p3 0.1 0.2 0.3 / 0.5)",
+            ),
+        ] {
+            assert_eq!(observable(name, input), expected, "{name}: {input}");
+        }
+    }
+
+    #[test]
+    fn serializes_font_family_lists_like_cssom() {
+        for (input, expected) in [
+            ("left top", "\"left top\""),
+            ("safe center", "\"safe center\""),
+            ("--x block", "\"--x block\""),
+            ("foo, bar baz", "foo, \"bar baz\""),
+            ("serif", "serif"),
+        ] {
+            assert_eq!(observable("font-family", input), expected, "{input}");
+        }
     }
 
     #[test]
