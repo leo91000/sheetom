@@ -6,7 +6,7 @@ use crate::context::PropertyHandlerContext;
 use crate::declaration::{DeclarationBlock, DeclarationList};
 use crate::error::{Error, ErrorLocation, ParserError, PrinterError, PrinterErrorKind};
 use crate::macros::{define_shorthand, impl_shorthand};
-use crate::printer::Printer;
+use crate::printer::{Printer, PrinterOptions};
 use crate::properties::{Property, PropertyId};
 use crate::traits::{Parse, PropertyHandler, Shorthand, ToCss};
 use crate::values::ident::CustomIdent;
@@ -115,7 +115,11 @@ impl<'i> Parse<'i> for Subgrid<'i> {
         items.push(SubgridItem::LineNames(line_names));
         continue;
       }
-      items.push(SubgridItem::Repeat(SubgridRepeat::parse(input)?));
+      if let Ok(repeat) = input.try_parse(SubgridRepeat::parse) {
+        items.push(SubgridItem::Repeat(repeat));
+        continue;
+      }
+      break;
     }
     Ok(Subgrid { items })
   }
@@ -504,6 +508,9 @@ impl<'i> ToCss for TrackRepeat<'i> {
     let mut first = true;
     for names in self.line_names.iter() {
       if !names.is_empty() {
+        if !first {
+          dest.whitespace()?;
+        }
         serialize_line_names(names, dest)?;
       }
 
@@ -632,6 +639,9 @@ impl<'i> ToCss for TrackList<'i> {
 
     for names in line_names_iter {
       if !names.is_empty() {
+        if !first {
+          dest.whitespace()?;
+        }
         serialize_line_names(names, dest)?;
       }
 
@@ -842,6 +852,15 @@ impl ToCss for GridTemplateAreas {
   where
     W: std::fmt::Write,
   {
+    self.to_css_with_layout(dest, true)
+  }
+}
+
+impl GridTemplateAreas {
+  fn to_css_with_layout<W>(&self, dest: &mut Printer<W>, multiline: bool) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
     match self {
       GridTemplateAreas::None => dest.write_str("none"),
       GridTemplateAreas::Areas { areas, .. } => {
@@ -850,21 +869,25 @@ impl ToCss for GridTemplateAreas {
         let mut first = true;
         while next.is_some() {
           if !first && !dest.minify {
-            dest.newline()?;
+            if multiline {
+              dest.newline()?;
+            } else {
+              dest.write_char(' ')?;
+            }
           }
 
           self.write_string(dest, &mut iter, &mut next)?;
 
           if first {
             first = false;
-            if !dest.minify {
+            if multiline && !dest.minify {
               // Indent by the width of "grid-template-areas: ", so the rows line up.
               dest.indent_by(21);
             }
           }
         }
 
-        if !dest.minify {
+        if multiline && !dest.minify {
           dest.dedent_by(21);
         }
 
@@ -872,9 +895,15 @@ impl ToCss for GridTemplateAreas {
       }
     }
   }
-}
 
-impl GridTemplateAreas {
+  /// Serialize the value as the single-line text exposed by CSSOM.
+  pub fn to_cssom_string(&self) -> Result<String, PrinterError> {
+    let mut output = String::new();
+    let mut printer = Printer::new(&mut output, PrinterOptions::default());
+    self.to_css_with_layout(&mut printer, false)?;
+    Ok(output)
+  }
+
   fn write_string<'a, W>(
     &self,
     dest: &mut Printer<W>,
@@ -938,8 +967,13 @@ pub struct GridTemplate<'i> {
 
 impl<'i> Parse<'i> for GridTemplate<'i> {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
-    if input.try_parse(|input| input.expect_ident_matching("none")).is_ok() {
-      input.expect_exhausted()?;
+    if input
+      .try_parse(|input| {
+        input.expect_ident_matching("none")?;
+        input.expect_exhausted()
+      })
+      .is_ok()
+    {
       return Ok(GridTemplate {
         rows: TrackSizing::None,
         columns: TrackSizing::None,
@@ -955,12 +989,11 @@ impl<'i> Parse<'i> for GridTemplate<'i> {
     let mut tokens = Vec::new();
 
     loop {
-      if let Ok(first_names) = input.try_parse(parse_line_names) {
-        if let Some(last_names) = line_names.last_mut() {
-          last_names.extend(first_names);
-        } else {
-          line_names.push(first_names);
-        }
+      let first_names = input.try_parse(parse_line_names).unwrap_or_default();
+      if let Some(last_names) = line_names.last_mut() {
+        last_names.extend(first_names);
+      } else {
+        line_names.push(first_names);
       }
 
       if let Ok(string) = input.try_parse(|input| input.expect_string().map(|s| s.as_ref().to_owned())) {
@@ -1021,12 +1054,17 @@ impl ToCss for GridTemplate<'_> {
   where
     W: std::fmt::Write,
   {
-    self.to_css_with_indent(dest, 15)
+    self.to_css_with_indent(dest, 15, true)
   }
 }
 
 impl GridTemplate<'_> {
-  fn to_css_with_indent<W>(&self, dest: &mut Printer<W>, indent: u8) -> Result<(), PrinterError>
+  fn to_css_with_indent<W>(
+    &self,
+    dest: &mut Printer<W>,
+    indent: u8,
+    multiline: bool,
+  ) -> Result<(), PrinterError>
   where
     W: std::fmt::Write,
   {
@@ -1057,19 +1095,23 @@ impl GridTemplate<'_> {
           macro_rules! newline {
             () => {
               if !dest.minify {
-                if !indented {
-                  // Indent by the width of "grid-template: ", so the rows line up.
-                  dest.indent_by(indent);
-                  indented = true;
+                if multiline {
+                  if !indented {
+                    // Indent by the width of "grid-template: ", so the rows line up.
+                    dest.indent_by(indent);
+                    indented = true;
+                  }
+                  dest.newline()?;
+                } else {
+                  dest.write_char(' ')?;
                 }
-                dest.newline()?;
               }
             };
           }
 
           if let Some(line_names) = line_names_iter.next() {
             if !line_names.is_empty() {
-              if !dest.minify && line_names.len() == 2 {
+              if multiline && !dest.minify && line_names.len() == 2 {
                 dest.whitespace()?;
                 serialize_line_names(&line_names[0..1], dest)?;
                 newline!();
@@ -1111,8 +1153,12 @@ impl GridTemplate<'_> {
         }
 
         if let TrackSizing::TrackList(track_list) = &self.columns {
-          dest.newline()?;
-          dest.delim('/', false)?;
+          if multiline {
+            dest.newline()?;
+            dest.delim('/', false)?;
+          } else {
+            dest.write_str(" / ")?;
+          }
           track_list.to_css(dest)?;
         }
 
@@ -1123,6 +1169,14 @@ impl GridTemplate<'_> {
     }
 
     Ok(())
+  }
+
+  /// Serialize the shorthand as the single-line value exposed by CSSOM.
+  pub fn to_cssom_string(&self) -> Result<String, PrinterError> {
+    let mut output = String::new();
+    let mut printer = Printer::new(&mut output, PrinterOptions::default());
+    self.to_css_with_indent(&mut printer, 0, false)?;
+    Ok(output)
   }
 }
 
@@ -1415,6 +1469,15 @@ impl ToCss for Grid<'_> {
   where
     W: std::fmt::Write,
   {
+    self.to_css_with_layout(dest, true)
+  }
+}
+
+impl Grid<'_> {
+  fn to_css_with_layout<W>(&self, dest: &mut Printer<W>, multiline: bool) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
     let is_auto_initial = self.auto_rows == TrackSizeList::default()
       && self.auto_columns == TrackSizeList::default()
       && self.auto_flow == GridAutoFlow::default();
@@ -1466,7 +1529,7 @@ impl ToCss for Grid<'_> {
         columns: self.columns.clone(),
         areas: self.areas.clone(),
       };
-      template.to_css_with_indent(dest, 6)?;
+      template.to_css_with_indent(dest, 6, multiline)?;
     } else if self.auto_flow.direction() == GridAutoFlow::Column {
       if self.columns != TrackSizing::None || self.auto_rows != TrackSizeList::default() {
         unreachable!("invalid grid shorthand: mixed implicit and explicit values");
@@ -1498,6 +1561,14 @@ impl ToCss for Grid<'_> {
     }
 
     Ok(())
+  }
+
+  /// Serialize the shorthand as the single-line value exposed by CSSOM.
+  pub fn to_cssom_string(&self) -> Result<String, PrinterError> {
+    let mut output = String::new();
+    let mut printer = Printer::new(&mut output, PrinterOptions::default());
+    self.to_css_with_layout(&mut printer, false)?;
+    Ok(output)
   }
 }
 
@@ -2120,6 +2191,43 @@ mod tests {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     parser.parse_entirely(TrackSizing::parse).is_ok()
+  }
+
+  fn parses_grid_template(source: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser.parse_entirely(GridTemplate::parse).is_ok()
+  }
+
+  fn parse_grid_template(source: &str) -> GridTemplate<'_> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser.parse_entirely(GridTemplate::parse).unwrap()
+  }
+
+  #[test]
+  fn grid_template_backtracks_none_and_stops_subgrid_at_the_slash() {
+    for source in [
+      "none / [a] 1px [b]",
+      "subgrid [a] / none",
+      "subgrid repeat(auto-fill, [a]) / none",
+    ] {
+      assert!(parses_grid_template(source), "{source}");
+    }
+
+    for source in ["none /", "subgrid [a] garbage / none"] {
+      assert!(!parses_grid_template(source), "{source}");
+    }
+  }
+
+  #[test]
+  fn grid_template_areas_keep_leading_and_trailing_line_names_on_their_sides() {
+    let template = parse_grid_template("\"main\" 1px [end] / [left] 1fr [right]");
+    let TrackSizing::TrackList(rows) = template.rows else {
+      panic!("expected an explicit row track list");
+    };
+    assert!(rows.line_names[0].is_empty());
+    assert_eq!(rows.line_names[1][0].0, "end");
   }
 
   #[test]
