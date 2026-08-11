@@ -1,7 +1,9 @@
 use cssparser::{Parser, ParserInput, Token};
 use lightningcss::{
     properties::{
-        animation::{AnimationAttachmentRange, AnimationRangeEnd, AnimationRangeStart},
+        animation::{
+            AnimationAttachmentRange, AnimationRangeEnd, AnimationRangeStart, AnimationTimeline,
+        },
         masking::ClipPath,
     },
     stylesheet::PrinterOptions,
@@ -44,9 +46,10 @@ pub enum BrowserLonghandValue {
     FontVariationSettings(Option<Vec<FontVariationSetting>>),
     PositionTryFallbacks(Option<Vec<PositionTryFallback>>),
     TextBoxEdge(TextBoxEdgeValue),
-    TimelineRangeStart(TimelineRangeStartValue),
-    TimelineRangeEnd(TimelineRangeEndValue),
-    TimelineTriggerSource(TimelineTriggerSourceValue),
+    TimelineRangeStart(Vec<TimelineRangeStartValue>),
+    TimelineRangeEnd(Vec<TimelineRangeEndValue>),
+    TimelineTriggerName(Vec<Option<DashedIdent<'static>>>),
+    TimelineTriggerSource(Vec<AnimationTimeline<'static>>),
     KeywordList(Vec<&'static str>),
     AnimationIterationCount(Vec<AnimationIterationCountValue>),
     OffsetPath(OffsetPathValue),
@@ -200,13 +203,6 @@ pub enum TimelineRangeStartValue {
 pub enum TimelineRangeEndValue {
     Auto,
     Range(AnimationRangeEnd),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum TimelineTriggerSourceValue {
-    Auto,
-    None,
-    Names(Vec<DashedIdent<'static>>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -422,27 +418,21 @@ impl BrowserLonghandValue {
                 Ok(output.join(", "))
             }
             BrowserLonghandValue::TextBoxEdge(value) => value.canonical_value(),
-            BrowserLonghandValue::TimelineRangeStart(TimelineRangeStartValue::Auto) => {
-                Ok("auto".to_owned())
+            BrowserLonghandValue::TimelineRangeStart(values) => {
+                serialize_timeline_range_starts(values)
             }
-            BrowserLonghandValue::TimelineRangeStart(TimelineRangeStartValue::Range(value)) => {
-                serialize_typed(value)
+            BrowserLonghandValue::TimelineRangeEnd(values) => serialize_timeline_range_ends(values),
+            BrowserLonghandValue::TimelineTriggerName(values) => values
+                .iter()
+                .map(|value| match value {
+                    Some(value) => serialize_typed(value),
+                    None => Ok("none".to_owned()),
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .map(|values| values.join(", ")),
+            BrowserLonghandValue::TimelineTriggerSource(values) => {
+                serialize_comma_separated(values)
             }
-            BrowserLonghandValue::TimelineRangeEnd(TimelineRangeEndValue::Auto) => {
-                Ok("auto".to_owned())
-            }
-            BrowserLonghandValue::TimelineRangeEnd(TimelineRangeEndValue::Range(value)) => {
-                serialize_typed(value)
-            }
-            BrowserLonghandValue::TimelineTriggerSource(TimelineTriggerSourceValue::Auto) => {
-                Ok("auto".to_owned())
-            }
-            BrowserLonghandValue::TimelineTriggerSource(TimelineTriggerSourceValue::None) => {
-                Ok("none".to_owned())
-            }
-            BrowserLonghandValue::TimelineTriggerSource(TimelineTriggerSourceValue::Names(
-                values,
-            )) => serialize_comma_separated(values),
             BrowserLonghandValue::KeywordList(values) => Ok(values.join(", ")),
             BrowserLonghandValue::AnimationIterationCount(values) => {
                 let mut output = Vec::with_capacity(values.len());
@@ -858,6 +848,7 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::TimelineRangeEnd { auto }) => {
             parse_timeline_range_end(source, auto)
         }
+        Some(BrowserLonghandGrammar::TimelineTriggerName) => parse_timeline_trigger_name(source),
         Some(BrowserLonghandGrammar::TimelineTriggerSource) => {
             parse_timeline_trigger_source(source)
         }
@@ -973,6 +964,7 @@ enum BrowserLonghandGrammar {
     TextBoxEdge,
     TimelineRangeStart { auto: bool },
     TimelineRangeEnd { auto: bool },
+    TimelineTriggerName,
     TimelineTriggerSource,
     KeywordList(&'static [&'static str]),
     AnimationIterationCount,
@@ -1050,7 +1042,6 @@ define_browser_longhand_registry! {
         "anchor-name",
         "scroll-timeline-name",
         "timeline-scope",
-        "timeline-trigger-name",
         "view-timeline-name",
     ],
     BrowserLonghandGrammar::DashedIdentList { allow_all: true } => [
@@ -1093,6 +1084,7 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::TimelineRangeEnd { auto: true } => [
         "timeline-trigger-active-range-end",
     ],
+    BrowserLonghandGrammar::TimelineTriggerName => ["timeline-trigger-name"],
     BrowserLonghandGrammar::TimelineTriggerSource => ["timeline-trigger-source"],
     BrowserLonghandGrammar::AnimationIterationCount => [
         "-webkit-animation-iteration-count",
@@ -2626,18 +2618,17 @@ fn parse_timeline_range_start(
     accepts_auto: bool,
 ) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
-        if accepts_auto
-            && input
-                .try_parse(|input| input.expect_ident_matching("auto"))
-                .is_ok()
-        {
-            return Ok(BrowserLonghandValue::TimelineRangeStart(
-                TimelineRangeStartValue::Auto,
-            ));
-        }
-        AnimationRangeStart::parse(input)
-            .map(TimelineRangeStartValue::Range)
-            .map(BrowserLonghandValue::TimelineRangeStart)
+        let values = input.parse_comma_separated(|input| {
+            if accepts_auto
+                && input
+                    .try_parse(|input| input.expect_ident_matching("auto"))
+                    .is_ok()
+            {
+                return Ok(TimelineRangeStartValue::Auto);
+            }
+            AnimationRangeStart::parse(input).map(TimelineRangeStartValue::Range)
+        })?;
+        Ok(BrowserLonghandValue::TimelineRangeStart(values))
     })
 }
 
@@ -2646,47 +2637,45 @@ fn parse_timeline_range_end(
     accepts_auto: bool,
 ) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
-        if accepts_auto
-            && input
-                .try_parse(|input| input.expect_ident_matching("auto"))
+        let values = input.parse_comma_separated(|input| {
+            if accepts_auto
+                && input
+                    .try_parse(|input| input.expect_ident_matching("auto"))
+                    .is_ok()
+            {
+                return Ok(TimelineRangeEndValue::Auto);
+            }
+            AnimationRangeEnd::parse(input).map(TimelineRangeEndValue::Range)
+        })?;
+        Ok(BrowserLonghandValue::TimelineRangeEnd(values))
+    })
+}
+
+fn parse_timeline_trigger_name(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let names = input.parse_comma_separated(|input| {
+            if input
+                .try_parse(|input| input.expect_ident_matching("none"))
                 .is_ok()
-        {
-            return Ok(BrowserLonghandValue::TimelineRangeEnd(
-                TimelineRangeEndValue::Auto,
-            ));
-        }
-        AnimationRangeEnd::parse(input)
-            .map(TimelineRangeEndValue::Range)
-            .map(BrowserLonghandValue::TimelineRangeEnd)
+            {
+                return Ok(None);
+            }
+            DashedIdent::parse(input)
+                .map(IntoOwned::into_owned)
+                .map(Some)
+        })?;
+        Ok(BrowserLonghandValue::TimelineTriggerName(names))
     })
 }
 
 fn parse_timeline_trigger_source(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
-        if input
-            .try_parse(|input| input.expect_ident_matching("auto"))
-            .is_ok()
-        {
-            return Ok(BrowserLonghandValue::TimelineTriggerSource(
-                TimelineTriggerSourceValue::Auto,
-            ));
-        }
-        if input
-            .try_parse(|input| input.expect_ident_matching("none"))
-            .is_ok()
-        {
-            return Ok(BrowserLonghandValue::TimelineTriggerSource(
-                TimelineTriggerSourceValue::None,
-            ));
-        }
-        let names = input
-            .parse_comma_separated(DashedIdent::parse)?
+        let timelines = input
+            .parse_comma_separated(AnimationTimeline::parse)?
             .into_iter()
             .map(IntoOwned::into_owned)
             .collect();
-        Ok(BrowserLonghandValue::TimelineTriggerSource(
-            TimelineTriggerSourceValue::Names(names),
-        ))
+        Ok(BrowserLonghandValue::TimelineTriggerSource(timelines))
     })
 }
 
@@ -3103,6 +3092,30 @@ fn serialize_space_separated<T: ToCss>(values: &[T]) -> Result<String, EngineErr
         serialized.push(serialize_typed(value)?);
     }
     Ok(serialized.join(" "))
+}
+
+fn serialize_timeline_range_starts(
+    values: &[TimelineRangeStartValue],
+) -> Result<String, EngineError> {
+    values
+        .iter()
+        .map(|value| match value {
+            TimelineRangeStartValue::Auto => Ok("auto".to_owned()),
+            TimelineRangeStartValue::Range(value) => serialize_typed(value),
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(|values| values.join(", "))
+}
+
+fn serialize_timeline_range_ends(values: &[TimelineRangeEndValue]) -> Result<String, EngineError> {
+    values
+        .iter()
+        .map(|value| match value {
+            TimelineRangeEndValue::Auto => Ok("auto".to_owned()),
+            TimelineRangeEndValue::Range(value) => serialize_typed(value),
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(|values| values.join(", "))
 }
 
 fn serialize_typed<T: ToCss>(value: &T) -> Result<String, EngineError> {
@@ -3560,6 +3573,21 @@ mod tests {
             ),
             ("timeline-trigger-active-range-start", "auto", "auto"),
             ("timeline-trigger-source", "--foo,--bar", "--foo, --bar"),
+            (
+                "timeline-trigger-source",
+                "scroll(block root), view(block 1px)",
+                "scroll(root), view(1px)",
+            ),
+            (
+                "timeline-trigger-active-range-start",
+                "auto, cover 10%",
+                "auto, cover 10%",
+            ),
+            (
+                "timeline-trigger-activation-range-end",
+                "normal, entry-crossing 1px",
+                "normal, entry-crossing 1px",
+            ),
         ] {
             assert_eq!(canonical(property, source).unwrap(), expected, "{property}");
         }
@@ -3569,6 +3597,8 @@ mod tests {
             ("timeline-trigger-activation-range-start", "auto"),
             ("timeline-trigger-activation-range-start", "red"),
             ("timeline-trigger-source", "foo"),
+            ("timeline-trigger-source", "scroll(root root)"),
+            ("timeline-trigger-active-range-start", "auto,"),
         ] {
             assert!(canonical(property, source).is_err(), "{property}: {source}");
         }

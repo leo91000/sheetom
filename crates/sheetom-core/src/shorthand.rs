@@ -269,15 +269,17 @@ fn synthesize_timeline_trigger_range(
     end_name: &str,
     omitted_end: &str,
 ) -> Option<String> {
-    let start = record_value(records, start_name, safe)?;
-    let end = record_value(records, end_name, safe)?;
-    let implied_end = crate::browser_longhand::parse_timeline_range_pair(start, omitted_end)
-        .ok()
-        .map(|(_, end)| end);
-    if implied_end.as_deref() == Some(end) {
-        return Some(start.to_owned());
+    let starts = value_list(record_value(records, start_name, safe)?)?;
+    let ends = value_list(record_value(records, end_name, safe)?)?;
+    if starts.len() != ends.len() {
+        return None;
     }
-    Some(format!("{start} {end}"))
+    starts
+        .into_iter()
+        .zip(ends)
+        .map(|(start, end)| synthesize_timeline_range_item(start, end, omitted_end, safe))
+        .collect::<Option<Vec<_>>>()
+        .map(|values| values.join(", "))
 }
 
 fn synthesize_position_try(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -292,25 +294,115 @@ fn synthesize_position_try(records: &[&DeclarationRecord], safe: bool) -> Option
 }
 
 fn synthesize_timeline_trigger(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
-    if record_value(records, "timeline-trigger-name", safe)? != "none"
-        || record_value(records, "timeline-trigger-source", safe)? != "auto"
-        || record_value(records, "timeline-trigger-active-range-start", safe)? != "auto"
-        || record_value(records, "timeline-trigger-active-range-end", safe)? != "auto"
+    let names = value_list(record_value(records, "timeline-trigger-name", safe)?)?;
+    let sources = value_list(record_value(records, "timeline-trigger-source", safe)?)?;
+    let activation_starts = value_list(record_value(
+        records,
+        "timeline-trigger-activation-range-start",
+        safe,
+    )?)?;
+    let activation_ends = value_list(record_value(
+        records,
+        "timeline-trigger-activation-range-end",
+        safe,
+    )?)?;
+    let active_starts = value_list(record_value(
+        records,
+        "timeline-trigger-active-range-start",
+        safe,
+    )?)?;
+    let active_ends = value_list(record_value(
+        records,
+        "timeline-trigger-active-range-end",
+        safe,
+    )?)?;
+    let item_count = names.len();
+    if item_count == 0
+        || [
+            sources.len(),
+            activation_starts.len(),
+            activation_ends.len(),
+            active_starts.len(),
+            active_ends.len(),
+        ]
+        .iter()
+        .any(|count| *count != item_count)
     {
         return None;
     }
-    let activation = synthesize_timeline_trigger_range(
-        records,
-        safe,
-        "timeline-trigger-activation-range-start",
-        "timeline-trigger-activation-range-end",
-        "normal",
-    )?;
-    Some(if activation == "normal" {
-        "none".to_owned()
-    } else {
-        activation
-    })
+
+    (0..item_count)
+        .map(|index| {
+            if safe {
+                return Some(format!(
+                    "{} {} {} {} / {} {}",
+                    names[index],
+                    sources[index],
+                    activation_starts[index],
+                    activation_ends[index],
+                    active_starts[index],
+                    active_ends[index],
+                ));
+            }
+            let mut components = Vec::with_capacity(3);
+            if names[index] != "none" {
+                components.push(names[index]);
+            }
+            if sources[index] != "auto" {
+                components.push(sources[index]);
+            }
+            let activation_start = activation_starts[index];
+            let activation_end = activation_ends[index];
+            if activation_start == activation_end {
+                if activation_start != "normal" {
+                    components.push(activation_start);
+                }
+            } else {
+                match (activation_start, activation_end) {
+                    ("normal", end) => components.push(end),
+                    (start, "normal") => components.push(start),
+                    (start, end) => {
+                        components.push(start);
+                        components.push(end);
+                    }
+                }
+            }
+            if active_starts[index] == "auto" && active_ends[index] != "auto" {
+                components.push(active_ends[index]);
+            }
+            let left = components.join(" ");
+            if active_starts[index] != "auto" {
+                let mut right = active_starts[index].to_owned();
+                if active_ends[index] != "auto" {
+                    right.push(' ');
+                    right.push_str(active_ends[index]);
+                }
+                return Some(format!("{left} / {right}"));
+            }
+            Some(if left.is_empty() {
+                "none".to_owned()
+            } else {
+                left
+            })
+        })
+        .collect::<Option<Vec<_>>>()
+        .map(|values| values.join(", "))
+}
+
+fn synthesize_timeline_range_item(
+    start: &str,
+    end: &str,
+    omitted_end: &str,
+    safe: bool,
+) -> Option<String> {
+    if !safe && omitted_end == "auto" && end == omitted_end {
+        return Some(start.to_owned());
+    }
+    let implied_end = parse_timeline_range_pair_or_auto(start, omitted_end)?.1;
+    if implied_end == end {
+        return Some(start.to_owned());
+    }
+    Some(format!("{start} {end}"))
 }
 
 fn record_value<'a>(records: &'a [&DeclarationRecord], name: &str, safe: bool) -> Option<&'a str> {
@@ -1879,15 +1971,54 @@ fn expand_timeline_trigger_range(
     end_name: &'static str,
     omitted_end: &str,
 ) -> Option<Vec<(&'static str, String)>> {
-    if value.eq_ignore_ascii_case("auto") && omitted_end == "auto" {
-        return Some(vec![
-            (start_name, "auto".to_owned()),
-            (end_name, "auto".to_owned()),
-        ]);
+    let pairs = value_list(value)?
+        .into_iter()
+        .map(|value| parse_timeline_range_pair_or_auto(value, omitted_end))
+        .collect::<Option<Vec<_>>>()?;
+    let mut starts = Vec::with_capacity(pairs.len());
+    let mut ends = Vec::with_capacity(pairs.len());
+    for (start, end) in pairs {
+        starts.push(start);
+        ends.push(end);
     }
-    let (start, end) =
-        crate::browser_longhand::parse_timeline_range_pair(value, omitted_end).ok()?;
-    Some(vec![(start_name, start), (end_name, end)])
+    Some(vec![
+        (start_name, starts.join(", ")),
+        (end_name, ends.join(", ")),
+    ])
+}
+
+fn parse_timeline_range_pair_or_auto(value: &str, omitted_end: &str) -> Option<(String, String)> {
+    let (start_name, end_name) = if omitted_end == "auto" {
+        (
+            "timeline-trigger-active-range-start",
+            "timeline-trigger-active-range-end",
+        )
+    } else {
+        (
+            "timeline-trigger-activation-range-start",
+            "timeline-trigger-activation-range-end",
+        )
+    };
+    if let Some(start) = typed_longhand_value(start_name, value) {
+        if start == "auto" {
+            return Some((start, omitted_end.to_owned()));
+        }
+        let (_, end) =
+            crate::browser_longhand::parse_timeline_range_pair(&start, omitted_end).ok()?;
+        return Some((start, end));
+    }
+
+    let components = split_top_level_whitespace(value)?;
+    for split in (1..components.len()).rev() {
+        let Some(start) = typed_longhand_value(start_name, &components[..split].join(" ")) else {
+            continue;
+        };
+        let Some(end) = typed_longhand_value(end_name, &components[split..].join(" ")) else {
+            continue;
+        };
+        return Some((start, end));
+    }
+    None
 }
 
 fn expand_position_try(value: &str) -> Option<Vec<(&'static str, String)>> {
@@ -1920,30 +2051,80 @@ fn expand_position_try(value: &str) -> Option<Vec<(&'static str, String)>> {
 }
 
 fn expand_timeline_trigger(value: &str) -> Option<Vec<(&'static str, String)>> {
-    let mut values = vec![
-        ("timeline-trigger-name", "none".to_owned()),
-        ("timeline-trigger-source", "auto".to_owned()),
+    let items = value_list(value)?
+        .into_iter()
+        .map(expand_timeline_trigger_item)
+        .collect::<Option<Vec<_>>>()?;
+    const LONGHANDS: [&str; 6] = [
+        "timeline-trigger-name",
+        "timeline-trigger-source",
+        "timeline-trigger-activation-range-start",
+        "timeline-trigger-activation-range-end",
+        "timeline-trigger-active-range-start",
+        "timeline-trigger-active-range-end",
     ];
-    let activation = if matches!(value, "none" | "auto" | "normal") {
-        vec![
-            (
-                "timeline-trigger-activation-range-start",
-                "normal".to_owned(),
-            ),
-            ("timeline-trigger-activation-range-end", "normal".to_owned()),
-        ]
+    Some(
+        LONGHANDS
+            .into_iter()
+            .enumerate()
+            .map(|(index, longhand)| {
+                (
+                    longhand,
+                    items
+                        .iter()
+                        .map(|item| item[index].as_str())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                )
+            })
+            .collect(),
+    )
+}
+
+fn expand_timeline_trigger_item(value: &str) -> Option<[String; 6]> {
+    let trimmed = value.trim();
+    let sections = if let Some(active) = trimmed.strip_prefix('/') {
+        let active_sections = split_top_level_delimiter(active.trim(), b'/')?;
+        if active_sections.len() != 1 {
+            return None;
+        }
+        vec!["", active_sections[0]]
     } else {
-        expand_timeline_trigger_range(
-            value,
-            "timeline-trigger-activation-range-start",
-            "timeline-trigger-activation-range-end",
-            "normal",
-        )?
+        split_top_level_delimiter(trimmed, b'/')?
     };
-    values.extend(activation);
-    values.push(("timeline-trigger-active-range-start", "auto".to_owned()));
-    values.push(("timeline-trigger-active-range-end", "auto".to_owned()));
-    Some(values)
+    if sections.len() > 2 {
+        return None;
+    }
+
+    let mut components = split_top_level_whitespace(sections.first()?.trim())?;
+    let name = if let Some(value) = components
+        .first()
+        .and_then(|component| typed_longhand_value("timeline-trigger-name", component))
+    {
+        components.remove(0);
+        value
+    } else {
+        "none".to_owned()
+    };
+    let source = if let Some(value) = components
+        .first()
+        .and_then(|component| typed_longhand_value("timeline-trigger-source", component))
+    {
+        components.remove(0);
+        value
+    } else {
+        "auto".to_owned()
+    };
+    let activation = if components.is_empty() {
+        ("normal".to_owned(), "normal".to_owned())
+    } else {
+        parse_timeline_range_pair_or_auto(&components.join(" "), "normal")?
+    };
+    let active = match sections.get(1) {
+        Some(value) => parse_timeline_range_pair_or_auto(value.trim(), "auto")?,
+        None => ("auto".to_owned(), "auto".to_owned()),
+    };
+    Some([name, source, activation.0, activation.1, active.0, active.1])
 }
 
 fn border_image_component_is_explicit(value: &str, longhand: &str) -> bool {
