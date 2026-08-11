@@ -5,7 +5,7 @@ use crate::{
     parse_semantic_property, EngineError, PropertyParseKind, SemanticDeclaration,
     SemanticExtensionValue, SemanticPropertyValue,
 };
-use cssparser::{Token, TokenizerWithSpans};
+use cssparser::{Parser, ParserInput, Token, TokenizerWithSpans};
 use lightningcss::{
     properties::{Property, PropertyId},
     stylesheet::{ParserOptions, PrinterOptions},
@@ -661,13 +661,9 @@ fn quote_css_string(value: &str) -> String {
 }
 
 fn is_identifier(value: &str) -> bool {
-    let mut characters = value.chars();
-    let Some(first) = characters.next() else {
-        return false;
-    };
-    (first == '-' || first == '_' || first.is_alphabetic())
-        && characters
-            .all(|character| character == '-' || character == '_' || character.is_alphanumeric())
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    parser.expect_ident().is_ok() && parser.expect_exhausted().is_ok()
 }
 
 fn is_generic_font_family(value: &str) -> bool {
@@ -1241,6 +1237,7 @@ mod tests {
             ("--x block", "\"--x block\""),
             ("foo, bar baz", "foo, \"bar baz\""),
             ("serif", "serif"),
+            ("\u{00a0}A\u{00a0}", "\u{00a0}A\u{00a0}"),
         ] {
             assert_eq!(observable("font-family", input), expected, "{input}");
         }
