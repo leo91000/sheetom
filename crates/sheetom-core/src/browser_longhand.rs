@@ -715,12 +715,25 @@ impl FontVariantAlternatesValue {
         }
         let mut output =
             Vec::with_capacity(self.functions.len() + usize::from(self.historical_forms));
-        if self.historical_forms {
-            output.push("historical-forms".to_owned());
-        }
-        for function in &self.functions {
-            let values = serialize_comma_separated(&function.values)?;
-            output.push(format!("{}({values})", function.name));
+        for name in [
+            "stylistic",
+            "historical-forms",
+            "styleset",
+            "character-variant",
+            "swash",
+            "ornaments",
+            "annotation",
+        ] {
+            if name == "historical-forms" {
+                if self.historical_forms {
+                    output.push(name.to_owned());
+                }
+                continue;
+            }
+            if let Some(function) = self.functions.iter().find(|function| function.name == name) {
+                let values = serialize_comma_separated(&function.values)?;
+                output.push(format!("{}({values})", function.name));
+            }
         }
         Ok(output.join(" "))
     }
@@ -2449,12 +2462,17 @@ fn parse_font_variant_keywords(
                 );
             }
             used_groups.push(group);
-            values.push(keyword);
+            values.push((keyword, group));
         }
         if values.is_empty() {
             return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
-        Ok(BrowserLonghandValue::FontVariantKeywords(values))
+        if property_name == "font-variant-east-asian" {
+            values.sort_by_key(|(_, group)| *group);
+        }
+        Ok(BrowserLonghandValue::FontVariantKeywords(
+            values.into_iter().map(|(keyword, _)| keyword).collect(),
+        ))
     })
 }
 
@@ -3473,12 +3491,12 @@ mod tests {
             ("font-size-adjust", "cap-height 0.5", "cap-height .5"),
             (
                 "font-variant-alternates",
-                "historical-forms styleset(foo,bar)",
-                "historical-forms styleset(foo, bar)",
+                "annotation(note) swash(flow) character-variant(cv) styleset(foo,bar) historical-forms stylistic(alt)",
+                "stylistic(alt) historical-forms styleset(foo, bar) character-variant(cv) swash(flow) annotation(note)",
             ),
             (
                 "font-variant-east-asian",
-                "jis78 full-width ruby",
+                "ruby full-width jis78",
                 "jis78 full-width ruby",
             ),
             (
