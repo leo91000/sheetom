@@ -12220,11 +12220,23 @@ mod tests {
       ".foo{animation-fill-mode:backwards,forwards}",
     );
     minify_test(".foo { animation: none }", ".foo{animation:none}");
-    minify_test(".foo { animation: \"none\" }", ".foo{animation:\"none\"}");
-    minify_test(".foo { animation: \"None\" }", ".foo{animation:\"None\"}");
-    minify_test(".foo { animation: \"none\", none }", ".foo{animation:\"none\",none}");
+    minify_test(
+      ".foo { animation: \"none\" }",
+      ".foo{animation:auto \"none\"}",
+    );
+    minify_test(
+      ".foo { animation: \"None\" }",
+      ".foo{animation:auto \"None\"}",
+    );
+    minify_test(
+      ".foo { animation: \"none\", none }",
+      ".foo{animation:auto \"none\",none}",
+    );
     minify_test(".foo { animation: none, none }", ".foo{animation:none,none}");
-    minify_test(".foo { animation: \"none\" none }", ".foo{animation:\"none\"}");
+    minify_test(
+      ".foo { animation: \"none\" none }",
+      ".foo{animation:auto \"none\"}",
+    );
     minify_test(".foo { animation: none none }", ".foo{animation:none}");
 
     // Test animation-name + animation-fill-mode
@@ -12243,7 +12255,10 @@ mod tests {
       ".foo{animation:none,2s forwards \"none\"}",
     );
 
-    minify_test(".foo { animation: \"unset\" }", ".foo{animation:\"unset\"}");
+    minify_test(
+      ".foo { animation: \"unset\" }",
+      ".foo{animation:auto \"unset\"}",
+    );
     minify_test(".foo { animation: \"string\" .5s }", ".foo{animation:.5s string}");
     minify_test(".foo { animation: \"unset\" .5s }", ".foo{animation:.5s \"unset\"}");
     minify_test(
