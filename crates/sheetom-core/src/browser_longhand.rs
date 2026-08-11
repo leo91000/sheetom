@@ -1,7 +1,7 @@
 use cssparser::{Parser, ParserInput, Token};
 use lightningcss::{
     properties::{
-        animation::{AnimationRangeEnd, AnimationRangeStart},
+        animation::{AnimationAttachmentRange, AnimationRangeEnd, AnimationRangeStart},
         masking::ClipPath,
     },
     stylesheet::PrinterOptions,
@@ -35,6 +35,7 @@ pub enum BrowserLonghandValue {
     TimeOrNormal(Option<Time>),
     ViewTimelineInset(Vec<ViewTimelineInsetValue>),
     CornerShape(CornerShapeValue),
+    ColorScheme(ColorSchemeValue),
     FontFeatureSettings(Option<Vec<FontFeatureSetting>>),
     FontLanguageOverride(Option<CSSString<'static>>),
     FontSizeAdjust(FontSizeAdjustValue),
@@ -122,6 +123,15 @@ pub enum CornerShapeValue {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum ColorSchemeValue {
+    Normal,
+    Schemes {
+        values: Vec<CustomIdent<'static>>,
+        only: bool,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct FontFeatureSetting {
     tag: CSSString<'static>,
     value: i32,
@@ -167,6 +177,7 @@ pub struct FontVariationSetting {
 #[derive(Clone, Debug, PartialEq)]
 pub struct PositionTryFallback {
     name: Option<DashedIdent<'static>>,
+    area: Option<PositionAreaValue>,
     tactics: Vec<&'static str>,
 }
 
@@ -352,6 +363,14 @@ impl BrowserLonghandValue {
                 Ok(entries.join(", "))
             }
             BrowserLonghandValue::CornerShape(value) => value.canonical_value(),
+            BrowserLonghandValue::ColorScheme(ColorSchemeValue::Normal) => Ok("normal".to_owned()),
+            BrowserLonghandValue::ColorScheme(ColorSchemeValue::Schemes { values, only }) => {
+                let mut output = serialize_space_separated(values)?;
+                if *only {
+                    output.push_str(" only");
+                }
+                Ok(output)
+            }
             BrowserLonghandValue::FontFeatureSettings(None) => Ok("normal".to_owned()),
             BrowserLonghandValue::FontFeatureSettings(Some(values)) => {
                 let mut output = Vec::with_capacity(values.len());
@@ -393,6 +412,9 @@ impl BrowserLonghandValue {
                     let mut components = Vec::with_capacity(value.tactics.len() + 1);
                     if let Some(name) = &value.name {
                         components.push(serialize_typed(name)?);
+                    }
+                    if let Some(area) = &value.area {
+                        components.push(area.canonical_value());
                     }
                     components.extend(value.tactics.iter().map(|value| (*value).to_owned()));
                     output.push(components.join(" "));
@@ -564,10 +586,7 @@ impl BrowserLonghandValue {
                 }
                 Ok(serialized.join(", "))
             }
-            BrowserLonghandValue::PositionArea(PositionAreaValue::None) => Ok("none".to_owned()),
-            BrowserLonghandValue::PositionArea(PositionAreaValue::Area { first, second }) => Ok(
-                second.map_or_else(|| (*first).to_owned(), |second| format!("{first} {second}")),
-            ),
+            BrowserLonghandValue::PositionArea(value) => Ok(value.canonical_value()),
         }
     }
 }
@@ -615,6 +634,17 @@ impl DynamicRangeLimitValue {
                     values.push(format!("{} {percentage}", entry.limit.canonical_value()?));
                 }
                 Ok(format!("dynamic-range-limit-mix({})", values.join(", ")))
+            }
+        }
+    }
+}
+
+impl PositionAreaValue {
+    fn canonical_value(&self) -> String {
+        match self {
+            PositionAreaValue::None => "none".to_owned(),
+            PositionAreaValue::Area { first, second } => {
+                second.map_or_else(|| (*first).to_owned(), |second| format!("{first} {second}"))
             }
         }
     }
@@ -794,6 +824,7 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::TimeOrNormal) => parse_time_or_normal(source),
         Some(BrowserLonghandGrammar::ViewTimelineInset) => parse_view_timeline_inset(source),
         Some(BrowserLonghandGrammar::CornerShape) => parse_corner_shape(source),
+        Some(BrowserLonghandGrammar::ColorScheme) => parse_color_scheme(source),
         Some(BrowserLonghandGrammar::FontFeatureSettings) => parse_font_feature_settings(source),
         Some(BrowserLonghandGrammar::FontLanguageOverride) => parse_font_language_override(source),
         Some(BrowserLonghandGrammar::FontSizeAdjust) => parse_font_size_adjust(source),
@@ -860,6 +891,51 @@ pub(crate) fn parse_browser_longhand(
     Ok(Some(value))
 }
 
+/// Parses reviewed Chromium grammar branches that are newer than the vendored
+/// property's otherwise complete grammar. Unlike the exclusive browser
+/// longhand registry, these branches are attempted only after the standard
+/// parser rejects the value.
+pub(crate) fn parse_browser_fallback(
+    property_name: &str,
+    source: &str,
+) -> Result<Option<BrowserLonghandValue>, EngineError> {
+    let accepted: &'static [&'static str] = match property_name {
+        "box-shadow" | "text-shadow" => &["none"],
+        "font-palette" | "initial-letter" | "zoom" => &["normal"],
+        "hyphenate-limit-chars" | "resize" | "rx" | "ry" => &["auto"],
+        "-webkit-line-clamp" => &["none"],
+        _ => return Ok(None),
+    };
+    parse_keyword(source, accepted)
+        .map(BrowserLonghandValue::Keyword)
+        .map(Some)
+}
+
+pub(crate) fn parse_timeline_range_pair(
+    source: &str,
+    omitted_end: &str,
+) -> Result<(String, String), EngineError> {
+    let (start, explicit_end) = parse_entire(source, |input| {
+        let start = AnimationRangeStart::parse(input)?;
+        let end = input.try_parse(AnimationRangeStart::parse).ok();
+        Ok((start, end))
+    })?;
+    let start_css = serialize_typed(&start)?;
+    let end = match explicit_end {
+        Some(value) => AnimationRangeEnd(value.0),
+        None => match &start.0 {
+            AnimationAttachmentRange::TimelineRange { name, .. } => {
+                AnimationRangeEnd(AnimationAttachmentRange::TimelineRange {
+                    name: name.clone(),
+                    offset: LengthPercentage::Percentage(Percentage(1.0)),
+                })
+            }
+            _ => return Ok((start_css, omitted_end.to_owned())),
+        },
+    };
+    Ok((start_css, serialize_typed(&end)?))
+}
+
 #[derive(Clone, Copy)]
 enum BrowserLonghandGrammar {
     Keyword(&'static [&'static str]),
@@ -873,6 +949,7 @@ enum BrowserLonghandGrammar {
     TimeOrNormal,
     ViewTimelineInset,
     CornerShape,
+    ColorScheme,
     FontFeatureSettings,
     FontLanguageOverride,
     FontSizeAdjust,
@@ -936,6 +1013,8 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::Length { non_negative: true } => [
         "-webkit-border-horizontal-spacing",
         "-webkit-border-vertical-spacing",
+    ],
+    BrowserLonghandGrammar::LengthPercentage { non_negative: false } => [
         "column-rule-inset-cap-end",
         "column-rule-inset-cap-start",
         "column-rule-inset-junction-end",
@@ -976,6 +1055,7 @@ define_browser_longhand_registry! {
         "corner-top-left-shape",
         "corner-top-right-shape",
     ],
+    BrowserLonghandGrammar::ColorScheme => ["color-scheme"],
     BrowserLonghandGrammar::FontFeatureSettings => ["font-feature-settings"],
     BrowserLonghandGrammar::FontLanguageOverride => ["font-language-override"],
     BrowserLonghandGrammar::FontSizeAdjust => ["font-size-adjust"],
@@ -2118,6 +2198,47 @@ fn parse_corner_shape(source: &str) -> Result<BrowserLonghandValue, EngineError>
     })
 }
 
+fn parse_color_scheme(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("normal"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::ColorScheme(ColorSchemeValue::Normal));
+        }
+
+        let mut values = Vec::new();
+        let mut only = false;
+        while !input.is_exhausted() {
+            if input
+                .try_parse(|input| input.expect_ident_matching("only"))
+                .is_ok()
+            {
+                if only {
+                    return Err(
+                        input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+                    );
+                }
+                only = true;
+                continue;
+            }
+            if input
+                .try_parse(|input| input.expect_ident_matching("normal"))
+                .is_ok()
+            {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            values.push(CustomIdent::parse(input)?.into_owned());
+        }
+        if values.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::ColorScheme(
+            ColorSchemeValue::Schemes { values, only },
+        ))
+    })
+}
+
 fn parse_font_feature_settings(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
         if input
@@ -2401,10 +2522,17 @@ fn parse_position_try_fallbacks(source: &str) -> Result<BrowserLonghandValue, En
             return Ok(BrowserLonghandValue::PositionTryFallbacks(None));
         }
         let fallbacks = input.parse_comma_separated(|input| {
-            let name = input
-                .try_parse(DashedIdent::parse)
-                .ok()
-                .map(IntoOwned::into_owned);
+            let area = input
+                .try_parse(|input| parse_position_area_value(input, false))
+                .ok();
+            let name = if area.is_none() {
+                input
+                    .try_parse(DashedIdent::parse)
+                    .ok()
+                    .map(IntoOwned::into_owned)
+            } else {
+                None
+            };
             let mut tactics = Vec::with_capacity(3);
             while !input.is_exhausted() {
                 let location = input.current_source_location();
@@ -2424,10 +2552,14 @@ fn parse_position_try_fallbacks(source: &str) -> Result<BrowserLonghandValue, En
                 }
                 tactics.push(tactic);
             }
-            if name.is_none() && tactics.is_empty() {
+            if name.is_none() && area.is_none() && tactics.is_empty() {
                 return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
             }
-            Ok(PositionTryFallback { name, tactics })
+            Ok(PositionTryFallback {
+                name,
+                area,
+                tactics,
+            })
         })?;
         Ok(BrowserLonghandValue::PositionTryFallbacks(Some(fallbacks)))
     })
@@ -2683,63 +2815,61 @@ fn parse_animation_trigger_behavior<'i, 't>(
 
 fn parse_position_area(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
-        if input
+        parse_position_area_value(input, true).map(BrowserLonghandValue::PositionArea)
+    })
+}
+
+fn parse_position_area_value<'i, 't>(
+    input: &mut Parser<'i, 't>,
+    allow_none: bool,
+) -> Result<PositionAreaValue, ParseError<'i>> {
+    if allow_none
+        && input
             .try_parse(|input| input.expect_ident_matching("none"))
             .is_ok()
-        {
-            return Ok(BrowserLonghandValue::PositionArea(PositionAreaValue::None));
-        }
-        let mut first = parse_position_area_keyword(input)?;
-        let Some(mut second) = input.try_parse(parse_position_area_keyword).ok() else {
-            return Ok(BrowserLonghandValue::PositionArea(
-                PositionAreaValue::Area {
-                    first: first.value,
-                    second: None,
-                },
-            ));
-        };
-        if matches!(
-            first.axis,
-            PositionAreaAxis::Vertical | PositionAreaAxis::Inline | PositionAreaAxis::SelfInline
-        ) || matches!(
-            second.axis,
-            PositionAreaAxis::Horizontal | PositionAreaAxis::Block | PositionAreaAxis::SelfBlock
-        ) {
-            std::mem::swap(&mut first, &mut second);
-        }
-        if !position_area_pair_is_compatible(first.axis, second.axis) {
-            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
-        }
-        if first.value == second.value {
-            return Ok(BrowserLonghandValue::PositionArea(
-                PositionAreaValue::Area {
-                    first: first.value,
-                    second: None,
-                },
-            ));
-        }
-        if first.value == "span-all" && !position_area_value_repeats(second.value) {
-            return Ok(BrowserLonghandValue::PositionArea(
-                PositionAreaValue::Area {
-                    first: second.value,
-                    second: None,
-                },
-            ));
-        }
-        if second.value == "span-all" && !position_area_value_repeats(first.value) {
-            return Ok(BrowserLonghandValue::PositionArea(
-                PositionAreaValue::Area {
-                    first: first.value,
-                    second: None,
-                },
-            ));
-        }
-        Ok(BrowserLonghandValue::PositionArea(
-            PositionAreaValue::Area {
-                first: first.value,
-                second: Some(second.value),
-            },
-        ))
+    {
+        return Ok(PositionAreaValue::None);
+    }
+    let mut first = parse_position_area_keyword(input)?;
+    let Some(mut second) = input.try_parse(parse_position_area_keyword).ok() else {
+        return Ok(PositionAreaValue::Area {
+            first: first.value,
+            second: None,
+        });
+    };
+    if matches!(
+        first.axis,
+        PositionAreaAxis::Vertical | PositionAreaAxis::Inline | PositionAreaAxis::SelfInline
+    ) || matches!(
+        second.axis,
+        PositionAreaAxis::Horizontal | PositionAreaAxis::Block | PositionAreaAxis::SelfBlock
+    ) {
+        std::mem::swap(&mut first, &mut second);
+    }
+    if !position_area_pair_is_compatible(first.axis, second.axis) {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    if first.value == second.value {
+        return Ok(PositionAreaValue::Area {
+            first: first.value,
+            second: None,
+        });
+    }
+    if first.value == "span-all" && !position_area_value_repeats(second.value) {
+        return Ok(PositionAreaValue::Area {
+            first: second.value,
+            second: None,
+        });
+    }
+    if second.value == "span-all" && !position_area_value_repeats(first.value) {
+        return Ok(PositionAreaValue::Area {
+            first: first.value,
+            second: None,
+        });
+    }
+    Ok(PositionAreaValue::Area {
+        first: first.value,
+        second: Some(second.value),
     })
 }
 
@@ -2933,6 +3063,14 @@ fn serialize_comma_separated<T: ToCss>(values: &[T]) -> Result<String, EngineErr
     Ok(serialized.join(", "))
 }
 
+fn serialize_space_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
+    let mut serialized = Vec::with_capacity(values.len());
+    for value in values {
+        serialized.push(serialize_typed(value)?);
+    }
+    Ok(serialized.join(" "))
+}
+
 fn serialize_typed<T: ToCss>(value: &T) -> Result<String, EngineError> {
     value
         .to_css_string(PrinterOptions::default())
@@ -3067,6 +3205,31 @@ mod tests {
             canonical("view-timeline-inset", "auto 10px").unwrap(),
             "auto 10px"
         );
+        for (source, expected) in [
+            ("red", "red"),
+            ("light dark", "light dark"),
+            ("only dark", "dark only"),
+        ] {
+            assert_eq!(
+                canonical("color-scheme", source).unwrap(),
+                expected,
+                "{source}"
+            );
+        }
+        for source in ["normal dark", "only", "dark only only", "1"] {
+            assert!(canonical("color-scheme", source).is_err(), "{source}");
+        }
+        for (source, expected) in [
+            ("-10px", "-10px"),
+            ("10%", "10%"),
+            ("calc(10px + 5%)", "calc(5% + 10px)"),
+        ] {
+            assert_eq!(
+                canonical("column-rule-inset-cap-start", source).unwrap(),
+                expected,
+                "{source}"
+            );
+        }
     }
 
     #[test]
@@ -3341,12 +3504,19 @@ mod tests {
                 "--foo, flip-block flip-inline",
                 "--foo, flip-block flip-inline",
             ),
+            ("position-try-fallbacks", "center", "center"),
+            ("position-try-fallbacks", "left top", "left top"),
             ("text-box-edge", "text text", "text"),
             ("text-box-edge", "cap alphabetic", "cap alphabetic"),
             (
                 "timeline-trigger-activation-range-start",
                 "cover 10%",
                 "cover 10%",
+            ),
+            (
+                "timeline-trigger-activation-range-start",
+                "scroll",
+                "scroll",
             ),
             ("timeline-trigger-active-range-start", "auto", "auto"),
             ("timeline-trigger-source", "--foo,--bar", "--foo, --bar"),
@@ -3357,6 +3527,7 @@ mod tests {
             ("position-try-fallbacks", "flip-block flip-block"),
             ("text-box-edge", "cap"),
             ("timeline-trigger-activation-range-start", "auto"),
+            ("timeline-trigger-activation-range-start", "red"),
             ("timeline-trigger-source", "foo"),
         ] {
             assert!(canonical(property, source).is_err(), "{property}: {source}");

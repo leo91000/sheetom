@@ -28,7 +28,14 @@ pub(crate) fn project_declaration(
 ) -> Result<DeclarationProjection, EngineError> {
     let name = declaration.property_name();
     let input = trim_css_whitespace(declaration.recovered().source());
-    let canonical = declaration.canonical_value()?;
+    let mut canonical = declaration.canonical_value()?;
+    if starts_math_function(input)
+        && !starts_math_function(&canonical)
+        && crate::property_constraints::rejects_direct_negative_component(name)
+        && crate::property_constraints::has_direct_negative_component(&canonical)
+    {
+        canonical = format!("calc({canonical})");
+    }
     let category = match declaration.value() {
         SemanticPropertyValue::Standard(_)
         | SemanticPropertyValue::Extension(_)
@@ -1157,6 +1164,11 @@ mod tests {
         ] {
             assert_eq!(observable(name, input), expected, "{name}: {input}");
         }
+
+        let declaration = parse_semantic_property("width", "rem(-5px, 2px)").unwrap();
+        let projection = project_declaration(&declaration).unwrap();
+        assert_eq!(projection.observable, "calc(-1px)");
+        assert_eq!(projection.canonical, "calc(-1px)");
     }
 
     #[test]

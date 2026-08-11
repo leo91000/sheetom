@@ -8,6 +8,7 @@ use lightningcss::{
 
 use crate::{
     analyze_recovered_substitutions,
+    browser_longhand::parse_browser_fallback,
     catalog::{property_grammar, PropertyGrammarOwner},
     extension_value::{
         is_numeric_extension_candidate, parse_extension_value, parse_preferred_extension_value,
@@ -239,6 +240,15 @@ pub fn parse_semantic_property_with_limits(
         None
     };
 
+    if let Some(value) = parse_browser_fallback(grammar.canonical_name(), source)? {
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::Extension(SemanticExtensionValue::BrowserLonghand(value)),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        });
+    }
+
     if let Some(value) =
         parse_extension_value(grammar.extensions(), extension_property_name, source)?
     {
@@ -291,6 +301,12 @@ fn parse_standard_value(
             grammar.canonical_name()
         )));
     }
+
+    crate::property_constraints::validate_standard_property(
+        grammar.canonical_name(),
+        source,
+        &property,
+    )?;
 
     Ok(property.into_owned())
 }
@@ -402,6 +418,41 @@ mod tests {
     }
 
     #[test]
+    fn parses_reviewed_browser_keyword_fallbacks_without_weakening_adjacent_grammar() {
+        for (name, source) in [
+            ("box-shadow", "none"),
+            ("text-shadow", "none"),
+            ("font-palette", "normal"),
+            ("hyphenate-limit-chars", "auto"),
+            ("initial-letter", "normal"),
+            ("resize", "auto"),
+            ("rx", "auto"),
+            ("ry", "auto"),
+            ("zoom", "normal"),
+            ("-webkit-line-clamp", "none"),
+        ] {
+            let declaration = parse_semantic_property(name, source).unwrap();
+            assert_eq!(
+                declaration.parse_kind(),
+                PropertyParseKind::SheetomTyped,
+                "{name}: {source}"
+            );
+            assert_eq!(
+                declaration.canonical_value().unwrap(),
+                source,
+                "{name}: {source}"
+            );
+            assert!(
+                parse_semantic_property(name, &format!("{source} extra")).is_err(),
+                "{name}: {source} extra"
+            );
+        }
+
+        let shadow = parse_semantic_property("box-shadow", "1px 2px").unwrap();
+        assert_eq!(shadow.parse_kind(), PropertyParseKind::Typed);
+    }
+
+    #[test]
     fn retains_recovery_evidence_beside_the_semantic_value() {
         let declaration = parse_standard_semantic_property("font-family", "\"Gotham").unwrap();
         let token = &declaration.recovered().values()[0];
@@ -469,6 +520,48 @@ mod tests {
                 SemanticPropertyValue::Standard(_)
             ));
             assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
+        }
+
+        for property in [
+            "-webkit-margin-after",
+            "-webkit-margin-before",
+            "-webkit-margin-end",
+            "-webkit-margin-start",
+            "bottom",
+            "inset",
+            "inset-block",
+            "inset-block-end",
+            "inset-block-start",
+            "inset-inline",
+            "inset-inline-end",
+            "inset-inline-start",
+            "left",
+            "margin",
+            "margin-block",
+            "margin-block-end",
+            "margin-block-start",
+            "margin-bottom",
+            "margin-inline",
+            "margin-inline-end",
+            "margin-inline-start",
+            "margin-left",
+            "margin-right",
+            "margin-top",
+            "right",
+            "top",
+        ] {
+            let declaration = parse_standard_semantic_property(property, "anchor-size(width)")
+                .unwrap_or_else(|error| panic!("{property}: {error}"));
+            assert_eq!(
+                declaration.parse_kind(),
+                PropertyParseKind::Typed,
+                "{property}"
+            );
+            assert_eq!(
+                declaration.canonical_value().unwrap(),
+                "anchor-size(width)",
+                "{property}"
+            );
         }
     }
 
