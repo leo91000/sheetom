@@ -94,7 +94,10 @@ fn synthesize_shorthand_inner(
             });
         }
     }
-    if records.iter().any(|record| record.pending_group.is_some()) {
+    let has_grouped_records = records.iter().any(|record| record.pending_group.is_some());
+    let can_synthesize_static_rule_inset =
+        name.contains("rule-inset") && records.iter().all(|record| !record.pending_substitution());
+    if has_grouped_records && !can_synthesize_static_rule_inset {
         return None;
     }
 
@@ -187,6 +190,18 @@ fn synthesize_special_shorthand(
         "column-rule-inset" | "row-rule-inset" | "rule-inset" => {
             synthesize_rule_inset(records, safe)
         }
+        "column-rule-inset-cap"
+        | "column-rule-inset-end"
+        | "column-rule-inset-junction"
+        | "column-rule-inset-start"
+        | "row-rule-inset-cap"
+        | "row-rule-inset-end"
+        | "row-rule-inset-junction"
+        | "row-rule-inset-start"
+        | "rule-inset-cap"
+        | "rule-inset-end"
+        | "rule-inset-junction"
+        | "rule-inset-start" => synthesize_rule_inset_component(name, records, safe),
         "scroll-timeline" => synthesize_scroll_timeline(records, safe),
         "text-decoration" => synthesize_text_decoration(records, safe),
         "text-box" => synthesize_text_box(records, safe),
@@ -1031,17 +1046,40 @@ fn synthesize_rule_inset(records: &[&DeclarationRecord], safe: bool) -> Option<S
         }
         _ => return None,
     };
-    let cap = if values[0] == values[1] {
-        values[0].clone()
-    } else {
-        format!("{} {}", values[0], values[1])
-    };
-    let junction = if values[2] == values[3] {
-        values[2].clone()
-    } else {
-        format!("{} {}", values[2], values[3])
-    };
+    if values.iter().all(|value| *value == values[0]) {
+        return Some(values[0].clone());
+    }
+    let cap = format!("{} {}", values[0], values[1]);
+    let junction = format!("{} {}", values[2], values[3]);
     Some(format!("{cap} / {junction}"))
+}
+
+fn synthesize_rule_inset_component(
+    name: &str,
+    records: &[&DeclarationRecord],
+    safe: bool,
+) -> Option<String> {
+    let values = record_values(records, safe)?;
+    if name.ends_with("-start") || name.ends_with("-end") {
+        return values
+            .iter()
+            .all(|value| *value == values[0])
+            .then(|| values[0].clone());
+    }
+    let pair = match values.as_slice() {
+        [start, end] => [start, end],
+        [first_start, first_end, second_start, second_end]
+            if first_start == second_start && first_end == second_end =>
+        {
+            [first_start, first_end]
+        }
+        _ => return None,
+    };
+    Some(if pair[0] == pair[1] {
+        pair[0].clone()
+    } else {
+        format!("{} {}", pair[0], pair[1])
+    })
 }
 
 fn synthesize_text_wrap(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1843,6 +1881,10 @@ fn expand_special_shorthand(
     if matches!(name, "rule-width" | "rule-style" | "rule-color") {
         return expand_gap_rule_component_records(name, value, important, limits);
     }
+    if matches!(name, "column-rule-inset" | "row-rule-inset" | "rule-inset") {
+        let values = expand_rule_inset(name, value)?;
+        return records_from_values(name, value, values, important, limits);
+    }
 
     let components = split_top_level_whitespace(value)?;
     let values = match name {
@@ -1966,6 +2008,45 @@ fn expand_gap_rule_component_records(
             })
         })
         .collect()
+}
+
+fn expand_rule_inset<'a>(shorthand: &'a str, source: &'a str) -> Option<Vec<(&'a str, String)>> {
+    let sections = split_top_level_delimiter(source, b'/')?;
+    if sections.is_empty() || sections.len() > 2 {
+        return None;
+    }
+    let cap = rule_inset_pair(sections[0])?;
+    let junction = match sections.get(1) {
+        Some(section) => rule_inset_pair(section)?,
+        None => cap.clone(),
+    };
+
+    observed_shorthand_longhands(shorthand)?
+        .iter()
+        .map(|longhand| {
+            let component = if longhand.ends_with("-cap-start") {
+                cap[0]
+            } else if longhand.ends_with("-cap-end") {
+                cap[1]
+            } else if longhand.ends_with("-junction-start") {
+                junction[0]
+            } else if longhand.ends_with("-junction-end") {
+                junction[1]
+            } else {
+                return None;
+            };
+            typed_longhand_value(longhand, component).map(|value| (*longhand, value))
+        })
+        .collect()
+}
+
+fn rule_inset_pair(source: &str) -> Option<Vec<&str>> {
+    let components = split_top_level_whitespace(source.trim())?;
+    match components.as_slice() {
+        [value] => Some(vec![*value, *value]),
+        [start, end] => Some(vec![*start, *end]),
+        _ => None,
+    }
 }
 
 fn expand_timeline_trigger_range(
@@ -2448,7 +2529,11 @@ fn records_from_values(
             let value = values
                 .iter()
                 .find_map(|(name, value)| (*name == *longhand).then_some(value))?;
-            let source = authored_longhand_source(longhand, value, shorthand_input);
+            let source = if longhand.contains("rule-inset") {
+                value.clone()
+            } else {
+                authored_longhand_source(longhand, value, shorthand_input)
+            };
             Some(DeclarationRecord {
                 name: (*longhand).to_owned(),
                 value: semantic_longhand_value(longhand, value, &source, limits)?,
@@ -3223,7 +3308,16 @@ fn expand_structural_shorthand(
         let canonical = validate_structural_longhand(longhand, component)?;
         records.push(DeclarationRecord {
             name: (*longhand).to_owned(),
-            value: semantic_longhand_value(longhand, &canonical, component.trim(), limits)?,
+            value: semantic_longhand_value(
+                longhand,
+                &canonical,
+                if longhand.contains("rule-inset") {
+                    &canonical
+                } else {
+                    component.trim()
+                },
+                limits,
+            )?,
             important,
             pending_group: None,
             alias_value: None,
@@ -3245,11 +3339,12 @@ fn semantic_longhand_value(
         .or_else(|_| parse_semantic_property_with_limits(name, canonical, limits))
         .ok()?;
     let projection = project_declaration(&semantic).ok()?;
-    let observable_projection = if semantic.recovered().contains_context_dependent_sign() {
-        canonical.to_owned()
-    } else {
-        projection.observable
-    };
+    let observable_projection =
+        if name.contains("rule-inset") || semantic.recovered().contains_context_dependent_sign() {
+            canonical.to_owned()
+        } else {
+            projection.observable
+        };
     Some(DeclarationValue::semantic_with_canonical(
         semantic,
         canonical.to_owned(),
@@ -3292,18 +3387,21 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
         "border-inline-style",
         "border-inline-width",
         "contain-intrinsic-size",
+        "column-rule-inset-cap",
+        "column-rule-inset-junction",
         "interest-delay",
         "overscroll-behavior",
+        "row-rule-inset-cap",
+        "row-rule-inset-junction",
         "rule-break",
+        "rule-inset-cap",
+        "rule-inset-junction",
         "rule-style",
         "rule-visibility-items",
         "timeline-trigger-activation-range",
         "timeline-trigger-active-range",
     ];
     const FOUR_VALUE: &[&str] = &[
-        "column-rule-inset",
-        "column-rule-inset-cap",
-        "column-rule-inset-junction",
         "corner-block-end-shape",
         "corner-block-start-shape",
         "corner-bottom-shape",
@@ -3313,12 +3411,6 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
         "corner-right-shape",
         "corner-shape",
         "corner-top-shape",
-        "row-rule-inset",
-        "row-rule-inset-cap",
-        "row-rule-inset-junction",
-        "rule-inset",
-        "rule-inset-cap",
-        "rule-inset-junction",
     ];
 
     if ONE_VALUE.contains(&name) {

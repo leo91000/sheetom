@@ -32,6 +32,10 @@ pub enum BrowserLonghandValue {
     Keyword(&'static str),
     Length(Length),
     LengthPercentage(LengthPercentage),
+    RuleInset {
+        value: LengthPercentage,
+        authored_math: bool,
+    },
     AutoLength(Option<Length>),
     ColumnCount(ColumnCountValue),
     ContainIntrinsic(ContainIntrinsicValue),
@@ -341,6 +345,17 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::Length(value) => serialize_zero_length(value),
             BrowserLonghandValue::LengthPercentage(value) => {
                 serialize_zero_length_percentage(value)
+            }
+            BrowserLonghandValue::RuleInset {
+                value,
+                authored_math,
+            } => {
+                let canonical = serialize_zero_length_percentage(value)?;
+                if *authored_math && !leading_math_function(&canonical) {
+                    Ok(format!("calc({canonical})"))
+                } else {
+                    Ok(canonical)
+                }
             }
             BrowserLonghandValue::AutoLength(None) => Ok("auto".to_owned()),
             BrowserLonghandValue::AutoLength(Some(value)) => serialize_zero_length(value),
@@ -911,6 +926,7 @@ pub(crate) fn parse_browser_longhand(
             parse_axis_position(source, horizontal)
         }
         Some(BrowserLonghandGrammar::Position) => parse_position(source),
+        Some(BrowserLonghandGrammar::RuleInset) => parse_rule_inset(source),
         Some(BrowserLonghandGrammar::AutoLengthPercentage) => parse_auto_length_percentage(source),
         Some(BrowserLonghandGrammar::Containment) => parse_containment(source),
         Some(BrowserLonghandGrammar::TextDecorationLine) => parse_text_decoration_line(source),
@@ -1021,6 +1037,7 @@ enum BrowserLonghandGrammar {
     OffsetPath,
     AxisPosition { horizontal: bool },
     Position,
+    RuleInset,
     AutoLengthPercentage,
     Containment,
     TextDecorationLine,
@@ -1069,7 +1086,7 @@ define_browser_longhand_registry! {
         "-webkit-border-horizontal-spacing",
         "-webkit-border-vertical-spacing",
     ],
-    BrowserLonghandGrammar::LengthPercentage { non_negative: false } => [
+    BrowserLonghandGrammar::RuleInset => [
         "column-rule-inset-cap-end",
         "column-rule-inset-cap-start",
         "column-rule-inset-junction-end",
@@ -1550,6 +1567,37 @@ fn parse_position(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
         Position::parse(input).map(|value| BrowserLonghandValue::Position(value.into_owned()))
     })
+}
+
+fn parse_rule_inset(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    let authored_math = leading_math_function(source);
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("overlap-join"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::Keyword("overlap-join"));
+        }
+        parse_strict_length_percentage(input).map(|value| BrowserLonghandValue::RuleInset {
+            value,
+            authored_math,
+        })
+    })
+}
+
+fn leading_math_function(source: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    matches!(
+        parser.next(),
+        Ok(Token::Function(name)) if [
+            "calc", "min", "max", "clamp", "round", "mod", "rem", "hypot", "abs",
+            "sign", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow",
+            "sqrt", "log", "exp",
+        ]
+        .iter()
+        .any(|candidate| name.eq_ignore_ascii_case(candidate))
+    )
 }
 
 fn parse_auto_length_percentage(source: &str) -> Result<BrowserLonghandValue, EngineError> {
@@ -3447,10 +3495,19 @@ mod tests {
             ("-10px", "-10px"),
             ("10%", "10%"),
             ("calc(10px + 5%)", "calc(5% + 10px)"),
+            ("min(1px, 2px)", "calc(1px)"),
+            ("min(1px, 2%)", "min(1px, 2%)"),
+            ("overlap-join", "overlap-join"),
         ] {
             assert_eq!(
                 canonical("column-rule-inset-cap-start", source).unwrap(),
                 expected,
+                "{source}"
+            );
+        }
+        for source in ["auto", "anchor-size(width)", "10deg", "overlap-join 1px"] {
+            assert!(
+                canonical("column-rule-inset-cap-start", source).is_err(),
                 "{source}"
             );
         }

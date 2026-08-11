@@ -713,6 +713,7 @@ impl DeclarationState {
         candidates.sort_by_key(|candidate| {
             (
                 std::cmp::Reverse(candidate.longhands.len()),
+                shorthand_serialization_priority(&candidate.name),
                 candidate.name.starts_with('-'),
             )
         });
@@ -763,6 +764,15 @@ impl DeclarationState {
     }
 }
 
+fn shorthand_serialization_priority(name: &str) -> u8 {
+    match name {
+        "column-rule-inset" => 0,
+        "rule-inset-cap" | "rule-inset-junction" => 1,
+        "row-rule-inset" => 2,
+        _ => 3,
+    }
+}
+
 fn is_gap_rule_longhand(name: &str) -> bool {
     matches!(
         name,
@@ -776,6 +786,9 @@ fn is_gap_rule_longhand(name: &str) -> bool {
 }
 
 fn prefers_synthesized_provenance(name: &str) -> bool {
+    if name.contains("rule-inset") {
+        return true;
+    }
     matches!(
         name,
         "animation"
@@ -1516,6 +1529,103 @@ mod tests {
             state.get_property_value("rule-color"),
             "red, repeat(auto, oklch(0.5 0.2 120)), red"
         );
+    }
+
+    #[test]
+    fn rule_inset_family_expands_canonicalizes_and_mutates_atomically() {
+        let mut state = DeclarationState::new();
+        let source = "calc(10px + 5%) -2px / overlap-join 4%";
+        let canonical = "calc(5% + 10px) -2px / overlap-join 4%";
+        assert_eq!(
+            state.set_property("rule-inset", source, "important"),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("rule-inset"), canonical);
+        assert_eq!(state.get_property_value("column-rule-inset"), canonical);
+        assert_eq!(state.get_property_value("row-rule-inset"), canonical);
+        assert_eq!(state.get_property_priority("rule-inset"), "important");
+        assert_eq!(state.len(), 8);
+        assert_eq!(state.item(0), "column-rule-inset-cap-start");
+        assert_eq!(state.item(7), "row-rule-inset-junction-end");
+        assert_eq!(
+            state.get_property_value("column-rule-inset-cap-start"),
+            "calc(5% + 10px)"
+        );
+        assert_eq!(
+            state.get_property_value("row-rule-inset-junction-start"),
+            "overlap-join"
+        );
+        assert_eq!(
+            state.css_text(),
+            format!("rule-inset: {canonical} !important;")
+        );
+
+        let before = state.css_text();
+        for invalid in [
+            "auto",
+            "1px 2px 3px",
+            "1px / 2px / 3px",
+            "1px, 2px",
+            "overlap-join 1px 2px",
+        ] {
+            assert_eq!(
+                state.set_property("rule-inset", invalid, "important"),
+                MutationOutcome::InvalidValue,
+                "{invalid}"
+            );
+            assert_eq!(state.css_text(), before, "{invalid}");
+        }
+
+        assert_eq!(
+            state.set_property("column-rule-inset-cap-start", "3px", "important"),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("rule-inset"), "");
+        assert_eq!(
+            state.get_property_value("column-rule-inset"),
+            "3px -2px / overlap-join 4%"
+        );
+        assert_eq!(state.remove_property("column-rule-inset-cap-start"), "3px");
+        assert_eq!(state.get_property_value("column-rule-inset"), "");
+        assert_eq!(state.len(), 7);
+        assert_eq!(
+            state.css_text(),
+            "column-rule-inset-cap-end: -2px !important; rule-inset-junction: overlap-join 4% !important; row-rule-inset-cap: calc(5% + 10px) -2px !important;"
+        );
+
+        let mut components = DeclarationState::new();
+        assert_eq!(
+            components.set_property("rule-inset-cap", "1px 2px", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(components.get_property_value("rule-inset-cap"), "1px 2px");
+        assert_eq!(components.len(), 4);
+        assert_eq!(
+            components.set_property("rule-inset-junction", "min(1px, 2px)", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            components.get_property_value("rule-inset-junction"),
+            "calc(1px)"
+        );
+        assert_eq!(
+            components.set_property("rule-inset-start", "overlap-join", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            components.get_property_value("rule-inset-start"),
+            "overlap-join"
+        );
+
+        let mut pending = DeclarationState::new();
+        assert_eq!(
+            pending.set_property("rule-inset", "var(--inset)", "important"),
+            MutationOutcome::Applied
+        );
+        assert_eq!(pending.get_property_value("rule-inset"), "var(--inset)");
+        assert_eq!(pending.get_property_priority("rule-inset"), "important");
+        assert_eq!(pending.len(), 8);
+        assert_eq!(pending.get_property_value("row-rule-inset-cap-start"), "");
     }
 
     #[test]
