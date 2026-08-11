@@ -6,6 +6,7 @@ use crate::{
 };
 use cssparser::{Parser, ParserInput};
 use lightningcss::{
+    properties::font::FontStretchKeyword,
     rules::{font_face::FontFaceProperty, CssRule},
     stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
     traits::{IntoOwned, Parse, ToCss, TrySign},
@@ -33,6 +34,7 @@ const DESCRIPTORS: &[&str] = &[
 pub enum FontFaceDescriptorValue {
     Typed(FontFaceProperty<'static>),
     MetricOverride(FontFaceMetricOverride),
+    FontStretch(FontFaceStretch),
     BrowserLonghand(BrowserLonghandValue),
     Keyword(&'static str),
 }
@@ -40,9 +42,21 @@ pub enum FontFaceDescriptorValue {
 #[derive(Clone, Debug, PartialEq)]
 pub enum FontFaceMetricOverride {
     Normal,
-    Percentage {
-        value: Calc<Percentage>,
-        wrap_calc: bool,
+    Percentage(FontFacePercentage),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FontFacePercentage {
+    value: Calc<Percentage>,
+    wrap_calc: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FontFaceStretch {
+    Keyword(FontStretchKeyword),
+    Percentages {
+        first: FontFacePercentage,
+        second: Option<FontFacePercentage>,
     },
 }
 
@@ -53,19 +67,36 @@ impl FontFaceDescriptorValue {
             FontFaceDescriptorValue::MetricOverride(FontFaceMetricOverride::Normal) => {
                 Ok("normal".to_owned())
             }
-            FontFaceDescriptorValue::MetricOverride(FontFaceMetricOverride::Percentage {
-                value,
-                wrap_calc,
+            FontFaceDescriptorValue::MetricOverride(FontFaceMetricOverride::Percentage(value)) => {
+                value.canonical_value()
+            }
+            FontFaceDescriptorValue::FontStretch(FontFaceStretch::Keyword(value)) => {
+                serialize_descriptor_component(value)
+            }
+            FontFaceDescriptorValue::FontStretch(FontFaceStretch::Percentages {
+                first,
+                second,
             }) => {
-                let serialized = serialize_descriptor_component(value)?;
-                if *wrap_calc && matches!(value, Calc::Number(_) | Calc::Value(_)) {
-                    return Ok(format!("calc({serialized})"));
+                let mut serialized = first.canonical_value()?;
+                if let Some(second) = second {
+                    serialized.push(' ');
+                    serialized.push_str(&second.canonical_value()?);
                 }
                 Ok(serialized)
             }
             FontFaceDescriptorValue::BrowserLonghand(value) => value.canonical_value(),
             FontFaceDescriptorValue::Keyword(value) => Ok((*value).to_owned()),
         }
+    }
+}
+
+impl FontFacePercentage {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let serialized = serialize_descriptor_component(&self.value)?;
+        if self.wrap_calc && matches!(self.value, Calc::Number(_) | Calc::Value(_)) {
+            return Ok(format!("calc({serialized})"));
+        }
+        Ok(serialized)
     }
 }
 
@@ -106,10 +137,11 @@ pub(crate) fn parse_descriptor_value(
         "font-feature-settings" | "font-variation-settings" => {
             FontFaceDescriptorValue::BrowserLonghand(parse_browser_longhand(name, value).ok()??)
         }
+        "font-stretch" => FontFaceDescriptorValue::FontStretch(parse_font_stretch(value)?),
         "font-variant" => {
             parse_keyword(value, &["normal", "small-caps"]).map(FontFaceDescriptorValue::Keyword)?
         }
-        "font-family" | "font-stretch" | "font-style" | "font-weight" | "src" | "unicode-range" => {
+        "font-family" | "font-style" | "font-weight" | "src" | "unicode-range" => {
             parse_typed_descriptor(name, value)?
         }
         _ => return None,
@@ -181,7 +213,6 @@ fn typed_variant_matches(name: &str, property: &FontFaceProperty<'_>) -> bool {
             | ("font-family", FontFaceProperty::FontFamily(_))
             | ("font-style", FontFaceProperty::FontStyle(_))
             | ("font-weight", FontFaceProperty::FontWeight(_))
-            | ("font-stretch", FontFaceProperty::FontStretch(_))
             | ("unicode-range", FontFaceProperty::UnicodeRange(_))
     )
 }
@@ -199,27 +230,48 @@ fn parse_metric_override(value: &str, allows_normal: bool) -> Option<FontFaceDes
             FontFaceMetricOverride::Normal,
         ));
     }
-    let state = parser.state();
-    let wrap_calc = parser
-        .expect_function()
-        .is_ok_and(|function| function.eq_ignore_ascii_case("calc"));
-    parser.reset(&state);
-    let percentage = match parser.try_parse(Calc::<Percentage>::parse) {
-        Ok(value) => value,
-        Err(_) => Percentage::parse(&mut parser).ok()?.into(),
+    let percentage = parse_percentage(&mut parser)?;
+    parser.expect_exhausted().ok()?;
+    Some(FontFaceDescriptorValue::MetricOverride(
+        FontFaceMetricOverride::Percentage(percentage),
+    ))
+}
+
+fn parse_font_stretch(value: &str) -> Option<FontFaceStretch> {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    if let Ok(keyword) = parser.try_parse(FontStretchKeyword::parse) {
+        parser.expect_exhausted().ok()?;
+        return Some(FontFaceStretch::Keyword(keyword));
+    }
+    let first = parse_percentage(&mut parser)?;
+    let second = if parser.is_exhausted() {
+        None
+    } else {
+        Some(parse_percentage(&mut parser)?)
     };
     parser.expect_exhausted().ok()?;
-    if matches!(&percentage, Calc::Number(_))
-        || percentage.try_sign().is_some_and(|sign| sign < 0.0)
+    Some(FontFaceStretch::Percentages { first, second })
+}
+
+fn parse_percentage(parser: &mut Parser<'_, '_>) -> Option<FontFacePercentage> {
+    let state = parser.state();
+    let function = parser.expect_function().ok().map(|name| name.to_string());
+    parser.reset(&state);
+    let value = if function.is_some() {
+        Calc::<Percentage>::parse_preserving_math_functions(parser).ok()?
+    } else {
+        Percentage::parse(parser).ok()?.into()
+    };
+    if value.resolves_to_number()
+        || function.is_none() && value.try_sign().is_some_and(|sign| sign < 0.0)
     {
         return None;
     }
-    Some(FontFaceDescriptorValue::MetricOverride(
-        FontFaceMetricOverride::Percentage {
-            value: percentage,
-            wrap_calc,
-        },
-    ))
+    Some(FontFacePercentage {
+        value,
+        wrap_calc: function.is_some_and(|name| name.eq_ignore_ascii_case("calc")),
+    })
 }
 
 fn parse_keyword(value: &str, keywords: &'static [&'static str]) -> Option<&'static str> {
@@ -250,6 +302,21 @@ mod tests {
             ("unicode-range", "U+??", "U+0-FF"),
             ("font-display", "SWAP", "swap"),
             ("ascent-override", "1e2%", "100%"),
+            (
+                "ascent-override",
+                "min(max(10%,20%),30%)",
+                "min(max(10%, 20%), 30%)",
+            ),
+            (
+                "size-adjust",
+                "calc(sign(1%) * 100%)",
+                "calc(100% * sign(1%))",
+            ),
+            (
+                "font-stretch",
+                "min(75%,125%) max(100%,150%)",
+                "min(75%, 125%) max(100%, 150%)",
+            ),
             ("font-feature-settings", "\"kern\" 1", "\"kern\""),
         ];
         for (name, input, expected) in cases {
@@ -302,7 +369,11 @@ mod tests {
         assert!(parse("font-family", "A, B").is_none());
         assert!(parse("src", "none").is_none());
         assert!(parse("font-stretch", "condensed expanded").is_none());
+        assert!(parse("font-stretch", "normal 125%").is_none());
+        assert!(parse("font-stretch", "75% normal").is_none());
+        assert!(parse("font-stretch", "sign(1%)").is_none());
         assert!(parse("size-adjust", "-1%").is_none());
+        assert!(parse("size-adjust", "sign(1%)").is_none());
         assert!(parse("font-display", "var(--x)").is_none());
     }
 
