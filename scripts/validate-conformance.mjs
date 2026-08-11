@@ -58,6 +58,7 @@ const relativeColorCorpusSchema = await readJson(path.join(compatibilityRoot, "s
 const numberResultMathCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/number-result-math-corpus.schema.json"));
 const propertyValueProbesSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-probes.schema.json"));
 const propertyValueObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-observations.schema.json"));
+const numericPropertyContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/numeric-property-contracts.schema.json"));
 const browserLonghandKeywordContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-keyword-contracts.schema.json"));
 const browserLonghandCompositeContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-composite-contracts.schema.json"));
 const browserGeometricContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-geometric-contracts.schema.json"));
@@ -76,6 +77,7 @@ const validateRelativeColorCorpus = ajv.compile(relativeColorCorpusSchema);
 const validateNumberResultMathCorpus = ajv.compile(numberResultMathCorpusSchema);
 const validatePropertyValueProbes = ajv.compile(propertyValueProbesSchema);
 const validatePropertyValueObservations = ajv.compile(propertyValueObservationsSchema);
+const validateNumericPropertyContracts = ajv.compile(numericPropertyContractsSchema);
 const validateBrowserLonghandKeywordContracts = ajv.compile(browserLonghandKeywordContractsSchema);
 const validateBrowserLonghandCompositeContracts = ajv.compile(browserLonghandCompositeContractsSchema);
 const validateBrowserGeometricContracts = ajv.compile(browserGeometricContractsSchema);
@@ -370,6 +372,37 @@ validateOrThrow(
   propertyGrammarExtensions,
   propertyGrammarExtensionsFile,
 );
+const numericPropertyContractsFile = path.join(
+  compatibilityRoot,
+  "numeric-property-contracts.json",
+);
+const numericPropertyContracts = await readJson(numericPropertyContractsFile);
+validateOrThrow(
+  validateNumericPropertyContracts,
+  numericPropertyContracts,
+  numericPropertyContractsFile,
+);
+const propertyGrammarFamilyIds = new Set(
+  propertyGrammarExtensions.families.map(family => family.id),
+);
+for (const family of numericPropertyContracts.extensionFamilies) {
+  assert.ok(
+    propertyGrammarFamilyIds.has(family),
+    `Numeric Property contract references unknown extension family ${family}`,
+  );
+}
+for (const property of numericPropertyContracts.additionalProperties) {
+  assert.ok(
+    chromiumSupportedProperties.has(property),
+    `Numeric Property contract references unknown property ${property}`,
+  );
+}
+for (const probe of numericPropertyContracts.probes) {
+  assert.ok(
+    propertyValueProbeIds.has(probe),
+    `Numeric Property contract references unknown probe ${probe}`,
+  );
+}
 assert.equal(
   new Set(propertyGrammarExtensions.families.map(family => family.id)).size,
   propertyGrammarExtensions.families.length,

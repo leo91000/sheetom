@@ -56,6 +56,18 @@ pub(crate) fn project_declaration(
         } else {
             retained.to_owned()
         }
+    } else if let SemanticPropertyValue::Extension(
+        SemanticExtensionValue::CrossDimensionCalculation(value),
+    ) = declaration.value()
+    {
+        value.list_observable_value(input).unwrap_or_else(|| {
+            serialize_typed_observable(name, input, closed, &canonical, &recovered)
+        })
+    } else if let SemanticPropertyValue::Extension(SemanticExtensionValue::WebkitPerspective(
+        value,
+    )) = declaration.value()
+    {
+        value.observable_value()?
     } else if let SemanticPropertyValue::Extension(SemanticExtensionValue::Geometric(value)) =
         declaration.value()
     {
@@ -661,6 +673,16 @@ mod tests {
         assert_eq!(observable("--x", "red/*comment"), "red");
         assert_eq!(observable("--x", "foo\\"), "foo�");
         assert_eq!(observable("width", "calc(1px"), "calc(1px)");
+    }
+
+    #[test]
+    fn preserves_numeric_units_and_per_item_math_provenance() {
+        assert_eq!(observable("stroke-width", "0"), "0");
+        assert_eq!(observable("stroke-width", "0px"), "0px");
+        assert_eq!(
+            observable("stroke-dasharray", "calc(1 + 1) 2"),
+            "calc(2), 2"
+        );
     }
 
     #[test]

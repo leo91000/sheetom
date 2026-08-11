@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "packageVersion", "baseline", "summary", "evidence", "resolutions"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "enum": [1, 2, 3, 4, 5] },
+    "schemaVersion": { "enum": [1, 2, 3, 4, 5, 6] },
     "packageVersion": { "type": "string" },
     "baseline": {
       "type": "object",
@@ -204,6 +204,28 @@
                 "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
               }
             },
+            "numericProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "passed",
+                "total",
+                "accepted",
+                "rejected",
+                "contractSha256",
+                "observationsSha256",
+                "executionSha256"
+              ],
+              "properties": {
+                "passed": { "type": "integer", "minimum": 1 },
+                "total": { "type": "integer", "minimum": 1 },
+                "accepted": { "type": "integer", "minimum": 1 },
+                "rejected": { "type": "integer", "minimum": 1 },
+                "contractSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "observationsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
             "relativeColors": {
               "type": "object",
               "additionalProperties": false,
@@ -317,7 +339,7 @@
       }
     },
     {
-      "if": { "properties": { "schemaVersion": { "const": 5 } } },
+      "if": { "properties": { "schemaVersion": { "enum": [5, 6] } } },
       "then": {
         "properties": {
           "baseline": {
@@ -333,6 +355,25 @@
             "properties": {
               "nativeGrammar": { "type": "object" },
               "processSafety": { "type": "object" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "schemaVersion": { "const": 6 } } },
+      "then": {
+        "properties": {
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "nativeGrammar": {
+                "type": "object",
+                "required": ["numericProperties"],
+                "properties": {
+                  "numericProperties": { "type": "object" }
+                }
+              }
             }
           }
         }

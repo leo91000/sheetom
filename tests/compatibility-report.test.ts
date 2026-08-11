@@ -55,6 +55,21 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       native: { passed: 33, total: 33 },
       public: { passed: 7, total: 7 },
     }));
+    const numericPropertyReportPath = path.join(directory, "numeric-properties.json");
+    await writeFile(numericPropertyReportPath, JSON.stringify({
+      schemaVersion: 1,
+      contract: "compatibility/numeric-property-contracts.json",
+      properties: 57,
+      probes: 11,
+      expectedAccepted: 309,
+      mismatches: {
+        acceptance: [],
+        observable: [],
+        cssText: [],
+        items: [],
+        atomicity: [],
+      },
+    }));
     const geometricReportPath = path.join(directory, "geometric.json");
     await writeFile(geometricReportPath, JSON.stringify({
       schemaVersion: 1,
@@ -93,13 +108,14 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         `--operation-report=${operationReportPath}`,
         `--native-corpus-report=${nativeCorpusReportPath}`,
         `--process-safety-report=${processSafetyReportPath}`,
+        `--numeric-property-report=${numericPropertyReportPath}`,
         `--geometric-report=${geometricReportPath}`,
         ...argumentsList,
       ],
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
-    assert.equal(report.schemaVersion, 5);
+    assert.equal(report.schemaVersion, 6);
     assert.deepEqual(report.baseline.nativeEngine.upstream, {
       repository: "https://github.com/parcel-bundler/lightningcss",
       version: "1.33.0",
@@ -112,7 +128,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.38",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.39",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -124,6 +140,15 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         negative: report.evidence.nativeGrammar.numberResultMath.negative,
       },
       { passed: 860, total: 860, positive: 616, negative: 244 },
+    );
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.numericProperties.passed,
+        total: report.evidence.nativeGrammar.numericProperties.total,
+        accepted: report.evidence.nativeGrammar.numericProperties.accepted,
+        rejected: report.evidence.nativeGrammar.numericProperties.rejected,
+      },
+      { passed: 627, total: 627, accepted: 309, rejected: 318 },
     );
     assert.deepEqual(
       report.evidence.nativeWpt.map((evidence: { engine: string }) => evidence.engine),

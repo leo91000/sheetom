@@ -20,6 +20,7 @@ pub(crate) enum PropertyGrammarExtension {
     WebkitBoxReflect,
     WebkitBorderImage,
     WebkitMaskBoxImageSlice,
+    WebkitPerspective,
 }
 
 mod generated {
@@ -134,7 +135,11 @@ pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
 
     let alias_parser_name = sheetom_parser_property_name(&canonical_name);
     let parser_name = alias_parser_name.unwrap_or(&canonical_name).to_owned();
-    let extensions = property_grammar_extensions(&canonical_name);
+    let extensions = if name.eq_ignore_ascii_case("-webkit-perspective") {
+        &[PropertyGrammarExtension::WebkitPerspective][..]
+    } else {
+        property_grammar_extensions(&canonical_name)
+    };
     let lightning_supports_property = !matches!(
         PropertyId::from(parser_name.as_str()),
         PropertyId::Custom(_)

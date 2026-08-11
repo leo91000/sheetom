@@ -5,7 +5,7 @@ use crate::{
         shorthand_longhands as style_shorthand_longhands, shorthand_names,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
-    shorthand::{parse_value_with_limits, synthesize_shorthand},
+    shorthand::{parse_value_for_source_with_limits, synthesize_shorthand},
     syntax::{parse_declaration_list, serialize_identifier},
     validate_declaration_block_input, validate_declaration_value_input, DeclarationValue,
     EngineError, ResourceLimits,
@@ -233,7 +233,7 @@ impl DeclarationState {
         }
 
         let important = priority == "important";
-        let mut parsed = match self.parse_value(&name, value, important) {
+        let mut parsed = match self.parse_value(&name, &source_name, value, important) {
             Ok(parsed) => parsed,
             Err(outcome) => return outcome,
         };
@@ -288,16 +288,17 @@ impl DeclarationState {
             let Some(name) = self.canonical_name(&declaration.name) else {
                 continue;
             };
-            let Ok(parsed) = self.parse_value(&name, &declaration.value, declaration.important)
-            else {
+            let source_name = declaration.name.to_ascii_lowercase();
+            let Ok(parsed) = self.parse_value(
+                &name,
+                &source_name,
+                &declaration.value,
+                declaration.important,
+            ) else {
                 continue;
             };
-            let records = self.records_for_parsed(
-                name,
-                parsed,
-                declaration.important,
-                &declaration.name.to_ascii_lowercase(),
-            );
+            let records =
+                self.records_for_parsed(name, parsed, declaration.important, &source_name);
             for (sub_index, record) in records.into_iter().enumerate() {
                 if winners
                     .get(&record.name)
@@ -440,12 +441,13 @@ impl DeclarationState {
     fn parse_value(
         &self,
         name: &str,
+        source_name: &str,
         value: &str,
         important: bool,
     ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
         match self.context {
             DeclarationContext::Style => {
-                parse_value_with_limits(name, value, important, self.limits)
+                parse_value_for_source_with_limits(name, source_name, value, important, self.limits)
             }
             DeclarationContext::FontFace => parse_descriptor_value(name, value, self.limits)
                 .ok_or(MutationOutcome::InvalidValue),
@@ -967,6 +969,30 @@ mod tests {
                 "{alias} canonical substitution write"
             );
         }
+    }
+
+    #[test]
+    fn preserves_legacy_webkit_perspective_syntax_without_weakening_lengths() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("-webkit-perspective", "1.5", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.item(0), "perspective");
+        assert_eq!(state.get_property_value("-webkit-perspective"), "1.5px");
+        assert_eq!(state.css_text(), "perspective: 1.5px;");
+
+        let before = state.clone();
+        assert_eq!(
+            state.set_property("-webkit-perspective", "-10px", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(state, before);
+        assert_eq!(
+            state.set_property("perspective", "1", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(state, before);
     }
 
     #[test]
@@ -1498,6 +1524,23 @@ mod tests {
                 state.serialize_safe(),
                 "{id} round-trip"
             );
+        }
+    }
+
+    #[test]
+    fn simplified_numeric_calculations_remain_reparsably_idempotent() {
+        for source in ["calc(1 / 2)", "calc(50%)"] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("opacity", source, ""),
+                MutationOutcome::Applied,
+                "{source}"
+            );
+
+            let serialized = state.serialize_safe();
+            let mut reparsed = DeclarationState::new();
+            reparsed.replace_css_text(&serialized);
+            assert_eq!(reparsed.serialize_safe(), serialized, "{source}");
         }
     }
 

@@ -1,4 +1,4 @@
-use cssparser::{Parser, ParserInput};
+use cssparser::{Parser, ParserInput, Token};
 use lightningcss::{
     properties::{
         border_image::{BorderImageRepeat, BorderImageSideWidth, BorderImageSlice},
@@ -15,6 +15,7 @@ use lightningcss::{
             Length, LengthOrNumber, LengthPercentage, LengthValue, PreservedLengthPercentage,
         },
         number::CSSNumber,
+        percentage::{DimensionPercentage, Percentage},
         position::{HorizontalPosition, Position, PositionComponent, VerticalPosition},
         rect::Rect,
         string::CSSString,
@@ -44,6 +45,7 @@ pub enum SemanticExtensionValue {
     WebkitBorderImage(WebkitBorderImageValue),
     WebkitBoxReflect(WebkitBoxReflectValue),
     WebkitMaskBoxImageSlice(WebkitBorderImageValue),
+    WebkitPerspective(WebkitPerspectiveValue),
 }
 
 impl SemanticExtensionValue {
@@ -61,6 +63,7 @@ impl SemanticExtensionValue {
             SemanticExtensionValue::WebkitBorderImage(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitBoxReflect(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => value.canonical_value(),
+            SemanticExtensionValue::WebkitPerspective(value) => value.canonical_value(),
         }
     }
 
@@ -76,6 +79,7 @@ impl SemanticExtensionValue {
             SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => {
                 value.retains_context_dependent_math()
             }
+            SemanticExtensionValue::WebkitPerspective(_) => false,
             _ => false,
         }
     }
@@ -363,8 +367,53 @@ impl WebkitBorderImageValue {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum WebkitPerspectiveValue {
+    None,
+    DirectNumber(CSSNumber),
+    DirectLength(Length),
+    NumberCalculation(Calc<PreservedLengthPercentage>),
+    LengthCalculation(Calc<Length>),
+}
+
+impl WebkitPerspectiveValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            Self::None => Ok("none".to_owned()),
+            Self::DirectNumber(value) => Ok(format!("{}px", serialize_number(*value)?)),
+            Self::DirectLength(value) => serialize_direct_length(value),
+            Self::NumberCalculation(value) => {
+                let value = serialize_typed(value)?;
+                if value.parse::<CSSNumber>().is_ok() {
+                    return Ok(format!("{value}px"));
+                }
+                Ok(format!("calc(1px * ({value}))"))
+            }
+            Self::LengthCalculation(value) => serialize_typed(value),
+        }
+    }
+
+    pub(crate) fn observable_value(&self) -> Result<String, EngineError> {
+        let canonical = self.canonical_value()?;
+        if matches!(self, Self::LengthCalculation(_)) && leading_math_function(&canonical).is_none()
+        {
+            return Ok(format!("calc({canonical})"));
+        }
+        Ok(canonical)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum CrossDimensionCalculationValue {
+    DirectNumber { value: CSSNumber, zero_as_px: bool },
+    DirectPercentage { value: Percentage, as_number: bool },
+    DirectLength(Length),
+    DirectLengthPercentage(LengthPercentage),
+    Auto,
+    CommaList(Vec<CrossDimensionCalculationValue>),
+    SpaceList(Vec<CrossDimensionCalculationValue>),
     LengthNumber(Calc<Length>),
+    LengthOrNumber(Calc<Length>),
+    PercentageCalculation(Calc<Percentage>),
     LengthPercentageNumber(Calc<PreservedLengthPercentage>),
     LengthPercentageOrNumber(Calc<PreservedLengthPercentage>),
 }
@@ -372,22 +421,127 @@ pub enum CrossDimensionCalculationValue {
 impl CrossDimensionCalculationValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
-            CrossDimensionCalculationValue::LengthNumber(value) => serialize_typed(value),
+            CrossDimensionCalculationValue::DirectNumber { value, zero_as_px } => {
+                if *zero_as_px && *value == 0.0 {
+                    return Ok("0px".to_owned());
+                }
+                serialize_number(*value)
+            }
+            CrossDimensionCalculationValue::DirectPercentage { value, as_number } => {
+                if *as_number {
+                    return serialize_number(value.0);
+                }
+                serialize_typed(value)
+            }
+            CrossDimensionCalculationValue::DirectLength(value) => serialize_direct_length(value),
+            CrossDimensionCalculationValue::DirectLengthPercentage(value) => {
+                serialize_direct_length_percentage(value)
+            }
+            CrossDimensionCalculationValue::Auto => Ok("auto".to_owned()),
+            CrossDimensionCalculationValue::CommaList(values) => {
+                let mut serialized = Vec::with_capacity(values.len());
+                for value in values {
+                    serialized.push(value.canonical_value()?);
+                }
+                Ok(serialized.join(", "))
+            }
+            CrossDimensionCalculationValue::SpaceList(values) => {
+                let mut serialized = Vec::with_capacity(values.len());
+                for value in values {
+                    serialized.push(value.canonical_value()?);
+                }
+                Ok(serialized.join(" "))
+            }
+            CrossDimensionCalculationValue::LengthNumber(value) => serialize_calculation(value),
+            CrossDimensionCalculationValue::LengthOrNumber(value) => serialize_calculation(value),
+            CrossDimensionCalculationValue::PercentageCalculation(value) => {
+                serialize_calculation(value)
+            }
             CrossDimensionCalculationValue::LengthPercentageNumber(value)
             | CrossDimensionCalculationValue::LengthPercentageOrNumber(value) => {
-                serialize_typed(value)
+                serialize_calculation(value)
             }
         }
     }
 
     fn retains_context_dependent_math(&self) -> bool {
         match self {
+            CrossDimensionCalculationValue::DirectNumber { .. }
+            | CrossDimensionCalculationValue::DirectPercentage { .. }
+            | CrossDimensionCalculationValue::DirectLength(_)
+            | CrossDimensionCalculationValue::DirectLengthPercentage(_)
+            | CrossDimensionCalculationValue::Auto => false,
+            CrossDimensionCalculationValue::CommaList(values)
+            | CrossDimensionCalculationValue::SpaceList(values) => values
+                .iter()
+                .any(CrossDimensionCalculationValue::retains_context_dependent_math),
             CrossDimensionCalculationValue::LengthNumber(value) => value.contains_unresolved_sign(),
+            CrossDimensionCalculationValue::LengthOrNumber(value) => {
+                value.contains_unresolved_sign()
+            }
+            CrossDimensionCalculationValue::PercentageCalculation(value) => {
+                value.contains_unresolved_sign()
+            }
             CrossDimensionCalculationValue::LengthPercentageNumber(value)
             | CrossDimensionCalculationValue::LengthPercentageOrNumber(value) => {
                 value.contains_unresolved_sign()
             }
         }
+    }
+
+    pub(crate) fn list_observable_value(&self, source: &str) -> Option<String> {
+        let CrossDimensionCalculationValue::CommaList(values) = self else {
+            return None;
+        };
+        let groups = split_top_level_delimiter(source, b',')?;
+        let mut authored_components = Vec::with_capacity(values.len());
+        for group in groups {
+            authored_components.extend(split_top_level_whitespace(group)?);
+        }
+        if authored_components.len() != values.len() {
+            return None;
+        }
+
+        let mut observable = Vec::with_capacity(values.len());
+        for (value, authored) in values.iter().zip(authored_components) {
+            let canonical = value.canonical_value().ok()?;
+            if leading_math_function(authored).is_none() {
+                observable.push(canonical);
+                continue;
+            }
+            if leading_math_function(&canonical).is_some() {
+                observable.push(canonical);
+            } else {
+                observable.push(format!("calc({canonical})"));
+            }
+        }
+        Some(observable.join(", "))
+    }
+}
+
+fn leading_math_function(source: &str) -> Option<String> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let function = match parser.next().ok()? {
+        Token::Function(function) => function,
+        _ => return None,
+    };
+    [
+        "calc", "min", "max", "clamp", "round", "rem", "mod", "abs", "sign", "hypot", "sin", "cos",
+        "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "log", "exp",
+    ]
+    .iter()
+    .find(|candidate| function.eq_ignore_ascii_case(candidate))
+    .map(|candidate| (*candidate).to_owned())
+}
+
+pub(crate) fn is_numeric_extension_candidate(source: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    match parser.next().ok() {
+        Some(Token::Number { .. } | Token::Percentage { .. } | Token::Dimension { .. }) => true,
+        Some(Token::Function(_)) => leading_math_function(source).is_some(),
+        _ => false,
     }
 }
 
@@ -647,12 +801,12 @@ pub(crate) fn parse_extension_value(
             PropertyGrammarExtension::LengthNumberCalculation => {
                 Some(parse_length_number_calculation(source))
             }
-            PropertyGrammarExtension::LengthPercentageNumberCalculation => {
-                Some(parse_length_percentage_number_calculation(source))
-            }
-            PropertyGrammarExtension::LengthPercentageOrNumberCalculation => {
-                Some(parse_length_percentage_or_number_calculation(source))
-            }
+            PropertyGrammarExtension::LengthPercentageNumberCalculation => Some(
+                parse_length_percentage_number_calculation(property_name, source),
+            ),
+            PropertyGrammarExtension::LengthPercentageOrNumberCalculation => Some(
+                parse_length_percentage_or_number_calculation(property_name, source),
+            ),
             PropertyGrammarExtension::OffsetPosition => {
                 Some(parse_offset_position(property_name, source))
             }
@@ -663,6 +817,7 @@ pub(crate) fn parse_extension_value(
             PropertyGrammarExtension::WebkitMaskBoxImageSlice => {
                 Some(parse_webkit_mask_box_image_slice(source))
             }
+            PropertyGrammarExtension::WebkitPerspective => Some(parse_webkit_perspective(source)),
         };
         match value {
             Some(Ok(value)) => return Ok(Some(value)),
@@ -943,7 +1098,12 @@ pub(crate) fn parse_preferred_extension_value(
         let Ok(Some(value)) = parse_extension_value(&[extension], property_name, source) else {
             continue;
         };
-        if value.retains_context_dependent_math() {
+        if matches!(
+            extension,
+            PropertyGrammarExtension::LengthPercentageNumberCalculation
+                | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
+        ) || value.retains_context_dependent_math()
+        {
             return Some(value);
         }
     }
@@ -1006,6 +1166,36 @@ fn parse_webkit_mask_box_image_slice(source: &str) -> Result<SemanticExtensionVa
     ))
 }
 
+fn parse_webkit_perspective(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let value = if source.eq_ignore_ascii_case("none") {
+        WebkitPerspectiveValue::None
+    } else if leading_math_function(source).is_none() {
+        if let Ok(value) = parse_entire(source, CSSNumber::parse) {
+            if value < 0.0 {
+                return Err(invalid_numeric_value());
+            }
+            WebkitPerspectiveValue::DirectNumber(value)
+        } else {
+            let value = parse_entire(source, Length::parse)?;
+            if direct_length_is_negative(&value) {
+                return Err(invalid_numeric_value());
+            }
+            WebkitPerspectiveValue::DirectLength(value)
+        }
+    } else {
+        let number = parse_entire(source, Calc::<PreservedLengthPercentage>::parse);
+        if let Ok(value) = number {
+            if value.resolves_to_number() {
+                return Ok(SemanticExtensionValue::WebkitPerspective(
+                    WebkitPerspectiveValue::NumberCalculation(value),
+                ));
+            }
+        }
+        WebkitPerspectiveValue::LengthCalculation(parse_entire(source, Calc::<Length>::parse)?)
+    };
+    Ok(SemanticExtensionValue::WebkitPerspective(value))
+}
+
 pub(crate) fn parse_contextual_dimension_calculation(source: &str) -> Option<String> {
     let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse).ok()?;
     if value.resolves_to_number() || !value.contains_unresolved_sign() {
@@ -1026,27 +1216,280 @@ fn parse_length_number_calculation(source: &str) -> Result<SemanticExtensionValu
     ))
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum NumericRange {
+    Any,
+    NonNegative,
+    Positive,
+    Integer,
+    NonZeroInteger,
+    PositiveInteger,
+}
+
+impl NumericRange {
+    fn accepts(self, value: CSSNumber) -> bool {
+        match self {
+            NumericRange::Any => true,
+            NumericRange::NonNegative => value >= 0.0,
+            NumericRange::Positive => value > 0.0,
+            NumericRange::Integer => value.is_finite() && value.fract() == 0.0,
+            NumericRange::NonZeroInteger => {
+                value.is_finite() && value != 0.0 && value.fract() == 0.0
+            }
+            NumericRange::PositiveInteger => {
+                value.is_finite() && value > 0.0 && value.fract() == 0.0
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct NumberPercentageProfile {
+    allow_percentage: bool,
+    percentage_as_number: bool,
+    range: NumericRange,
+}
+
+fn number_percentage_profile(property_name: &str) -> NumberPercentageProfile {
+    let allow_percentage = matches!(
+        property_name,
+        "-webkit-mask-box-image-slice"
+            | "-webkit-opacity"
+            | "-webkit-shape-image-threshold"
+            | "border-image-slice"
+            | "fill-opacity"
+            | "flood-opacity"
+            | "opacity"
+            | "scale"
+            | "shape-image-threshold"
+            | "stop-opacity"
+            | "stroke-opacity"
+            | "zoom"
+    );
+    let range = match property_name {
+        "-webkit-box-ordinal-group"
+        | "-webkit-column-count"
+        | "-webkit-line-clamp"
+        | "column-count"
+        | "flex-line-count"
+        | "hyphenate-limit-chars"
+        | "orphans"
+        | "widows" => NumericRange::PositiveInteger,
+        "grid-column-end" | "grid-column-start" | "grid-row-end" | "grid-row-start" => {
+            NumericRange::NonZeroInteger
+        }
+        "-webkit-order" | "math-depth" | "order" | "reading-order" => NumericRange::Integer,
+        "font-weight" | "initial-letter" => NumericRange::Positive,
+        "-webkit-animation-iteration-count"
+        | "-webkit-flex-grow"
+        | "-webkit-flex-shrink"
+        | "-webkit-mask-box-image-slice"
+        | "animation-iteration-count"
+        | "border-image-slice"
+        | "flex-grow"
+        | "flex-shrink"
+        | "font-size-adjust"
+        | "stroke-miterlimit"
+        | "zoom" => NumericRange::NonNegative,
+        _ => NumericRange::Any,
+    };
+    NumberPercentageProfile {
+        allow_percentage,
+        percentage_as_number: allow_percentage
+            && !matches!(
+                property_name,
+                "-webkit-mask-box-image-slice" | "border-image-slice" | "zoom"
+            ),
+        range,
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct DimensionNumberProfile {
+    allow_percentage: bool,
+    non_negative: bool,
+    zero_as_px: bool,
+}
+
+fn dimension_number_profile(property_name: &str) -> DimensionNumberProfile {
+    DimensionNumberProfile {
+        allow_percentage: !matches!(
+            property_name,
+            "-webkit-mask-box-image-outset" | "border-image-outset" | "tab-size"
+        ),
+        non_negative: !matches!(
+            property_name,
+            "baseline-shift" | "cx" | "cy" | "stroke-dashoffset" | "x" | "y"
+        ),
+        zero_as_px: matches!(property_name, "cx" | "cy" | "r" | "rx" | "ry" | "x" | "y"),
+    }
+}
+
+fn invalid_numeric_value() -> EngineError {
+    EngineError::Parse("invalid numeric extension value".to_owned())
+}
+
+fn validate_direct_number(range: NumericRange, value: CSSNumber) -> Result<(), EngineError> {
+    range
+        .accepts(value)
+        .then_some(())
+        .ok_or_else(invalid_numeric_value)
+}
+
 fn parse_length_percentage_number_calculation(
+    property_name: &str,
     source: &str,
 ) -> Result<SemanticExtensionValue, EngineError> {
+    let profile = number_percentage_profile(property_name);
+    if leading_math_function(source).is_none() {
+        if let Ok(value) = parse_entire(source, CSSNumber::parse) {
+            validate_direct_number(profile.range, value)?;
+            return Ok(SemanticExtensionValue::CrossDimensionCalculation(
+                CrossDimensionCalculationValue::DirectNumber {
+                    value,
+                    zero_as_px: false,
+                },
+            ));
+        }
+        if profile.allow_percentage {
+            let value = parse_entire(source, Percentage::parse)?;
+            validate_direct_number(profile.range, value.0)?;
+            return Ok(SemanticExtensionValue::CrossDimensionCalculation(
+                CrossDimensionCalculationValue::DirectPercentage {
+                    value,
+                    as_number: profile.percentage_as_number,
+                },
+            ));
+        }
+        return Err(invalid_numeric_value());
+    }
+
+    if profile.allow_percentage {
+        if let Ok(value) = parse_entire(source, Calc::<Percentage>::parse) {
+            return Ok(SemanticExtensionValue::CrossDimensionCalculation(
+                CrossDimensionCalculationValue::PercentageCalculation(value),
+            ));
+        }
+    }
     let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse)?;
-    if !value.resolves_to_number() {
-        return Err(EngineError::Parse(
-            "calculation does not resolve to a number".to_owned(),
+    if value.resolves_to_number() {
+        return Ok(SemanticExtensionValue::CrossDimensionCalculation(
+            CrossDimensionCalculationValue::LengthPercentageNumber(value),
         ));
     }
-    Ok(SemanticExtensionValue::CrossDimensionCalculation(
-        CrossDimensionCalculationValue::LengthPercentageNumber(value),
-    ))
+    Err(invalid_numeric_value())
+}
+
+fn parse_dimension_number_scalar(
+    property_name: &str,
+    source: &str,
+) -> Result<CrossDimensionCalculationValue, EngineError> {
+    let profile = dimension_number_profile(property_name);
+    if leading_math_function(source).is_none() {
+        if let Ok(value) = parse_entire(source, CSSNumber::parse) {
+            if profile.non_negative && value < 0.0 {
+                return Err(invalid_numeric_value());
+            }
+            return Ok(CrossDimensionCalculationValue::DirectNumber {
+                value,
+                zero_as_px: profile.zero_as_px,
+            });
+        }
+        if profile.allow_percentage {
+            let value = parse_entire(source, LengthPercentage::parse)?;
+            if profile.non_negative && direct_length_percentage_is_negative(&value) {
+                return Err(invalid_numeric_value());
+            }
+            return Ok(CrossDimensionCalculationValue::DirectLengthPercentage(
+                value,
+            ));
+        }
+        let value = parse_entire(source, Length::parse)?;
+        if profile.non_negative && direct_length_is_negative(&value) {
+            return Err(invalid_numeric_value());
+        }
+        return Ok(CrossDimensionCalculationValue::DirectLength(value));
+    }
+
+    if let Ok(value) = parse_entire(source, Calc::<PreservedLengthPercentage>::parse) {
+        if profile.allow_percentage || value.resolves_to_number() {
+            return Ok(CrossDimensionCalculationValue::LengthPercentageOrNumber(
+                value,
+            ));
+        }
+    }
+    if let Ok(value) = parse_entire(source, Calc::<Length>::parse) {
+        return Ok(CrossDimensionCalculationValue::LengthOrNumber(value));
+    }
+    Err(invalid_numeric_value())
+}
+
+fn direct_length_is_negative(value: &Length) -> bool {
+    matches!(value, Length::Value(value) if value.to_unit_value().0 < 0.0)
+}
+
+fn direct_length_percentage_is_negative(value: &LengthPercentage) -> bool {
+    match value {
+        DimensionPercentage::Dimension(value) => value.to_unit_value().0 < 0.0,
+        DimensionPercentage::Percentage(value) => value.0 < 0.0,
+        DimensionPercentage::Calc(_) => false,
+    }
+}
+
+fn parse_stroke_dasharray(source: &str) -> Result<CrossDimensionCalculationValue, EngineError> {
+    let comma_groups = split_top_level_delimiter(source, b',').ok_or_else(invalid_numeric_value)?;
+    let mut values = Vec::new();
+    for group in comma_groups {
+        let components = split_top_level_whitespace(group).ok_or_else(invalid_numeric_value)?;
+        if components.is_empty() {
+            return Err(invalid_numeric_value());
+        }
+        for component in components {
+            values.push(parse_dimension_number_scalar(
+                "stroke-dasharray",
+                component,
+            )?);
+        }
+    }
+    if values.is_empty() {
+        return Err(invalid_numeric_value());
+    }
+    Ok(CrossDimensionCalculationValue::CommaList(values))
+}
+
+fn parse_border_image_dimension_list(
+    property_name: &str,
+    source: &str,
+) -> Result<CrossDimensionCalculationValue, EngineError> {
+    let components = split_top_level_whitespace(source).ok_or_else(invalid_numeric_value)?;
+    if !(1..=4).contains(&components.len()) {
+        return Err(invalid_numeric_value());
+    }
+    let allows_auto = property_name.ends_with("image-width");
+    let mut values = Vec::with_capacity(components.len());
+    for component in components {
+        if allows_auto && component.eq_ignore_ascii_case("auto") {
+            values.push(CrossDimensionCalculationValue::Auto);
+            continue;
+        }
+        values.push(parse_dimension_number_scalar(property_name, component)?);
+    }
+    Ok(CrossDimensionCalculationValue::SpaceList(values))
 }
 
 fn parse_length_percentage_or_number_calculation(
+    property_name: &str,
     source: &str,
 ) -> Result<SemanticExtensionValue, EngineError> {
-    let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse)?;
-    Ok(SemanticExtensionValue::CrossDimensionCalculation(
-        CrossDimensionCalculationValue::LengthPercentageOrNumber(value),
-    ))
+    let value = match property_name {
+        "stroke-dasharray" => parse_stroke_dasharray(source)?,
+        "-webkit-mask-box-image-outset"
+        | "-webkit-mask-box-image-width"
+        | "border-image-outset"
+        | "border-image-width" => parse_border_image_dimension_list(property_name, source)?,
+        _ => parse_dimension_number_scalar(property_name, source)?,
+    };
+    Ok(SemanticExtensionValue::CrossDimensionCalculation(value))
 }
 
 fn parse_integer_calculation(source: &str) -> Result<SemanticExtensionValue, EngineError> {
@@ -1215,6 +1658,27 @@ fn serialize_position_component<S: ToCss>(
     serialize_typed(value)
 }
 
+fn serialize_direct_length(value: &Length) -> Result<String, EngineError> {
+    let Length::Value(value) = value else {
+        return serialize_typed(value);
+    };
+    let (number, unit) = value.to_unit_value();
+    if number == 0.0 {
+        return Ok(format!("0{unit}"));
+    }
+    serialize_typed(value)
+}
+
+fn serialize_direct_length_percentage(value: &LengthPercentage) -> Result<String, EngineError> {
+    if let DimensionPercentage::Dimension(value) = value {
+        let (number, unit) = value.to_unit_value();
+        if number == 0.0 {
+            return Ok(format!("0{unit}"));
+        }
+    }
+    serialize_typed(value)
+}
+
 fn serialize_number(number: CSSNumber) -> Result<String, EngineError> {
     if number.is_nan() {
         return Ok("NaN".to_owned());
@@ -1225,7 +1689,25 @@ fn serialize_number(number: CSSNumber) -> Result<String, EngineError> {
     if number == CSSNumber::NEG_INFINITY {
         return Ok("-infinity".to_owned());
     }
-    serialize_typed(&number)
+    let serialized = serialize_typed(&number)?;
+    if let Some(fraction) = serialized.strip_prefix("-.") {
+        return Ok(format!("-0.{fraction}"));
+    }
+    if let Some(fraction) = serialized.strip_prefix('.') {
+        return Ok(format!("0.{fraction}"));
+    }
+    Ok(serialized)
+}
+
+fn serialize_calculation<T>(value: &Calc<T>) -> Result<String, EngineError>
+where
+    Calc<T>: ToCss,
+{
+    let serialized = serialize_typed(value)?;
+    if leading_math_function(&serialized).is_some() {
+        return Ok(serialized);
+    }
+    Ok(format!("calc({serialized})"))
 }
 
 fn serialize_typed<T: ToCss>(value: &T) -> Result<String, EngineError> {
@@ -1464,6 +1946,103 @@ mod tests {
             ),
         ] {
             assert!(parse(extension, "opacity", source).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn validates_direct_number_percentage_profiles() {
+        let extension = PropertyGrammarExtension::LengthPercentageNumberCalculation;
+        for (property, source, expected) in [
+            ("flood-opacity", "-1", "-1"),
+            ("flood-opacity", "10%", "0.1"),
+            ("zoom", "10%", "10%"),
+            ("font-weight", "1.5", "1.5"),
+            ("grid-column-start", "-1", "-1"),
+            ("math-depth", "0", "0"),
+            ("-webkit-box-ordinal-group", "1", "1"),
+        ] {
+            let value = parse(extension, property, source).unwrap();
+            assert_eq!(
+                value.canonical_value().unwrap(),
+                expected,
+                "{property}: {source}"
+            );
+        }
+        for (property, source) in [
+            ("zoom", "-1"),
+            ("font-weight", "0"),
+            ("grid-column-start", "0"),
+            ("math-depth", "1.5"),
+            ("-webkit-box-ordinal-group", "1.5"),
+            ("flood-opacity", "10px"),
+        ] {
+            assert!(
+                parse(extension, property, source).is_err(),
+                "{property}: {source}"
+            );
+        }
+    }
+
+    #[test]
+    fn validates_direct_dimension_number_profiles_and_lists() {
+        let extension = PropertyGrammarExtension::LengthPercentageOrNumberCalculation;
+        for (property, source, expected) in [
+            ("x", "0", "0px"),
+            ("x", "-1", "-1"),
+            ("x", "-10px", "-10px"),
+            ("r", "0", "0px"),
+            ("r", "10%", "10%"),
+            ("stroke-width", "0px", "0px"),
+            ("stroke-dashoffset", "-1", "-1"),
+            ("tab-size", "10px", "10px"),
+            ("stroke-dasharray", "1 2px, 3%", "1, 2px, 3%"),
+            ("stroke-dasharray", "calc(1 + 1) 2", "calc(2), 2"),
+            ("border-image-outset", "1px 2 3px 4", "1px 2 3px 4"),
+            ("border-image-width", "1px auto 2 3px", "1px auto 2 3px"),
+        ] {
+            let value = parse(extension, property, source).unwrap();
+            assert_eq!(
+                value.canonical_value().unwrap(),
+                expected,
+                "{property}: {source}"
+            );
+        }
+        for (property, source) in [
+            ("r", "-1"),
+            ("stroke-width", "-1px"),
+            ("stroke-dasharray", "1 -2"),
+            ("stroke-dasharray", "1,,2"),
+            ("tab-size", "10%"),
+            ("border-image-outset", "1px 2px 3px 4px 5px"),
+            ("border-image-outset", "1px auto"),
+            ("border-image-width", "1px -2px"),
+        ] {
+            assert!(
+                parse(extension, property, source).is_err(),
+                "{property}: {source}"
+            );
+        }
+    }
+
+    #[test]
+    fn owns_legacy_webkit_perspective_unitless_lengths() {
+        let extension = PropertyGrammarExtension::WebkitPerspective;
+        for (source, expected) in [
+            ("none", "none"),
+            ("0", "0px"),
+            ("1.5", "1.5px"),
+            ("10px", "10px"),
+            ("calc(1 + 1)", "2px"),
+            ("min(1px, 2px)", "1px"),
+        ] {
+            let value = parse(extension, "-webkit-perspective", source).unwrap();
+            assert_eq!(value.canonical_value().unwrap(), expected, "{source}");
+        }
+        for source in ["-1", "-10px", "10%", "calc(10%)"] {
+            assert!(
+                parse(extension, "-webkit-perspective", source).is_err(),
+                "{source}"
+            );
         }
     }
 
