@@ -186,10 +186,7 @@ for (const candidate of valueCapabilities.cases) {
   });
 }
 
-const directNumberResultMathCases = numberResultMathCapabilities.cases.filter(
-  candidate => candidate.integration === "direct-number",
-);
-for (const candidate of directNumberResultMathCases) {
+for (const candidate of numberResultMathCapabilities.cases) {
   capture(candidate.id, () => {
     const { sheet, rule } = createRule();
     if (!candidate.accepted) {
@@ -292,6 +289,14 @@ if (reportArgument) {
       positive: positiveValueCapabilities,
       negative: negativeValueCapabilities,
     },
+    numberResultMath: {
+      passed: numberResultMathCapabilities.cases.length,
+      total: numberResultMathCapabilities.cases.length,
+      positive: numberResultMathCapabilities.cases
+        .filter(candidate => candidate.accepted).length,
+      negative: numberResultMathCapabilities.cases
+        .filter(candidate => !candidate.accepted).length,
+    },
     relativeColors: {
       passed: relativeColorCapabilities.cases.length,
       total: relativeColorCapabilities.cases.length,
@@ -309,6 +314,6 @@ console.log(
     `${negativeGrammarCases} atomic rejection branches and ` +
     `${nativeInventory.propertyBranches.length} property plus ` +
     `${valueCapabilities.cases.length} value and ` +
-    `${directNumberResultMathCases.length} direct number-result math and ` +
+    `${numberResultMathCapabilities.cases.length} number-result math and ` +
     `${relativeColorCapabilities.cases.length} relative-color branches.`,
 );

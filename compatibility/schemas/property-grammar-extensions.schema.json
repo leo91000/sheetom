@@ -18,6 +18,7 @@
           "id": {
             "enum": [
               "content",
+              "aspect-ratio",
               "integer-calculation",
               "length-number-calculation",
               "length-percentage-number-calculation",
@@ -26,7 +27,9 @@
               "offset-rotate",
               "page-size",
               "subgrid",
-              "webkit-box-reflect"
+              "webkit-box-reflect",
+              "webkit-border-image",
+              "webkit-mask-box-image-slice"
             ]
           },
           "properties": {

@@ -2,6 +2,7 @@ use lightningcss::properties::PropertyId;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PropertyGrammarExtension {
+    AspectRatio,
     Content,
     IntegerCalculation,
     LengthNumberCalculation,
@@ -12,6 +13,8 @@ pub(crate) enum PropertyGrammarExtension {
     PageSize,
     Subgrid,
     WebkitBoxReflect,
+    WebkitBorderImage,
+    WebkitMaskBoxImageSlice,
 }
 
 mod generated {

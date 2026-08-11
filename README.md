@@ -172,13 +172,13 @@ serialization, and atomic failure to Chromium 151.
 
 Computed-context number results are covered separately by the checked-in
 [`Number Result Math Corpus`](./compatibility/number-result-math-capabilities.json).
-It records 840 batched Chromium observations across all 70 accepting
+It records 860 batched Chromium observations across all 70 accepting
 properties, including relative lengths, percentages, dynamic products and
 quotients, dimension-result neighbors, invalid dimensional multiplication,
-CSSOM expansion, and declaration serialization. Direct numeric properties use
-the typed runtime codec; composite properties remain explicitly classified for
-their shorthand or property-specific codecs rather than being counted as
-implicitly supported.
+CSSOM expansion, declaration serialization, multi-item animations, slash
+sections, and contextual values in every position of `flex`, `grid`, columns,
+aspect ratios, and border-image families. Both direct and composite properties
+must pass mutation, `cssText`, safe round-trip, and atomic-rejection gates.
 
 The corresponding shorthand depth evidence is split between the reviewed
 [`Grammar Branch Contracts`](./compatibility/shorthand-grammar-contracts.json)

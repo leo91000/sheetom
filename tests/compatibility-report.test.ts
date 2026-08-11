@@ -42,6 +42,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       grammarBranches: { passed: 96, total: 96, positive: 72, negative: 24 },
       propertyBranches: { passed: 10, total: 10, positive: 5, negative: 5 },
       valueCapabilities: { passed: 135, total: 135, positive: 94, negative: 41 },
+      numberResultMath: { passed: 860, total: 860, positive: 616, negative: 244 },
       relativeColors: { passed: 1306, total: 1306, positive: 1146, negative: 160 },
     }));
     const processSafetyReportPath = path.join(directory, "process-safety.json");
@@ -95,10 +96,19 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.24",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.25",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.numberResultMath.passed,
+        total: report.evidence.nativeGrammar.numberResultMath.total,
+        positive: report.evidence.nativeGrammar.numberResultMath.positive,
+        negative: report.evidence.nativeGrammar.numberResultMath.negative,
+      },
+      { passed: 860, total: 860, positive: 616, negative: 244 },
+    );
     assert.deepEqual(
       report.evidence.nativeWpt.map((evidence: { engine: string }) => evidence.engine),
       ["chrome", "firefox", "safari"],

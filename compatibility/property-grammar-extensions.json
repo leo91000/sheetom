@@ -3,6 +3,10 @@
   "baseline": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
   "families": [
     {
+      "id": "aspect-ratio",
+      "properties": ["aspect-ratio"]
+    },
+    {
       "id": "content",
       "properties": ["content"]
     },
@@ -99,6 +103,14 @@
     {
       "id": "webkit-box-reflect",
       "properties": ["-webkit-box-reflect"]
+    },
+    {
+      "id": "webkit-border-image",
+      "properties": ["-webkit-border-image"]
+    },
+    {
+      "id": "webkit-mask-box-image-slice",
+      "properties": ["-webkit-mask-box-image-slice"]
     }
   ]
 }
