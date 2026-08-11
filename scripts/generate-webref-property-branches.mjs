@@ -56,6 +56,11 @@ for (const [property, probe] of observations.accepted) {
   const input = inputByProbe.get(probe);
   if (input) fallbackValues.set(property, input);
 }
+for (const property of chromiumSupportedProperties) {
+  if (!fallbackValues.has(property)) {
+    throw new Error(`Missing a non-CSS-wide atomicity seed for ${property}`);
+  }
+}
 
 const profileBySyntax = new Map();
 const missingProperties = [];
@@ -129,28 +134,62 @@ const browser = await chromium.launch({ headless: true });
 let browserResult;
 try {
   const page = await browser.newPage();
-  browserResult = await page.evaluate(profiles => {
+  browserResult = await page.evaluate(({ profiles, seedInputs }) => {
     const accepted = [];
+    const seeds = [];
     let checkCount = 0;
     let branchCount = 0;
     let sampleCount = 0;
     let missingInvalidNeighborCount = 0;
+    let rejectedAtomicNoOpCount = 0;
+    let invalidNeighborAtomicNoOpCount = 0;
     const invalidSuffixes = [
       " __sheetom_invalid__",
       " /",
       ",",
       " !",
     ];
+    const state = style => ({
+      cssText: style.cssText,
+      items: Array.from(style, name => [
+        name,
+        style.getPropertyValue(name),
+        style.getPropertyPriority(name),
+      ]),
+    });
     for (const profile of profiles) {
       sampleCount += profile.samples.length;
       for (const sample of profile.samples) branchCount += sample.branches.length;
       for (const property of profile.properties) {
+        const seedInput = seedInputs[property];
+        const seedStyle = document.createElement("div").style;
+        seedStyle.setProperty(property, seedInput);
+        if (seedStyle.length === 0) {
+          throw new Error(`Chromium rejected the Property Value seed for ${property}`);
+        }
+        const seedState = state(seedStyle);
+        seeds.push([
+          property,
+          seedInput,
+          seedStyle.getPropertyValue(property),
+          seedState.cssText,
+          seedState.items,
+        ]);
         for (const sample of profile.samples) {
           checkCount += 1;
           const style = document.createElement("div").style;
           style.setProperty(property, sample.input);
           const items = Array.from(style);
-          if (items.length === 0) continue;
+          if (items.length === 0) {
+            const atomicStyle = document.createElement("div").style;
+            atomicStyle.setProperty(property, seedInput);
+            const before = JSON.stringify(state(atomicStyle));
+            atomicStyle.setProperty(property, sample.input);
+            if (JSON.stringify(state(atomicStyle)) === before) {
+              rejectedAtomicNoOpCount += 1;
+            }
+            continue;
+          }
           let invalidNeighbor = null;
           for (const suffix of invalidSuffixes) {
             const candidate = `${sample.input}${suffix}`;
@@ -162,6 +201,13 @@ try {
             }
           }
           if (invalidNeighbor === null) missingInvalidNeighborCount += 1;
+          if (invalidNeighbor !== null) {
+            const before = JSON.stringify(state(style));
+            style.setProperty(property, invalidNeighbor);
+            if (JSON.stringify(state(style)) === before) {
+              invalidNeighborAtomicNoOpCount += 1;
+            }
+          }
           accepted.push([
             profile.id,
             property,
@@ -184,9 +230,15 @@ try {
       branchCount,
       sampleCount,
       missingInvalidNeighborCount,
+      rejectedAtomicNoOpCount,
+      invalidNeighborAtomicNoOpCount,
+      seeds,
       accepted,
     };
-  }, profiles);
+  }, {
+    profiles,
+    seedInputs: Object.fromEntries(fallbackValues),
+  });
 } finally {
   await browser.close();
 }
@@ -220,10 +272,13 @@ const report = {
     accepted: browserResult.accepted.length,
     rejected: browserResult.checkCount - browserResult.accepted.length,
     missingInvalidNeighborCount: browserResult.missingInvalidNeighborCount,
+    rejectedAtomicNoOpCount: browserResult.rejectedAtomicNoOpCount,
+    invalidNeighborAtomicNoOpCount: browserResult.invalidNeighborAtomicNoOpCount,
     missingProperties,
     representativeTerminals,
   },
   profiles,
+  seeds: browserResult.seeds,
   accepted: browserResult.accepted,
 };
 const serialized = `${JSON.stringify(report, null, 2)}\n`;

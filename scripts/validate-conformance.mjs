@@ -432,6 +432,16 @@ assert.equal(
   webrefPropertyBranches.accepted.length,
   "Webref accepted count drifted",
 );
+assert.equal(
+  webrefPropertyBranches.coverage.rejectedAtomicNoOpCount,
+  webrefPropertyBranches.coverage.rejected,
+  "Every Chromium-rejected Webref candidate must preserve previous state",
+);
+assert.equal(
+  webrefPropertyBranches.coverage.invalidNeighborAtomicNoOpCount,
+  webrefPropertyBranches.coverage.accepted,
+  "Every accepted Webref candidate must have an atomic invalid neighbor",
+);
 const expectedRepresentativeTerminals = webrefSemanticTerminals.terminals
   .filter(terminal => terminal.coverage === "representative")
   .map(terminal => terminal.type);
@@ -441,6 +451,18 @@ assert.deepEqual(
   "Webref representative terminal dispositions drifted",
 );
 const webrefAcceptedKeys = new Set();
+const webrefSeedProperties = new Set();
+for (const seed of webrefPropertyBranches.seeds) {
+  const [property] = seed;
+  assert.ok(webrefCoveredProperties.has(property), `Unknown Webref seed property ${property}`);
+  assert.ok(!webrefSeedProperties.has(property), `Duplicate Webref seed for ${property}`);
+  webrefSeedProperties.add(property);
+}
+assert.deepEqual(
+  [...webrefSeedProperties].sort(),
+  [...webrefCoveredProperties].sort(),
+  "Every Webref-covered property must have exactly one atomicity seed",
+);
 for (const observation of webrefPropertyBranches.accepted) {
   const [profileId, property, sampleId] = observation;
   assert.ok(webrefProfileIds.has(profileId), `Unknown Webref profile ${profileId}`);

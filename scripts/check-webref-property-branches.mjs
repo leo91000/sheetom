@@ -13,6 +13,7 @@ const expectedByKey = new Map(corpus.accepted.map(observation => [
   `${observation[1]}\0${observation[2]}`,
   observation,
 ]));
+const seedByProperty = new Map(corpus.seeds.map(seed => [seed[0], seed]));
 const mismatches = {
   acceptance: [],
   observable: [],
@@ -63,9 +64,30 @@ for (const profile of corpus.profiles) {
           expected: Boolean(expected),
           actual: actualAccepted,
         });
+        if (expected) continue;
+      }
+      if (!expected) {
+        const atomicRule = createRule();
+        const seed = seedByProperty.get(property);
+        if (!seed) throw new Error(`Missing Webref atomicity seed for ${property}`);
+        atomicRule.style.setProperty(property, seed[1]);
+        const before = state(atomicRule.style);
+        if (before.items.length === 0) {
+          throw new Error(`SheetOM rejected the Webref atomicity seed for ${property}`);
+        }
+        atomicRule.style.setProperty(property, sample.input);
+        const after = state(atomicRule.style);
+        if (JSON.stringify(before) !== JSON.stringify(after)) {
+          mismatches.atomicity.push({
+            property,
+            sample: sample.id,
+            input: sample.input,
+            before,
+            after,
+          });
+        }
         continue;
       }
-      if (!expected) continue;
 
       const [, , , expectedObservable, expectedCssText, expectedItems, invalidNeighbor] = expected;
       const actualObservable = rule.style.getPropertyValue(property);
