@@ -3,6 +3,7 @@
     deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)
 )]
 
+mod browser_longhand;
 mod catalog;
 mod counter_style;
 mod declaration_state;
@@ -87,7 +88,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.29";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.30";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -461,7 +462,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.29");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.30");
     }
 
     #[test]

@@ -22,6 +22,7 @@ use lightningcss::{
 };
 
 use crate::{
+    browser_longhand::{parse_browser_longhand, BrowserLonghandValue},
     catalog::PropertyGrammarExtension,
     shorthand::canonicalize_webkit_border_image,
     syntax::{split_top_level_delimiter, split_top_level_whitespace},
@@ -31,6 +32,7 @@ use crate::{
 #[derive(Clone, Debug, PartialEq)]
 pub enum SemanticExtensionValue {
     AspectRatio(AspectRatioValue),
+    BrowserLonghand(BrowserLonghandValue),
     Content(ContentValue),
     IntegerCalculation(IntegerCalculationValue),
     CrossDimensionCalculation(CrossDimensionCalculationValue),
@@ -46,6 +48,7 @@ impl SemanticExtensionValue {
     pub fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             SemanticExtensionValue::AspectRatio(value) => value.canonical_value(),
+            SemanticExtensionValue::BrowserLonghand(value) => value.canonical_value(),
             SemanticExtensionValue::Content(value) => value.canonical_value(),
             SemanticExtensionValue::IntegerCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::CrossDimensionCalculation(value) => value.canonical_value(),
@@ -622,6 +625,13 @@ pub(crate) fn parse_extension_value(
     for extension in extensions {
         let value = match extension {
             PropertyGrammarExtension::AspectRatio => Some(parse_aspect_ratio(source)),
+            PropertyGrammarExtension::BrowserLonghand => {
+                match parse_browser_longhand(property_name, source) {
+                    Ok(Some(value)) => Some(Ok(SemanticExtensionValue::BrowserLonghand(value))),
+                    Ok(None) => None,
+                    Err(error) => Some(Err(error)),
+                }
+            }
             PropertyGrammarExtension::Content => Some(parse_content(source)),
             PropertyGrammarExtension::IntegerCalculation => Some(parse_integer_calculation(source)),
             PropertyGrammarExtension::LengthNumberCalculation => {

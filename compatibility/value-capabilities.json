@@ -1255,6 +1255,396 @@
       "property": "color",
       "input": "lch(from currentColor l c calc(h + 180deg))",
       "accepted": false
+    },
+    {
+      "id": "longhand.column-count-calculation",
+      "property": "column-count",
+      "input": "calc(1 + 1)",
+      "accepted": true,
+      "observable": "calc(2)"
+    },
+    {
+      "id": "longhand.column-count-zero-invalid",
+      "property": "column-count",
+      "input": "0",
+      "accepted": false
+    },
+    {
+      "id": "longhand.column-width-length",
+      "property": "column-width",
+      "input": "12px",
+      "accepted": true,
+      "observable": "12px"
+    },
+    {
+      "id": "longhand.column-width-percentage-invalid",
+      "property": "column-width",
+      "input": "10%",
+      "accepted": false
+    },
+    {
+      "id": "longhand.column-rule-break-none",
+      "property": "column-rule-break",
+      "input": "none",
+      "accepted": true,
+      "observable": "none"
+    },
+    {
+      "id": "longhand.column-rule-break-auto-invalid",
+      "property": "column-rule-break",
+      "input": "auto",
+      "accepted": false
+    },
+    {
+      "id": "longhand.contain-intrinsic-auto-length",
+      "property": "contain-intrinsic-width",
+      "input": "auto 10px",
+      "accepted": true,
+      "observable": "auto 10px"
+    },
+    {
+      "id": "longhand.contain-intrinsic-percentage-invalid",
+      "property": "contain-intrinsic-width",
+      "input": "10%",
+      "accepted": false
+    },
+    {
+      "id": "longhand.corner-shape-superellipse",
+      "property": "corner-top-left-shape",
+      "input": "superellipse(-1)",
+      "accepted": true,
+      "observable": "superellipse(-1)"
+    },
+    {
+      "id": "longhand.corner-shape-empty-superellipse-invalid",
+      "property": "corner-top-left-shape",
+      "input": "superellipse()",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-feature-settings-list",
+      "property": "font-feature-settings",
+      "input": "\"liga\" off, \"kern\" 2",
+      "accepted": true,
+      "observable": "\"liga\" 0, \"kern\" 2"
+    },
+    {
+      "id": "longhand.font-feature-settings-bad-tag-invalid",
+      "property": "font-feature-settings",
+      "input": "\"abcde\"",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-language-override-string",
+      "property": "font-language-override",
+      "input": "\"ENG\"",
+      "accepted": true,
+      "observable": "\"ENG\""
+    },
+    {
+      "id": "longhand.font-language-override-long-invalid",
+      "property": "font-language-override",
+      "input": "\"ABCDE\"",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-size-adjust-cap-height",
+      "property": "font-size-adjust",
+      "input": "cap-height 0.5",
+      "accepted": true,
+      "observable": "cap-height 0.5"
+    },
+    {
+      "id": "longhand.font-size-adjust-negative-invalid",
+      "property": "font-size-adjust",
+      "input": "-1",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-variant-alternates-functions",
+      "property": "font-variant-alternates",
+      "input": "historical-forms styleset(foo,bar)",
+      "accepted": true,
+      "observable": "historical-forms styleset(foo, bar)"
+    },
+    {
+      "id": "longhand.font-variant-alternates-duplicate-invalid",
+      "property": "font-variant-alternates",
+      "input": "stylistic(foo) stylistic(bar)",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-variant-east-asian-combination",
+      "property": "font-variant-east-asian",
+      "input": "jis78 full-width ruby",
+      "accepted": true,
+      "observable": "jis78 full-width ruby"
+    },
+    {
+      "id": "longhand.font-variant-east-asian-conflict-invalid",
+      "property": "font-variant-east-asian",
+      "input": "jis78 jis83",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-variant-ligatures-combination",
+      "property": "font-variant-ligatures",
+      "input": "no-common-ligatures discretionary-ligatures",
+      "accepted": true,
+      "observable": "no-common-ligatures discretionary-ligatures"
+    },
+    {
+      "id": "longhand.font-variant-ligatures-conflict-invalid",
+      "property": "font-variant-ligatures",
+      "input": "common-ligatures no-common-ligatures",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-variant-numeric-combination",
+      "property": "font-variant-numeric",
+      "input": "ordinal slashed-zero tabular-nums",
+      "accepted": true,
+      "observable": "ordinal slashed-zero tabular-nums"
+    },
+    {
+      "id": "longhand.font-variant-numeric-conflict-invalid",
+      "property": "font-variant-numeric",
+      "input": "lining-nums oldstyle-nums",
+      "accepted": false
+    },
+    {
+      "id": "longhand.font-variation-settings-calculation",
+      "property": "font-variation-settings",
+      "input": "\"wght\" calc(1 + 1)",
+      "accepted": true,
+      "observable": "\"wght\" calc(2)"
+    },
+    {
+      "id": "longhand.font-variation-settings-bad-tag-invalid",
+      "property": "font-variation-settings",
+      "input": "\"a\" 1",
+      "accepted": false
+    },
+    {
+      "id": "longhand.interest-delay-time",
+      "property": "interest-delay-start",
+      "input": "1s",
+      "accepted": true,
+      "observable": "1s"
+    },
+    {
+      "id": "longhand.interest-delay-negative-invalid",
+      "property": "interest-delay-start",
+      "input": "-1s",
+      "accepted": false
+    },
+    {
+      "id": "longhand.offset-distance-mixed",
+      "property": "offset-distance",
+      "input": "calc(1px + 2%)",
+      "accepted": true,
+      "observable": "calc(2% + 1px)"
+    },
+    {
+      "id": "longhand.offset-distance-auto-invalid",
+      "property": "offset-distance",
+      "input": "auto",
+      "accepted": false
+    },
+    {
+      "id": "longhand.overscroll-contain",
+      "property": "overscroll-behavior-x",
+      "input": "contain",
+      "accepted": true,
+      "observable": "contain"
+    },
+    {
+      "id": "longhand.overscroll-normal-invalid",
+      "property": "overscroll-behavior-x",
+      "input": "normal",
+      "accepted": false
+    },
+    {
+      "id": "longhand.position-try-fallbacks-list",
+      "property": "position-try-fallbacks",
+      "input": "--foo, flip-block flip-inline",
+      "accepted": true,
+      "observable": "--foo, flip-block flip-inline"
+    },
+    {
+      "id": "longhand.position-try-fallbacks-duplicate-invalid",
+      "property": "position-try-fallbacks",
+      "input": "flip-block flip-block",
+      "accepted": false
+    },
+    {
+      "id": "longhand.position-try-order-most-inline",
+      "property": "position-try-order",
+      "input": "most-inline-size",
+      "accepted": true,
+      "observable": "most-inline-size"
+    },
+    {
+      "id": "longhand.position-try-order-custom-invalid",
+      "property": "position-try-order",
+      "input": "--foo",
+      "accepted": false
+    },
+    {
+      "id": "longhand.scroll-timeline-name-list",
+      "property": "scroll-timeline-name",
+      "input": "--foo,--bar",
+      "accepted": true,
+      "observable": "--foo, --bar"
+    },
+    {
+      "id": "longhand.scroll-timeline-name-ordinary-invalid",
+      "property": "scroll-timeline-name",
+      "input": "foo",
+      "accepted": false
+    },
+    {
+      "id": "longhand.text-box-edge-pair",
+      "property": "text-box-edge",
+      "input": "cap alphabetic",
+      "accepted": true,
+      "observable": "cap alphabetic"
+    },
+    {
+      "id": "longhand.text-box-edge-single-cap-invalid",
+      "property": "text-box-edge",
+      "input": "cap",
+      "accepted": false
+    },
+    {
+      "id": "longhand.timeline-trigger-range",
+      "property": "timeline-trigger-activation-range-start",
+      "input": "cover 10%",
+      "accepted": true,
+      "observable": "cover 10%"
+    },
+    {
+      "id": "longhand.timeline-trigger-activation-auto-invalid",
+      "property": "timeline-trigger-activation-range-start",
+      "input": "auto",
+      "accepted": false
+    },
+    {
+      "id": "longhand.timeline-trigger-source-list",
+      "property": "timeline-trigger-source",
+      "input": "--foo,--bar",
+      "accepted": true,
+      "observable": "--foo, --bar"
+    },
+    {
+      "id": "longhand.timeline-trigger-source-ordinary-invalid",
+      "property": "timeline-trigger-source",
+      "input": "foo",
+      "accepted": false
+    },
+    {
+      "id": "longhand.transition-behavior-discrete",
+      "property": "transition-behavior",
+      "input": "allow-discrete",
+      "accepted": true,
+      "observable": "allow-discrete"
+    },
+    {
+      "id": "longhand.transition-behavior-none-invalid",
+      "property": "transition-behavior",
+      "input": "none",
+      "accepted": false
+    },
+    {
+      "id": "longhand.view-timeline-inset-pair",
+      "property": "view-timeline-inset",
+      "input": "auto 10px",
+      "accepted": true,
+      "observable": "auto 10px"
+    },
+    {
+      "id": "longhand.view-timeline-inset-third-invalid",
+      "property": "view-timeline-inset",
+      "input": "auto 10px 20px",
+      "accepted": false
+    },
+    {
+      "id": "longhand.white-space-collapse-break-spaces",
+      "property": "white-space-collapse",
+      "input": "break-spaces",
+      "accepted": true,
+      "observable": "break-spaces"
+    },
+    {
+      "id": "longhand.white-space-collapse-preserve-spaces-invalid",
+      "property": "white-space-collapse",
+      "input": "preserve-spaces",
+      "accepted": false
+    },
+    {
+      "id": "longhand.animation-iteration-contextual-list",
+      "property": "animation-iteration-count",
+      "input": "sign(1em), 1",
+      "accepted": true,
+      "observable": "sign(1em), 1"
+    },
+    {
+      "id": "longhand.animation-iteration-negative-invalid",
+      "property": "animation-iteration-count",
+      "input": "-1",
+      "accepted": false
+    },
+    {
+      "id": "longhand.offset-path-data",
+      "property": "offset-path",
+      "input": "path(\"M 0 0 L 10 10\")",
+      "accepted": true,
+      "observable": "path(\"M 0 0 L 10 10\")"
+    },
+    {
+      "id": "longhand.offset-path-empty-function-invalid",
+      "property": "offset-path",
+      "input": "path()",
+      "accepted": false
+    },
+    {
+      "id": "longhand.scroll-timeline-axis-list",
+      "property": "scroll-timeline-axis",
+      "input": "block, inline",
+      "accepted": true,
+      "observable": "block, inline"
+    },
+    {
+      "id": "longhand.scroll-timeline-axis-auto-invalid",
+      "property": "scroll-timeline-axis",
+      "input": "auto",
+      "accepted": false
+    },
+    {
+      "id": "longhand.text-wrap-style-balance",
+      "property": "text-wrap-style",
+      "input": "balance",
+      "accepted": true,
+      "observable": "balance"
+    },
+    {
+      "id": "longhand.text-wrap-style-none-invalid",
+      "property": "text-wrap-style",
+      "input": "none",
+      "accepted": false
+    },
+    {
+      "id": "longhand.transition-behavior-list",
+      "property": "transition-behavior",
+      "input": "normal, allow-discrete",
+      "accepted": true,
+      "observable": "normal, allow-discrete"
+    },
+    {
+      "id": "longhand.transition-behavior-empty-item-invalid",
+      "property": "transition-behavior",
+      "input": "normal,",
+      "accepted": false
     }
   ]
 }
