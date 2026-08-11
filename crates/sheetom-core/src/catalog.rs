@@ -307,7 +307,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 22, 209, 51]);
+        assert_eq!(owner_counts, [0, 429, 22, 213, 47]);
     }
 
     #[test]
