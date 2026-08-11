@@ -1,4 +1,4 @@
-use cssparser::{Parser, ParserInput};
+use cssparser::{Parser, ParserInput, Token};
 use lightningcss::{
     properties::{
         animation::{AnimationRangeEnd, AnimationRangeStart},
@@ -12,6 +12,8 @@ use lightningcss::{
         ident::{CustomIdent, DashedIdent},
         length::{Length, LengthPercentage, PreservedLengthPercentage},
         number::CSSNumber,
+        percentage::Percentage,
+        position::Position,
         string::CSSString,
         time::Time,
     },
@@ -47,6 +49,33 @@ pub enum BrowserLonghandValue {
     KeywordList(Vec<&'static str>),
     AnimationIterationCount(Vec<AnimationIterationCountValue>),
     OffsetPath(OffsetPathValue),
+    AxisPosition(LengthPercentage),
+    Position(Position),
+    AutoLengthPercentage(Option<LengthPercentage>),
+    Containment(Vec<&'static str>),
+    TextDecorationLine(Vec<&'static str>),
+    ScrollSnapAlign {
+        block: &'static str,
+        inline: Option<&'static str>,
+    },
+    ScrollSnapType {
+        axis: &'static str,
+        strictness: Option<&'static str>,
+    },
+    ScrollbarGutter {
+        both_edges: bool,
+    },
+    OverflowClipMargin {
+        visual_box: &'static str,
+        length: Option<Length>,
+        calculation: bool,
+    },
+    TextUnderlinePosition {
+        primary: Option<&'static str>,
+        side: Option<&'static str>,
+    },
+    TouchAction(Vec<&'static str>),
+    StringOrKeyword(StringOrKeywordValue),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -171,12 +200,20 @@ pub enum OffsetPathValue {
     Ray(Angle),
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum StringOrKeywordValue {
+    Keyword(&'static str),
+    String(CSSString<'static>),
+}
+
 impl BrowserLonghandValue {
     pub(crate) fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             BrowserLonghandValue::Keyword(value) => Ok((*value).to_owned()),
             BrowserLonghandValue::Length(value) => serialize_zero_length(value),
-            BrowserLonghandValue::LengthPercentage(value) => serialize_typed(value),
+            BrowserLonghandValue::LengthPercentage(value) => {
+                serialize_zero_length_percentage(value)
+            }
             BrowserLonghandValue::AutoLength(None) => Ok("auto".to_owned()),
             BrowserLonghandValue::AutoLength(Some(value)) => serialize_zero_length(value),
             BrowserLonghandValue::ColumnCount(value) => value.canonical_value(),
@@ -285,6 +322,73 @@ impl BrowserLonghandValue {
                 Ok(output.join(", "))
             }
             BrowserLonghandValue::OffsetPath(value) => value.canonical_value(),
+            BrowserLonghandValue::AxisPosition(value) => serialize_zero_length_percentage(value),
+            BrowserLonghandValue::Position(value) => Ok(format!(
+                "{} {}",
+                serialize_position_component(&value.x)?,
+                serialize_position_component(&value.y)?,
+            )),
+            BrowserLonghandValue::AutoLengthPercentage(None) => Ok("auto".to_owned()),
+            BrowserLonghandValue::AutoLengthPercentage(Some(value)) => {
+                serialize_zero_length_percentage(value)
+            }
+            BrowserLonghandValue::Containment(values)
+            | BrowserLonghandValue::TextDecorationLine(values)
+            | BrowserLonghandValue::TouchAction(values) => Ok(values.join(" ")),
+            BrowserLonghandValue::ScrollSnapAlign { block, inline } => Ok(
+                inline.map_or_else(|| (*block).to_owned(), |inline| format!("{block} {inline}"))
+            ),
+            BrowserLonghandValue::ScrollSnapType { axis, strictness } => Ok(strictness
+                .map_or_else(
+                    || (*axis).to_owned(),
+                    |strictness| format!("{axis} {strictness}"),
+                )),
+            BrowserLonghandValue::ScrollbarGutter { both_edges } => Ok(if *both_edges {
+                "stable both-edges".to_owned()
+            } else {
+                "stable".to_owned()
+            }),
+            BrowserLonghandValue::OverflowClipMargin {
+                visual_box,
+                length,
+                calculation,
+            } => {
+                let mut output = if *visual_box == "padding-box" {
+                    String::new()
+                } else {
+                    (*visual_box).to_owned()
+                };
+                if let Some(length) = length {
+                    if !output.is_empty() {
+                        output.push(' ');
+                    }
+                    let mut serialized = serialize_zero_length(length)?;
+                    if *calculation && !serialized.starts_with("calc(") {
+                        serialized = format!("calc({serialized})");
+                    }
+                    output.push_str(&serialized);
+                }
+                if output.is_empty() {
+                    output.push_str("0px");
+                }
+                Ok(output)
+            }
+            BrowserLonghandValue::TextUnderlinePosition { primary, side } => {
+                let mut values = Vec::with_capacity(2);
+                if let Some(primary) = primary {
+                    values.push(*primary);
+                }
+                if let Some(side) = side {
+                    values.push(*side);
+                }
+                Ok(values.join(" "))
+            }
+            BrowserLonghandValue::StringOrKeyword(StringOrKeywordValue::Keyword(keyword)) => {
+                Ok((*keyword).to_owned())
+            }
+            BrowserLonghandValue::StringOrKeyword(StringOrKeywordValue::String(value)) => {
+                serialize_typed(value)
+            }
         }
     }
 }
@@ -430,16 +534,30 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::Keyword(keywords)) => {
             parse_keyword(source, keywords).map(BrowserLonghandValue::Keyword)
         }
+        Some(BrowserLonghandGrammar::KeywordAliases(keywords)) => {
+            parse_keyword_alias(source, keywords).map(BrowserLonghandValue::Keyword)
+        }
         Some(BrowserLonghandGrammar::Length { non_negative }) => parse_entire(source, |input| {
-            let value = Length::parse(input)?;
+            let value = parse_strict_length(input)?;
             if non_negative && value.try_sign().is_some_and(|sign| sign < 0.0) {
                 return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
             }
             Ok(BrowserLonghandValue::Length(value))
         }),
-        Some(BrowserLonghandGrammar::LengthPercentage) => parse_entire(source, |input| {
-            LengthPercentage::parse(input).map(BrowserLonghandValue::LengthPercentage)
-        }),
+        Some(BrowserLonghandGrammar::LengthPercentage { non_negative }) => {
+            parse_entire(source, |input| {
+                let value = parse_strict_length_percentage(input)?;
+                if non_negative
+                    && !matches!(value, LengthPercentage::Calc(_))
+                    && value.try_sign().is_some_and(|sign| sign < 0.0)
+                {
+                    return Err(
+                        input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+                    );
+                }
+                Ok(BrowserLonghandValue::LengthPercentage(value))
+            })
+        }
         Some(BrowserLonghandGrammar::AutoLength) => parse_auto_length(source),
         Some(BrowserLonghandGrammar::ColumnCount) => parse_column_count(source),
         Some(BrowserLonghandGrammar::ContainIntrinsic) => parse_contain_intrinsic(source),
@@ -475,6 +593,24 @@ pub(crate) fn parse_browser_longhand(
             parse_animation_iteration_count(source)
         }
         Some(BrowserLonghandGrammar::OffsetPath) => parse_offset_path(source),
+        Some(BrowserLonghandGrammar::AxisPosition { horizontal }) => {
+            parse_axis_position(source, horizontal)
+        }
+        Some(BrowserLonghandGrammar::Position) => parse_position(source),
+        Some(BrowserLonghandGrammar::AutoLengthPercentage) => parse_auto_length_percentage(source),
+        Some(BrowserLonghandGrammar::Containment) => parse_containment(source),
+        Some(BrowserLonghandGrammar::TextDecorationLine) => parse_text_decoration_line(source),
+        Some(BrowserLonghandGrammar::ScrollSnapAlign) => parse_scroll_snap_align(source),
+        Some(BrowserLonghandGrammar::ScrollSnapType) => parse_scroll_snap_type(source),
+        Some(BrowserLonghandGrammar::ScrollbarGutter) => parse_scrollbar_gutter(source),
+        Some(BrowserLonghandGrammar::OverflowClipMargin) => parse_overflow_clip_margin(source),
+        Some(BrowserLonghandGrammar::TextUnderlinePosition) => {
+            parse_text_underline_position(source)
+        }
+        Some(BrowserLonghandGrammar::TouchAction) => parse_touch_action(source),
+        Some(BrowserLonghandGrammar::StringOrKeyword(keyword)) => {
+            parse_string_or_keyword(source, keyword)
+        }
         None => return Ok(None),
     }?;
     Ok(Some(value))
@@ -483,8 +619,9 @@ pub(crate) fn parse_browser_longhand(
 #[derive(Clone, Copy)]
 enum BrowserLonghandGrammar {
     Keyword(&'static [&'static str]),
+    KeywordAliases(&'static [(&'static str, &'static str)]),
     Length { non_negative: bool },
-    LengthPercentage,
+    LengthPercentage { non_negative: bool },
     AutoLength,
     ColumnCount,
     ContainIntrinsic,
@@ -506,6 +643,18 @@ enum BrowserLonghandGrammar {
     KeywordList(&'static [&'static str]),
     AnimationIterationCount,
     OffsetPath,
+    AxisPosition { horizontal: bool },
+    Position,
+    AutoLengthPercentage,
+    Containment,
+    TextDecorationLine,
+    ScrollSnapAlign,
+    ScrollSnapType,
+    ScrollbarGutter,
+    OverflowClipMargin,
+    TextUnderlinePosition,
+    TouchAction,
+    StringOrKeyword(&'static str),
 }
 
 macro_rules! define_browser_longhand_registry {
@@ -541,13 +690,14 @@ define_browser_longhand_registry! {
         "row-rule-inset-junction-end",
         "row-rule-inset-junction-start",
     ],
-    BrowserLonghandGrammar::LengthPercentage => ["offset-distance"],
+    BrowserLonghandGrammar::Length { non_negative: false } => [
+        "-webkit-transform-origin-z",
+        "outline-offset",
+    ],
+    BrowserLonghandGrammar::LengthPercentage { non_negative: false } => ["offset-distance"],
+    BrowserLonghandGrammar::LengthPercentage { non_negative: true } => ["shape-margin"],
     BrowserLonghandGrammar::AutoLength => ["column-height", "column-width"],
     BrowserLonghandGrammar::ColumnCount => ["column-count"],
-    BrowserLonghandGrammar::ContainIntrinsic => [
-        "contain-intrinsic-height",
-        "contain-intrinsic-width",
-    ],
     BrowserLonghandGrammar::TimeOrNormal => ["interest-delay-end", "interest-delay-start"],
     BrowserLonghandGrammar::DashedIdentList => [
         "scroll-timeline-name",
@@ -595,6 +745,36 @@ define_browser_longhand_registry! {
         "animation-iteration-count",
     ],
     BrowserLonghandGrammar::OffsetPath => ["offset-path"],
+    BrowserLonghandGrammar::AxisPosition { horizontal: true } => [
+        "-webkit-perspective-origin-x",
+        "-webkit-transform-origin-x",
+    ],
+    BrowserLonghandGrammar::AxisPosition { horizontal: false } => [
+        "-webkit-perspective-origin-y",
+        "-webkit-transform-origin-y",
+    ],
+    BrowserLonghandGrammar::Position => ["object-position"],
+    BrowserLonghandGrammar::AutoLengthPercentage => ["text-underline-offset"],
+    BrowserLonghandGrammar::ContainIntrinsic => [
+        "contain-intrinsic-block-size",
+        "contain-intrinsic-height",
+        "contain-intrinsic-inline-size",
+        "contain-intrinsic-width",
+    ],
+    BrowserLonghandGrammar::Containment => ["contain"],
+    BrowserLonghandGrammar::TextDecorationLine => ["-webkit-text-decorations-in-effect"],
+    BrowserLonghandGrammar::ScrollSnapAlign => ["scroll-snap-align"],
+    BrowserLonghandGrammar::ScrollSnapType => ["scroll-snap-type"],
+    BrowserLonghandGrammar::ScrollbarGutter => ["scrollbar-gutter"],
+    BrowserLonghandGrammar::OverflowClipMargin => ["overflow-clip-margin"],
+    BrowserLonghandGrammar::TextUnderlinePosition => ["text-underline-position"],
+    BrowserLonghandGrammar::TouchAction => ["touch-action"],
+    BrowserLonghandGrammar::StringOrKeyword("auto") => ["-webkit-locale"],
+    BrowserLonghandGrammar::KeywordAliases(&[
+        ("auto", "auto"),
+        ("none", "spaces"),
+        ("spaces", "spaces"),
+    ]) => ["ruby-overhang"],
     BrowserLonghandGrammar::KeywordList(&["block", "inline", "x", "y"]) => [
         "scroll-timeline-axis",
         "view-timeline-axis",
@@ -835,6 +1015,7 @@ define_browser_longhand_registry! {
         "no-punctuation",
     ]) => ["speak"],
     BrowserLonghandGrammar::Keyword(&["auto", "fixed"]) => ["table-layout"],
+    BrowserLonghandGrammar::Keyword(&["none", "shrink", "grow"]) => ["text-fit"],
     BrowserLonghandGrammar::Keyword(&["start", "middle", "end"]) => ["text-anchor"],
     BrowserLonghandGrammar::Keyword(&["none", "all"]) => ["text-combine-upright"],
     BrowserLonghandGrammar::Keyword(&[
@@ -847,6 +1028,9 @@ define_browser_longhand_registry! {
         "text-spacing-trim",
     ],
     BrowserLonghandGrammar::Keyword(&["none", "non-scaling-stroke"]) => ["vector-effect"],
+    BrowserLonghandGrammar::Keyword(&["upright", "rotate-left", "rotate-right"]) => [
+        "page-orientation",
+    ],
     BrowserLonghandGrammar::Keyword(&[
         "horizontal-tb",
         "vertical-rl",
@@ -879,6 +1063,26 @@ fn parse_keyword(
     })
 }
 
+fn parse_keyword_alias(
+    source: &str,
+    accepted: &'static [(&'static str, &'static str)],
+) -> Result<&'static str, EngineError> {
+    parse_entire(source, |input| {
+        let location = input.current_source_location();
+        let identifier = input.expect_ident_cloned()?;
+        accepted
+            .iter()
+            .find_map(|(candidate, canonical)| {
+                identifier
+                    .eq_ignore_ascii_case(candidate)
+                    .then_some(*canonical)
+            })
+            .ok_or_else(|| {
+                location.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+            })
+    })
+}
+
 fn parse_keyword_list(
     source: &str,
     accepted: &'static [&'static str],
@@ -896,6 +1100,311 @@ fn parse_keyword_list(
                 })
         })?;
         Ok(BrowserLonghandValue::KeywordList(values))
+    })
+}
+
+fn parse_axis_position(
+    source: &str,
+    horizontal: bool,
+) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let keywords = if horizontal {
+            [("left", 0.0), ("center", 0.5), ("right", 1.0)]
+        } else {
+            [("top", 0.0), ("center", 0.5), ("bottom", 1.0)]
+        };
+        for (keyword, percentage) in keywords {
+            if input
+                .try_parse(|input| input.expect_ident_matching(keyword))
+                .is_ok()
+            {
+                return Ok(BrowserLonghandValue::AxisPosition(
+                    LengthPercentage::Percentage(Percentage(percentage)),
+                ));
+            }
+        }
+        parse_strict_length_percentage(input).map(BrowserLonghandValue::AxisPosition)
+    })
+}
+
+fn parse_position(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    reject_top_level_nonzero_numbers(source)?;
+    parse_entire(source, |input| {
+        Position::parse(input).map(|value| BrowserLonghandValue::Position(value.into_owned()))
+    })
+}
+
+fn parse_auto_length_percentage(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::AutoLengthPercentage(None));
+        }
+        parse_strict_length_percentage(input)
+            .map(|value| BrowserLonghandValue::AutoLengthPercentage(Some(value)))
+    })
+}
+
+fn parse_containment(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    const CANONICAL: &[&str] = &["size", "inline-size", "layout", "style", "paint"];
+    parse_entire(source, |input| {
+        for exclusive in ["none", "strict", "content"] {
+            if input
+                .try_parse(|input| input.expect_ident_matching(exclusive))
+                .is_ok()
+            {
+                return Ok(BrowserLonghandValue::Containment(vec![exclusive]));
+            }
+        }
+
+        let mut selected = Vec::with_capacity(CANONICAL.len());
+        while !input.is_exhausted() {
+            let value = parse_one_keyword(input, CANONICAL)?;
+            if selected.contains(&value)
+                || value == "size" && selected.contains(&"inline-size")
+                || value == "inline-size" && selected.contains(&"size")
+            {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            selected.push(value);
+        }
+        if selected.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        selected.sort_by_key(|value| CANONICAL.iter().position(|candidate| candidate == value));
+        Ok(BrowserLonghandValue::Containment(selected))
+    })
+}
+
+fn parse_text_decoration_line(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    const CANONICAL: &[&str] = &[
+        "underline",
+        "overline",
+        "line-through",
+        "blink",
+        "spelling-error",
+        "grammar-error",
+    ];
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::TextDecorationLine(vec!["none"]));
+        }
+        let mut selected = Vec::with_capacity(CANONICAL.len());
+        while !input.is_exhausted() {
+            let value = parse_one_keyword(input, CANONICAL)?;
+            if selected.contains(&value)
+                || matches!(value, "spelling-error" | "grammar-error") && !selected.is_empty()
+                || selected
+                    .iter()
+                    .any(|value| matches!(*value, "spelling-error" | "grammar-error"))
+            {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            selected.push(value);
+        }
+        if selected.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        selected.sort_by_key(|value| CANONICAL.iter().position(|candidate| candidate == value));
+        Ok(BrowserLonghandValue::TextDecorationLine(selected))
+    })
+}
+
+fn parse_scroll_snap_align(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let block = parse_one_keyword(input, &["none", "start", "end", "center"])?;
+        let inline = input
+            .try_parse(|input| parse_one_keyword(input, &["none", "start", "end", "center"]))
+            .ok();
+        Ok(BrowserLonghandValue::ScrollSnapAlign { block, inline })
+    })
+}
+
+fn parse_scroll_snap_type(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::ScrollSnapType {
+                axis: "none",
+                strictness: None,
+            });
+        }
+        let axis = parse_one_keyword(input, &["x", "y", "block", "inline", "both"])?;
+        let strictness = input
+            .try_parse(|input| parse_one_keyword(input, &["proximity", "mandatory"]))
+            .ok()
+            .filter(|strictness| *strictness != "proximity");
+        Ok(BrowserLonghandValue::ScrollSnapType { axis, strictness })
+    })
+}
+
+fn parse_scrollbar_gutter(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::Keyword("auto"));
+        }
+        input.expect_ident_matching("stable")?;
+        let both_edges = input
+            .try_parse(|input| input.expect_ident_matching("both-edges"))
+            .is_ok();
+        Ok(BrowserLonghandValue::ScrollbarGutter { both_edges })
+    })
+}
+
+fn parse_overflow_clip_margin(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let mut visual_box = None;
+        let mut length = None;
+        let mut unitless_number = false;
+        let mut calculation = false;
+        while !input.is_exhausted() {
+            if visual_box.is_none() {
+                if let Ok(value) = input.try_parse(|input| {
+                    parse_one_keyword(input, &["content-box", "padding-box", "border-box"])
+                }) {
+                    visual_box = Some(value);
+                    continue;
+                }
+            }
+            if length.is_none() {
+                let state = input.state();
+                let token = input.next()?.clone();
+                unitless_number = matches!(token, Token::Number { .. });
+                calculation = matches!(token, Token::Function(_));
+                input.reset(&state);
+                let value = parse_strict_length(input)?;
+                if value.try_sign().is_some_and(|sign| sign < 0.0) {
+                    return Err(
+                        input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+                    );
+                }
+                length = Some(value);
+                continue;
+            }
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        if visual_box.is_none() && length.is_none()
+            || visual_box.is_none() && (unitless_number || calculation)
+        {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::OverflowClipMargin {
+            visual_box: visual_box.unwrap_or("padding-box"),
+            length,
+            calculation,
+        })
+    })
+}
+
+fn parse_text_underline_position(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let mut primary = None;
+        let mut side = None;
+        while !input.is_exhausted() {
+            if primary.is_none() {
+                if let Ok(value) = input
+                    .try_parse(|input| parse_one_keyword(input, &["auto", "from-font", "under"]))
+                {
+                    primary = Some(value);
+                    continue;
+                }
+            }
+            if side.is_none() {
+                side = Some(parse_one_keyword(input, &["left", "right"])?);
+                continue;
+            }
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        if primary.is_none() && side.is_none() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::TextUnderlinePosition { primary, side })
+    })
+}
+
+fn parse_touch_action(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        for exclusive in ["auto", "none", "manipulation"] {
+            if input
+                .try_parse(|input| input.expect_ident_matching(exclusive))
+                .is_ok()
+            {
+                return Ok(BrowserLonghandValue::TouchAction(vec![exclusive]));
+            }
+        }
+        let mut horizontal = None;
+        let mut vertical = None;
+        let mut pinch_zoom = false;
+        while !input.is_exhausted() {
+            let value = parse_one_keyword(
+                input,
+                &[
+                    "pan-x",
+                    "pan-left",
+                    "pan-right",
+                    "pan-y",
+                    "pan-up",
+                    "pan-down",
+                    "pinch-zoom",
+                ],
+            )?;
+            match value {
+                "pan-x" | "pan-left" | "pan-right" if horizontal.is_none() => {
+                    horizontal = Some(value)
+                }
+                "pan-y" | "pan-up" | "pan-down" if vertical.is_none() => vertical = Some(value),
+                "pinch-zoom" if !pinch_zoom => pinch_zoom = true,
+                _ => {
+                    return Err(
+                        input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+                    )
+                }
+            }
+        }
+        if horizontal.is_none() && vertical.is_none() && !pinch_zoom {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        let mut values = Vec::with_capacity(3);
+        if let Some(horizontal) = horizontal {
+            values.push(horizontal);
+        }
+        if let Some(vertical) = vertical {
+            values.push(vertical);
+        }
+        if pinch_zoom {
+            values.push("pinch-zoom");
+        }
+        Ok(BrowserLonghandValue::TouchAction(values))
+    })
+}
+
+fn parse_string_or_keyword(
+    source: &str,
+    keyword: &'static str,
+) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching(keyword))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::StringOrKeyword(
+                StringOrKeywordValue::Keyword(keyword),
+            ));
+        }
+        let string = CSSString::parse(input)?.into_owned();
+        Ok(BrowserLonghandValue::StringOrKeyword(
+            StringOrKeywordValue::String(string),
+        ))
     })
 }
 
@@ -970,7 +1479,7 @@ fn parse_auto_length(source: &str) -> Result<BrowserLonghandValue, EngineError> 
         {
             return Ok(BrowserLonghandValue::AutoLength(None));
         }
-        let value = Length::parse(input)?;
+        let value = parse_strict_length(input)?;
         if value.try_sign().is_some_and(|sign| sign < 0.0) {
             return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
@@ -1032,7 +1541,7 @@ fn parse_contain_intrinsic(source: &str) -> Result<BrowserLonghandValue, EngineE
                 ContainIntrinsicValue::Length { auto, value: None },
             ));
         }
-        let value = Length::parse(input)?;
+        let value = parse_strict_length(input)?;
         if value.try_sign().is_some_and(|sign| sign < 0.0) {
             return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
@@ -1091,7 +1600,7 @@ fn parse_view_timeline_inset(source: &str) -> Result<BrowserLonghandValue, Engin
                     continue;
                 }
                 values.push(ViewTimelineInsetComponent::LengthPercentage(
-                    LengthPercentage::parse(input)?,
+                    parse_strict_length_percentage(input)?,
                 ));
             }
             if values.is_empty() {
@@ -1546,7 +2055,71 @@ fn parse_one_keyword<'i, 't>(
         .ok_or_else(|| location.new_custom_error(lightningcss::error::ParserError::InvalidValue))
 }
 
+fn parse_strict_length<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Length, ParseError<'i>> {
+    reject_nonzero_number_token(input)?;
+    Length::parse(input)
+}
+
+fn parse_strict_length_percentage<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<LengthPercentage, ParseError<'i>> {
+    reject_nonzero_number_token(input)?;
+    LengthPercentage::parse(input)
+}
+
+fn reject_nonzero_number_token<'i, 't>(input: &mut Parser<'i, 't>) -> Result<(), ParseError<'i>> {
+    let state = input.state();
+    let token = input.next()?.clone();
+    input.reset(&state);
+    if matches!(token, Token::Number { value, .. } if value != 0.0) {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    Ok(())
+}
+
+fn reject_top_level_nonzero_numbers(source: &str) -> Result<(), EngineError> {
+    parse_entire(source, |input| consume_component_values(input, true))
+}
+
+fn consume_component_values<'i, 't>(
+    input: &mut Parser<'i, 't>,
+    inspect_numbers: bool,
+) -> Result<(), ParseError<'i>> {
+    while !input.is_exhausted() {
+        let token = input.next()?.clone();
+        if inspect_numbers && matches!(token, Token::Number { value, .. } if value != 0.0) {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        if matches!(
+            token,
+            Token::Function(_)
+                | Token::ParenthesisBlock
+                | Token::SquareBracketBlock
+                | Token::CurlyBracketBlock
+        ) {
+            input.parse_nested_block(|input| consume_component_values(input, false))?;
+        }
+    }
+    Ok(())
+}
+
 fn serialize_zero_length(value: &Length) -> Result<String, EngineError> {
+    let serialized = serialize_typed(value)?;
+    if serialized == "0" {
+        return Ok("0px".to_owned());
+    }
+    Ok(serialized)
+}
+
+fn serialize_zero_length_percentage(value: &LengthPercentage) -> Result<String, EngineError> {
+    let serialized = serialize_typed(value)?;
+    if serialized == "0" {
+        return Ok("0px".to_owned());
+    }
+    Ok(serialized)
+}
+
+fn serialize_position_component<T: ToCss>(value: &T) -> Result<String, EngineError> {
     let serialized = serialize_typed(value)?;
     if serialized == "0" {
         return Ok("0px".to_owned());
@@ -1655,6 +2228,26 @@ mod tests {
     }
 
     #[test]
+    fn composite_browser_contracts_are_owned_by_the_registry() {
+        let contract: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../compatibility/browser-longhand-composite-contracts.json"
+        ))
+        .unwrap();
+        let properties = contract["properties"].as_array().unwrap();
+        let mut branch_count = 0;
+        for entry in properties {
+            let property = entry["property"].as_str().unwrap();
+            assert!(
+                grammar(property).is_some(),
+                "missing grammar for {property}"
+            );
+            branch_count += entry["branches"].as_array().unwrap().len();
+        }
+        assert_eq!(properties.len(), 23);
+        assert_eq!(branch_count, 105);
+    }
+
+    #[test]
     fn parses_numeric_and_list_branches() {
         assert_eq!(
             canonical("animation-iteration-count", "sign(1em), 1").unwrap(),
@@ -1676,6 +2269,90 @@ mod tests {
             canonical("view-timeline-inset", "auto 10px").unwrap(),
             "auto 10px"
         );
+    }
+
+    #[test]
+    fn parses_box_geometry_and_interaction_branches() {
+        for (property, source, expected) in [
+            ("-webkit-locale", "\"en-US\"", "\"en-US\""),
+            ("-webkit-perspective-origin-x", "left", "0%"),
+            ("-webkit-perspective-origin-y", "bottom", "100%"),
+            ("-webkit-transform-origin-x", "center", "50%"),
+            ("-webkit-transform-origin-y", "top", "0%"),
+            ("-webkit-transform-origin-z", "0", "0px"),
+            (
+                "-webkit-text-decorations-in-effect",
+                "line-through underline",
+                "underline line-through",
+            ),
+            ("contain", "paint layout", "layout paint"),
+            (
+                "contain",
+                "style size paint layout",
+                "size layout style paint",
+            ),
+            ("contain-intrinsic-block-size", "auto none", "auto none"),
+            ("contain-intrinsic-inline-size", "auto 10px", "auto 10px"),
+            ("object-position", "center", "center center"),
+            (
+                "object-position",
+                "right 10px bottom 20%",
+                "right 10px bottom 20%",
+            ),
+            ("outline-offset", "0", "0px"),
+            ("overflow-clip-margin", "padding-box 0", "0px"),
+            (
+                "overflow-clip-margin",
+                "content-box 10px",
+                "content-box 10px",
+            ),
+            ("page-orientation", "rotate-left", "rotate-left"),
+            ("ruby-overhang", "none", "spaces"),
+            ("scroll-snap-align", "start end", "start end"),
+            ("scroll-snap-type", "block proximity", "block"),
+            ("scroll-snap-type", "inline mandatory", "inline mandatory"),
+            ("scrollbar-gutter", "stable both-edges", "stable both-edges"),
+            ("shape-margin", "0", "0px"),
+            ("text-fit", "grow", "grow"),
+            ("text-underline-offset", "auto", "auto"),
+            (
+                "text-underline-position",
+                "right from-font",
+                "from-font right",
+            ),
+            (
+                "touch-action",
+                "pinch-zoom pan-y pan-left",
+                "pan-left pan-y pinch-zoom",
+            ),
+        ] {
+            assert_eq!(canonical(property, source).unwrap(), expected, "{property}");
+        }
+
+        for (property, source) in [
+            ("-webkit-locale", "en-US"),
+            ("-webkit-perspective-origin-x", "top"),
+            ("-webkit-transform-origin-z", "20%"),
+            (
+                "-webkit-text-decorations-in-effect",
+                "underline spelling-error",
+            ),
+            ("contain", "strict paint"),
+            ("contain", "size inline-size"),
+            ("contain-intrinsic-block-size", "20%"),
+            ("object-position", "left right"),
+            ("outline-offset", "20%"),
+            ("overflow-clip-margin", "0"),
+            ("scroll-snap-align", "start end center"),
+            ("scroll-snap-type", "mandatory"),
+            ("scrollbar-gutter", "both-edges"),
+            ("shape-margin", "-1px"),
+            ("text-underline-offset", "from-font"),
+            ("text-underline-position", "under left right"),
+            ("touch-action", "pan-left pan-right"),
+        ] {
+            assert!(canonical(property, source).is_err(), "{property}: {source}");
+        }
     }
 
     #[test]

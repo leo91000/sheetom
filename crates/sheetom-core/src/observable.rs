@@ -90,6 +90,14 @@ fn serialize_typed_observable(
             return value;
         }
     }
+    if name == "object-position" {
+        if starts_math_function(input) && !starts_math_function(canonical) {
+            if let Some((first, rest)) = canonical.split_once(' ') {
+                return format!("calc({first}) {rest}");
+            }
+        }
+        return canonicalize_leading_decimal(canonical);
+    }
     if starts_math_function(closed) {
         let value = canonicalize_leading_decimal(canonical);
         if starts_math_function(&value) {
