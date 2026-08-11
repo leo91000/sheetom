@@ -2,7 +2,7 @@ use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
     extension_value::parse_contextual_dimension_calculation,
-    observable::{serialize_observable_value, ObservableCategory},
+    observable::project_declaration,
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
     DeclarationValue, EngineError, PropertyParseKind, ResourceLimits,
@@ -883,12 +883,8 @@ pub(crate) fn parse_value_with_limits(
     if name.starts_with("--") {
         let semantic =
             parse_semantic_property_with_limits(name, value, limits).map_err(map_engine_error)?;
-        let safe_value = semantic.canonical_value().map_err(map_engine_error)?;
-        let observable_value =
-            serialize_observable_value(name, value, &safe_value, ObservableCategory::Custom);
         return Ok(ParsedValue {
-            value: DeclarationValue::semantic(semantic, observable_value)
-                .map_err(map_engine_error)?,
+            value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
             longhands: None,
         });
     }
@@ -914,16 +910,8 @@ pub(crate) fn parse_value_with_limits(
     if substitutions.found {
         let semantic =
             parse_semantic_property_with_limits(name, value, limits).map_err(map_engine_error)?;
-        let safe_value = semantic.canonical_value().map_err(map_engine_error)?;
-        let observable_value = serialize_observable_value(
-            name,
-            value,
-            &safe_value,
-            ObservableCategory::PendingSubstitution,
-        );
         return Ok(ParsedValue {
-            value: DeclarationValue::semantic(semantic, observable_value)
-                .map_err(map_engine_error)?,
+            value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
             longhands: None,
         });
     }
@@ -967,12 +955,10 @@ pub(crate) fn parse_value_with_limits(
         return Err(MutationOutcome::InvalidValue);
     }
     let semantic = semantic.map_err(map_engine_error)?;
-    let canonical_value = semantic.canonical_value().map_err(map_engine_error)?;
-
     let Some(longhand_names) = observed_shorthand_longhands(name) else {
-        let mut observable_value =
-            serialize_observable_value(name, value, &canonical_value, ObservableCategory::Typed);
-        let mut safe_value = canonical_value;
+        let projection = project_declaration(&semantic).map_err(map_engine_error)?;
+        let mut observable_value = projection.observable;
+        let mut safe_value = projection.canonical;
         if observable_value == "0" && is_zero_length_property(name) {
             observable_value = "0px".to_owned();
             safe_value = "0px".to_owned();
@@ -1032,10 +1018,8 @@ pub(crate) fn parse_value_with_limits(
         });
     }
 
-    let observable_value =
-        serialize_observable_value(name, value, &canonical_value, ObservableCategory::Typed);
     Ok(ParsedValue {
-        value: DeclarationValue::semantic(semantic, observable_value).map_err(map_engine_error)?,
+        value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
         longhands: Some(longhands),
     })
 }

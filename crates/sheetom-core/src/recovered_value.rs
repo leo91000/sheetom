@@ -124,6 +124,14 @@ pub struct RecoveredValue {
     compacted: bool,
 }
 
+pub(crate) struct RecoveredObservableText {
+    pub(crate) closed: String,
+    pub(crate) recovered: bool,
+    pub(crate) retained: String,
+    pub(crate) single_string: Option<String>,
+    pub(crate) unterminated_url: bool,
+}
+
 impl RecoveredValue {
     pub(crate) fn compacted_explicit_source(source: String) -> Self {
         Self {
@@ -154,16 +162,23 @@ impl RecoveredValue {
         self.contains_context_dependent_sign
     }
 
-    pub(crate) fn compact_if_fully_explicit(mut self) -> Self {
+    pub(crate) fn compact_if_fully_explicit(&mut self) {
         if requires_recovery_evidence(&self.values) {
-            return self;
+            return;
         }
         self.values = Arc::from([]);
         self.compacted = true;
-        self
     }
 
     pub fn reparsable_css(&self) -> Result<String, EngineError> {
+        self.serialize_reparsable(true)
+    }
+
+    pub(crate) fn reparsable_css_without_comments(&self) -> Result<String, EngineError> {
+        self.serialize_reparsable(false)
+    }
+
+    fn serialize_reparsable(&self, preserve_comments: bool) -> Result<String, EngineError> {
         if self.compacted {
             return Ok(self.source.to_string());
         }
@@ -191,6 +206,9 @@ impl RecoveredValue {
                 }
                 SerializationEvent::Component(component) => match &component.kind {
                     RecoveredComponentKind::Token(token) => {
+                        if !preserve_comments && matches!(token.kind, RecoveredTokenKind::Comment) {
+                            continue;
+                        }
                         serialize_recovered_token(self, component.span, token, &mut output)?;
                     }
                     RecoveredComponentKind::Function {
@@ -233,6 +251,168 @@ impl RecoveredValue {
 
         Ok(output)
     }
+
+    pub(crate) fn observable_text(
+        &self,
+        preserve_comments: bool,
+    ) -> Result<RecoveredObservableText, EngineError> {
+        if self.compacted {
+            return Ok(RecoveredObservableText {
+                closed: self.source.to_string(),
+                recovered: false,
+                retained: self.source.to_string(),
+                single_string: None,
+                unterminated_url: false,
+            });
+        }
+
+        enum SerializationEvent<'a> {
+            Component(&'a RecoveredComponentValue),
+            Close(char),
+        }
+
+        let mut retained = String::with_capacity(self.source.len());
+        let mut pending = self
+            .values
+            .iter()
+            .rev()
+            .map(SerializationEvent::Component)
+            .collect::<Vec<_>>();
+        while let Some(event) = pending.pop() {
+            match event {
+                SerializationEvent::Close(delimiter) => retained.push(delimiter),
+                SerializationEvent::Component(component) => match &component.kind {
+                    RecoveredComponentKind::Token(token) => {
+                        if token.parse_error {
+                            return Err(EngineError::Serialize(
+                                "cannot serialize a CSS token parse error".to_owned(),
+                            ));
+                        }
+                        if matches!(token.kind, RecoveredTokenKind::Comment) {
+                            if preserve_comments
+                                && token.termination == RecoveredTokenTermination::Explicit
+                            {
+                                append_source_slice(self, component.span, &mut retained)?;
+                            }
+                            continue;
+                        }
+                        append_observable_token(self, component, token, &mut retained)?;
+                    }
+                    RecoveredComponentKind::Function {
+                        opening,
+                        values,
+                        closure,
+                        ..
+                    } => {
+                        append_source_slice(self, *opening, &mut retained)?;
+                        if *closure == RecoveredClosure::Explicit {
+                            pending.push(SerializationEvent::Close(')'));
+                        }
+                        for child in values.iter().rev() {
+                            pending.push(SerializationEvent::Component(child));
+                        }
+                    }
+                    RecoveredComponentKind::SimpleBlock {
+                        delimiter,
+                        opening,
+                        values,
+                        closure,
+                    } => {
+                        append_source_slice(self, *opening, &mut retained)?;
+                        if *closure == RecoveredClosure::Explicit {
+                            pending.push(SerializationEvent::Close(match delimiter {
+                                RecoveredBlockDelimiter::Parenthesis => ')',
+                                RecoveredBlockDelimiter::SquareBracket => ']',
+                                RecoveredBlockDelimiter::CurlyBracket => '}',
+                            }));
+                        }
+                        for child in values.iter().rev() {
+                            pending.push(SerializationEvent::Component(child));
+                        }
+                    }
+                },
+            }
+        }
+
+        let significant = self
+            .values
+            .iter()
+            .filter(|component| {
+                !matches!(
+                    component.kind,
+                    RecoveredComponentKind::Token(RecoveredToken {
+                        kind: RecoveredTokenKind::Whitespace | RecoveredTokenKind::Comment,
+                        ..
+                    })
+                )
+            })
+            .collect::<Vec<_>>();
+        let single_string = match significant.as_slice() {
+            [RecoveredComponentValue {
+                kind:
+                    RecoveredComponentKind::Token(RecoveredToken {
+                        kind: RecoveredTokenKind::String(value),
+                        ..
+                    }),
+                ..
+            }] => Some(value.clone()),
+            _ => None,
+        };
+        let unterminated_url = matches!(
+            significant.as_slice(),
+            [RecoveredComponentValue {
+                kind: RecoveredComponentKind::Token(RecoveredToken {
+                    kind: RecoveredTokenKind::Url(_),
+                    termination: RecoveredTokenTermination::ImplicitEof,
+                    ..
+                }),
+                ..
+            }]
+        );
+
+        Ok(RecoveredObservableText {
+            closed: self.reparsable_css_without_comments()?,
+            recovered: requires_recovery_evidence(&self.values),
+            retained,
+            single_string,
+            unterminated_url,
+        })
+    }
+}
+
+fn append_observable_token(
+    recovered: &RecoveredValue,
+    component: &RecoveredComponentValue,
+    token: &RecoveredToken,
+    output: &mut String,
+) -> Result<(), EngineError> {
+    let source = recovered.slice(component.span).ok_or_else(|| {
+        EngineError::Serialize("recovered CSS span is outside its source".to_owned())
+    })?;
+    if component.span.end == recovered.source().len() && source.ends_with('\\') {
+        match &token.kind {
+            RecoveredTokenKind::Ident(value) => {
+                cssparser::serialize_identifier(value, output)
+                    .map_err(|error| EngineError::Serialize(error.to_string()))?;
+                return Ok(());
+            }
+            RecoveredTokenKind::AtKeyword(value) => {
+                output.push('@');
+                cssparser::serialize_identifier(value, output)
+                    .map_err(|error| EngineError::Serialize(error.to_string()))?;
+                return Ok(());
+            }
+            RecoveredTokenKind::Hash(value) | RecoveredTokenKind::IdHash(value) => {
+                output.push('#');
+                cssparser::serialize_name(value, output)
+                    .map_err(|error| EngineError::Serialize(error.to_string()))?;
+                return Ok(());
+            }
+            _ => {}
+        }
+    }
+    output.push_str(source);
+    Ok(())
 }
 
 fn serialize_recovered_token(
@@ -245,6 +425,20 @@ fn serialize_recovered_token(
         return Err(EngineError::Serialize(
             "cannot serialize a CSS token parse error".to_owned(),
         ));
+    }
+
+    if matches!(token.kind, RecoveredTokenKind::Url(_))
+        && token.termination == RecoveredTokenTermination::ImplicitEof
+    {
+        let source = recovered.slice(span).ok_or_else(|| {
+            EngineError::Serialize("recovered CSS span is outside its source".to_owned())
+        })?;
+        if let Some(prefix) = source.strip_suffix('\\') {
+            output.push_str(prefix);
+            output.push('\u{fffd}');
+            output.push(')');
+            return Ok(());
+        }
     }
 
     append_source_slice(recovered, span, output)?;
@@ -867,6 +1061,86 @@ mod tests {
                     .reparsable_css()
                     .unwrap(),
                 expected
+            );
+        }
+    }
+
+    #[test]
+    fn projects_observable_recovery_from_component_evidence() {
+        struct Case {
+            source: &'static str,
+            preserve_comments: bool,
+            retained: &'static str,
+            closed: &'static str,
+            recovered: bool,
+            single_string: Option<&'static str>,
+            unterminated_url: bool,
+        }
+
+        for case in [
+            Case {
+                source: "72px var(--space, var(--space,",
+                preserve_comments: true,
+                retained: "72px var(--space, var(--space,",
+                closed: "72px var(--space, var(--space, ))",
+                recovered: true,
+                single_string: None,
+                unterminated_url: false,
+            },
+            Case {
+                source: "\"Gotham",
+                preserve_comments: false,
+                retained: "\"Gotham",
+                closed: "\"Gotham\"",
+                recovered: true,
+                single_string: Some("Gotham"),
+                unterminated_url: false,
+            },
+            Case {
+                source: "a/* internal */b/* unfinished",
+                preserve_comments: true,
+                retained: "a/* internal */b",
+                closed: "ab",
+                recovered: true,
+                single_string: None,
+                unterminated_url: false,
+            },
+            Case {
+                source: "foo\\",
+                preserve_comments: true,
+                retained: "foo�",
+                closed: "foo\\",
+                recovered: false,
+                single_string: None,
+                unterminated_url: false,
+            },
+            Case {
+                source: "url(foo\\",
+                preserve_comments: true,
+                retained: "url(foo\\",
+                closed: "url(foo�)",
+                recovered: true,
+                single_string: None,
+                unterminated_url: true,
+            },
+        ] {
+            let projection = recover_component_values(case.source)
+                .unwrap()
+                .observable_text(case.preserve_comments)
+                .unwrap();
+            assert_eq!(projection.retained, case.retained, "{}", case.source);
+            assert_eq!(projection.closed, case.closed, "{}", case.source);
+            assert_eq!(projection.recovered, case.recovered, "{}", case.source);
+            assert_eq!(
+                projection.single_string.as_deref(),
+                case.single_string,
+                "{}",
+                case.source
+            );
+            assert_eq!(
+                projection.unterminated_url, case.unterminated_url,
+                "{}",
+                case.source
             );
         }
     }

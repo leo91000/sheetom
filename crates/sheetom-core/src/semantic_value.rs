@@ -44,6 +44,16 @@ impl SemanticDeclaration {
         }
     }
 
+    pub(crate) fn compact_recovery(&mut self) {
+        if !matches!(
+            self.value,
+            SemanticPropertyValue::Standard(_) | SemanticPropertyValue::Extension(_)
+        ) {
+            return;
+        }
+        self.recovered.compact_if_fully_explicit();
+    }
+
     pub fn property_name(&self) -> &str {
         &self.property_name
     }
@@ -113,7 +123,7 @@ pub fn parse_semantic_property_with_limits(
             return Ok(SemanticDeclaration {
                 property_name: Arc::from(grammar.canonical_name()),
                 value: SemanticPropertyValue::Extension(value),
-                recovered: recovered.compact_if_fully_explicit(),
+                recovered,
                 parse_kind: PropertyParseKind::SheetomTyped,
             });
         }
@@ -130,7 +140,7 @@ pub fn parse_semantic_property_with_limits(
                 return Ok(SemanticDeclaration {
                     property_name: Arc::from(grammar.canonical_name()),
                     value: SemanticPropertyValue::Standard(value),
-                    recovered: recovered.compact_if_fully_explicit(),
+                    recovered,
                     parse_kind,
                 });
             }
@@ -146,7 +156,7 @@ pub fn parse_semantic_property_with_limits(
         return Ok(SemanticDeclaration {
             property_name: Arc::from(grammar.canonical_name()),
             value: SemanticPropertyValue::Extension(value),
-            recovered: recovered.compact_if_fully_explicit(),
+            recovered,
             parse_kind: PropertyParseKind::SheetomTyped,
         });
     }
@@ -315,12 +325,13 @@ mod tests {
     #[test]
     fn retains_explicit_nested_structure_without_reparsing_strings() {
         let declaration = parse_standard_semantic_property("width", "calc(100% - 2rem)").unwrap();
-        assert!(declaration.recovered().is_compacted());
-        assert!(declaration.recovered().values().is_empty());
-        assert_eq!(
-            declaration.recovered().reparsable_css().unwrap(),
-            "calc(100% - 2rem)"
-        );
+        let RecoveredComponentKind::Function { closure, .. } =
+            &declaration.recovered().values()[0].kind
+        else {
+            panic!("expected recovered calc function")
+        };
+
+        assert_eq!(*closure, crate::RecoveredClosure::Explicit);
         assert_eq!(declaration.canonical_value().unwrap(), "calc(100% - 2rem)");
     }
 

@@ -1,35 +1,74 @@
 use crate::catalog::shorthand_longhands;
+use crate::recovered_value::RecoveredObservableText;
+use crate::{EngineError, SemanticDeclaration, SemanticPropertyValue};
 use cssparser::{Token, TokenizerWithSpans};
 
-pub(crate) enum ObservableCategory {
+#[derive(Clone, Copy)]
+enum ObservableCategory {
     Typed,
     PendingSubstitution,
     Custom,
 }
 
-pub(crate) fn serialize_observable_value(
-    name: &str,
-    input: &str,
-    safe_value: &str,
-    category: ObservableCategory,
-) -> String {
-    let input = trim_css_whitespace(input);
+pub(crate) struct DeclarationProjection {
+    pub(crate) canonical: String,
+    pub(crate) observable: String,
+}
+
+pub(crate) fn project_declaration(
+    declaration: &SemanticDeclaration,
+) -> Result<DeclarationProjection, EngineError> {
+    let name = declaration.property_name();
+    let input = trim_css_whitespace(declaration.recovered().source());
+    let canonical = declaration.canonical_value()?;
+    let category = match declaration.value() {
+        SemanticPropertyValue::Standard(_) | SemanticPropertyValue::Extension(_) => {
+            ObservableCategory::Typed
+        }
+        SemanticPropertyValue::PendingSubstitution(_) => ObservableCategory::PendingSubstitution,
+        SemanticPropertyValue::CustomTokenStream => ObservableCategory::Custom,
+    };
     let preserve_comments = matches!(
         category,
         ObservableCategory::PendingSubstitution | ObservableCategory::Custom
     );
-    let recovered = recover_token_text(input, preserve_comments);
-    if !matches!(category, ObservableCategory::Typed) {
-        if matches!(category, ObservableCategory::Custom)
-            && input.to_ascii_lowercase().starts_with("url(")
-            && input.ends_with('\\')
-        {
-            return recovered.closed;
+    let recovered = declaration.recovered().observable_text(preserve_comments)?;
+    let retained = if preserve_comments {
+        trim_token_stream_trivia(&recovered.retained)
+    } else {
+        trim_css_whitespace(&recovered.retained)
+    };
+    let closed = trim_css_whitespace(&recovered.closed);
+    let observable = if !matches!(category, ObservableCategory::Typed) {
+        if matches!(category, ObservableCategory::Custom) && recovered.unterminated_url {
+            closed.to_owned()
+        } else {
+            retained.to_owned()
         }
-        return recovered.retained;
-    }
+    } else {
+        serialize_typed_observable(name, input, closed, &canonical, &recovered)
+    };
+
+    Ok(DeclarationProjection {
+        canonical,
+        observable,
+    })
+}
+
+fn serialize_typed_observable(
+    name: &str,
+    input: &str,
+    closed: &str,
+    canonical: &str,
+    recovered: &RecoveredObservableText,
+) -> String {
     if name == "font-family" {
-        return serialize_font_family(input, safe_value, &recovered);
+        return serialize_font_family(
+            input,
+            canonical,
+            recovered.single_string.as_deref(),
+            recovered.recovered,
+        );
     }
     if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
         && !recovered.recovered
@@ -37,34 +76,42 @@ pub(crate) fn serialize_observable_value(
         return input.to_owned();
     }
     if name == "color" || name.ends_with("-color") {
-        return serialize_color(&recovered.closed, safe_value);
+        return serialize_color(closed, canonical);
     }
     if name == "z-index" {
-        if let Some(value) = serialize_integer_calculation(&recovered.closed) {
+        if let Some(value) = serialize_integer_calculation(closed) {
             return value;
         }
     }
-    if starts_math_function(&recovered.closed) {
-        let safe_value = canonicalize_leading_decimal(safe_value);
-        return if starts_math_function(&safe_value) {
-            safe_value
-        } else {
-            format!("calc({safe_value})")
-        };
+    if starts_math_function(closed) {
+        let value = canonicalize_leading_decimal(canonical);
+        if starts_math_function(&value) {
+            return value;
+        }
+        return format!("calc({value})");
     }
-    if recovered.closed.contains("gradient(") {
-        return recovered.closed;
+    if closed.contains("gradient(") {
+        return closed.to_owned();
     }
+    serialize_default_observable(input, closed, canonical, recovered)
+}
+
+fn serialize_default_observable(
+    input: &str,
+    closed: &str,
+    canonical: &str,
+    recovered: &RecoveredObservableText,
+) -> String {
     if !recovered.recovered {
-        return canonicalize_leading_decimal(safe_value);
+        return canonicalize_leading_decimal(canonical);
     }
-    if recovered.closed.to_ascii_lowercase().starts_with("url(") || input.starts_with(['\'', '"']) {
-        return safe_value.to_owned();
+    if closed.to_ascii_lowercase().starts_with("url(") || input.starts_with(['\'', '"']) {
+        return canonical.to_owned();
     }
     if input.contains("/*") {
-        return recovered.retained;
+        return trim_css_whitespace(&recovered.retained).to_owned();
     }
-    recovered.closed
+    closed.to_owned()
 }
 
 fn canonicalize_leading_decimal(value: &str) -> String {
@@ -92,124 +139,6 @@ fn canonicalize_leading_decimal(value: &str) -> String {
         index += character.len_utf8();
     }
     result
-}
-
-struct RecoveredTokenText {
-    closed: String,
-    recovered: bool,
-    retained: String,
-    single_string: Option<String>,
-}
-
-fn recover_token_text(input: &str, preserve_comments: bool) -> RecoveredTokenText {
-    let bytes = input.as_bytes();
-    let mut retained = String::with_capacity(input.len());
-    let mut closings = Vec::new();
-    let mut index = 0usize;
-    let mut recovered = false;
-    let mut significant = 0usize;
-    let mut single_string = None;
-
-    while index < bytes.len() {
-        if bytes[index].is_ascii_whitespace() {
-            retained.push(bytes[index] as char);
-            index += 1;
-            continue;
-        }
-        if bytes[index] == b'/' && bytes.get(index + 1) == Some(&b'*') {
-            let start = index;
-            recovered = true;
-            index += 2;
-            while index < bytes.len()
-                && !(bytes[index] == b'*' && bytes.get(index + 1) == Some(&b'/'))
-            {
-                index += 1;
-            }
-            let closed = index < bytes.len();
-            index = (index + 2).min(bytes.len());
-            if preserve_comments && closed {
-                retained.push_str(&input[start..index]);
-            }
-            continue;
-        }
-        if matches!(bytes[index], b'\'' | b'"') {
-            significant += 1;
-            let quote = bytes[index];
-            let start = index;
-            index += 1;
-            let mut value = String::new();
-            let mut closed = false;
-            while index < bytes.len() {
-                if bytes[index] == b'\\' {
-                    if let Some(next) = bytes.get(index + 1) {
-                        retained.push_str(&input[start..index]);
-                        retained.push('\\');
-                        retained.push(*next as char);
-                        value.push(*next as char);
-                        index += 2;
-                        closed = bytes.get(index.wrapping_sub(1)) == Some(&quote);
-                        break;
-                    }
-                    value.push('\u{fffd}');
-                    index += 1;
-                    recovered = true;
-                    break;
-                }
-                if bytes[index] == quote {
-                    index += 1;
-                    closed = true;
-                    break;
-                }
-                value.push(bytes[index] as char);
-                index += 1;
-            }
-            retained.push_str(&input[start..index]);
-            if !closed {
-                recovered = true;
-            }
-            single_string = Some(value);
-            continue;
-        }
-        significant += 1;
-        if bytes[index] == b'\\' && index + 1 == bytes.len() {
-            retained.push('\u{fffd}');
-            recovered = true;
-            index += 1;
-            continue;
-        }
-        let character = input[index..].chars().next().unwrap_or('\u{fffd}');
-        retained.push(character);
-        if matches!(character, '(' | '[' | '{') {
-            closings.push(match character {
-                '(' => ')',
-                '[' => ']',
-                '{' => '}',
-                _ => unreachable!(),
-            });
-        } else if matches!(character, ')' | ']' | '}') && closings.last() == Some(&character) {
-            closings.pop();
-        }
-        index += character.len_utf8();
-    }
-
-    if !closings.is_empty() {
-        recovered = true;
-    }
-    let retained = if preserve_comments {
-        trim_token_stream_trivia(&retained)
-    } else {
-        trim_css_whitespace(&retained)
-    };
-    let mut closed = retained.to_owned();
-    for closing in closings.iter().rev() {
-        closed.push(*closing);
-    }
-    RecoveredTokenText {
-        closed,
-        recovered,
-        retained: retained.to_owned(),
-        single_string: (significant == 1).then_some(single_string).flatten(),
-    }
 }
 
 fn trim_token_stream_trivia(mut value: &str) -> &str {
@@ -240,14 +169,19 @@ fn trim_css_whitespace(value: &str) -> &str {
     value.trim_matches(|character| matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{000c}'))
 }
 
-fn serialize_font_family(input: &str, safe_value: &str, recovered: &RecoveredTokenText) -> String {
-    let Some(value) = &recovered.single_string else {
+fn serialize_font_family(
+    input: &str,
+    safe_value: &str,
+    single_string: Option<&str>,
+    recovered: bool,
+) -> String {
+    let Some(value) = single_string else {
         return safe_value.to_owned();
     };
     if is_identifier(value) && !is_generic_font_family(value) {
-        return value.clone();
+        return value.to_owned();
     }
-    if !recovered.recovered && input.ends_with(['\'', '"']) {
+    if !recovered && input.ends_with(['\'', '"']) {
         return safe_value.to_owned();
     }
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
@@ -307,6 +241,10 @@ fn serialize_color(value: &str, safe_value: &str) -> String {
         return serialize_hex_color(safe_value).unwrap_or_else(|| value.to_owned());
     }
     canonicalize_color_identifiers(value)
+}
+
+pub(crate) fn serialize_observable_color(value: &str) -> String {
+    serialize_color(value, value)
 }
 
 fn is_relative_color_function(value: &str) -> bool {
@@ -491,129 +429,83 @@ fn starts_math_function(value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{serialize_observable_value, ObservableCategory};
+    use super::project_declaration;
+    use crate::parse_semantic_property;
+
+    fn observable(name: &str, input: &str) -> String {
+        let declaration = parse_semantic_property(name, input).unwrap();
+        project_declaration(&declaration).unwrap().observable
+    }
 
     #[test]
     fn recovers_browser_facing_token_text() {
-        assert_eq!(
-            serialize_observable_value("--x", "red/*comment", "red", ObservableCategory::Custom),
-            "red"
-        );
-        assert_eq!(
-            serialize_observable_value("--x", "foo\\", "foo�", ObservableCategory::Custom),
-            "foo�"
-        );
-        assert_eq!(
-            serialize_observable_value("width", "calc(1px", "1px", ObservableCategory::Typed),
-            "calc(1px)"
-        );
+        assert_eq!(observable("--x", "red/*comment"), "red");
+        assert_eq!(observable("--x", "foo\\"), "foo�");
+        assert_eq!(observable("width", "calc(1px"), "calc(1px)");
     }
 
     #[test]
     fn serializes_typed_math_like_chromium_cssom() {
-        for (input, safe, expected) in [
-            ("calc(1px / 2)", ".5px", "calc(0.5px)"),
-            ("min(1px, 2%)", "min(1px, 2%)", "min(1px, 2%)"),
-            ("round(1px, 2px)", "2px", "calc(2px)"),
-            ("hypot(3px, 4px)", "5px", "calc(5px)"),
-            ("atan2(1, 1)", "45deg", "calc(45deg)"),
-            ("pow(2, 3)", "8", "calc(8)"),
+        for (name, input, expected) in [
+            ("width", "calc(1px / 2)", "calc(0.5px)"),
+            ("width", "min(1px, 2%)", "min(1px, 2%)"),
+            ("width", "round(1px, 2px)", "calc(2px)"),
+            ("width", "hypot(3px, 4px)", "calc(5px)"),
+            ("rotate", "atan2(1, 1)", "calc(45deg)"),
+            ("opacity", "pow(2, 3)", "calc(8)"),
         ] {
-            assert_eq!(
-                serialize_observable_value("width", input, safe, ObservableCategory::Typed),
-                expected,
-                "{input}"
-            );
+            assert_eq!(observable(name, input), expected, "{name}: {input}");
         }
     }
 
     #[test]
     fn preserves_internal_comments_for_custom_and_pending_token_streams() {
-        for (category, input, expected) in [
-            (ObservableCategory::Custom, "a/*c*/b", "a/*c*/b"),
+        for (name, input, expected) in [
+            ("--x", "a/*c*/b", "a/*c*/b"),
+            ("--x", "\u{00a0}red\u{00a0}", "\u{00a0}red\u{00a0}"),
+            ("--x", "/*c*/a/*tail*/", "a"),
             (
-                ObservableCategory::Custom,
-                "\u{00a0}red\u{00a0}",
-                "\u{00a0}red\u{00a0}",
-            ),
-            (ObservableCategory::Custom, "/*c*/a/*tail*/", "a"),
-            (
-                ObservableCategory::PendingSubstitution,
+                "width",
                 "calc(var(--x)/*c*/ + 1px)",
                 "calc(var(--x)/*c*/ + 1px)",
             ),
-            (
-                ObservableCategory::PendingSubstitution,
-                "--f(a/*c*/,b)",
-                "--f(a/*c*/,b)",
-            ),
-            (
-                ObservableCategory::PendingSubstitution,
-                "--f(a)/*c*/",
-                "--f(a)",
-            ),
-            (
-                ObservableCategory::PendingSubstitution,
-                "--f(a/*c)",
-                "--f(a",
-            ),
+            ("width", "--f(a/*c*/,b)", "--f(a/*c*/,b)"),
+            ("width", "--f(a)/*c*/", "--f(a)"),
+            ("width", "--f(a/*c)", "--f(a"),
         ] {
-            assert_eq!(
-                serialize_observable_value("width", input, input, category),
-                expected,
-                "{input}"
-            );
+            assert_eq!(observable(name, input), expected, "{input}");
         }
     }
 
     #[test]
     fn serializes_cssom_colors() {
         assert_eq!(
-            serialize_observable_value(
-                "color",
-                "rgb(1 2 3 / 50%)",
-                "#01020380",
-                ObservableCategory::Typed,
-            ),
+            observable("color", "rgb(1 2 3 / 50%)"),
             "rgba(1, 2, 3, 0.5)"
         );
+        assert_eq!(observable("color", "white"), "white");
         assert_eq!(
-            serialize_observable_value("color", "white", "#fff", ObservableCategory::Typed),
-            "white"
-        );
-        assert_eq!(
-            serialize_observable_value(
+            observable(
                 "color",
                 "color-mix(in srgb, contrast-color(red), currentColor)",
-                "color-mix(in srgb, contrast-color(red), currentColor)",
-                ObservableCategory::Typed,
             ),
             "color-mix(in srgb, contrast-color(red), currentcolor)"
         );
         assert_eq!(
-            serialize_observable_value(
-                "color",
-                "contrast-color(current\\43 olor)",
-                "contrast-color(currentColor)",
-                ObservableCategory::Typed,
-            ),
+            observable("color", "contrast-color(current\\43 olor)"),
             "contrast-color(currentcolor)"
         );
         assert_eq!(
-            serialize_observable_value(
+            observable(
                 "color",
                 "RGBA(from rgb(20%, 40%, 60%, 80%) r calc(g * .5 + g * .5) b / alpha)",
-                "rgb(from rgba(51, 102, 153, 0.8) r calc((0.5 * g) + (0.5 * g)) b / alpha)",
-                ObservableCategory::Typed,
             ),
             "rgb(from rgba(51, 102, 153, 0.8) r calc((0.5 * g) + (0.5 * g)) b / alpha)"
         );
         assert_eq!(
-            serialize_observable_value(
+            observable(
                 "color",
                 "lab(from var(--mycolor) l a b / calc(alpha * 0.8))",
-                "lab(from var(--mycolor) l a b / calc(alpha * .8))",
-                ObservableCategory::PendingSubstitution,
             ),
             "lab(from var(--mycolor) l a b / calc(alpha * 0.8))"
         );

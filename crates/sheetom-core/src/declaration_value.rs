@@ -37,23 +37,21 @@ enum DeclarationValueStorage {
 }
 
 impl DeclarationValue {
-    pub(crate) fn semantic(
-        declaration: SemanticDeclaration,
-        observable: String,
-    ) -> Result<Self, crate::EngineError> {
-        let canonical = declaration.canonical_value()?;
+    pub(crate) fn semantic(declaration: SemanticDeclaration) -> Result<Self, crate::EngineError> {
+        let projection = crate::observable::project_declaration(&declaration)?;
         Ok(Self::semantic_with_canonical(
             declaration,
-            canonical,
-            observable,
+            projection.canonical,
+            projection.observable,
         ))
     }
 
     pub(crate) fn semantic_with_canonical(
-        declaration: SemanticDeclaration,
+        mut declaration: SemanticDeclaration,
         canonical: String,
         observable: String,
     ) -> Self {
+        declaration.compact_recovery();
         Self::with_storage(
             DeclarationValueStorage::Semantic(Arc::new(declaration)),
             canonical,
@@ -151,10 +149,10 @@ mod tests {
     #[test]
     fn semantic_value_is_the_owned_authority_for_both_projections() {
         let semantic = parse_semantic_property("width", "calc(1px + 2px)").unwrap();
-        let value = DeclarationValue::semantic(semantic, "3px".to_owned()).unwrap();
+        let value = DeclarationValue::semantic(semantic).unwrap();
 
         assert_eq!(value.safe_css(), "3px");
-        assert_eq!(value.observable_css(), "3px");
+        assert_eq!(value.observable_css(), "calc(3px)");
         assert!(matches!(
             value.semantic_value().unwrap().value(),
             SemanticPropertyValue::Standard(_)
@@ -164,7 +162,7 @@ mod tests {
     #[test]
     fn observable_override_does_not_replace_the_canonical_value() {
         let semantic = parse_semantic_property("color", "white").unwrap();
-        let value = DeclarationValue::semantic(semantic, "white".to_owned()).unwrap();
+        let value = DeclarationValue::semantic(semantic).unwrap();
 
         assert_eq!(value.safe_css(), "#fff");
         assert_eq!(value.observable_css(), "white");

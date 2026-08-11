@@ -1,6 +1,6 @@
 use crate::{
     function_rule::{parse_function_prelude, ParsedFunctionParameter, ParsedFunctionPrelude},
-    observable::{serialize_observable_value, ObservableCategory},
+    observable::serialize_observable_color,
     scan_safety_metrics,
     syntax::{parse_declaration_list, serialize_identifier, split_top_level_whitespace},
     EngineError, ResourceLimits,
@@ -1867,12 +1867,7 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
                                 continue;
                             };
                             let color = color_parts.join(" ");
-                            let observable_color = serialize_observable_value(
-                                "color",
-                                &color,
-                                &color,
-                                ObservableCategory::Typed,
-                            );
+                            let observable_color = serialize_observable_color(&color);
                             serialized_values.push(format!("{index} {observable_color}"));
                         }
                         override_colors = Some(serialized_values.join(", "));
