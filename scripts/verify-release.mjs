@@ -72,10 +72,10 @@ if (
   nativeGrammar?.propertyBranches?.total !== 10 ||
   nativeGrammar?.propertyBranches?.positive !== 5 ||
   nativeGrammar?.propertyBranches?.negative !== 5 ||
-  nativeGrammar?.valueCapabilities?.passed !== 186 ||
-  nativeGrammar?.valueCapabilities?.total !== 186 ||
-  nativeGrammar?.valueCapabilities?.positive !== 134 ||
-  nativeGrammar?.valueCapabilities?.negative !== 52 ||
+  nativeGrammar?.valueCapabilities?.passed !== 246 ||
+  nativeGrammar?.valueCapabilities?.total !== 246 ||
+  nativeGrammar?.valueCapabilities?.positive !== 164 ||
+  nativeGrammar?.valueCapabilities?.negative !== 82 ||
   nativeGrammar?.numberResultMath?.passed !== 860 ||
   nativeGrammar?.numberResultMath?.total !== 860 ||
   nativeGrammar?.numberResultMath?.positive !== 616 ||

@@ -473,10 +473,17 @@ impl DeclarationState {
             parsed.safe_value().to_owned()
         };
         let safe_value = normalize_rgb_function_spacing(&safe_value);
-        let group = self.new_pending_group(
-            name.to_owned(),
-            DeclarationValue::codec(safe_value, observable_value),
+        let group_value = parsed.value.semantic_value().map_or_else(
+            || parsed.value.clone(),
+            |semantic| {
+                DeclarationValue::semantic_with_canonical(
+                    semantic.clone(),
+                    safe_value,
+                    observable_value,
+                )
+            },
         );
+        let group = self.new_pending_group(name.to_owned(), group_value);
         for record in records {
             record.pending_group = Some(group.clone());
         }
@@ -727,6 +734,25 @@ mod tests {
     use super::{DeclarationContext, DeclarationState, MutationOutcome, ParsedDeclaration};
     use crate::{DeclarationValueKind, EngineError, ResourceLimits};
     use serde_json::Value;
+
+    #[test]
+    fn every_manifested_longhand_initial_value_has_semantic_state() {
+        let failures = crate::catalog::initial_longhand_values()
+            .filter_map(|(name, value)| {
+                let mut state = DeclarationState::new();
+                let outcome = state.set_property(name, value, "");
+                let kind = state.records().first().map(|record| record.value.kind());
+                (outcome != MutationOutcome::Applied
+                    || !matches!(
+                        kind,
+                        Some(DeclarationValueKind::Semantic | DeclarationValueKind::CssWideKeyword)
+                    ))
+                .then(|| format!("{name}: {value}: outcome={outcome:?}, kind={kind:?}"))
+            })
+            .collect::<Vec<_>>();
+
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
 
     #[test]
     fn preserves_order_and_updates_existing_longhands_in_place() {
@@ -996,7 +1022,7 @@ mod tests {
     }
 
     #[test]
-    fn sheetom_border_codecs_expand_arbitrary_valid_components() {
+    fn sheetom_border_grammars_expand_to_semantic_longhands() {
         let mut column_rule = DeclarationState::new();
         assert_eq!(
             column_rule.set_property("column-rule", "2px dashed red", ""),
@@ -1043,7 +1069,7 @@ mod tests {
     }
 
     #[test]
-    fn structural_codecs_expand_by_validated_cardinality() {
+    fn structural_grammars_expand_by_validated_cardinality() {
         let mut state = DeclarationState::new();
         assert_eq!(
             state.set_property("overscroll-behavior", "contain none", ""),
@@ -1083,7 +1109,7 @@ mod tests {
     }
 
     #[test]
-    fn structural_codecs_reject_invalid_neighbors_atomically() {
+    fn structural_grammars_reject_invalid_neighbors_atomically() {
         let mut state = DeclarationState::new();
         state.set_property("overscroll-behavior", "contain none", "");
         assert_eq!(
@@ -1160,6 +1186,19 @@ mod tests {
             if outcome != MutationOutcome::Applied {
                 failures.push(format!("{property}: {input} ({outcome:?})"));
                 continue;
+            }
+            for record in state.records() {
+                if record.value.kind() == DeclarationValueKind::Codec
+                    || record
+                        .pending_group
+                        .as_ref()
+                        .is_some_and(|group| group.value.kind() == DeclarationValueKind::Codec)
+                {
+                    failures.push(format!(
+                        "{property}: {} retained textual Codec authority",
+                        record.name
+                    ));
+                }
             }
             let expected = case["chromium"]["longhands"]
                 .as_array()
@@ -1319,6 +1358,19 @@ mod tests {
                     failures.push(format!("{id}: invalid mutation changed declaration state"));
                 }
                 continue;
+            }
+            for record in state.records() {
+                if record.value.kind() == DeclarationValueKind::Codec
+                    || record
+                        .pending_group
+                        .as_ref()
+                        .is_some_and(|group| group.value.kind() == DeclarationValueKind::Codec)
+                {
+                    failures.push(format!(
+                        "{id}: {} retained textual Codec authority",
+                        record.name
+                    ));
+                }
             }
             let Some(observation) = observations
                 .iter()

@@ -3,6 +3,7 @@ use lightningcss::properties::PropertyId;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PropertyGrammarExtension {
     AspectRatio,
+    BrowserLonghand,
     Content,
     IntegerCalculation,
     LengthNumberCalculation,
@@ -152,6 +153,15 @@ fn property_grammar_extensions(name: &str) -> &'static [PropertyGrammarExtension
 }
 
 pub(crate) fn sheetom_parser_property_name(name: &str) -> Option<&'static str> {
+    if name == "-webkit-mask-position-x" {
+        return Some("mask-position-x");
+    }
+    if name == "-webkit-mask-position-y" {
+        return Some("mask-position-y");
+    }
+    if name == "offset-path" {
+        return Some("clip-path");
+    }
     if matches!(
         name,
         "-webkit-border-after"
@@ -206,6 +216,11 @@ pub(crate) fn initial_longhand_value(name: &str) -> Option<&'static str> {
         .binary_search_by_key(&name, |(longhand, _)| *longhand)
         .ok()?;
     Some(generated::INITIAL_LONGHAND_VALUES[index].1)
+}
+
+#[cfg(test)]
+pub(crate) fn initial_longhand_values() -> impl Iterator<Item = (&'static str, &'static str)> {
+    generated::INITIAL_LONGHAND_VALUES.iter().copied()
 }
 
 #[cfg(test)]
@@ -278,7 +293,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 19, 30, 233]);
+        assert_eq!(owner_counts, [0, 429, 22, 97, 163]);
     }
 
     #[test]

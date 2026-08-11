@@ -916,31 +916,21 @@ pub(crate) fn parse_value_with_limits(
         });
     }
 
-    if shorthand_longhands(name).is_none()
-        && initial_longhand_value(name).is_some_and(|initial| initial == value.trim())
-    {
-        let value = value.trim().to_owned();
-        return Ok(ParsedValue {
-            value: DeclarationValue::codec(value.clone(), value),
-            longhands: None,
-        });
-    }
-
     if !validate_typed_shorthand_structure(name, value) {
         return Err(MutationOutcome::InvalidValue);
     }
 
-    if let Some(longhands) = expand_special_shorthand(name, value, important) {
-        let value = value.trim().to_owned();
+    if let Some(longhands) = expand_special_shorthand(name, value, important, limits) {
+        let value = validated_expanded_shorthand_value(name, value, limits)?;
         return Ok(ParsedValue {
-            value: DeclarationValue::codec(value.clone(), value),
+            value,
             longhands: Some(longhands),
         });
     }
-    if let Some(longhands) = expand_structural_shorthand(name, value, important) {
-        let value = value.trim().to_owned();
+    if let Some(longhands) = expand_structural_shorthand(name, value, important, limits) {
+        let value = validated_expanded_shorthand_value(name, value, limits)?;
         return Ok(ParsedValue {
-            value: DeclarationValue::codec(value.clone(), value),
+            value,
             longhands: Some(longhands),
         });
     }
@@ -1006,7 +996,10 @@ pub(crate) fn parse_value_with_limits(
                         safe_value = safe;
                     }
                 }
-                DeclarationValue::codec(safe_value, observable_value)
+                let semantic =
+                    parse_semantic_property_with_limits(longhand_name, initial_value, limits)
+                        .map_err(map_engine_error)?;
+                DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
             } else {
                 return Err(MutationOutcome::UnsupportedShorthand);
             };
@@ -1287,6 +1280,7 @@ fn expand_special_shorthand(
     name: &str,
     value: &str,
     important: bool,
+    limits: ResourceLimits,
 ) -> Option<Vec<DeclarationRecord>> {
     if name == "font" && is_system_font(value) {
         return Some(
@@ -1366,7 +1360,7 @@ fn expand_special_shorthand(
         "white-space" => expand_white_space(&components)?,
         _ => return None,
     };
-    records_from_values(name, values, important)
+    records_from_values(name, values, important, limits)
 }
 
 fn contextual_longhand_value(name: &str, value: &str) -> Option<String> {
@@ -1611,6 +1605,7 @@ fn records_from_values(
     shorthand: &str,
     values: Vec<(&str, String)>,
     important: bool,
+    limits: ResourceLimits,
 ) -> Option<Vec<DeclarationRecord>> {
     let longhands = observed_shorthand_longhands(shorthand)?;
     if values.len() != longhands.len() {
@@ -1624,7 +1619,7 @@ fn records_from_values(
                 .find_map(|(name, value)| (*name == *longhand).then_some(value))?;
             Some(DeclarationRecord {
                 name: (*longhand).to_owned(),
-                value: DeclarationValue::codec(value.clone(), value.clone()),
+                value: semantic_longhand_value(longhand, value, value, limits)?,
                 important,
                 pending_group: None,
             })
@@ -2266,6 +2261,7 @@ fn expand_structural_shorthand(
     name: &str,
     value: &str,
     important: bool,
+    limits: ResourceLimits,
 ) -> Option<Vec<DeclarationRecord>> {
     let longhands = observed_shorthand_longhands(name)?;
     let maximum = structural_cardinality(name, longhands.len())?;
@@ -2279,12 +2275,45 @@ fn expand_structural_shorthand(
         let canonical = validate_structural_longhand(longhand, component)?;
         records.push(DeclarationRecord {
             name: (*longhand).to_owned(),
-            value: DeclarationValue::codec(canonical, component.trim().to_owned()),
+            value: semantic_longhand_value(longhand, &canonical, component.trim(), limits)?,
             important,
             pending_group: None,
         });
     }
     Some(records)
+}
+
+fn semantic_longhand_value(
+    name: &str,
+    canonical: &str,
+    observable: &str,
+    limits: ResourceLimits,
+) -> Option<DeclarationValue> {
+    if let Some(keyword) = css_wide_keyword(canonical) {
+        return Some(DeclarationValue::css_wide(keyword));
+    }
+    let semantic = parse_semantic_property_with_limits(name, canonical, limits).ok()?;
+    Some(DeclarationValue::semantic_with_canonical(
+        semantic,
+        canonical.to_owned(),
+        observable.to_owned(),
+    ))
+}
+
+fn validated_expanded_shorthand_value(
+    name: &str,
+    source: &str,
+    limits: ResourceLimits,
+) -> Result<DeclarationValue, MutationOutcome> {
+    let source = source.trim();
+    let semantic =
+        crate::SemanticDeclaration::from_validated_expanded_shorthand(name, source, limits)
+            .map_err(map_engine_error)?;
+    Ok(DeclarationValue::semantic_with_canonical(
+        semantic,
+        source.to_owned(),
+        source.to_owned(),
+    ))
 }
 
 fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {

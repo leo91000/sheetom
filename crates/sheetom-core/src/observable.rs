@@ -22,9 +22,9 @@ pub(crate) fn project_declaration(
     let input = trim_css_whitespace(declaration.recovered().source());
     let canonical = declaration.canonical_value()?;
     let category = match declaration.value() {
-        SemanticPropertyValue::Standard(_) | SemanticPropertyValue::Extension(_) => {
-            ObservableCategory::Typed
-        }
+        SemanticPropertyValue::Standard(_)
+        | SemanticPropertyValue::Extension(_)
+        | SemanticPropertyValue::ExpandedShorthand => ObservableCategory::Typed,
         SemanticPropertyValue::PendingSubstitution(_) => ObservableCategory::PendingSubstitution,
         SemanticPropertyValue::CustomTokenStream => ObservableCategory::Custom,
     };

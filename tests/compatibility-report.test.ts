@@ -41,7 +41,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
       shorthandProperties: { passed: 129, total: 129 },
       grammarBranches: { passed: 96, total: 96, positive: 72, negative: 24 },
       propertyBranches: { passed: 10, total: 10, positive: 5, negative: 5 },
-      valueCapabilities: { passed: 186, total: 186, positive: 134, negative: 52 },
+      valueCapabilities: { passed: 246, total: 246, positive: 164, negative: 82 },
       numberResultMath: { passed: 860, total: 860, positive: 616, negative: 244 },
       relativeColors: { passed: 1306, total: 1306, positive: 1146, negative: 160 },
     }));
@@ -96,7 +96,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.29",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.30",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -148,7 +148,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         positive: report.evidence.nativeGrammar.valueCapabilities.positive,
         negative: report.evidence.nativeGrammar.valueCapabilities.negative,
       },
-      { passed: 186, total: 186, positive: 134, negative: 52 },
+      { passed: 246, total: 246, positive: 164, negative: 82 },
     );
     assert.deepEqual(
       {

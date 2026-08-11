@@ -85,6 +85,7 @@ const initialValues = [...initialLonghandValues].sort(([left], [right]) =>
 );
 const extensionVariants = new Map([
   ["aspect-ratio", "AspectRatio"],
+  ["browser-longhand", "BrowserLonghand"],
   ["content", "Content"],
   ["integer-calculation", "IntegerCalculation"],
   ["length-number-calculation", "LengthNumberCalculation"],

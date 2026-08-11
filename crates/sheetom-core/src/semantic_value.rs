@@ -18,6 +18,10 @@ use crate::{
 pub enum SemanticPropertyValue {
     Standard(Property<'static>),
     Extension(SemanticExtensionValue),
+    /// A shorthand whose grammar was validated while producing its complete
+    /// semantic longhand set. The recovered component tree is retained only as
+    /// CSSOM provenance for reconstructing the shorthand spelling.
+    ExpandedShorthand,
     PendingSubstitution(SemanticSubstitutionValue),
     CustomTokenStream,
 }
@@ -42,6 +46,19 @@ impl SemanticDeclaration {
             recovered: RecoveredValue::compacted_explicit_source(canonical_source),
             parse_kind: PropertyParseKind::Typed,
         }
+    }
+
+    pub(crate) fn from_validated_expanded_shorthand(
+        property_name: &str,
+        source: &str,
+        limits: ResourceLimits,
+    ) -> Result<Self, EngineError> {
+        Ok(Self {
+            property_name: Arc::from(property_name),
+            value: SemanticPropertyValue::ExpandedShorthand,
+            recovered: recover_component_values_with_limits(source, limits)?,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        })
     }
 
     pub(crate) fn compact_recovery(&mut self) {
@@ -76,6 +93,9 @@ impl SemanticDeclaration {
                 .value_to_css_string(PrinterOptions::default())
                 .map_err(|error| EngineError::Serialize(error.to_string())),
             SemanticPropertyValue::Extension(value) => value.canonical_value(),
+            SemanticPropertyValue::ExpandedShorthand => {
+                self.recovered.reparsable_css_without_comments()
+            }
             SemanticPropertyValue::PendingSubstitution(_)
             | SemanticPropertyValue::CustomTokenStream => self.recovered.reparsable_css(),
         }
@@ -113,6 +133,24 @@ pub fn parse_semantic_property_with_limits(
             value: SemanticPropertyValue::PendingSubstitution(substitution),
             recovered,
             parse_kind: PropertyParseKind::Unparsed,
+        });
+    }
+
+    if grammar
+        .extensions()
+        .contains(&crate::catalog::PropertyGrammarExtension::BrowserLonghand)
+    {
+        let value = parse_extension_value(
+            &[crate::catalog::PropertyGrammarExtension::BrowserLonghand],
+            grammar.canonical_name(),
+            source,
+        )?
+        .ok_or_else(|| unsupported_grammar_error(&grammar, source))?;
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::Extension(value),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
         });
     }
 
