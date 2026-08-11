@@ -22777,6 +22777,18 @@ mod tests {
   #[test]
   fn test_grid() {
     minify_test(
+      ".foo { grid-template: none / [a] 1px [b]; }",
+      ".foo{grid-template:none/[a]1px[b]}",
+    );
+    minify_test(
+      ".foo { grid: none / [a] 1px [b]; }",
+      ".foo{grid:none/[a]1px[b]}",
+    );
+    minify_test(
+      ".foo { grid-template: subgrid [a] / none; }",
+      ".foo{grid-template:subgrid [a]/none}",
+    );
+    minify_test(
       ".foo { grid-template-columns: [first nav-start]  150px [main-start] 1fr [last]; }",
       ".foo{grid-template-columns:[first nav-start]150px[main-start]1fr[last]}",
     );
