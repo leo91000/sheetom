@@ -31,7 +31,7 @@ pub enum BrowserLonghandValue {
     AutoLength(Option<Length>),
     ColumnCount(ColumnCountValue),
     ContainIntrinsic(ContainIntrinsicValue),
-    DashedIdentList(Option<Vec<DashedIdent<'static>>>),
+    DashedIdentList(DashedIdentListValue),
     TimeOrNormal(Option<Time>),
     ViewTimelineInset(Vec<ViewTimelineInsetValue>),
     CornerShape(CornerShapeValue),
@@ -76,6 +76,16 @@ pub enum BrowserLonghandValue {
     },
     TouchAction(Vec<&'static str>),
     StringOrKeyword(StringOrKeywordValue),
+    KeywordOrDashedIdent(KeywordOrDashedIdentValue),
+    PositionVisibility {
+        anchors_visible: bool,
+        no_overflow: bool,
+    },
+    CounterList(Option<Vec<CounterEntry>>),
+    CustomIdent(CustomIdent<'static>),
+    Quotes(QuotesValue),
+    PaintOrder(Vec<&'static str>),
+    WillChange(Option<Vec<CustomIdent<'static>>>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -206,6 +216,32 @@ pub enum StringOrKeywordValue {
     String(CSSString<'static>),
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum DashedIdentListValue {
+    None,
+    All,
+    Names(Vec<DashedIdent<'static>>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum KeywordOrDashedIdentValue {
+    Keyword(&'static str),
+    Name(DashedIdent<'static>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CounterEntry {
+    name: CustomIdent<'static>,
+    value: i32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum QuotesValue {
+    Auto,
+    None,
+    Pairs(Vec<(CSSString<'static>, CSSString<'static>)>),
+}
+
 impl BrowserLonghandValue {
     pub(crate) fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
@@ -218,8 +254,13 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::AutoLength(Some(value)) => serialize_zero_length(value),
             BrowserLonghandValue::ColumnCount(value) => value.canonical_value(),
             BrowserLonghandValue::ContainIntrinsic(value) => value.canonical_value(),
-            BrowserLonghandValue::DashedIdentList(None) => Ok("none".to_owned()),
-            BrowserLonghandValue::DashedIdentList(Some(values)) => {
+            BrowserLonghandValue::DashedIdentList(DashedIdentListValue::None) => {
+                Ok("none".to_owned())
+            }
+            BrowserLonghandValue::DashedIdentList(DashedIdentListValue::All) => {
+                Ok("all".to_owned())
+            }
+            BrowserLonghandValue::DashedIdentList(DashedIdentListValue::Names(values)) => {
                 serialize_comma_separated(values)
             }
             BrowserLonghandValue::TimeOrNormal(None) => Ok("normal".to_owned()),
@@ -389,6 +430,51 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::StringOrKeyword(StringOrKeywordValue::String(value)) => {
                 serialize_typed(value)
             }
+            BrowserLonghandValue::KeywordOrDashedIdent(KeywordOrDashedIdentValue::Keyword(
+                keyword,
+            )) => Ok((*keyword).to_owned()),
+            BrowserLonghandValue::KeywordOrDashedIdent(KeywordOrDashedIdentValue::Name(name)) => {
+                serialize_typed(name)
+            }
+            BrowserLonghandValue::PositionVisibility {
+                anchors_visible,
+                no_overflow,
+            } => {
+                let mut values = Vec::with_capacity(2);
+                if *anchors_visible {
+                    values.push("anchors-visible");
+                }
+                if *no_overflow {
+                    values.push("no-overflow");
+                }
+                if values.is_empty() {
+                    values.push("always");
+                }
+                Ok(values.join(" "))
+            }
+            BrowserLonghandValue::CounterList(None) => Ok("none".to_owned()),
+            BrowserLonghandValue::CounterList(Some(entries)) => {
+                let mut values = Vec::with_capacity(entries.len() * 2);
+                for entry in entries {
+                    values.push(serialize_typed(&entry.name)?);
+                    values.push(entry.value.to_string());
+                }
+                Ok(values.join(" "))
+            }
+            BrowserLonghandValue::CustomIdent(value) => serialize_typed(value),
+            BrowserLonghandValue::Quotes(QuotesValue::Auto) => Ok("auto".to_owned()),
+            BrowserLonghandValue::Quotes(QuotesValue::None) => Ok("none".to_owned()),
+            BrowserLonghandValue::Quotes(QuotesValue::Pairs(pairs)) => {
+                let mut values = Vec::with_capacity(pairs.len() * 2);
+                for (open, close) in pairs {
+                    values.push(serialize_typed(open)?);
+                    values.push(serialize_typed(close)?);
+                }
+                Ok(values.join(" "))
+            }
+            BrowserLonghandValue::PaintOrder(values) => Ok(values.join(" ")),
+            BrowserLonghandValue::WillChange(None) => Ok("auto".to_owned()),
+            BrowserLonghandValue::WillChange(Some(values)) => serialize_comma_separated(values),
         }
     }
 }
@@ -561,7 +647,9 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::AutoLength) => parse_auto_length(source),
         Some(BrowserLonghandGrammar::ColumnCount) => parse_column_count(source),
         Some(BrowserLonghandGrammar::ContainIntrinsic) => parse_contain_intrinsic(source),
-        Some(BrowserLonghandGrammar::DashedIdentList) => parse_dashed_ident_list(source),
+        Some(BrowserLonghandGrammar::DashedIdentList { allow_all }) => {
+            parse_dashed_ident_list(source, allow_all)
+        }
         Some(BrowserLonghandGrammar::TimeOrNormal) => parse_time_or_normal(source),
         Some(BrowserLonghandGrammar::ViewTimelineInset) => parse_view_timeline_inset(source),
         Some(BrowserLonghandGrammar::CornerShape) => parse_corner_shape(source),
@@ -611,6 +699,17 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::StringOrKeyword(keyword)) => {
             parse_string_or_keyword(source, keyword)
         }
+        Some(BrowserLonghandGrammar::KeywordOrDashedIdent(keywords)) => {
+            parse_keyword_or_dashed_ident(source, keywords)
+        }
+        Some(BrowserLonghandGrammar::PositionVisibility) => parse_position_visibility(source),
+        Some(BrowserLonghandGrammar::CounterList { default_value }) => {
+            parse_counter_list(source, default_value)
+        }
+        Some(BrowserLonghandGrammar::CustomIdent) => parse_custom_ident(source),
+        Some(BrowserLonghandGrammar::Quotes) => parse_quotes(source),
+        Some(BrowserLonghandGrammar::PaintOrder) => parse_paint_order(source),
+        Some(BrowserLonghandGrammar::WillChange) => parse_will_change(source),
         None => return Ok(None),
     }?;
     Ok(Some(value))
@@ -625,7 +724,7 @@ enum BrowserLonghandGrammar {
     AutoLength,
     ColumnCount,
     ContainIntrinsic,
-    DashedIdentList,
+    DashedIdentList { allow_all: bool },
     TimeOrNormal,
     ViewTimelineInset,
     CornerShape,
@@ -655,6 +754,13 @@ enum BrowserLonghandGrammar {
     TextUnderlinePosition,
     TouchAction,
     StringOrKeyword(&'static str),
+    KeywordOrDashedIdent(&'static [&'static str]),
+    PositionVisibility,
+    CounterList { default_value: i32 },
+    CustomIdent,
+    Quotes,
+    PaintOrder,
+    WillChange,
 }
 
 macro_rules! define_browser_longhand_registry {
@@ -699,10 +805,16 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::AutoLength => ["column-height", "column-width"],
     BrowserLonghandGrammar::ColumnCount => ["column-count"],
     BrowserLonghandGrammar::TimeOrNormal => ["interest-delay-end", "interest-delay-start"],
-    BrowserLonghandGrammar::DashedIdentList => [
+    BrowserLonghandGrammar::DashedIdentList { allow_all: false } => [
+        "anchor-name",
         "scroll-timeline-name",
+        "timeline-scope",
         "timeline-trigger-name",
         "view-timeline-name",
+    ],
+    BrowserLonghandGrammar::DashedIdentList { allow_all: true } => [
+        "anchor-scope",
+        "trigger-scope",
     ],
     BrowserLonghandGrammar::ViewTimelineInset => ["view-timeline-inset"],
     BrowserLonghandGrammar::CornerShape => [
@@ -769,7 +881,23 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::OverflowClipMargin => ["overflow-clip-margin"],
     BrowserLonghandGrammar::TextUnderlinePosition => ["text-underline-position"],
     BrowserLonghandGrammar::TouchAction => ["touch-action"],
-    BrowserLonghandGrammar::StringOrKeyword("auto") => ["-webkit-locale"],
+    BrowserLonghandGrammar::StringOrKeyword("auto") => [
+        "-webkit-locale",
+        "hyphenate-character",
+    ],
+    BrowserLonghandGrammar::KeywordOrDashedIdent(&["auto", "none", "normal"]) => [
+        "position-anchor",
+    ],
+    BrowserLonghandGrammar::PositionVisibility => ["position-visibility"],
+    BrowserLonghandGrammar::CounterList { default_value: 1 } => ["counter-increment"],
+    BrowserLonghandGrammar::CounterList { default_value: 0 } => [
+        "counter-reset",
+        "counter-set",
+    ],
+    BrowserLonghandGrammar::CustomIdent => ["page"],
+    BrowserLonghandGrammar::Quotes => ["quotes"],
+    BrowserLonghandGrammar::PaintOrder => ["paint-order"],
+    BrowserLonghandGrammar::WillChange => ["will-change"],
     BrowserLonghandGrammar::KeywordAliases(&[
         ("auto", "auto"),
         ("none", "spaces"),
@@ -1028,6 +1156,8 @@ define_browser_longhand_registry! {
         "text-spacing-trim",
     ],
     BrowserLonghandGrammar::Keyword(&["none", "non-scaling-stroke"]) => ["vector-effect"],
+    BrowserLonghandGrammar::Keyword(&["normal", "no-autospace"]) => ["text-autospace"],
+    BrowserLonghandGrammar::Keyword(&["none", "all"]) => ["view-transition-scope"],
     BrowserLonghandGrammar::Keyword(&["upright", "rotate-left", "rotate-right"]) => [
         "page-orientation",
     ],
@@ -1408,6 +1538,189 @@ fn parse_string_or_keyword(
     })
 }
 
+fn parse_keyword_or_dashed_ident(
+    source: &str,
+    keywords: &'static [&'static str],
+) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if let Ok(keyword) = input.try_parse(|input| parse_one_keyword(input, keywords)) {
+            return Ok(BrowserLonghandValue::KeywordOrDashedIdent(
+                KeywordOrDashedIdentValue::Keyword(keyword),
+            ));
+        }
+        let name = DashedIdent::parse(input)?.into_owned();
+        Ok(BrowserLonghandValue::KeywordOrDashedIdent(
+            KeywordOrDashedIdentValue::Name(name),
+        ))
+    })
+}
+
+fn parse_position_visibility(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("always"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::PositionVisibility {
+                anchors_visible: false,
+                no_overflow: false,
+            });
+        }
+        let mut anchors_visible = false;
+        let mut no_overflow = false;
+        while !input.is_exhausted() {
+            let keyword = parse_one_keyword(input, &["anchors-visible", "no-overflow"])?;
+            match keyword {
+                "anchors-visible" if !anchors_visible => anchors_visible = true,
+                "no-overflow" if !no_overflow => no_overflow = true,
+                _ => {
+                    return Err(
+                        input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+                    )
+                }
+            }
+        }
+        if !anchors_visible && !no_overflow {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::PositionVisibility {
+            anchors_visible,
+            no_overflow,
+        })
+    })
+}
+
+fn parse_counter_list(
+    source: &str,
+    default_value: i32,
+) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::CounterList(None));
+        }
+        let mut entries = Vec::new();
+        while !input.is_exhausted() {
+            let name = CustomIdent::parse(input)?.into_owned();
+            if name.eq_ignore_ascii_case("none") {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            let value = input
+                .try_parse(|input| input.expect_integer())
+                .unwrap_or(default_value);
+            entries.push(CounterEntry { name, value });
+        }
+        if entries.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::CounterList(Some(entries)))
+    })
+}
+
+fn parse_custom_ident(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        CustomIdent::parse(input)
+            .map(IntoOwned::into_owned)
+            .map(BrowserLonghandValue::CustomIdent)
+    })
+}
+
+fn parse_quotes(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::Quotes(QuotesValue::Auto));
+        }
+        if input
+            .try_parse(|input| input.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::Quotes(QuotesValue::None));
+        }
+        let mut pairs = Vec::new();
+        while !input.is_exhausted() {
+            let open = CSSString::parse(input)?.into_owned();
+            let close = CSSString::parse(input)?.into_owned();
+            pairs.push((open, close));
+        }
+        if pairs.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::Quotes(QuotesValue::Pairs(pairs)))
+    })
+}
+
+fn parse_paint_order(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    const DEFAULT_ORDER: &[&str] = &["fill", "stroke", "markers"];
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("normal"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::PaintOrder(vec!["normal"]));
+        }
+        let mut specified = Vec::with_capacity(DEFAULT_ORDER.len());
+        while !input.is_exhausted() {
+            let value = parse_one_keyword(input, DEFAULT_ORDER)?;
+            if specified.contains(&value) {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            specified.push(value);
+        }
+        if specified.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        let mut full_order = specified.clone();
+        full_order.extend(
+            DEFAULT_ORDER
+                .iter()
+                .copied()
+                .filter(|value| !specified.contains(value)),
+        );
+        for prefix_length in 1..=full_order.len() {
+            let mut reconstructed = full_order[..prefix_length].to_vec();
+            let missing = DEFAULT_ORDER
+                .iter()
+                .copied()
+                .filter(|value| !reconstructed.contains(value))
+                .collect::<Vec<_>>();
+            reconstructed.extend(missing);
+            if reconstructed == full_order {
+                return Ok(BrowserLonghandValue::PaintOrder(
+                    full_order[..prefix_length].to_vec(),
+                ));
+            }
+        }
+        Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+    })
+}
+
+fn parse_will_change(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::WillChange(None));
+        }
+        let values = input.parse_comma_separated(|input| {
+            let value = CustomIdent::parse(input)?.into_owned();
+            if value.eq_ignore_ascii_case("auto")
+                || value.eq_ignore_ascii_case("none")
+                || value.eq_ignore_ascii_case("will-change")
+            {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            Ok(value)
+        })?;
+        Ok(BrowserLonghandValue::WillChange(Some(values)))
+    })
+}
+
 fn parse_animation_iteration_count(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
         let values = input.parse_comma_separated(|input| {
@@ -1554,20 +1867,36 @@ fn parse_contain_intrinsic(source: &str) -> Result<BrowserLonghandValue, EngineE
     })
 }
 
-fn parse_dashed_ident_list(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+fn parse_dashed_ident_list(
+    source: &str,
+    allow_all: bool,
+) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
         if input
             .try_parse(|input| input.expect_ident_matching("none"))
             .is_ok()
         {
-            return Ok(BrowserLonghandValue::DashedIdentList(None));
+            return Ok(BrowserLonghandValue::DashedIdentList(
+                DashedIdentListValue::None,
+            ));
+        }
+        if allow_all
+            && input
+                .try_parse(|input| input.expect_ident_matching("all"))
+                .is_ok()
+        {
+            return Ok(BrowserLonghandValue::DashedIdentList(
+                DashedIdentListValue::All,
+            ));
         }
         let values = input
             .parse_comma_separated(DashedIdent::parse)?
             .into_iter()
             .map(IntoOwned::into_owned)
             .collect();
-        Ok(BrowserLonghandValue::DashedIdentList(Some(values)))
+        Ok(BrowserLonghandValue::DashedIdentList(
+            DashedIdentListValue::Names(values),
+        ))
     })
 }
 
@@ -2243,8 +2572,8 @@ mod tests {
             );
             branch_count += entry["branches"].as_array().unwrap().len();
         }
-        assert_eq!(properties.len(), 23);
-        assert_eq!(branch_count, 105);
+        assert_eq!(properties.len(), 39);
+        assert_eq!(branch_count, 165);
     }
 
     #[test]
@@ -2350,6 +2679,61 @@ mod tests {
             ("text-underline-offset", "from-font"),
             ("text-underline-position", "under left right"),
             ("touch-action", "pan-left pan-right"),
+        ] {
+            assert!(canonical(property, source).is_err(), "{property}: {source}");
+        }
+    }
+
+    #[test]
+    fn parses_names_counters_scopes_and_string_pairs() {
+        for (property, source, expected) in [
+            ("anchor-name", "--a,--b", "--a, --b"),
+            ("anchor-scope", "all", "all"),
+            ("timeline-scope", "--timeline", "--timeline"),
+            ("trigger-scope", "--a,--b", "--a, --b"),
+            ("view-transition-scope", "all", "all"),
+            ("position-anchor", "--anchor", "--anchor"),
+            (
+                "position-visibility",
+                "no-overflow anchors-visible",
+                "anchors-visible no-overflow",
+            ),
+            ("counter-increment", "chapter", "chapter 1"),
+            ("counter-increment", "foo 0 bar", "foo 0 bar 1"),
+            ("counter-reset", "chapter", "chapter 0"),
+            ("counter-set", "chapter -1 item 3", "chapter -1 item 3"),
+            ("page", "chapter-1", "chapter-1"),
+            (
+                "quotes",
+                "\"«\" \"»\" \"‹\" \"›\"",
+                "\"«\" \"»\" \"‹\" \"›\"",
+            ),
+            ("paint-order", "stroke fill", "stroke"),
+            ("paint-order", "markers stroke", "markers stroke"),
+            ("text-autospace", "no-autospace", "no-autospace"),
+            ("will-change", "transform,opacity", "transform, opacity"),
+            ("hyphenate-character", "\"ab\"", "\"ab\""),
+        ] {
+            assert_eq!(canonical(property, source).unwrap(), expected, "{property}");
+        }
+
+        for (property, source) in [
+            ("anchor-name", "--a --b"),
+            ("anchor-scope", "all --a"),
+            ("timeline-scope", "all"),
+            ("trigger-scope", "foo"),
+            ("view-transition-scope", "--a"),
+            ("position-anchor", "--a, --b"),
+            ("position-visibility", "always no-overflow"),
+            ("counter-increment", "reversed(chapter)"),
+            ("counter-reset", "chapter 1.5"),
+            ("counter-set", "none chapter"),
+            ("page", "first left"),
+            ("quotes", "\"a\" \"b\" \"c\""),
+            ("paint-order", "fill fill"),
+            ("text-autospace", "auto"),
+            ("will-change", "will-change"),
+            ("hyphenate-character", "-"),
         ] {
             assert!(canonical(property, source).is_err(), "{property}: {source}");
         }

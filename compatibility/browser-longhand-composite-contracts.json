@@ -222,6 +222,146 @@
         { "id": "pinch", "input": "pinch-zoom", "invalidNeighbor": "pinch-zoom pinch-zoom" },
         { "id": "unordered-combination", "input": "pinch-zoom pan-y pan-left", "invalidNeighbor": "pan-left pan-right pinch-zoom" }
       ]
+    },
+    {
+      "property": "anchor-name",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none --a" },
+        { "id": "single-name", "input": "--a", "invalidNeighbor": "foo" },
+        { "id": "name-list", "input": "--a, --b", "invalidNeighbor": "--a --b" }
+      ]
+    },
+    {
+      "property": "anchor-scope",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none --a" },
+        { "id": "all", "input": "all", "invalidNeighbor": "all --a" },
+        { "id": "single-name", "input": "--a", "invalidNeighbor": "foo" },
+        { "id": "name-list", "input": "--a, --b", "invalidNeighbor": "--a --b" }
+      ]
+    },
+    {
+      "property": "timeline-scope",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "all" },
+        { "id": "single-name", "input": "--a", "invalidNeighbor": "foo" },
+        { "id": "name-list", "input": "--a, --b", "invalidNeighbor": "--a --b" }
+      ]
+    },
+    {
+      "property": "trigger-scope",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none --a" },
+        { "id": "all", "input": "all", "invalidNeighbor": "all --a" },
+        { "id": "single-name", "input": "--a", "invalidNeighbor": "foo" },
+        { "id": "name-list", "input": "--a, --b", "invalidNeighbor": "--a --b" }
+      ]
+    },
+    {
+      "property": "view-transition-scope",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none all" },
+        { "id": "all", "input": "all", "invalidNeighbor": "--a" }
+      ]
+    },
+    {
+      "property": "position-anchor",
+      "branches": [
+        { "id": "auto", "input": "auto", "invalidNeighbor": "foo" },
+        { "id": "none", "input": "none", "invalidNeighbor": "none --a" },
+        { "id": "normal", "input": "normal", "invalidNeighbor": "normal --a" },
+        { "id": "name", "input": "--a", "invalidNeighbor": "--a, --b" }
+      ]
+    },
+    {
+      "property": "position-visibility",
+      "branches": [
+        { "id": "always", "input": "always", "invalidNeighbor": "always no-overflow" },
+        { "id": "anchors-visible", "input": "anchors-visible", "invalidNeighbor": "anchors-visible anchors-visible" },
+        { "id": "no-overflow", "input": "no-overflow", "invalidNeighbor": "no-overflow no-overflow" },
+        { "id": "unordered-combination", "input": "no-overflow anchors-visible", "invalidNeighbor": "always anchors-visible" }
+      ]
+    },
+    {
+      "property": "counter-increment",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none chapter" },
+        { "id": "implicit-integer", "input": "chapter", "invalidNeighbor": "reversed(chapter)" },
+        { "id": "explicit-integer", "input": "chapter -1 item 3", "invalidNeighbor": "chapter 1.5" },
+        { "id": "mixed-default", "input": "foo 0 bar", "invalidNeighbor": "foo, bar" }
+      ]
+    },
+    {
+      "property": "counter-reset",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none chapter" },
+        { "id": "implicit-integer", "input": "chapter", "invalidNeighbor": "reversed(chapter)" },
+        { "id": "explicit-integer", "input": "chapter -1 item 3", "invalidNeighbor": "chapter 1.5" },
+        { "id": "mixed-default", "input": "foo 0 bar", "invalidNeighbor": "foo, bar" }
+      ]
+    },
+    {
+      "property": "counter-set",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none chapter" },
+        { "id": "implicit-integer", "input": "chapter", "invalidNeighbor": "reversed(chapter)" },
+        { "id": "explicit-integer", "input": "chapter -1 item 3", "invalidNeighbor": "chapter 1.5" },
+        { "id": "mixed-default", "input": "foo 0 bar", "invalidNeighbor": "foo, bar" }
+      ]
+    },
+    {
+      "property": "page",
+      "branches": [
+        { "id": "keyword-like-ident", "input": "none", "invalidNeighbor": "\"none\"" },
+        { "id": "custom-ident", "input": "chapter-1", "invalidNeighbor": "first left" },
+        { "id": "dashed-ident", "input": "--a", "invalidNeighbor": "--a --b" }
+      ]
+    },
+    {
+      "property": "quotes",
+      "branches": [
+        { "id": "auto", "input": "auto", "invalidNeighbor": "auto none" },
+        { "id": "none", "input": "none", "invalidNeighbor": "none \"a\"" },
+        { "id": "single-pair", "input": "\"«\" \"»\"", "invalidNeighbor": "\"a\"" },
+        { "id": "multiple-pairs", "input": "\"«\" \"»\" \"‹\" \"›\"", "invalidNeighbor": "\"a\" \"b\" \"c\"" }
+      ]
+    },
+    {
+      "property": "paint-order",
+      "branches": [
+        { "id": "normal", "input": "normal", "invalidNeighbor": "normal stroke" },
+        { "id": "fill", "input": "fill", "invalidNeighbor": "fill fill" },
+        { "id": "stroke", "input": "stroke", "invalidNeighbor": "stroke stroke" },
+        { "id": "markers", "input": "markers", "invalidNeighbor": "markers markers" },
+        { "id": "minimal-prefix", "input": "stroke fill", "invalidNeighbor": "stroke unknown" },
+        { "id": "two-component-prefix", "input": "markers stroke", "invalidNeighbor": "markers stroke markers" }
+      ]
+    },
+    {
+      "property": "text-autospace",
+      "branches": [
+        { "id": "normal", "input": "normal", "invalidNeighbor": "auto" },
+        { "id": "none", "input": "no-autospace", "invalidNeighbor": "none" }
+      ]
+    },
+    {
+      "property": "will-change",
+      "branches": [
+        { "id": "auto", "input": "auto", "invalidNeighbor": "auto, transform" },
+        { "id": "scroll-position", "input": "scroll-position", "invalidNeighbor": "none" },
+        { "id": "contents", "input": "contents", "invalidNeighbor": "will-change" },
+        { "id": "property", "input": "transform", "invalidNeighbor": "transform opacity" },
+        { "id": "property-list", "input": "transform, opacity", "invalidNeighbor": "transform,, opacity" },
+        { "id": "dashed-ident", "input": "--foo", "invalidNeighbor": "--foo --bar" }
+      ]
+    },
+    {
+      "property": "hyphenate-character",
+      "branches": [
+        { "id": "auto", "input": "auto", "invalidNeighbor": "none" },
+        { "id": "string", "input": "\"-\"", "invalidNeighbor": "-" },
+        { "id": "empty-string", "input": "\"\"", "invalidNeighbor": "--hyphen" }
+      ]
     }
   ]
 }
