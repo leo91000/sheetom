@@ -307,7 +307,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 22, 192, 68]);
+        assert_eq!(owner_counts, [0, 429, 22, 209, 51]);
     }
 
     #[test]
@@ -324,30 +324,14 @@ mod tests {
         assert_eq!(
             unsupported,
             [
-                "anchor-name",
-                "anchor-scope",
                 "animation-trigger",
                 "border-shape",
                 "clip",
-                "counter-increment",
-                "counter-reset",
-                "counter-set",
                 "d",
                 "dynamic-range-limit",
-                "hyphenate-character",
                 "object-view-box",
-                "page",
-                "paint-order",
-                "position-anchor",
                 "position-area",
-                "position-visibility",
-                "quotes",
                 "shape-outside",
-                "text-autospace",
-                "timeline-scope",
-                "trigger-scope",
-                "view-transition-scope",
-                "will-change",
             ]
         );
     }
