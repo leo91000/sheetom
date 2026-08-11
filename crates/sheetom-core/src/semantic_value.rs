@@ -9,7 +9,9 @@ use lightningcss::{
 use crate::{
     analyze_recovered_substitutions,
     catalog::{property_grammar, PropertyGrammarOwner},
-    extension_value::{parse_extension_value, parse_preferred_extension_value},
+    extension_value::{
+        is_numeric_extension_candidate, parse_extension_value, parse_preferred_extension_value,
+    },
     font_face::FontFaceDescriptorValue,
     recover_component_values_with_limits, EngineError, PropertyParseKind, RecoveredValue,
     ResourceLimits, SemanticExtensionValue, SemanticSubstitutionValue,
@@ -172,17 +174,48 @@ pub fn parse_semantic_property_with_limits(
         });
     }
 
-    if recovered.contains_context_dependent_sign() {
-        if let Some(value) =
-            parse_preferred_extension_value(grammar.extensions(), grammar.canonical_name(), source)
-        {
-            return Ok(SemanticDeclaration {
-                property_name: Arc::from(grammar.canonical_name()),
-                value: SemanticPropertyValue::Extension(value),
-                recovered,
-                parse_kind: PropertyParseKind::SheetomTyped,
-            });
-        }
+    if grammar
+        .extensions()
+        .contains(&crate::catalog::PropertyGrammarExtension::WebkitPerspective)
+    {
+        let value = parse_extension_value(grammar.extensions(), name, source)?
+            .ok_or_else(|| unsupported_grammar_error(&grammar, source))?;
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::Extension(value),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        });
+    }
+
+    let owns_numeric_candidate = grammar.extensions().iter().any(|extension| {
+        matches!(
+            extension,
+            crate::catalog::PropertyGrammarExtension::LengthPercentageNumberCalculation
+                | crate::catalog::PropertyGrammarExtension::LengthPercentageOrNumberCalculation
+        )
+    }) && is_numeric_extension_candidate(source);
+    if owns_numeric_candidate {
+        let value = parse_extension_value(grammar.extensions(), grammar.canonical_name(), source)?
+            .ok_or_else(|| unsupported_grammar_error(&grammar, source))?;
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::Extension(value),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        });
+    }
+
+    let extension_property_name = grammar.canonical_name();
+    if let Some(value) =
+        parse_preferred_extension_value(grammar.extensions(), extension_property_name, source)
+    {
+        return Ok(SemanticDeclaration {
+            property_name: Arc::from(grammar.canonical_name()),
+            value: SemanticPropertyValue::Extension(value),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        });
     }
 
     let standard = if grammar.has_standard_parser() {
@@ -207,7 +240,7 @@ pub fn parse_semantic_property_with_limits(
     };
 
     if let Some(value) =
-        parse_extension_value(grammar.extensions(), grammar.canonical_name(), source)?
+        parse_extension_value(grammar.extensions(), extension_property_name, source)?
     {
         return Ok(SemanticDeclaration {
             property_name: Arc::from(grammar.canonical_name()),

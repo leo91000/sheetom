@@ -31,6 +31,12 @@ const valueCapabilitiesBytes = await readFile(
 const numberResultMathCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "number-result-math-capabilities.json"),
 );
+const numericPropertyContractsBytes = await readFile(
+  path.join(compatibilityRoot, "numeric-property-contracts.json"),
+);
+const propertyValueObservationsBytes = await readFile(
+  path.join(compatibilityRoot, "property-value-observations.json"),
+);
 const relativeColorCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "relative-color-capabilities.json"),
 );
@@ -222,6 +228,21 @@ for (const adapter of ["native", "public"]) {
   }
 }
 
+const numericPropertyEvidence = await requiredEvidenceReport("numeric-property-report");
+const numericPropertyReport = numericPropertyEvidence.report;
+const numericMismatchCount = Object.values(numericPropertyReport.mismatches ?? {})
+  .reduce((count, mismatches) => count + (Array.isArray(mismatches) ? mismatches.length : 1), 0);
+if (
+  numericPropertyReport.schemaVersion !== 1
+  || numericPropertyReport.contract !== "compatibility/numeric-property-contracts.json"
+  || numericPropertyReport.properties < 1
+  || numericPropertyReport.probes < 1
+  || numericPropertyReport.expectedAccepted < 1
+  || numericMismatchCount !== 0
+) {
+  throw new Error("Numeric Property contract execution evidence is incomplete");
+}
+
 const geometricEvidence = await requiredEvidenceReport("geometric-report");
 const geometricReport = geometricEvidence.report;
 if (
@@ -289,7 +310,7 @@ for (const reportArgument of reportArguments) {
 }
 const report = {
   $schema: "../schemas/compatibility-report.schema.json",
-  schemaVersion: 5,
+  schemaVersion: 6,
   packageVersion: packageManifest.version,
   baseline: {
     wptCommit: wptLock.commit,
@@ -341,6 +362,22 @@ const report = {
         ...nativeCorpusReport.numberResultMath,
         sha256: createHash("sha256")
           .update(numberResultMathCapabilitiesBytes)
+          .digest("hex"),
+      },
+      numericProperties: {
+        passed: numericPropertyReport.properties * numericPropertyReport.probes,
+        total: numericPropertyReport.properties * numericPropertyReport.probes,
+        accepted: numericPropertyReport.expectedAccepted,
+        rejected: numericPropertyReport.properties * numericPropertyReport.probes
+          - numericPropertyReport.expectedAccepted,
+        contractSha256: createHash("sha256")
+          .update(numericPropertyContractsBytes)
+          .digest("hex"),
+        observationsSha256: createHash("sha256")
+          .update(propertyValueObservationsBytes)
+          .digest("hex"),
+        executionSha256: createHash("sha256")
+          .update(numericPropertyEvidence.bytes)
           .digest("hex"),
       },
       relativeColors: {

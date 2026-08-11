@@ -1,0 +1,23 @@
+{
+  "$schema": "./schemas/numeric-property-contracts.schema.json",
+  "schemaVersion": 1,
+  "description": "Numeric grammar branches that must match the pinned Chromium Property Value observations exactly. This selects proof cases and is never imported by the runtime.",
+  "extensionFamilies": [
+    "length-percentage-number-calculation",
+    "length-percentage-or-number-calculation"
+  ],
+  "additionalProperties": ["-webkit-perspective"],
+  "probes": [
+    "number.zero",
+    "number.one",
+    "number.negative",
+    "number.fraction",
+    "length.positive",
+    "length.negative",
+    "percentage",
+    "cardinality.two-lengths",
+    "math.number",
+    "math.length-percentage",
+    "math.min"
+  ]
+}

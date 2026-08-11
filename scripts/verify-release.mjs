@@ -31,8 +31,8 @@ const report = JSON.parse(await readFile(reportPath, "utf8"));
 if (report.packageVersion !== manifest.version) {
   throw new Error(`${reportPath} does not describe package version ${manifest.version}`);
 }
-if (report.schemaVersion !== 5) {
-  throw new Error("RC6 releases require Compatibility Report schema version 5");
+if (report.schemaVersion !== 6) {
+  throw new Error("RC6 releases require Compatibility Report schema version 6");
 }
 const expectedNativeEngine = await nativeEngineEvidence(process.cwd());
 if (JSON.stringify(report.baseline.nativeEngine) !== JSON.stringify(expectedNativeEngine)) {
@@ -61,6 +61,7 @@ if (!/^[0-9a-f]{64}$/.test(report.evidence.operationFixtures.sha256 ?? "")) {
 const nativeGrammar = report.evidence.nativeGrammar;
 const shorthandGrammar = nativeGrammar?.grammarBranches;
 const geometricGrammar = nativeGrammar?.geometricBranches;
+const numericProperties = nativeGrammar?.numericProperties;
 if (
   nativeGrammar?.codecProfiles !== 24 ||
   nativeGrammar?.shorthandProperties?.passed !== 129 ||
@@ -81,6 +82,10 @@ if (
   nativeGrammar?.numberResultMath?.total !== 860 ||
   nativeGrammar?.numberResultMath?.positive !== 616 ||
   nativeGrammar?.numberResultMath?.negative !== 244 ||
+  numericProperties?.passed !== 627 ||
+  numericProperties?.total !== 627 ||
+  numericProperties?.accepted !== 309 ||
+  numericProperties?.rejected !== 318 ||
   nativeGrammar?.relativeColors?.passed !== 1_306 ||
   nativeGrammar?.relativeColors?.total !== 1_306 ||
   nativeGrammar?.relativeColors?.positive !== 1_146 ||
@@ -96,6 +101,9 @@ if (
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.observationsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.valueCapabilities?.sha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.numberResultMath?.sha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(numericProperties?.contractSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(numericProperties?.observationsSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(numericProperties?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.relativeColors?.sha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(geometricGrammar?.contractsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(geometricGrammar?.generatorSha256 ?? "") ||
@@ -112,6 +120,8 @@ for (const [filename, recordedHash] of [
     "compatibility/number-result-math-capabilities.json",
     nativeGrammar.numberResultMath.sha256,
   ],
+  ["compatibility/numeric-property-contracts.json", numericProperties.contractSha256],
+  ["compatibility/property-value-observations.json", numericProperties.observationsSha256],
   ["compatibility/relative-color-capabilities.json", nativeGrammar.relativeColors.sha256],
   ["compatibility/browser-geometric-contracts.json", geometricGrammar.contractsSha256],
   ["scripts/browser-geometric-differential.mjs", geometricGrammar.generatorSha256],

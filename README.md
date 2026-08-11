@@ -180,6 +180,14 @@ sections, and contextual values in every position of `flex`, `grid`, columns,
 aspect ratios, and border-image families. Both direct and composite properties
 must pass mutation, `cssText`, safe round-trip, and atomic-rejection gates.
 
+Direct numeric and cross-dimension syntax is gated independently by the
+[`Numeric Property Contracts`](./compatibility/numeric-property-contracts.json).
+It crosses 57 number-, percentage-, length-, and legacy-number properties with
+11 accepted and rejected neighboring branches. The public binding must match
+Chromium for acceptance, observable values, `cssText`, indexed names, and
+invalid-mutation atomicity; the browser observations remain test evidence and
+are never loaded by the runtime.
+
 The corresponding shorthand depth evidence is split between the reviewed
 [`Grammar Branch Contracts`](./compatibility/shorthand-grammar-contracts.json)
 and the generated

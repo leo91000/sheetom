@@ -876,13 +876,28 @@ pub(crate) fn parse_value_with_limits(
     important: bool,
     limits: ResourceLimits,
 ) -> Result<ParsedValue, MutationOutcome> {
+    parse_value_for_source_with_limits(name, name, value, important, limits)
+}
+
+pub(crate) fn parse_value_for_source_with_limits(
+    name: &str,
+    source_name: &str,
+    value: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Result<ParsedValue, MutationOutcome> {
+    let semantic_name = if source_name == "-webkit-perspective" {
+        source_name
+    } else {
+        name
+    };
     let substitutions = analyze_substitutions(value);
     if !substitutions.valid {
         return Err(MutationOutcome::InvalidValue);
     }
     if name.starts_with("--") {
-        let semantic =
-            parse_semantic_property_with_limits(name, value, limits).map_err(map_engine_error)?;
+        let semantic = parse_semantic_property_with_limits(semantic_name, value, limits)
+            .map_err(map_engine_error)?;
         return Ok(ParsedValue {
             value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
             longhands: None,
@@ -909,8 +924,8 @@ pub(crate) fn parse_value_with_limits(
     }
 
     if substitutions.found {
-        let semantic =
-            parse_semantic_property_with_limits(name, value, limits).map_err(map_engine_error)?;
+        let semantic = parse_semantic_property_with_limits(semantic_name, value, limits)
+            .map_err(map_engine_error)?;
         return Ok(ParsedValue {
             value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
             longhands: None,
@@ -936,7 +951,7 @@ pub(crate) fn parse_value_with_limits(
         });
     }
 
-    let semantic = parse_semantic_property_with_limits(name, value, limits);
+    let semantic = parse_semantic_property_with_limits(semantic_name, value, limits);
     if !semantic.as_ref().is_ok_and(|candidate| {
         matches!(
             candidate.parse_kind(),
