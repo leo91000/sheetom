@@ -143,6 +143,77 @@ for (const value of [
     });
 }
 
+for (const recoveryCase of [
+    { id: "font-string", property: "font-family", initial: "serif", input: '"Gotham' },
+    { id: "typed-comment", property: "color", initial: "blue", input: "red/*comment" },
+    {
+        id: "calc-internal-comment",
+        property: "width",
+        initial: "2px",
+        input: "calc(1px/*comment*/",
+    },
+    {
+        id: "color-internal-comment",
+        property: "color",
+        initial: "blue",
+        input: "rgb(1/*comment*/ 2 3",
+    },
+    {
+        id: "gradient-internal-comment",
+        property: "background-image",
+        initial: "none",
+        input: "linear-gradient(red/*comment*/, blue",
+    },
+    { id: "calc-function", property: "width", initial: "2px", input: "calc(1px" },
+    { id: "min-function", property: "width", initial: "2px", input: "min(1px, 2px" },
+    { id: "color-function", property: "color", initial: "blue", input: "rgb(1 2 3" },
+    {
+        id: "gradient-function",
+        property: "background-image",
+        initial: "none",
+        input: "linear-gradient(red, blue",
+    },
+    {
+        id: "transform-function",
+        property: "transform",
+        initial: "none",
+        input: "translateX(1px",
+    },
+    { id: "url-token", property: "background-image", initial: "none", input: "url(foo" },
+    { id: "pending-function", property: "content", initial: '"before"', input: "var(--x" },
+    {
+        id: "nested-pending-functions",
+        property: "padding",
+        initial: "1px",
+        input: "72px var(--space, var(--space,",
+    },
+    { id: "custom-string", property: "--x", initial: "before", input: '"hello' },
+    { id: "custom-function", property: "--x", initial: "before", input: "fn(value" },
+    { id: "custom-square-block", property: "--x", initial: "before", input: "[value" },
+    { id: "custom-curly-block", property: "--x", initial: "before", input: "{value" },
+    { id: "custom-comment", property: "--x", initial: "before", input: "red/*comment" },
+    {
+        id: "custom-mixed-comments",
+        property: "--x",
+        initial: "before",
+        input: "a/* internal */b/* unfinished",
+    },
+    { id: "custom-terminal-escape", property: "--x", initial: "before", input: "foo\\" },
+    { id: "custom-url-escape", property: "--x", initial: "before", input: "url(foo\\" },
+    { id: "invalid-string", property: "font-family", initial: "serif", input: '"bad\nnext' },
+    { id: "invalid-url", property: "background-image", initial: "none", input: 'url(bad"' },
+    { id: "unmatched-close", property: "color", initial: "blue", input: "red)" },
+]) {
+    cases.push({
+        id: `recovered-eof:${recoveryCase.id}`,
+        operations: [
+            ["set", recoveryCase.property, recoveryCase.initial, ""],
+            ["set", recoveryCase.property, recoveryCase.input, ""],
+        ],
+        probes: [recoveryCase.property],
+    });
+}
+
 function applyNative(state, operation) {
     const [kind, ...args] = operation;
     if (kind === "replace") state.replaceCssText(args[0]);
