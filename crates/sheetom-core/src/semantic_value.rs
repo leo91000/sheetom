@@ -109,9 +109,13 @@ impl SemanticDeclaration {
 
     pub fn canonical_value(&self) -> Result<String, EngineError> {
         match &self.value {
-            SemanticPropertyValue::Standard(property) => property
-                .value_to_css_string(PrinterOptions::default())
-                .map_err(|error| EngineError::Serialize(error.to_string())),
+            SemanticPropertyValue::Standard(property) => match property {
+                Property::Grid(value) => value.to_cssom_string(),
+                Property::GridTemplate(value) => value.to_cssom_string(),
+                Property::GridTemplateAreas(value) => value.to_cssom_string(),
+                _ => property.value_to_css_string(PrinterOptions::default()),
+            }
+            .map_err(|error| EngineError::Serialize(error.to_string())),
             SemanticPropertyValue::Extension(value) => value.canonical_value(),
             SemanticPropertyValue::ExpandedShorthand => {
                 self.recovered.reparsable_css_without_comments()
