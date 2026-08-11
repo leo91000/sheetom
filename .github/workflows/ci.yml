@@ -168,7 +168,7 @@ jobs:
       - name: Install the Chromium oracle
         run: npx playwright install chromium
       - name: Compare native declaration sequences with Chromium
-        run: npm run native:browser-differential
+        run: npm run native:browser-differential:run
 
   native-bindings:
     needs: changes
@@ -186,8 +186,11 @@ jobs:
             os: windows-2025
           - target: aarch64-pc-windows-msvc
             os: windows-11-vs2026-arm
+          # Apple Silicon cross-compiles the x64 binary faster; the packaged
+          # bytes are still executed by the macos-15-intel consumer job.
           - target: x86_64-apple-darwin
-            os: macos-15-intel
+            os: macos-15
+            load_on_builder: false
           - target: aarch64-apple-darwin
             os: macos-15
     runs-on: ${{ matrix.os }}
@@ -211,9 +214,13 @@ jobs:
           key: cargo-registry-target-v2-${{ matrix.target }}-1.88-${{ hashFiles('Cargo.lock') }}
       - run: npm install --global npm@11.16.0
       - run: npm ci
+      - name: Install the cross-compiled Rust target
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: rustup target add ${{ matrix.target }}
       - name: Build the native target
         run: npm run native:build:target -- ${{ matrix.target }}
       - name: Load and exercise the native target
+        if: matrix.load_on_builder != false
         run: node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs
       - uses: actions/upload-artifact@v7
         with:
@@ -558,6 +565,8 @@ jobs:
         working-directory: ../sheetom-baseline
       - run: npm run native:build
         working-directory: ../sheetom-baseline
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
       - run: npm run build
         working-directory: ../sheetom-baseline
       - name: Benchmark base commit with the candidate harness

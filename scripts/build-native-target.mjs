@@ -8,7 +8,15 @@ const target = process.argv[2];
 
 const targets = new Map([
   ["aarch64-apple-darwin", { platform: "darwin", arch: "arm64", suffix: "darwin-arm64" }],
-  ["x86_64-apple-darwin", { platform: "darwin", arch: "x64", suffix: "darwin-x64" }],
+  [
+    "x86_64-apple-darwin",
+    {
+      platform: "darwin",
+      arch: "x64",
+      buildArchitectures: ["arm64", "x64"],
+      suffix: "darwin-x64",
+    },
+  ],
   ["aarch64-pc-windows-msvc", { platform: "win32", arch: "arm64", suffix: "win32-arm64-msvc" }],
   ["x86_64-pc-windows-msvc", { platform: "win32", arch: "x64", suffix: "win32-x64-msvc" }],
   ["aarch64-unknown-linux-gnu", { platform: "linux", arch: "arm64", suffix: "linux-arm64-gnu", napiCross: true }],
@@ -21,9 +29,14 @@ const configuration = targets.get(target);
 if (!configuration) {
   throw new Error(`Unsupported native build target: ${target ?? "<missing>"}`);
 }
-if (process.platform !== configuration.platform || process.arch !== configuration.arch) {
+const buildArchitectures = configuration.buildArchitectures ?? [configuration.arch];
+if (
+  process.platform !== configuration.platform ||
+  !buildArchitectures.includes(process.arch)
+) {
   throw new Error(
-    `Target ${target} must be built on ${configuration.platform}/${configuration.arch}, ` +
+    `Target ${target} must be built on ${configuration.platform}/` +
+      `${buildArchitectures.join(" or ")}, ` +
       `not ${process.platform}/${process.arch}`,
   );
 }
