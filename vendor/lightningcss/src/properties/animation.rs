@@ -44,13 +44,13 @@ pub enum AnimationDuration {
 
 impl Default for AnimationDuration {
   fn default() -> Self {
-    Self::Time(Time::Seconds(0.0))
+    Self::Auto
   }
 }
 
 impl Zero for AnimationDuration {
   fn zero() -> Self {
-    Self::default()
+    Self::Time(Time::Seconds(0.0))
   }
 
   fn is_zero(&self) -> bool {
@@ -1194,5 +1194,28 @@ mod tests {
         .expect("animation shorthand should serialize"),
       "auto 1s foo"
     );
+  }
+
+  #[test]
+  fn distinguishes_an_omitted_duration_from_an_explicit_zero() {
+    for (source, expected) in [
+      ("fade", AnimationDuration::Auto),
+      ("0s fade", AnimationDuration::Time(crate::values::time::Time::Seconds(0.0))),
+    ] {
+      let property = Property::parse_string(
+        PropertyId::from("animation"),
+        source,
+        ParserOptions::default(),
+      )
+      .expect("animation shorthand should parse");
+      let duration = property
+        .longhand(&PropertyId::from("animation-duration"))
+        .expect("animation shorthand should expose its duration");
+
+      assert!(matches!(
+        duration,
+        Property::AnimationDuration(ref values, _) if values.as_slice() == [expected]
+      ));
+    }
   }
 }

@@ -20,6 +20,8 @@ The broad matrix complements, rather than replaces, property-specific branch cor
 
 During the RC6 implementation sequence, the report command may be run with explicit mismatch reporting so each focused PR can reduce the inventory. The RC6 release gate will run the strict form and require zero acceptance, observable, serialization, item-order, or atomicity mismatches.
 
+The matrix runner can gate named dimensions independently while the remaining dimensions are still under active migration. CI already requires zero observable-value, `cssText`, indexed-name, and atomicity differences across every pair accepted by both implementations. Acceptance remains a separately visible mismatch inventory until its own strict gate reaches zero; an acceptance mismatch is never silently counted as an observable pass.
+
 ## Consequences
 
 - The baseline accounts for every property/value pair and fails closed when the property manifest or probe set changes.
