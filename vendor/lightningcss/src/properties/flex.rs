@@ -41,15 +41,77 @@ impl Default for FlexDirection {
   }
 }
 
-enum_property! {
-  /// A value for the [flex-wrap](https://www.w3.org/TR/2018/CR-css-flexbox-1-20181119/#flex-wrap-property) property.
-  pub enum FlexWrap {
-    /// The flex items do not wrap.
-    "nowrap": NoWrap,
-    /// The flex items wrap.
-    "wrap": Wrap,
-    /// The flex items wrap, in reverse.
-    "wrap-reverse": WrapReverse,
+/// A value for the [flex-wrap](https://www.w3.org/TR/css-flexbox-2/#flex-wrap-property) property.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum FlexWrap {
+  /// The flex items do not wrap.
+  NoWrap,
+  /// The flex items wrap.
+  Wrap,
+  /// The flex items wrap, in reverse.
+  WrapReverse,
+  /// Wrapped lines are balanced. An authored `wrap` is omitted when serialized.
+  Balance,
+  /// Reverse wrapped lines are balanced.
+  WrapReverseBalance,
+}
+
+impl<'i> Parse<'i> for FlexWrap {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let location = input.current_source_location();
+    let ident = input.expect_ident()?;
+    let mut value = cssparser::match_ignore_ascii_case! { &*ident,
+      "nowrap" => Self::NoWrap,
+      "wrap" => Self::Wrap,
+      "wrap-reverse" => Self::WrapReverse,
+      "balance" => Self::Balance,
+      _ => return Err(location.new_unexpected_token_error(Token::Ident(ident.clone()))),
+    };
+    if matches!(value, Self::Wrap | Self::WrapReverse)
+      && input.try_parse(|input| input.expect_ident_matching("balance")).is_ok()
+    {
+      value = match value {
+        Self::Wrap => Self::Balance,
+        Self::WrapReverse => Self::WrapReverseBalance,
+        _ => unreachable!(),
+      };
+    } else if value == Self::Balance {
+      if input.try_parse(|input| input.expect_ident_matching("wrap")).is_ok() {
+        value = Self::Balance;
+      } else if input
+        .try_parse(|input| input.expect_ident_matching("wrap-reverse"))
+        .is_ok()
+      {
+        value = Self::WrapReverseBalance;
+      }
+    }
+    Ok(value)
+  }
+}
+
+impl FlexWrap {
+  /// Returns the canonical serialized value.
+  pub fn as_str(&self) -> &str {
+    match self {
+      Self::NoWrap => "nowrap",
+      Self::Wrap => "wrap",
+      Self::WrapReverse => "wrap-reverse",
+      Self::Balance => "balance",
+      Self::WrapReverseBalance => "wrap-reverse balance",
+    }
+  }
+}
+
+impl ToCss for FlexWrap {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    dest.write_str(self.as_str())
   }
 }
 
@@ -806,5 +868,42 @@ fn is_flex_property(property_id: &PropertyId) -> bool {
     | PropertyId::BoxOrdinalGroup(_)
     | PropertyId::FlexOrder(_) => true,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::printer::PrinterOptions;
+  use crate::properties::{Property, PropertyId};
+  use crate::stylesheet::ParserOptions;
+
+  #[test]
+  fn parses_and_canonicalizes_balanced_flex_wrapping() {
+    for (name, source, expected) in [
+      ("flex-wrap", "balance", "balance"),
+      ("flex-wrap", "wrap balance", "balance"),
+      ("flex-wrap", "balance wrap", "balance"),
+      ("flex-wrap", "wrap-reverse balance", "wrap-reverse balance"),
+      ("flex-flow", "column balance", "column balance"),
+      ("flex-flow", "wrap balance", "balance"),
+    ] {
+      let property = Property::parse_string(PropertyId::from(name), source, ParserOptions::default())
+        .expect("balanced flex wrapping should parse");
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("balanced flex wrapping should serialize"),
+        expected,
+        "{name}: {source}"
+      );
+    }
+
+    for source in ["nowrap balance", "balance nowrap", "balance balance", "wrap nowrap"] {
+      let property = Property::parse_string(PropertyId::from("flex-wrap"), source, ParserOptions::default());
+      assert!(
+        property.is_err() || matches!(property, Ok(Property::Unparsed(_))),
+        "flex-wrap: {source}"
+      );
+    }
   }
 }
