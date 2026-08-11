@@ -307,7 +307,7 @@ mod tests {
             };
             owner_counts[index] += 1;
         }
-        assert_eq!(owner_counts, [0, 429, 22, 168, 92]);
+        assert_eq!(owner_counts, [0, 429, 22, 192, 68]);
     }
 
     #[test]
@@ -324,50 +324,27 @@ mod tests {
         assert_eq!(
             unsupported,
             [
-                "-webkit-locale",
-                "-webkit-perspective-origin-x",
-                "-webkit-perspective-origin-y",
-                "-webkit-text-decorations-in-effect",
-                "-webkit-transform-origin-x",
-                "-webkit-transform-origin-y",
-                "-webkit-transform-origin-z",
                 "anchor-name",
                 "anchor-scope",
                 "animation-trigger",
                 "border-shape",
                 "clip",
-                "contain",
-                "contain-intrinsic-block-size",
-                "contain-intrinsic-inline-size",
                 "counter-increment",
                 "counter-reset",
                 "counter-set",
                 "d",
                 "dynamic-range-limit",
                 "hyphenate-character",
-                "object-position",
                 "object-view-box",
-                "outline-offset",
-                "overflow-clip-margin",
                 "page",
-                "page-orientation",
                 "paint-order",
                 "position-anchor",
                 "position-area",
                 "position-visibility",
                 "quotes",
-                "ruby-overhang",
-                "scroll-snap-align",
-                "scroll-snap-type",
-                "scrollbar-gutter",
-                "shape-margin",
                 "shape-outside",
                 "text-autospace",
-                "text-fit",
-                "text-underline-offset",
-                "text-underline-position",
                 "timeline-scope",
-                "touch-action",
                 "trigger-scope",
                 "view-transition-scope",
                 "will-change",

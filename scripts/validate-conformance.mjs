@@ -59,6 +59,7 @@ const numberResultMathCorpusSchema = await readJson(path.join(compatibilityRoot,
 const propertyValueProbesSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-probes.schema.json"));
 const propertyValueObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-observations.schema.json"));
 const browserLonghandKeywordContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-keyword-contracts.schema.json"));
+const browserLonghandCompositeContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-composite-contracts.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -75,6 +76,7 @@ const validateNumberResultMathCorpus = ajv.compile(numberResultMathCorpusSchema)
 const validatePropertyValueProbes = ajv.compile(propertyValueProbesSchema);
 const validatePropertyValueObservations = ajv.compile(propertyValueObservationsSchema);
 const validateBrowserLonghandKeywordContracts = ajv.compile(browserLonghandKeywordContractsSchema);
+const validateBrowserLonghandCompositeContracts = ajv.compile(browserLonghandCompositeContractsSchema);
 
 const propertyValueProbesFile = path.join(
   compatibilityRoot,
@@ -88,17 +90,50 @@ const browserLonghandKeywordContractsFile = path.join(
   compatibilityRoot,
   "browser-longhand-keyword-contracts.json",
 );
+const browserLonghandCompositeContractsFile = path.join(
+  compatibilityRoot,
+  "browser-longhand-composite-contracts.json",
+);
 const propertyValueProbesBytes = await readFile(propertyValueProbesFile);
 const propertyValueProbes = JSON.parse(propertyValueProbesBytes.toString("utf8"));
 const propertyValueObservations = await readJson(propertyValueObservationsFile);
 const browserLonghandKeywordContracts = await readJson(
   browserLonghandKeywordContractsFile,
 );
+const browserLonghandCompositeContracts = await readJson(
+  browserLonghandCompositeContractsFile,
+);
 validateOrThrow(
   validatePropertyValueProbes,
   propertyValueProbes,
   propertyValueProbesFile,
 );
+validateOrThrow(
+  validateBrowserLonghandCompositeContracts,
+  browserLonghandCompositeContracts,
+  browserLonghandCompositeContractsFile,
+);
+assert.equal(
+  browserLonghandCompositeContracts.baseline,
+  propertyValueObservations.baseline.userAgent,
+  "Browser Longhand Composite contracts must use the Property Value Chromium baseline",
+);
+assert.equal(
+  new Set(browserLonghandCompositeContracts.properties.map(entry => entry.property)).size,
+  browserLonghandCompositeContracts.properties.length,
+  "Browser Longhand Composite properties must be unique",
+);
+for (const entry of browserLonghandCompositeContracts.properties) {
+  assert.ok(
+    chromiumSupportedProperties.has(entry.property),
+    `Browser Longhand Composite contract references an unknown property: ${entry.property}`,
+  );
+  assert.equal(
+    new Set(entry.branches.map(branch => branch.id)).size,
+    entry.branches.length,
+    `${entry.property} composite branch IDs must be unique`,
+  );
+}
 validateOrThrow(
   validatePropertyValueObservations,
   propertyValueObservations,
