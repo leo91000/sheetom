@@ -57,10 +57,18 @@ fn synthesize_shorthand_inner(
     authored_expansion: bool,
 ) -> Option<String> {
     let longhands = observed_shorthand_longhands(name)?;
-    let records = longhands
-        .iter()
-        .map(|longhand| records.iter().find(|record| record.name == *longhand))
-        .collect::<Option<Vec<_>>>()?;
+    let records = if name == "grid" {
+        let records = records
+            .iter()
+            .filter(|record| longhands.contains(&record.name.as_str()))
+            .collect::<Vec<_>>();
+        (records.len() == longhands.len()).then_some(records)?
+    } else {
+        longhands
+            .iter()
+            .map(|longhand| records.iter().find(|record| record.name == *longhand))
+            .collect::<Option<Vec<_>>>()?
+    };
     let first = records.first()?;
     if records
         .iter()
@@ -125,6 +133,14 @@ fn synthesize_shorthand_inner(
         return special;
     }
 
+    synthesize_typed_shorthand(&records, name, safe)
+}
+
+fn synthesize_typed_shorthand(
+    records: &[&DeclarationRecord],
+    name: &str,
+    safe: bool,
+) -> Option<String> {
     let mut declarations = DeclarationBlock::new();
     for record in records {
         let value = if safe {
@@ -137,7 +153,11 @@ fn synthesize_shorthand_inner(
     }
     let shorthand = PropertyId::from(name);
     let (property, _) = declarations.get(&shorthand)?;
-    property.value_to_css_string(PrinterOptions::default()).ok()
+    match property.as_ref() {
+        Property::Grid(value) => value.to_cssom_string().ok(),
+        Property::GridTemplate(value) => value.to_cssom_string().ok(),
+        _ => property.value_to_css_string(PrinterOptions::default()).ok(),
+    }
 }
 
 fn synthesize_special_shorthand(
@@ -155,6 +175,7 @@ fn synthesize_special_shorthand(
         "flex" => synthesize_flex(records, safe),
         "font" => synthesize_font(records, safe),
         "font-variant" => synthesize_font_variant(records, safe),
+        "grid" => synthesize_grid(records, safe),
         "grid-area" => synthesize_grid_area(records, safe),
         "grid-column" | "grid-row" => synthesize_grid_line(records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
@@ -204,10 +225,10 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "flex"
             | "font"
             | "font-variant"
+            | "grid"
             | "grid-area"
             | "grid-column"
             | "grid-row"
-            | "grid-template"
             | "mask"
             | "offset"
             | "outline"
@@ -654,6 +675,49 @@ fn synthesize_grid_area(records: &[&DeclarationRecord], safe: bool) -> Option<St
         .rposition(|value| *value != "auto")
         .map_or(1, |index| index + 1);
     Some(values[..retained].join(" / "))
+}
+
+fn synthesize_grid(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let authored_auto_flow = records.first()?.name == "grid-template-columns";
+    if !authored_auto_flow {
+        return synthesize_typed_shorthand(records, "grid", safe);
+    }
+
+    let rows = record_value(records, "grid-template-rows", safe)?;
+    let columns = record_value(records, "grid-template-columns", safe)?;
+    let areas = record_value(records, "grid-template-areas", safe)?;
+    let flow = record_value(records, "grid-auto-flow", safe)?;
+    let auto_columns = record_value(records, "grid-auto-columns", safe)?;
+    let auto_rows = record_value(records, "grid-auto-rows", safe)?;
+    if areas != "none" {
+        return None;
+    }
+
+    if matches!(flow, "row" | "dense" | "row dense") && rows == "none" && auto_columns == "auto" {
+        let mut left = "auto-flow".to_owned();
+        if matches!(flow, "dense" | "row dense") {
+            left.push_str(" dense");
+        }
+        if auto_rows != "auto" {
+            left.push(' ');
+            left.push_str(auto_rows);
+        }
+        return Some(format!("{left} / {columns}"));
+    }
+
+    if matches!(flow, "column" | "column dense") && columns == "none" && auto_rows == "auto" {
+        let mut right = "auto-flow".to_owned();
+        if flow == "column dense" {
+            right.push_str(" dense");
+        }
+        if auto_columns != "auto" {
+            right.push(' ');
+            right.push_str(auto_columns);
+        }
+        return Some(format!("{rows} / {right}"));
+    }
+
+    None
 }
 
 fn synthesize_grid_template(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1384,6 +1448,22 @@ pub(crate) fn parse_value_for_source_with_limits(
             alias_value: None,
         });
     }
+    if name == "grid" && grid_uses_auto_flow(value) {
+        const GRID_AUTO_FLOW_ORDER: &[&str] = &[
+            "grid-template-columns",
+            "grid-template-rows",
+            "grid-template-areas",
+            "grid-auto-flow",
+            "grid-auto-columns",
+            "grid-auto-rows",
+        ];
+        longhands.sort_by_key(|record| {
+            GRID_AUTO_FLOW_ORDER
+                .iter()
+                .position(|name| *name == record.name)
+                .unwrap_or(GRID_AUTO_FLOW_ORDER.len())
+        });
+    }
 
     Ok(ParsedValue {
         value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
@@ -1462,6 +1542,9 @@ fn observable_shorthand_override(
     input: &str,
     safe_value: &str,
 ) -> Option<(String, Option<String>)> {
+    if shorthand == "grid" && longhand == "grid-auto-flow" && safe_value == "row dense" {
+        return Some(("dense".to_owned(), None));
+    }
     if shorthand == "background" {
         return observable_background_longhand(longhand, input).map(|value| {
             let value = project_observable_value(longhand, &value).unwrap_or(value);
@@ -1492,6 +1575,16 @@ fn observable_shorthand_override(
         }
     }
     None
+}
+
+fn grid_uses_auto_flow(input: &str) -> bool {
+    split_top_level_delimiter(input, b'/').is_some_and(|sections| {
+        sections.len() == 2
+            && sections.iter().any(|section| {
+                split_top_level_whitespace(section)
+                    .is_some_and(|components| components.contains(&"auto-flow"))
+            })
+    })
 }
 
 fn observable_background_longhand(longhand: &str, input: &str) -> Option<String> {

@@ -790,6 +790,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "grid-area"
             | "grid-column"
             | "grid-row"
+            | "grid"
             | "grid-template"
             | "mask"
             | "offset"
@@ -1987,6 +1988,65 @@ mod tests {
                 "{id} round-trip"
             );
         }
+    }
+
+    #[test]
+    fn grid_shorthands_own_explicit_subgrid_area_and_auto_flow_branches() {
+        let mut template = DeclarationState::new();
+        assert_eq!(
+            template.set_property("grid-template", "subgrid [a] / none", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            template.get_property_value("grid-template"),
+            "subgrid [a] / none"
+        );
+
+        assert_eq!(
+            template.set_property(
+                "grid-template",
+                "[top] \"main\" 1px [bottom] / [left] 1fr [right]",
+                "",
+            ),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            template.get_property_value("grid-template"),
+            "[top] \"main\" 1px [bottom] / [left] 1fr [right]"
+        );
+        assert_eq!(
+            template.get_property_value("grid-template-rows"),
+            "[top] 1px [bottom]"
+        );
+        assert_eq!(
+            template.get_property_value("grid-template-areas"),
+            "\"main\""
+        );
+
+        let mut auto_flow = DeclarationState::new();
+        let source = "auto-flow dense 1px / [left] 1fr [right]";
+        assert_eq!(
+            auto_flow.set_property("grid", source, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(auto_flow.get_property_value("grid"), source);
+        assert_eq!(auto_flow.item(0), "grid-template-columns");
+        assert_eq!(auto_flow.get_property_value("grid-auto-flow"), "dense");
+
+        assert_eq!(
+            auto_flow.set_property("grid-auto-rows", "2px", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            auto_flow.get_property_value("grid"),
+            "auto-flow dense 2px / [left] 1fr [right]"
+        );
+        let before = auto_flow.css_text();
+        assert_eq!(
+            auto_flow.set_property("grid", "none /", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(auto_flow.css_text(), before);
     }
 
     #[test]
