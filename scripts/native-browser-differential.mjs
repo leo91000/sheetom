@@ -56,6 +56,58 @@ const cases = [
         probes: ["overflow", "overflow-x", "overflow-y"],
     },
     {
+        id: "anchor-inset-canonicalization",
+        operations: [[
+            "set",
+            "top",
+            "anchor(inside --sheetom, calc(anchor-size(width) + 1px))",
+            "important",
+        ]],
+        probes: ["top"],
+    },
+    {
+        id: "recursive-anchor-inset-fallback",
+        operations: [[
+            "set",
+            "top",
+            "anchor(inside, anchor(outside, calc(anchor-size(width) + 1px)))",
+            "",
+        ]],
+        probes: ["top"],
+    },
+    {
+        id: "anchor-inset-shorthand-remove",
+        operations: [
+            [
+                "set",
+                "inset",
+                "anchor(inside) anchor(--sheetom outside, 1px) calc(anchor(start) + 1px) anchor(20%)",
+                "important",
+            ],
+            ["set", "top", "2px", ""],
+            ["remove", "top"],
+        ],
+        probes: ["inset", "top", "right", "bottom", "left"],
+    },
+    {
+        id: "invalid-anchor-inset-is-atomic",
+        operations: [
+            ["set", "top", "anchor(inside)", "important"],
+            ["set", "top", "anchor(inside, calc(anchor-size(width) + 1s))", ""],
+        ],
+        probes: ["top"],
+    },
+    {
+        id: "pending-anchor-inset-shorthand",
+        operations: [[
+            "set",
+            "inset",
+            "anchor(inside, var(--fallback))",
+            "important",
+        ]],
+        probes: ["inset", "top", "right", "bottom", "left"],
+    },
+    {
         id: "escaped-custom-name",
         operations: [["set", "--foo:bar", "red", ""]],
         probes: ["--foo:bar"],

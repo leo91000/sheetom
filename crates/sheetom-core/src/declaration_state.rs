@@ -911,6 +911,14 @@ fn requires_observable_shorthand_synthesis(name: &str, observable: &str) -> bool
             && crate::syntax::split_top_level_whitespace(observable)
                 .is_some_and(|components| components.len() == 2);
     }
+    if matches!(name, "inset" | "inset-block" | "inset-inline") {
+        if observable.contains("anchor(") || observable.contains("anchor-size(") {
+            return true;
+        }
+        return crate::syntax::split_top_level_whitespace(observable).is_some_and(|components| {
+            components.len() > 1 && components.iter().all(|component| *component == "auto")
+        });
+    }
     name == "outline"
         && crate::syntax::split_top_level_whitespace(observable)
             .is_some_and(|components| components.len() > 1)
@@ -1971,6 +1979,147 @@ mod tests {
             MutationOutcome::InvalidValue
         );
         assert_eq!(state.css_text(), before);
+    }
+
+    #[test]
+    fn anchor_functions_are_typed_only_in_inset_grammars() {
+        for name in [
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "inset-block-start",
+            "inset-block-end",
+            "inset-inline-start",
+            "inset-inline-end",
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(
+                    name,
+                    "anchor(inside --sheetom, calc(anchor-size(width) + 1px))",
+                    "",
+                ),
+                MutationOutcome::Applied,
+                "{name}"
+            );
+            assert_eq!(
+                state.get_property_value(name),
+                "anchor(--sheetom inside, calc(1px + anchor-size(width)))",
+                "{name}"
+            );
+        }
+
+        let mut recursive = DeclarationState::new();
+        assert_eq!(
+            recursive.set_property(
+                "top",
+                "anchor(inside, anchor(outside, calc(anchor-size(width) + 1px)))",
+                "",
+            ),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            recursive.get_property_value("top"),
+            "anchor(inside, anchor(outside, calc(1px + anchor-size(width))))"
+        );
+        assert_eq!(
+            recursive.set_property("margin-top", "anchor(inside)", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(
+            recursive.set_property("width", "anchor(inside)", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(
+            recursive.set_property("padding-top", "anchor-size(width)", ""),
+            MutationOutcome::InvalidValue
+        );
+    }
+
+    #[test]
+    fn anchor_inset_shorthands_expand_mutate_and_recover_atomically() {
+        for (name, value) in [
+            ("inset", "auto auto auto auto"),
+            ("inset-block", "auto auto"),
+            ("inset-inline", "auto auto"),
+        ] {
+            let mut defaults = DeclarationState::new();
+            assert_eq!(
+                defaults.set_property(name, value, ""),
+                MutationOutcome::Applied
+            );
+            assert_eq!(defaults.get_property_value(name), "auto", "{name}");
+        }
+
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property(
+                "inset",
+                "anchor(inside) anchor(--sheetom outside, 1px) calc(anchor(start) + 1px) anchor(20%)",
+                "important",
+            ),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.len(), 4);
+        assert_eq!(state.item(0), "top");
+        assert_eq!(state.item(1), "right");
+        assert_eq!(state.item(2), "bottom");
+        assert_eq!(state.item(3), "left");
+        assert_eq!(state.get_property_value("top"), "anchor(inside)");
+        assert_eq!(
+            state.get_property_value("right"),
+            "anchor(--sheetom outside, 1px)"
+        );
+        assert_eq!(
+            state.get_property_value("bottom"),
+            "calc(1px + anchor(start))"
+        );
+        assert_eq!(state.get_property_value("left"), "anchor(20%)");
+        assert_eq!(
+            state.get_property_value("inset"),
+            "anchor(inside) anchor(--sheetom outside, 1px) calc(1px + anchor(start)) anchor(20%)"
+        );
+        assert_eq!(state.get_property_priority("inset"), "important");
+
+        assert_eq!(
+            state.set_property("top", "2px", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("inset"), "");
+        assert_eq!(state.remove_property("top"), "2px");
+        assert_eq!(state.get_property_value("top"), "");
+        assert_eq!(state.len(), 3);
+
+        let before = state.css_text();
+        for invalid in [
+            "anchor()",
+            "anchor(--sheetom)",
+            "anchor(inside,)",
+            "anchor(inside outside)",
+            "anchor(10px)",
+            "anchor(inside, calc(anchor-size(width) + 1s))",
+        ] {
+            assert_eq!(
+                state.set_property("right", invalid, ""),
+                MutationOutcome::InvalidValue,
+                "{invalid}"
+            );
+            assert_eq!(state.css_text(), before, "{invalid}");
+        }
+
+        let mut pending = DeclarationState::new();
+        assert_eq!(
+            pending.set_property("inset", "anchor(inside, var(--fallback))", "important",),
+            MutationOutcome::Applied
+        );
+        assert_eq!(pending.len(), 4);
+        assert_eq!(
+            pending.get_property_value("inset"),
+            "anchor(inside, var(--fallback))"
+        );
+        assert_eq!(pending.get_property_value("top"), "");
+        assert_eq!(pending.get_property_priority("top"), "important");
     }
 
     #[test]
