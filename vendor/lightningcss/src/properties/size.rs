@@ -901,7 +901,7 @@ mod tests {
       ("anchor-size(10px)", "anchor-size(10px)"),
       (
         "anchor-size(width, calc(10px + 5%))",
-        "anchor-size(width, calc(10px + 5%))",
+        "anchor-size(width, calc(5% + 10px))",
       ),
       (
         "calc(anchor-size(width) * 2)",

@@ -1075,11 +1075,24 @@ mod tests {
 
   #[test]
   fn preserves_non_finite_dimension_coefficients() {
-    for value in ["calc(infinity * 1px)", "calc(NaN * 1px)"] {
+    for (value, expected) in [
+      ("calc(infinity * 1px)", "calc(infinity * 1px)"),
+      ("calc(NaN * 1px)", "calc(NaN * 1px)"),
+      ("calc(500px / 0)", "calc(infinity * 1px)"),
+      ("calc(500px / -0)", "calc(-infinity * 1px)"),
+    ] {
       let mut input = ParserInput::new(value);
       let mut parser = Parser::new(&mut input);
       let parsed = parser.parse_entirely(LengthPercentage::parse).unwrap();
-      assert_eq!(parsed.to_css_string(PrinterOptions::default()).unwrap(), value);
+      assert_eq!(parsed.to_css_string(PrinterOptions::default()).unwrap(), expected);
+    }
+  }
+
+  #[test]
+  fn rejects_number_results_from_dimension_quotients() {
+    for value in ["calc(500px / 2px)", "calc(500px / 0px)"] {
+      assert!(!parses::<Length>(value), "{value}");
+      assert!(!parses::<LengthPercentage>(value), "{value}");
     }
   }
 

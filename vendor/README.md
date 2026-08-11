@@ -16,3 +16,7 @@ diff -qr --exclude=.git /tmp/sheetom-upstream vendor/<directory>
 ```
 
 Later SheetOM modifications are kept in focused commits. General parser corrections should include upstream-style regression tests and remain separable for contribution to the recorded upstream project.
+
+`npm run native:vendor-check` runs the complete library test suites for both
+vendored engines in the shared Cargo target directory. This keeps fork changes
+covered without adding another CI build cohort or recompiling the same graph.
