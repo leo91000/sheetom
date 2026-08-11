@@ -348,6 +348,7 @@ impl AspectRatioValue {
 pub enum WebkitBorderImageValue {
     Compound(String),
     Slice(Calc<PreservedLengthPercentage>),
+    SlicePercentage(Calc<Percentage>),
 }
 
 impl WebkitBorderImageValue {
@@ -355,6 +356,9 @@ impl WebkitBorderImageValue {
         match self {
             WebkitBorderImageValue::Compound(value) => Ok(value.clone()),
             WebkitBorderImageValue::Slice(slice) => Ok(format!("{} fill", serialize_typed(slice)?)),
+            WebkitBorderImageValue::SlicePercentage(slice) => {
+                Ok(format!("{} fill", serialize_typed(slice)?))
+            }
         }
     }
 
@@ -362,6 +366,7 @@ impl WebkitBorderImageValue {
         match self {
             WebkitBorderImageValue::Compound(_) => true,
             WebkitBorderImageValue::Slice(slice) => slice.contains_unresolved_sign(),
+            WebkitBorderImageValue::SlicePercentage(slice) => slice.contains_unresolved_sign(),
         }
     }
 }
@@ -1124,6 +1129,9 @@ fn parse_contextual_number(source: &str) -> Result<Calc<PreservedLengthPercentag
 }
 
 fn parse_aspect_ratio(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    if crate::property_constraints::has_direct_negative_component(source) {
+        return Err(invalid_numeric_value());
+    }
     let sections = split_top_level_delimiter(source, b'/')
         .filter(|sections| !sections.is_empty() && sections.len() <= 2)
         .ok_or_else(|| EngineError::Parse("invalid aspect-ratio structure".to_owned()))?;
@@ -1139,6 +1147,9 @@ fn parse_aspect_ratio(source: &str) -> Result<SemanticExtensionValue, EngineErro
 }
 
 fn parse_webkit_border_image(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    if crate::property_constraints::has_direct_negative_component(source) {
+        return Err(invalid_numeric_value());
+    }
     let canonical = (|| {
         let components = split_top_level_whitespace(source)?;
         if components.len() > 2 || components.get(1).is_some_and(|value| *value != "fill") {
@@ -1160,10 +1171,17 @@ fn parse_webkit_mask_box_image_slice(source: &str) -> Result<SemanticExtensionVa
         .ok_or_else(|| {
             EngineError::Parse("invalid -webkit-mask-box-image-slice structure".to_owned())
         })?;
-    let slice = parse_contextual_number(components[0])?;
-    Ok(SemanticExtensionValue::WebkitMaskBoxImageSlice(
-        WebkitBorderImageValue::Slice(slice),
-    ))
+    let slice = if let Ok(slice) = parse_entire(components[0], Percentage::parse) {
+        if slice.0 < 0.0 {
+            return Err(invalid_numeric_value());
+        }
+        WebkitBorderImageValue::SlicePercentage(slice.into())
+    } else if let Ok(slice) = parse_entire(components[0], Calc::<Percentage>::parse) {
+        WebkitBorderImageValue::SlicePercentage(slice)
+    } else {
+        WebkitBorderImageValue::Slice(parse_contextual_number(components[0])?)
+    };
+    Ok(SemanticExtensionValue::WebkitMaskBoxImageSlice(slice))
 }
 
 fn parse_webkit_perspective(source: &str) -> Result<SemanticExtensionValue, EngineError> {
@@ -1494,6 +1512,9 @@ fn parse_length_percentage_or_number_calculation(
 
 fn parse_integer_calculation(source: &str) -> Result<SemanticExtensionValue, EngineError> {
     let number = parse_entire(source, CSSNumber::parse)?;
+    if leading_math_function(source).is_none() && number.fract() != 0.0 {
+        return Err(invalid_numeric_value());
+    }
     Ok(SemanticExtensionValue::IntegerCalculation(
         IntegerCalculationValue { number },
     ))
@@ -1767,6 +1788,12 @@ mod tests {
             "calc(1px)"
         )
         .is_err());
+        assert!(parse(
+            PropertyGrammarExtension::IntegerCalculation,
+            "z-index",
+            "1.5"
+        )
+        .is_err());
     }
 
     #[test]
@@ -1786,6 +1813,16 @@ mod tests {
         )
         .unwrap();
         assert_eq!(image.canonical_value().unwrap(), "sign(1em) fill");
+        for (extension, property, source) in [
+            (PropertyGrammarExtension::AspectRatio, "aspect-ratio", "-1"),
+            (
+                PropertyGrammarExtension::WebkitBorderImage,
+                "-webkit-border-image",
+                "-1",
+            ),
+        ] {
+            assert!(parse(extension, property, source).is_err(), "{source}");
+        }
     }
 
     #[test]

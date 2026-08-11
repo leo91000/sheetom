@@ -159,6 +159,7 @@ fn synthesize_special_shorthand(
         "mask" => synthesize_mask(records, safe),
         "offset" => synthesize_offset(records, safe),
         "outline" => synthesize_outline(records, safe),
+        "position-try" => synthesize_position_try(records, safe),
         "column-rule-inset" | "row-rule-inset" | "rule-inset" => {
             synthesize_rule_inset(records, safe)
         }
@@ -166,6 +167,21 @@ fn synthesize_special_shorthand(
         "text-decoration" => synthesize_text_decoration(records, safe),
         "text-box" => synthesize_text_box(records, safe),
         "text-wrap" => synthesize_text_wrap(records, safe),
+        "timeline-trigger" => synthesize_timeline_trigger(records, safe),
+        "timeline-trigger-activation-range" => synthesize_timeline_trigger_range(
+            records,
+            safe,
+            "timeline-trigger-activation-range-start",
+            "timeline-trigger-activation-range-end",
+            "normal",
+        ),
+        "timeline-trigger-active-range" => synthesize_timeline_trigger_range(
+            records,
+            safe,
+            "timeline-trigger-active-range-start",
+            "timeline-trigger-active-range-end",
+            "auto",
+        ),
         "white-space" => synthesize_white_space(records, safe),
         "view-timeline" => synthesize_view_timeline(records, safe),
         _ => synthesize_structural_shorthand(name, records, safe),
@@ -192,6 +208,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "mask"
             | "offset"
             | "outline"
+            | "position-try"
             | "column-rule-inset"
             | "row-rule-inset"
             | "rule-inset"
@@ -199,6 +216,9 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "text-decoration"
             | "text-box"
             | "text-wrap"
+            | "timeline-trigger"
+            | "timeline-trigger-activation-range"
+            | "timeline-trigger-active-range"
             | "white-space"
             | "view-timeline"
     ) || is_border_like(name)
@@ -216,6 +236,57 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
                 | "border-inline-width"
                 | "overscroll-behavior"
         )
+}
+
+fn synthesize_timeline_trigger_range(
+    records: &[&DeclarationRecord],
+    safe: bool,
+    start_name: &str,
+    end_name: &str,
+    omitted_end: &str,
+) -> Option<String> {
+    let start = record_value(records, start_name, safe)?;
+    let end = record_value(records, end_name, safe)?;
+    let implied_end = crate::browser_longhand::parse_timeline_range_pair(start, omitted_end)
+        .ok()
+        .map(|(_, end)| end);
+    if implied_end.as_deref() == Some(end) {
+        return Some(start.to_owned());
+    }
+    Some(format!("{start} {end}"))
+}
+
+fn synthesize_position_try(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let order = record_value(records, "position-try-order", safe)?;
+    let fallbacks = record_value(records, "position-try-fallbacks", safe)?;
+    Some(match (order, fallbacks) {
+        ("normal", "none") => "none".to_owned(),
+        ("normal", fallbacks) => fallbacks.to_owned(),
+        (order, "none") => order.to_owned(),
+        (order, fallbacks) => format!("{order} {fallbacks}"),
+    })
+}
+
+fn synthesize_timeline_trigger(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    if record_value(records, "timeline-trigger-name", safe)? != "none"
+        || record_value(records, "timeline-trigger-source", safe)? != "auto"
+        || record_value(records, "timeline-trigger-active-range-start", safe)? != "auto"
+        || record_value(records, "timeline-trigger-active-range-end", safe)? != "auto"
+    {
+        return None;
+    }
+    let activation = synthesize_timeline_trigger_range(
+        records,
+        safe,
+        "timeline-trigger-activation-range-start",
+        "timeline-trigger-activation-range-end",
+        "normal",
+    )?;
+    Some(if activation == "normal" {
+        "none".to_owned()
+    } else {
+        activation
+    })
 }
 
 fn record_value<'a>(records: &'a [&DeclarationRecord], name: &str, safe: bool) -> Option<&'a str> {
@@ -1572,31 +1643,103 @@ fn expand_special_shorthand(
         "font-synthesis" => expand_font_synthesis(&components)?,
         "font-variant" => expand_font_variant(&components)?,
         "offset" => expand_offset(value)?,
-        "position-try" if value == "none" => vec![
-            ("position-try-order", "normal".to_owned()),
-            ("position-try-fallbacks", "none".to_owned()),
-        ],
+        "position-try" => expand_position_try(value)?,
         "scroll-timeline" => expand_scroll_timeline(value)?,
         "text-box" => expand_text_box(&components)?,
         "text-decoration" => expand_text_decoration(&components)?,
         "text-wrap" => expand_text_wrap(&components)?,
         "transition" | "-webkit-transition" => expand_transition(value)?,
-        "timeline-trigger" if value == "none" => vec![
-            ("timeline-trigger-name", "none".to_owned()),
-            ("timeline-trigger-source", "auto".to_owned()),
-            (
-                "timeline-trigger-activation-range-start",
-                "normal".to_owned(),
-            ),
-            ("timeline-trigger-activation-range-end", "normal".to_owned()),
-            ("timeline-trigger-active-range-start", "auto".to_owned()),
-            ("timeline-trigger-active-range-end", "auto".to_owned()),
-        ],
+        "timeline-trigger" => expand_timeline_trigger(value)?,
+        "timeline-trigger-activation-range" => expand_timeline_trigger_range(
+            value,
+            "timeline-trigger-activation-range-start",
+            "timeline-trigger-activation-range-end",
+            "normal",
+        )?,
+        "timeline-trigger-active-range" => expand_timeline_trigger_range(
+            value,
+            "timeline-trigger-active-range-start",
+            "timeline-trigger-active-range-end",
+            "auto",
+        )?,
         "view-timeline" => expand_view_timeline(value)?,
         "white-space" => expand_white_space(&components)?,
         _ => return None,
     };
     records_from_values(name, value, values, important, limits)
+}
+
+fn expand_timeline_trigger_range(
+    value: &str,
+    start_name: &'static str,
+    end_name: &'static str,
+    omitted_end: &str,
+) -> Option<Vec<(&'static str, String)>> {
+    if value.eq_ignore_ascii_case("auto") && omitted_end == "auto" {
+        return Some(vec![
+            (start_name, "auto".to_owned()),
+            (end_name, "auto".to_owned()),
+        ]);
+    }
+    let (start, end) =
+        crate::browser_longhand::parse_timeline_range_pair(value, omitted_end).ok()?;
+    Some(vec![(start_name, start), (end_name, end)])
+}
+
+fn expand_position_try(value: &str) -> Option<Vec<(&'static str, String)>> {
+    if value.eq_ignore_ascii_case("none") {
+        return Some(vec![
+            ("position-try-order", "normal".to_owned()),
+            ("position-try-fallbacks", "none".to_owned()),
+        ]);
+    }
+    if let Some(fallbacks) = typed_longhand_value("position-try-fallbacks", value) {
+        return Some(vec![
+            ("position-try-order", "normal".to_owned()),
+            ("position-try-fallbacks", fallbacks),
+        ]);
+    }
+
+    let mut components = split_top_level_whitespace(value)?;
+    let order_index = components
+        .iter()
+        .position(|component| typed_longhand_value("position-try-order", component).is_some())?;
+    let order = typed_longhand_value("position-try-order", components.remove(order_index))?;
+    if components.is_empty() {
+        return None;
+    }
+    let fallbacks = typed_longhand_value("position-try-fallbacks", &components.join(" "))?;
+    Some(vec![
+        ("position-try-order", order),
+        ("position-try-fallbacks", fallbacks),
+    ])
+}
+
+fn expand_timeline_trigger(value: &str) -> Option<Vec<(&'static str, String)>> {
+    let mut values = vec![
+        ("timeline-trigger-name", "none".to_owned()),
+        ("timeline-trigger-source", "auto".to_owned()),
+    ];
+    let activation = if matches!(value, "none" | "auto" | "normal") {
+        vec![
+            (
+                "timeline-trigger-activation-range-start",
+                "normal".to_owned(),
+            ),
+            ("timeline-trigger-activation-range-end", "normal".to_owned()),
+        ]
+    } else {
+        expand_timeline_trigger_range(
+            value,
+            "timeline-trigger-activation-range-start",
+            "timeline-trigger-activation-range-end",
+            "normal",
+        )?
+    };
+    values.extend(activation);
+    values.push(("timeline-trigger-active-range-start", "auto".to_owned()));
+    values.push(("timeline-trigger-active-range-end", "auto".to_owned()));
+    Some(values)
 }
 
 fn border_image_component_is_explicit(value: &str, longhand: &str) -> bool {
@@ -1645,13 +1788,15 @@ fn border_image_component_is_explicit(value: &str, longhand: &str) -> bool {
 fn contextual_longhand_value(name: &str, value: &str) -> Option<String> {
     let declaration =
         parse_semantic_property_with_limits(name, value, ResourceLimits::default()).ok()?;
-    if !declaration.recovered().contains_context_dependent_sign() {
-        return None;
-    }
     if !matches!(
         declaration.parse_kind(),
         PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
     ) {
+        return None;
+    }
+    if declaration.parse_kind() != PropertyParseKind::SheetomTyped
+        && !declaration.recovered().contains_context_dependent_sign()
+    {
         return None;
     }
     declaration.canonical_value().ok()
@@ -2122,6 +2267,21 @@ fn expand_font_synthesis(components: &[&str]) -> Option<Vec<(&'static str, Strin
 }
 
 fn expand_font_variant(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
+    if components == ["none"] {
+        return Some(
+            shorthand_longhands("font-variant")?
+                .iter()
+                .map(|longhand| {
+                    let value = if *longhand == "font-variant-ligatures" {
+                        "none"
+                    } else {
+                        "normal"
+                    };
+                    (*longhand, value.to_owned())
+                })
+                .collect(),
+        );
+    }
     if components != ["normal"] {
         return None;
     }
@@ -2295,7 +2455,7 @@ fn expand_scroll_timeline(value: &str) -> Option<Vec<(&'static str, String)>> {
 }
 
 fn expand_text_box(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
-    if components == ["normal"] {
+    if matches!(components, ["normal"] | ["none"]) {
         return Some(vec![
             ("text-box-trim", "none".to_owned()),
             ("text-box-edge", "auto".to_owned()),
@@ -2525,6 +2685,11 @@ fn expand_white_space(components: &[&str]) -> Option<Vec<(&'static str, String)>
 }
 
 fn validate_typed_shorthand_structure(name: &str, value: &str) -> bool {
+    if matches!(name, "border-image" | "-webkit-border-image")
+        && crate::property_constraints::has_direct_negative_component(value)
+    {
+        return false;
+    }
     if matches!(name, "mask" | "-webkit-mask") {
         return split_top_level_delimiter(value, b',').is_some();
     }
@@ -2575,12 +2740,19 @@ fn shorthand_longhand<'i>(
 
 fn parse_typed_property<'i>(name: &'i str, value: &'i str) -> Result<Property<'i>, EngineError> {
     let parser_name = sheetom_parser_property_name(name).unwrap_or(name);
-    Property::parse_string(
+    let property = Property::parse_string(
         PropertyId::from(parser_name),
         value,
         ParserOptions::default(),
     )
-    .map_err(|error| EngineError::Parse(error.to_string()))
+    .map_err(|error| EngineError::Parse(error.to_string()))?;
+    if matches!(property, Property::Unparsed(_) | Property::Custom(_)) {
+        return Err(EngineError::Parse(format!(
+            "shorthand requires a typed grammar: {name}: {value}"
+        )));
+    }
+    crate::property_constraints::validate_standard_property(name, value, &property)?;
+    Ok(property)
 }
 
 fn map_engine_error(_: EngineError) -> MutationOutcome {
@@ -2657,6 +2829,15 @@ fn validated_expanded_shorthand_value(
 }
 
 fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
+    const ONE_VALUE: &[&str] = &[
+        "column-rule-inset-end",
+        "column-rule-inset-start",
+        "row-rule-inset-end",
+        "row-rule-inset-start",
+        "rule-color",
+        "rule-inset-end",
+        "rule-inset-start",
+    ];
     const TWO_VALUE: &[&str] = &[
         "border-block-color",
         "border-block-style",
@@ -2668,7 +2849,6 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
         "interest-delay",
         "overscroll-behavior",
         "rule-break",
-        "rule-color",
         "rule-style",
         "rule-visibility-items",
         "timeline-trigger-activation-range",
@@ -2677,9 +2857,7 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
     const FOUR_VALUE: &[&str] = &[
         "column-rule-inset",
         "column-rule-inset-cap",
-        "column-rule-inset-end",
         "column-rule-inset-junction",
-        "column-rule-inset-start",
         "corner-block-end-shape",
         "corner-block-start-shape",
         "corner-bottom-shape",
@@ -2691,16 +2869,15 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
         "corner-top-shape",
         "row-rule-inset",
         "row-rule-inset-cap",
-        "row-rule-inset-end",
         "row-rule-inset-junction",
-        "row-rule-inset-start",
         "rule-inset",
         "rule-inset-cap",
-        "rule-inset-end",
         "rule-inset-junction",
-        "rule-inset-start",
     ];
 
+    if ONE_VALUE.contains(&name) {
+        return Some(1);
+    }
     if TWO_VALUE.contains(&name) {
         return Some(2.min(longhand_count));
     }

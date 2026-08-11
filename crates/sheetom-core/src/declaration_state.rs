@@ -768,6 +768,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "columns"
             | "container"
             | "flex"
+            | "flex-flow"
             | "grid-area"
             | "grid-column"
             | "grid-row"
@@ -777,6 +778,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "scroll-timeline"
             | "text-box"
             | "text-wrap"
+            | "timeline-trigger"
             | "transition"
             | "view-timeline"
             | "white-space"
@@ -786,7 +788,12 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
 fn prefers_synthesized_safe_provenance(name: &str) -> bool {
     matches!(
         name,
-        "border-image" | "grid-area" | "grid-column" | "grid-row"
+        "border-image"
+            | "flex-flow"
+            | "grid-area"
+            | "grid-column"
+            | "grid-row"
+            | "timeline-trigger"
     ) || name.ends_with("-color")
 }
 
@@ -1391,11 +1398,11 @@ mod tests {
         );
 
         assert_eq!(
-            state.set_property("rule-color", "red blue", ""),
+            state.set_property("rule-color", "red", ""),
             MutationOutcome::Applied
         );
         assert_eq!(state.get_property_value("column-rule-color"), "red");
-        assert_eq!(state.get_property_value("row-rule-color"), "blue");
+        assert_eq!(state.get_property_value("row-rule-color"), "red");
 
         assert_eq!(
             state.set_property("contain-intrinsic-size", "none", ""),
@@ -1457,11 +1464,115 @@ mod tests {
                 state.records
             );
         }
+
+        for (value, start, end, observable) in [
+            ("auto", "normal", "normal", "none"),
+            ("normal", "normal", "normal", "none"),
+            ("10px", "10px", "normal", "10px"),
+            ("scroll", "scroll", "scroll", "scroll"),
+            ("1px 2px", "1px", "2px", "1px 2px"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("timeline-trigger", value, ""),
+                MutationOutcome::Applied,
+                "{value}"
+            );
+            assert_eq!(
+                state.get_property_value("timeline-trigger-activation-range-start"),
+                start,
+                "{value}"
+            );
+            assert_eq!(
+                state.get_property_value("timeline-trigger-activation-range-end"),
+                end,
+                "{value}"
+            );
+            assert_eq!(
+                state.get_property_value("timeline-trigger"),
+                observable,
+                "{value}"
+            );
+        }
+
+        for value in ["center", "left top"] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("position-try", value, ""),
+                MutationOutcome::Applied,
+                "{value}"
+            );
+            assert_eq!(
+                state.get_property_value("position-try-fallbacks"),
+                value,
+                "{value}"
+            );
+            assert_eq!(state.get_property_value("position-try"), value, "{value}");
+        }
+
+        for (name, input, expected) in [
+            ("columns", "calc(1 + 1)", "calc(2)"),
+            ("grid-area", "calc(1 + 1)", "calc(2)"),
+            ("grid-column", "calc(1 + 1)", "calc(2)"),
+            ("grid-row", "calc(1 + 1)", "calc(2)"),
+            ("flex-flow", "wrap balance", "balance"),
+            ("font-variant", "none", "none"),
+            ("text-box", "none", "normal"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(name, input, ""),
+                MutationOutcome::Applied,
+                "{name}: {input}"
+            );
+            assert_eq!(state.get_property_value(name), expected, "{name}: {input}");
+        }
+
+        let mut mask = DeclarationState::new();
+        assert_eq!(
+            mask.set_property("-webkit-mask-box-image", "10%", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(mask.get_property_value("-webkit-mask-box-image"), "");
+        assert_eq!(
+            mask.get_property_value("-webkit-mask-box-image-slice"),
+            "10% fill"
+        );
+
+        for (name, value) in [
+            ("animation", "100px 2"),
+            ("timeline-trigger", "red"),
+            ("position-try", "normal"),
+        ] {
+            let mut state = DeclarationState::new();
+            state.set_property("color", "red", "");
+            let before = state.css_text();
+            assert_eq!(
+                state.set_property(name, value, ""),
+                MutationOutcome::InvalidValue,
+                "{name}: {value}"
+            );
+            assert_eq!(state.css_text(), before, "{name}: {value}");
+        }
     }
 
     #[test]
     fn structural_grammars_reject_invalid_neighbors_atomically() {
         let mut state = DeclarationState::new();
+        for name in ["border-image", "-webkit-border-image"] {
+            assert_eq!(
+                state.set_property(name, "url(a.png) 30", ""),
+                MutationOutcome::Applied,
+                "{name}"
+            );
+            let before = state.css_text();
+            assert_eq!(
+                state.set_property(name, "-1", ""),
+                MutationOutcome::InvalidValue,
+                "{name}"
+            );
+            assert_eq!(state.css_text(), before, "{name}");
+        }
         state.set_property("overscroll-behavior", "contain none", "");
         assert_eq!(
             state.set_property("overscroll-behavior", "contain none auto", ""),
