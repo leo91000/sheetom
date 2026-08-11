@@ -112,6 +112,12 @@ jobs:
       - name: Test public behavior
         run: npm run test:unit
 
+      - name: Build the public runtime
+        run: npm run build
+
+      - name: Gate Webref-derived Chromium property branches
+        run: npm run native:webref-property-branches
+
       - name: Run deterministic fuzz corpus
         run: npm run fuzz
         env:
@@ -165,6 +171,8 @@ jobs:
       - run: npm ci
       - run: npm run native:check
       - run: npm run native:test
+      - name: Gate Webref-derived Chromium property branches
+        run: npm run native:webref-property-branches
       - name: Install the Chromium oracle
         run: npx playwright install chromium
       - name: Compare native declaration sequences with Chromium
@@ -345,7 +353,7 @@ jobs:
         run: npm run test:browser:matrix
 
       - name: Reprobe reviewed shorthand grammar branches
-        run: npm run generate:shorthand-grammar && npm run generate:native-grammar && npm run generate:property-values
+        run: npm run generate:shorthand-grammar && npm run generate:native-grammar && npm run generate:property-values && npm run generate:webref-property-branches
 
       - name: Run browser differential and native reparsing evidence
         run: npm run native:build && npm run test:differential

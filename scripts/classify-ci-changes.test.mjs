@@ -80,6 +80,18 @@ test("browser-backed grammar generators still run browser validation", () => {
     });
 });
 
+test("Webref grammar sampling reruns browser evidence without native or package matrices", () => {
+    assert.deepEqual(classifyPaths([
+        "scripts/generate-webref-property-branches.mjs",
+        "scripts/lib/webref-syntax-samples.mjs",
+    ]), {
+        ...none,
+        browser: true,
+        docs: true,
+        quality: true,
+    });
+});
+
 test("public runtime changes run every relevant JavaScript gate", () => {
     assert.deepEqual(classifyPaths(["src/index.ts"]), {
         browser: true,
