@@ -42,6 +42,8 @@ const isBrowserPath = filePath =>
     filePath.startsWith("scripts/browser-") ||
     filePath === "scripts/generate-chromium-properties.mjs" ||
     filePath === "scripts/generate-native-grammar-inventory.mjs" ||
+    filePath.startsWith("scripts/generate-property-value-") ||
+    filePath === "scripts/check-property-value-matrix.mjs" ||
     filePath.startsWith("scripts/generate-shorthand-") ||
     ["package.json", "package-lock.json", "vitest.config.ts"].includes(filePath);
 
