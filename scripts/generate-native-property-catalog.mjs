@@ -87,6 +87,7 @@ const extensionVariants = new Map([
   ["aspect-ratio", "AspectRatio"],
   ["browser-longhand", "BrowserLonghand"],
   ["content", "Content"],
+  ["gap-rule-longhand", "GapRuleLonghand"],
   ["integer-calculation", "IntegerCalculation"],
   ["length-number-calculation", "LengthNumberCalculation"],
   ["length-percentage-number-calculation", "LengthPercentageNumberCalculation"],

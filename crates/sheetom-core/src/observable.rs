@@ -103,6 +103,10 @@ pub(crate) fn project_declaration(
         } else {
             canonical.clone()
         }
+    } else if let SemanticPropertyValue::Extension(SemanticExtensionValue::GapRuleLonghand(value)) =
+        declaration.value()
+    {
+        value.observable_value()?
     } else {
         serialize_typed_observable(name, input, closed, &canonical, &recovered)
     };

@@ -2,6 +2,7 @@ use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
     extension_value::parse_contextual_dimension_calculation,
+    gap_rule::{canonical_gap_rule_longhand, expand_gap_rule, synthesize_gap_rule},
     observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
@@ -932,6 +933,10 @@ fn synthesize_structural_shorthand(
     records: &[&DeclarationRecord],
     safe: bool,
 ) -> Option<String> {
+    if matches!(name, "rule-width" | "rule-style" | "rule-color") && records.len() == 2 {
+        let values = record_values(records, safe)?;
+        return (values[0] == values[1]).then(|| values[0].clone());
+    }
     if is_border_like(name) {
         return synthesize_border_like(name, records, safe);
     }
@@ -1003,6 +1008,9 @@ fn synthesize_border_like(
     let width = uniform_value(&widths)?;
     let style = uniform_value(&styles)?;
     let color = uniform_value(&colors)?;
+    if matches!(name, "column-rule" | "row-rule" | "rule") {
+        return synthesize_gap_rule(width, style, color).ok();
+    }
     if width == "medium" && style == "none" && color == "currentcolor" {
         if matches!(
             name,
@@ -1614,6 +1622,13 @@ fn expand_special_shorthand(
         );
     }
 
+    if matches!(name, "column-rule" | "row-rule" | "rule") {
+        return expand_gap_rule_records(name, value, important, limits);
+    }
+    if matches!(name, "rule-width" | "rule-style" | "rule-color") {
+        return expand_gap_rule_component_records(name, value, important, limits);
+    }
+
     let components = split_top_level_whitespace(value)?;
     let values = match name {
         "animation" | "-webkit-animation" => expand_contextual_animation(value)?,
@@ -1679,6 +1694,63 @@ fn expand_special_shorthand(
         _ => return None,
     };
     records_from_values(name, value, values, important, limits)
+}
+
+fn expand_gap_rule_records(
+    shorthand: &str,
+    source: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Option<Vec<DeclarationRecord>> {
+    let expansion = expand_gap_rule(source).ok()?;
+    observed_shorthand_longhands(shorthand)?
+        .iter()
+        .map(|longhand| {
+            let (canonical, observable) = if longhand.ends_with("-width") {
+                (&expansion.width, &expansion.width_observable)
+            } else if longhand.ends_with("-style") {
+                (&expansion.style, &expansion.style_observable)
+            } else if longhand.ends_with("-color") {
+                (&expansion.color, &expansion.color_observable)
+            } else {
+                return None;
+            };
+            Some(DeclarationRecord {
+                name: (*longhand).to_owned(),
+                value: semantic_longhand_value(longhand, canonical, observable, limits)?,
+                important,
+                pending_group: None,
+                alias_value: None,
+            })
+        })
+        .collect()
+}
+
+fn expand_gap_rule_component_records(
+    shorthand: &str,
+    source: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Option<Vec<DeclarationRecord>> {
+    let representative = match shorthand {
+        "rule-width" => "column-rule-width",
+        "rule-style" => "column-rule-style",
+        "rule-color" => "column-rule-color",
+        _ => return None,
+    };
+    let canonical = canonical_gap_rule_longhand(representative, source).ok()?;
+    observed_shorthand_longhands(shorthand)?
+        .iter()
+        .map(|longhand| {
+            Some(DeclarationRecord {
+                name: (*longhand).to_owned(),
+                value: semantic_longhand_value(longhand, &canonical, source, limits)?,
+                important,
+                pending_group: None,
+                alias_value: None,
+            })
+        })
+        .collect()
 }
 
 fn expand_timeline_trigger_range(

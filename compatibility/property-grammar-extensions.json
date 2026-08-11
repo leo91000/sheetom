@@ -11,6 +11,17 @@
       "properties": ["content"]
     },
     {
+      "id": "gap-rule-longhand",
+      "properties": [
+        "column-rule-color",
+        "column-rule-style",
+        "column-rule-width",
+        "row-rule-color",
+        "row-rule-style",
+        "row-rule-width"
+      ]
+    },
+    {
       "id": "integer-calculation",
       "properties": ["z-index"]
     },

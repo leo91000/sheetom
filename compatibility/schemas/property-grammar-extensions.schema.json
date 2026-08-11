@@ -20,6 +20,7 @@
               "content",
               "aspect-ratio",
               "browser-longhand",
+              "gap-rule-longhand",
               "integer-calculation",
               "length-number-calculation",
               "length-percentage-number-calculation",
