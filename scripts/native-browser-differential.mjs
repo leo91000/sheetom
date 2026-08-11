@@ -256,8 +256,6 @@ try {
             testCase.cssText ?? "",
             `${testCase.id}: Chromium declaration serialization drifted`,
         );
-        if (testCase.integration !== "direct-number") continue;
-
         const state = new binding.NativeDeclarationState();
         state.setProperty(testCase.property, testCase.input, "");
         assert.deepEqual(

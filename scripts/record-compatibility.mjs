@@ -28,6 +28,9 @@ const nativeGrammarInventoryBytes = await readFile(
 const valueCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "value-capabilities.json"),
 );
+const numberResultMathCapabilitiesBytes = await readFile(
+  path.join(compatibilityRoot, "number-result-math-capabilities.json"),
+);
 const relativeColorCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "relative-color-capabilities.json"),
 );
@@ -41,6 +44,9 @@ const shorthandGrammarCases = shorthandGrammarContracts.profiles.flatMap(
 const shorthandCapabilities = JSON.parse(shorthandCapabilitiesBytes.toString("utf8"));
 const nativeGrammarInventory = JSON.parse(nativeGrammarInventoryBytes.toString("utf8"));
 const valueCapabilities = JSON.parse(valueCapabilitiesBytes.toString("utf8"));
+const numberResultMathCapabilities = JSON.parse(
+  numberResultMathCapabilitiesBytes.toString("utf8"),
+);
 const relativeColorCapabilities = JSON.parse(
   relativeColorCapabilitiesBytes.toString("utf8"),
 );
@@ -144,6 +150,10 @@ const propertyPositive = nativeGrammarInventory.propertyBranches
 const propertyNegative = nativeGrammarInventory.propertyBranches.length - propertyPositive;
 const valuePositive = valueCapabilities.cases.filter(candidate => candidate.accepted).length;
 const valueNegative = valueCapabilities.cases.length - valuePositive;
+const numberResultMathPositive = numberResultMathCapabilities.cases
+  .filter(candidate => candidate.accepted).length;
+const numberResultMathNegative = numberResultMathCapabilities.cases.length
+  - numberResultMathPositive;
 const relativeColorPositive = relativeColorCapabilities.cases
   .filter(candidate => candidate.chromiumAccepted).length;
 const relativeColorNegative = relativeColorCapabilities.cases.length - relativeColorPositive;
@@ -170,6 +180,12 @@ const expectedNativeCorpus = {
     total: valueCapabilities.cases.length,
     positive: valuePositive,
     negative: valueNegative,
+  },
+  numberResultMath: {
+    passed: numberResultMathCapabilities.cases.length,
+    total: numberResultMathCapabilities.cases.length,
+    positive: numberResultMathPositive,
+    negative: numberResultMathNegative,
   },
   relativeColors: {
     passed: relativeColorCapabilities.cases.length,
@@ -295,6 +311,12 @@ const report = {
       valueCapabilities: {
         ...nativeCorpusReport.valueCapabilities,
         sha256: createHash("sha256").update(valueCapabilitiesBytes).digest("hex"),
+      },
+      numberResultMath: {
+        ...nativeCorpusReport.numberResultMath,
+        sha256: createHash("sha256")
+          .update(numberResultMathCapabilitiesBytes)
+          .digest("hex"),
       },
       relativeColors: {
         ...nativeCorpusReport.relativeColors,

@@ -15,7 +15,7 @@ const outputUrl = new URL(
   import.meta.url,
 );
 const manifestUrl = new URL("../src/chromium-properties.ts", import.meta.url);
-const probes = [
+const baseProbes = [
   { branch: "relative-length", input: "sign(1em)" },
   { branch: "relative-length-negative", input: "sign(-1em)" },
   { branch: "percentage", input: "sign(1%)" },
@@ -53,11 +53,92 @@ const probes = [
   },
   { branch: "invalid-relative-sine", input: "sin(1em)" },
 ];
+const compositeCandidates = [
+  { property: "animation", branch: "animation-components", input: "1s ease sign(1em) foo" },
+  {
+    property: "animation",
+    branch: "animation-list",
+    input: "1s ease sign(1em) foo, 2s linear sign(1%) bar",
+  },
+  {
+    property: "animation",
+    branch: "animation-mixed-contextual-list",
+    input: "1s ease sign(1em) foo, 2s linear bar",
+  },
+  { property: "columns", branch: "columns-width-count", input: "10px sign(1em)" },
+  { property: "columns", branch: "columns-count-width", input: "sign(1em) 10px" },
+  { property: "flex", branch: "flex-contextual-grow", input: "sign(1em) 2 10px" },
+  { property: "flex", branch: "flex-contextual-shrink", input: "1 sign(1em) 10px" },
+  {
+    property: "flex",
+    branch: "flex-contextual-basis",
+    input: "1 2 calc(1px * sign(1em))",
+  },
+  { property: "grid-column", branch: "grid-contextual-end", input: "2 / sign(1em)" },
+  { property: "grid-row", branch: "grid-contextual-start", input: "sign(1em) / 3" },
+  {
+    property: "grid-area",
+    branch: "grid-contextual-four-lines",
+    input: "1 / sign(1em) / 3 / sign(1%)",
+  },
+  {
+    property: "border-image",
+    branch: "border-image-contextual-sections",
+    input: "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+  },
+  {
+    property: "-webkit-mask-box-image",
+    branch: "mask-box-image-contextual-sections",
+    input: "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+  },
+  {
+    property: "-webkit-border-image",
+    branch: "webkit-border-image-contextual-sections",
+    input: "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+  },
+  {
+    property: "aspect-ratio",
+    branch: "aspect-ratio-contextual-pair",
+    input: "sign(1em) / calc(sign(1%) + 1)",
+  },
+  {
+    property: "animation",
+    branch: "animation-invalid-contextual-dimension",
+    input: "1s ease calc(sign(1em) * 1px) foo",
+  },
+  {
+    property: "flex",
+    branch: "flex-invalid-contextual-grow-dimension",
+    input: "calc(sign(1em) * 1px) 2 10px",
+  },
+  {
+    property: "grid-column",
+    branch: "grid-invalid-contextual-dimension",
+    input: "2 / calc(sign(1em) * 1px)",
+  },
+  {
+    property: "border-image",
+    branch: "border-image-invalid-contextual-slice-dimension",
+    input: "url(a.png) calc(sign(1em) * 1px) / 2",
+  },
+  {
+    property: "aspect-ratio",
+    branch: "aspect-ratio-invalid-contextual-dimension",
+    input: "sign(1em) / calc(sign(1%) * 1px)",
+  },
+];
+const probes = [
+  ...baseProbes,
+  ...compositeCandidates.map(({ branch, input }) => ({ branch, input })),
+];
 const properties = [...chromiumSupportedProperties].sort();
-const candidates = properties.flatMap(property => probes.map(probe => ({
-  property,
-  ...probe,
-})));
+const candidates = [
+  ...properties.flatMap(property => baseProbes.map(probe => ({
+    property,
+    ...probe,
+  }))),
+  ...compositeCandidates,
+];
 
 const browser = await chromium.launch({ headless: true });
 let observations;

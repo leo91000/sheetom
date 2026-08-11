@@ -141,7 +141,8 @@
             "codecProfiles",
             "grammarBranches",
             "propertyBranches",
-            "valueCapabilities"
+            "valueCapabilities",
+            "numberResultMath"
           ],
           "properties": {
             "inventorySha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
@@ -180,6 +181,18 @@
               }
             },
             "valueCapabilities": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["passed", "total", "positive", "negative", "sha256"],
+              "properties": {
+                "passed": { "type": "integer", "minimum": 1 },
+                "total": { "type": "integer", "minimum": 1 },
+                "positive": { "type": "integer", "minimum": 1 },
+                "negative": { "type": "integer", "minimum": 1 },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "numberResultMath": {
               "type": "object",
               "additionalProperties": false,
               "required": ["passed", "total", "positive", "negative", "sha256"],

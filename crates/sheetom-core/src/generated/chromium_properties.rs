@@ -3075,6 +3075,9 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("-webkit-animation-iteration-count", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
+    ("-webkit-border-image", &[
+        super::PropertyGrammarExtension::WebkitBorderImage,
+    ]),
     ("-webkit-box-flex", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
@@ -3101,6 +3104,7 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("-webkit-mask-box-image-slice", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+        super::PropertyGrammarExtension::WebkitMaskBoxImageSlice,
     ]),
     ("-webkit-mask-box-image-width", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
@@ -3116,6 +3120,9 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("animation-iteration-count", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("aspect-ratio", &[
+        super::PropertyGrammarExtension::AspectRatio,
     ]),
     ("baseline-shift", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,

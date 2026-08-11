@@ -84,6 +84,7 @@ const initialValues = [...initialLonghandValues].sort(([left], [right]) =>
   left.localeCompare(right),
 );
 const extensionVariants = new Map([
+  ["aspect-ratio", "AspectRatio"],
   ["content", "Content"],
   ["integer-calculation", "IntegerCalculation"],
   ["length-number-calculation", "LengthNumberCalculation"],
@@ -94,6 +95,8 @@ const extensionVariants = new Map([
   ["page-size", "PageSize"],
   ["subgrid", "Subgrid"],
   ["webkit-box-reflect", "WebkitBoxReflect"],
+  ["webkit-border-image", "WebkitBorderImage"],
+  ["webkit-mask-box-image-slice", "WebkitMaskBoxImageSlice"],
 ]);
 const extensionsByProperty = new Map();
 for (const family of grammarExtensions.families) {

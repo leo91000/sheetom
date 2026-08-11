@@ -1,7 +1,7 @@
 use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
-    inspect_property,
+    extension_value::parse_contextual_dimension_calculation,
     observable::{serialize_observable_value, ObservableCategory},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
@@ -120,6 +120,8 @@ fn synthesize_special_shorthand(
         "columns" => synthesize_columns(records, safe),
         "container" => synthesize_container(records, safe),
         "flex" => synthesize_flex(records, safe),
+        "grid-area" => synthesize_grid_area(records, safe),
+        "grid-column" | "grid-row" => synthesize_grid_line(records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
         "mask" => synthesize_mask(records, safe),
         "offset" => synthesize_offset(records, safe),
@@ -409,6 +411,76 @@ fn synthesize_flex(records: &[&DeclarationRecord], safe: bool) -> Option<String>
     let shrink = record_value(records, "flex-shrink", safe)?;
     let basis = record_value(records, "flex-basis", safe)?;
     Some(format!("{grow} {shrink} {basis}"))
+}
+
+fn synthesize_grid_line(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    if records.len() != 2 {
+        return None;
+    }
+    let start = if safe {
+        &records[0].safe_value
+    } else {
+        &records[0].observable_value
+    };
+    let end = if safe {
+        &records[1].safe_value
+    } else {
+        &records[1].observable_value
+    };
+    if !records.iter().any(|record| {
+        parse_semantic_property_with_limits(
+            &record.name,
+            if safe {
+                &record.safe_value
+            } else {
+                &record.observable_value
+            },
+            ResourceLimits::default(),
+        )
+        .is_ok_and(|value| value.recovered().contains_context_dependent_sign())
+    }) {
+        return None;
+    }
+    Some(if end == "auto" {
+        start.clone()
+    } else {
+        format!("{start} / {end}")
+    })
+}
+
+fn synthesize_grid_area(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    if records.len() != 4 {
+        return None;
+    }
+    let values = records
+        .iter()
+        .map(|record| {
+            if safe {
+                record.safe_value.as_str()
+            } else {
+                record.observable_value.as_str()
+            }
+        })
+        .collect::<Vec<_>>();
+    if !records.iter().any(|record| {
+        parse_semantic_property_with_limits(
+            &record.name,
+            if safe {
+                &record.safe_value
+            } else {
+                &record.observable_value
+            },
+            ResourceLimits::default(),
+        )
+        .is_ok_and(|value| value.recovered().contains_context_dependent_sign())
+    }) {
+        return None;
+    }
+    let retained = values
+        .iter()
+        .rposition(|value| *value != "auto")
+        .map_or(1, |index| index + 1);
+    Some(values[..retained].join(" / "))
 }
 
 fn synthesize_grid_template(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1221,6 +1293,20 @@ fn is_image_component(component: &str) -> bool {
         .any(|prefix| component.starts_with(prefix))
 }
 
+fn has_explicit_border_image_source(value: &str) -> bool {
+    let Some(sections) = split_top_level_delimiter(value, b'/') else {
+        return false;
+    };
+    let Some(first) = sections.first() else {
+        return false;
+    };
+    split_top_level_whitespace(first).is_some_and(|components| {
+        components
+            .iter()
+            .any(|component| is_image_component(component))
+    })
+}
+
 fn is_zero_dimension(value: &str) -> bool {
     let value = value.trim();
     let split = value.find(|character: char| character.is_ascii_alphabetic() || character == '%');
@@ -1255,11 +1341,18 @@ fn expand_special_shorthand(
 
     let components = split_top_level_whitespace(value)?;
     let values = match name {
+        "animation" | "-webkit-animation" => expand_contextual_animation(value)?,
         "columns" | "-webkit-columns" => expand_columns(&components)?,
         "border-image" => expand_border_image(value)?,
+        "flex" | "-webkit-flex" => expand_contextual_flex(&components)?,
+        "grid-area" => expand_contextual_grid_area(value)?,
+        "grid-column" => {
+            expand_contextual_grid_line(value, "grid-column-start", "grid-column-end")?
+        }
+        "grid-row" => expand_contextual_grid_line(value, "grid-row-start", "grid-row-end")?,
         "-webkit-mask-box-image" => expand_border_image(value)?
             .into_iter()
-            .map(|(longhand, value)| {
+            .map(|(longhand, expanded_value)| {
                 let longhand = match longhand {
                     "border-image-source" => "-webkit-mask-box-image-source",
                     "border-image-slice" => "-webkit-mask-box-image-slice",
@@ -1268,12 +1361,19 @@ fn expand_special_shorthand(
                     "border-image-repeat" => "-webkit-mask-box-image-repeat",
                     _ => longhand,
                 };
-                let value = if value != "none" && value == initial_border_image_value(longhand) {
+                let omitted_source = longhand == "-webkit-mask-box-image-source"
+                    && expanded_value == "none"
+                    && !has_explicit_border_image_source(value);
+                let initial_component = expanded_value != "none"
+                    && expanded_value == initial_border_image_value(longhand);
+                let expanded_value = if omitted_source || initial_component {
                     "initial".to_owned()
+                } else if longhand == "-webkit-mask-box-image-slice" {
+                    format!("{expanded_value} fill")
                 } else {
-                    value
+                    expanded_value
                 };
-                (longhand, value)
+                (longhand, expanded_value)
             })
             .collect(),
         "font-synthesis" => expand_font_synthesis(&components)?,
@@ -1304,6 +1404,205 @@ fn expand_special_shorthand(
         _ => return None,
     };
     records_from_values(name, values, important)
+}
+
+fn contextual_longhand_value(name: &str, value: &str) -> Option<String> {
+    let declaration =
+        parse_semantic_property_with_limits(name, value, ResourceLimits::default()).ok()?;
+    if !declaration.recovered().contains_context_dependent_sign() {
+        return None;
+    }
+    if !matches!(
+        declaration.parse_kind(),
+        PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
+    ) {
+        return None;
+    }
+    declaration.canonical_value().ok()
+}
+
+fn expand_contextual_animation(value: &str) -> Option<Vec<(&'static str, String)>> {
+    let layers = split_top_level_delimiter(value, b',')?;
+    let mut replacements = Vec::with_capacity(layers.len());
+    let mut iterations = Vec::with_capacity(layers.len());
+    let mut bare_iterations = Vec::with_capacity(layers.len());
+    for layer in layers {
+        let components = split_top_level_whitespace(layer)?;
+        let contextual = components
+            .iter()
+            .enumerate()
+            .filter_map(|(index, component)| {
+                contextual_longhand_value("animation-iteration-count", component)
+                    .map(|value| (index, value))
+            })
+            .collect::<Vec<_>>();
+        let mut replaced = components
+            .iter()
+            .map(|component| (*component).to_owned())
+            .collect::<Vec<_>>();
+        let iteration = match contextual.as_slice() {
+            [] => None,
+            [(index, iteration)] => {
+                replaced[*index] = "1".to_owned();
+                Some(iteration.clone())
+            }
+            _ => return None,
+        };
+        replacements.push(replaced.join(" "));
+        bare_iterations.push(iteration.is_some() && components.len() == 1);
+        iterations.push(iteration);
+    }
+    if iterations.iter().all(Option::is_none) {
+        return None;
+    }
+    let mut values = expand_typed_shorthand_values("animation", &replacements.join(", "))?;
+    let iteration = values
+        .iter_mut()
+        .find(|(name, _)| *name == "animation-iteration-count")?;
+    let mut iteration_values = value_list(&iteration.1)?
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    if iteration_values.len() != iterations.len() {
+        return None;
+    }
+    for (value, replacement) in iteration_values.iter_mut().zip(iterations) {
+        if let Some(replacement) = replacement {
+            *value = replacement;
+        }
+    }
+    iteration.1 = iteration_values.join(", ");
+    let duration = values
+        .iter_mut()
+        .find(|(name, _)| *name == "animation-duration")?;
+    let mut durations = value_list(&duration.1)?
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    if durations.len() != bare_iterations.len() {
+        return None;
+    }
+    for (duration, bare) in durations.iter_mut().zip(bare_iterations) {
+        if bare {
+            *duration = "auto".to_owned();
+        }
+    }
+    duration.1 = durations.join(", ");
+    Some(values)
+}
+
+fn expand_contextual_flex(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
+    if components.is_empty() || components.len() > 3 {
+        return None;
+    }
+    let contextual = components.iter().any(|component| {
+        contextual_longhand_value("flex-grow", component).is_some()
+            || parse_contextual_dimension_calculation(component).is_some()
+    });
+    if !contextual {
+        return None;
+    }
+    let (grow, shrink, basis) = match components {
+        [single] => {
+            if let Some(grow) = typed_longhand_value("flex-grow", single) {
+                (grow, "1".to_owned(), "0%".to_owned())
+            } else {
+                ("1".to_owned(), "1".to_owned(), typed_flex_basis(single)?)
+            }
+        }
+        [first, second] => {
+            let grow = typed_longhand_value("flex-grow", first)?;
+            if let Some(shrink) = typed_longhand_value("flex-shrink", second) {
+                (grow, shrink, "0%".to_owned())
+            } else {
+                (grow, "1".to_owned(), typed_flex_basis(second)?)
+            }
+        }
+        [first, second, third] => (
+            typed_longhand_value("flex-grow", first)?,
+            typed_longhand_value("flex-shrink", second)?,
+            typed_flex_basis(third)?,
+        ),
+        _ => return None,
+    };
+    Some(vec![
+        ("flex-grow", grow),
+        ("flex-shrink", shrink),
+        ("flex-basis", basis),
+    ])
+}
+
+fn typed_flex_basis(value: &str) -> Option<String> {
+    parse_contextual_dimension_calculation(value)
+        .or_else(|| typed_longhand_value("flex-basis", value))
+}
+
+fn expand_contextual_grid_line(
+    value: &str,
+    start_name: &'static str,
+    end_name: &'static str,
+) -> Option<Vec<(&'static str, String)>> {
+    let sections = split_top_level_delimiter(value, b'/')?;
+    if sections.is_empty() || sections.len() > 2 {
+        return None;
+    }
+    let has_contextual = sections.iter().enumerate().any(|(index, value)| {
+        let name = if index == 0 { start_name } else { end_name };
+        contextual_longhand_value(name, value.trim()).is_some()
+    });
+    if !has_contextual {
+        return None;
+    }
+    let start = typed_longhand_value(start_name, sections[0].trim())?;
+    let end = match sections.get(1) {
+        Some(value) => typed_longhand_value(end_name, value.trim())?,
+        None => "auto".to_owned(),
+    };
+    Some(vec![(start_name, start), (end_name, end)])
+}
+
+fn expand_contextual_grid_area(value: &str) -> Option<Vec<(&'static str, String)>> {
+    let names = [
+        "grid-row-start",
+        "grid-column-start",
+        "grid-row-end",
+        "grid-column-end",
+    ];
+    let sections = split_top_level_delimiter(value, b'/')?;
+    if sections.is_empty() || sections.len() > names.len() {
+        return None;
+    }
+    let has_contextual = sections
+        .iter()
+        .enumerate()
+        .any(|(index, value)| contextual_longhand_value(names[index], value.trim()).is_some());
+    if !has_contextual {
+        return None;
+    }
+    let first = typed_longhand_value(names[0], sections[0].trim())?;
+    let mut values = Vec::with_capacity(names.len());
+    values.push((names[0], first));
+    for (index, name) in names.iter().enumerate().skip(1) {
+        let value = match sections.get(index) {
+            Some(value) => typed_longhand_value(name, value.trim())?,
+            None => "auto".to_owned(),
+        };
+        values.push((*name, value));
+    }
+    Some(values)
+}
+
+fn expand_typed_shorthand_values(name: &str, value: &str) -> Option<Vec<(&'static str, String)>> {
+    let property = parse_typed_property(name, value).ok()?;
+    observed_shorthand_longhands(name)?
+        .iter()
+        .map(|longhand_name| {
+            let value = shorthand_longhand(&property, name, longhand_name)
+                .and_then(|longhand| longhand.value_to_css_string(PrinterOptions::default()).ok())
+                .or_else(|| initial_longhand_value(longhand_name).map(str::to_owned))?;
+            Some((*longhand_name, value))
+        })
+        .collect()
 }
 
 const SYSTEM_FONT_LONGHANDS: &[&str] = &[
@@ -1421,13 +1720,29 @@ fn expand_border_image(value: &str) -> Option<Vec<(&'static str, String)>> {
             || component.contains("gradient(")
             || component.starts_with("image(")
             || component.starts_with("image-set(")
-    })?;
-    let source = first.remove(source_index);
+    });
+    let source = source_index
+        .map(|index| first.remove(index).to_owned())
+        .unwrap_or_else(|| "none".to_owned());
+    let source = typed_longhand_value("border-image-source", &source)?;
     if first.is_empty() || first.len() > 5 {
         return None;
     }
-    let slice = first.join(" ");
+    let fill = first
+        .iter()
+        .position(|component| *component == "fill")
+        .map(|index| first.remove(index));
+    if first.is_empty() || first.len() > 4 {
+        return None;
+    }
+    let slice = typed_longhand_value("border-image-slice", &first.join(" "))?;
+    let slice = if fill.is_some() {
+        format!("{slice} fill")
+    } else {
+        slice
+    };
     let width = sections.get(1).copied().unwrap_or("1").trim();
+    let width = validate_repeated_longhand_components("border-image-width", width, 4)?;
     let mut outset = "0".to_owned();
     let mut repeat = "stretch".to_owned();
     if let Some(last) = sections.get(2) {
@@ -1439,19 +1754,62 @@ fn expand_border_image(value: &str) -> Option<Vec<(&'static str, String)>> {
             repeat = components.pop()?.to_owned();
         }
         if !components.is_empty() {
-            outset = components.join(" ");
+            outset = validate_repeated_longhand_components(
+                "border-image-outset",
+                &components.join(" "),
+                4,
+            )?;
         }
     }
     Some(vec![
-        ("border-image-source", source.to_owned()),
+        ("border-image-source", source),
         ("border-image-slice", slice),
-        ("border-image-width", width.to_owned()),
+        ("border-image-width", width),
         ("border-image-outset", outset),
         ("border-image-repeat", repeat),
     ])
 }
 
+fn validate_repeated_longhand_components(
+    name: &str,
+    value: &str,
+    maximum: usize,
+) -> Option<String> {
+    let components = split_top_level_whitespace(value)?;
+    if components.is_empty() || components.len() > maximum {
+        return None;
+    }
+    components
+        .iter()
+        .map(|component| typed_longhand_value(name, component))
+        .collect::<Option<Vec<_>>>()
+        .map(|components| components.join(" "))
+}
+
+pub(crate) fn canonicalize_webkit_border_image(value: &str) -> Option<String> {
+    let values = expand_border_image(value)?;
+    let get = |name: &str| {
+        values
+            .iter()
+            .find_map(|(candidate, value)| (*candidate == name).then_some(value.as_str()))
+    };
+    let source = get("border-image-source")?;
+    let slice = get("border-image-slice")?;
+    let width = get("border-image-width")?;
+    let outset = get("border-image-outset")?;
+    let repeat = get("border-image-repeat")?;
+    let slice = if split_top_level_whitespace(slice)?.contains(&"fill") {
+        slice.to_owned()
+    } else {
+        format!("{slice} fill")
+    };
+    Some(format!("{source} {slice} / {width} / {outset} {repeat}"))
+}
+
 fn validate_column_width(value: &str) -> Option<String> {
+    if let Some(value) = parse_contextual_dimension_calculation(value) {
+        return Some(value);
+    }
     if value.parse::<f64>().is_ok() && value != "0" {
         return None;
     }
@@ -1459,6 +1817,9 @@ fn validate_column_width(value: &str) -> Option<String> {
 }
 
 fn validate_column_count(value: &str) -> Option<String> {
+    if let Some(value) = contextual_longhand_value("column-count", value) {
+        return Some(value);
+    }
     let count = value.parse::<u32>().ok()?;
     (count > 0).then(|| count.to_string())
 }
@@ -1610,12 +1971,15 @@ fn typed_longhand_value(name: &str, value: &str) -> Option<String> {
     if let Some(grammar) = parse_browser_grammar_gap(name, value) {
         return Some(grammar.safe_value);
     }
-    let inspection = inspect_property(name, value).ok()?;
-    matches!(
-        inspection.kind,
+    let declaration =
+        parse_semantic_property_with_limits(name, value, ResourceLimits::default()).ok()?;
+    if !matches!(
+        declaration.parse_kind(),
         PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
-    )
-    .then_some(inspection.canonical_value)
+    ) {
+        return None;
+    }
+    declaration.canonical_value().ok()
 }
 
 fn expand_scroll_timeline(value: &str) -> Option<Vec<(&'static str, String)>> {
@@ -2052,13 +2416,8 @@ fn expand_repeated_components<'a>(
 }
 
 fn validate_structural_longhand(name: &str, value: &str) -> Option<String> {
-    if let Ok(inspection) = inspect_property(name, value) {
-        if matches!(
-            inspection.kind,
-            PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
-        ) {
-            return Some(inspection.canonical_value);
-        }
+    if let Some(value) = typed_longhand_value(name, value) {
+        return Some(value);
     }
 
     let validation_name = if name.starts_with("overscroll-behavior-") {
@@ -2088,10 +2447,5 @@ fn validate_structural_longhand(name: &str, value: &str) -> Option<String> {
         None
     };
 
-    let inspection = inspect_property(validation_name?, value).ok()?;
-    matches!(
-        inspection.kind,
-        PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
-    )
-    .then_some(inspection.canonical_value)
+    typed_longhand_value(validation_name?, value)
 }

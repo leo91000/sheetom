@@ -635,6 +635,9 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "columns"
             | "container"
             | "flex"
+            | "grid-area"
+            | "grid-column"
+            | "grid-row"
             | "grid-template"
             | "mask"
             | "offset"
@@ -648,7 +651,10 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
 }
 
 fn prefers_synthesized_safe_provenance(name: &str) -> bool {
-    name == "border-image" || name.ends_with("-color")
+    matches!(
+        name,
+        "border-image" | "grid-area" | "grid-column" | "grid-row"
+    ) || name.ends_with("-color")
 }
 
 fn materialize_static_observable(observable: &str, safe: &str) -> String {
@@ -1142,6 +1148,79 @@ mod tests {
             "Chromium shorthands that did not expand:\n{}",
             failures.join("\n")
         );
+    }
+
+    #[test]
+    fn every_composite_number_result_matches_chromium_state() {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../../compatibility/number-result-math-capabilities.json"
+        ))
+        .expect("the checked-in Chromium number-result corpus should be valid JSON");
+        let cases = fixture["cases"]
+            .as_array()
+            .expect("the number-result corpus should contain cases");
+
+        for candidate in cases {
+            if candidate["integration"].as_str() != Some("composite-property") {
+                continue;
+            }
+            let id = candidate["id"].as_str().unwrap_or_default();
+            let property = candidate["property"].as_str().unwrap_or_default();
+            let input = candidate["input"].as_str().unwrap_or_default();
+            let accepted = candidate["accepted"].as_bool().unwrap_or_default();
+            let mut state = DeclarationState::new();
+
+            if !accepted {
+                assert_eq!(
+                    state.set_property("color", "red", ""),
+                    MutationOutcome::Applied,
+                    "{id} seed"
+                );
+                let before = state.clone();
+                assert_eq!(
+                    state.set_property(property, input, ""),
+                    MutationOutcome::InvalidValue,
+                    "{id} outcome"
+                );
+                assert_eq!(state, before, "{id} atomicity");
+                continue;
+            }
+
+            assert_eq!(
+                state.set_property(property, input, ""),
+                MutationOutcome::Applied,
+                "{id} outcome"
+            );
+            let expected_items = candidate["items"]
+                .as_array()
+                .expect("accepted number-result cases should contain items");
+            assert_eq!(state.len(), expected_items.len(), "{id} length");
+            for (index, expected) in expected_items.iter().enumerate() {
+                assert_eq!(
+                    state.item(index),
+                    expected.as_str().unwrap_or_default(),
+                    "{id}"
+                );
+            }
+            assert_eq!(
+                state.get_property_value(property),
+                candidate["observable"].as_str().unwrap_or_default(),
+                "{id} getter"
+            );
+            assert_eq!(
+                state.css_text(),
+                candidate["cssText"].as_str().unwrap_or_default(),
+                "{id} cssText"
+            );
+
+            let mut reparsed = DeclarationState::new();
+            reparsed.replace_css_text(&state.serialize_safe());
+            assert_eq!(
+                reparsed.serialize_safe(),
+                state.serialize_safe(),
+                "{id} round-trip"
+            );
+        }
     }
 
     #[test]

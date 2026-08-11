@@ -54,6 +54,86 @@
     {
       "branch": "invalid-relative-sine",
       "input": "sin(1em)"
+    },
+    {
+      "branch": "animation-components",
+      "input": "1s ease sign(1em) foo"
+    },
+    {
+      "branch": "animation-list",
+      "input": "1s ease sign(1em) foo, 2s linear sign(1%) bar"
+    },
+    {
+      "branch": "animation-mixed-contextual-list",
+      "input": "1s ease sign(1em) foo, 2s linear bar"
+    },
+    {
+      "branch": "columns-width-count",
+      "input": "10px sign(1em)"
+    },
+    {
+      "branch": "columns-count-width",
+      "input": "sign(1em) 10px"
+    },
+    {
+      "branch": "flex-contextual-grow",
+      "input": "sign(1em) 2 10px"
+    },
+    {
+      "branch": "flex-contextual-shrink",
+      "input": "1 sign(1em) 10px"
+    },
+    {
+      "branch": "flex-contextual-basis",
+      "input": "1 2 calc(1px * sign(1em))"
+    },
+    {
+      "branch": "grid-contextual-end",
+      "input": "2 / sign(1em)"
+    },
+    {
+      "branch": "grid-contextual-start",
+      "input": "sign(1em) / 3"
+    },
+    {
+      "branch": "grid-contextual-four-lines",
+      "input": "1 / sign(1em) / 3 / sign(1%)"
+    },
+    {
+      "branch": "border-image-contextual-sections",
+      "input": "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round"
+    },
+    {
+      "branch": "mask-box-image-contextual-sections",
+      "input": "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round"
+    },
+    {
+      "branch": "webkit-border-image-contextual-sections",
+      "input": "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round"
+    },
+    {
+      "branch": "aspect-ratio-contextual-pair",
+      "input": "sign(1em) / calc(sign(1%) + 1)"
+    },
+    {
+      "branch": "animation-invalid-contextual-dimension",
+      "input": "1s ease calc(sign(1em) * 1px) foo"
+    },
+    {
+      "branch": "flex-invalid-contextual-grow-dimension",
+      "input": "calc(sign(1em) * 1px) 2 10px"
+    },
+    {
+      "branch": "grid-invalid-contextual-dimension",
+      "input": "2 / calc(sign(1em) * 1px)"
+    },
+    {
+      "branch": "border-image-invalid-contextual-slice-dimension",
+      "input": "url(a.png) calc(sign(1em) * 1px) / 2"
+    },
+    {
+      "branch": "aspect-ratio-invalid-contextual-dimension",
+      "input": "sign(1em) / calc(sign(1%) * 1px)"
     }
   ],
   "cases": [
@@ -10984,6 +11064,316 @@
       "property": "zoom",
       "branch": "invalid-relative-sine",
       "input": "sin(1em)",
+      "accepted": false
+    },
+    {
+      "id": "number-result-math.animation.animation-components",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "animation",
+      "branch": "animation-components",
+      "input": "1s ease sign(1em) foo",
+      "accepted": true,
+      "observable": "1s ease 0s sign(1em) normal none running foo",
+      "items": [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end"
+      ],
+      "cssText": "animation: 1s ease 0s sign(1em) normal none running foo;"
+    },
+    {
+      "id": "number-result-math.animation.animation-list",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "animation",
+      "branch": "animation-list",
+      "input": "1s ease sign(1em) foo, 2s linear sign(1%) bar",
+      "accepted": true,
+      "observable": "1s ease 0s sign(1em) normal none running foo, 2s linear 0s sign(1%) normal none running bar",
+      "items": [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end"
+      ],
+      "cssText": "animation: 1s ease 0s sign(1em) normal none running foo, 2s linear 0s sign(1%) normal none running bar;"
+    },
+    {
+      "id": "number-result-math.animation.animation-mixed-contextual-list",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "animation",
+      "branch": "animation-mixed-contextual-list",
+      "input": "1s ease sign(1em) foo, 2s linear bar",
+      "accepted": true,
+      "observable": "1s ease 0s sign(1em) normal none running foo, 2s linear 0s 1 normal none running bar",
+      "items": [
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-name",
+        "animation-timeline",
+        "animation-range-start",
+        "animation-range-end"
+      ],
+      "cssText": "animation: 1s ease 0s sign(1em) normal none running foo, 2s linear 0s 1 normal none running bar;"
+    },
+    {
+      "id": "number-result-math.columns.columns-width-count",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "columns",
+      "branch": "columns-width-count",
+      "input": "10px sign(1em)",
+      "accepted": true,
+      "observable": "10px sign(1em)",
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "cssText": "columns: 10px sign(1em);"
+    },
+    {
+      "id": "number-result-math.columns.columns-count-width",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "columns",
+      "branch": "columns-count-width",
+      "input": "sign(1em) 10px",
+      "accepted": true,
+      "observable": "10px sign(1em)",
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "cssText": "columns: 10px sign(1em);"
+    },
+    {
+      "id": "number-result-math.flex.flex-contextual-grow",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "flex",
+      "branch": "flex-contextual-grow",
+      "input": "sign(1em) 2 10px",
+      "accepted": true,
+      "observable": "sign(1em) 2 10px",
+      "items": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ],
+      "cssText": "flex: sign(1em) 2 10px;"
+    },
+    {
+      "id": "number-result-math.flex.flex-contextual-shrink",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "flex",
+      "branch": "flex-contextual-shrink",
+      "input": "1 sign(1em) 10px",
+      "accepted": true,
+      "observable": "1 sign(1em) 10px",
+      "items": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ],
+      "cssText": "flex: 1 sign(1em) 10px;"
+    },
+    {
+      "id": "number-result-math.flex.flex-contextual-basis",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "flex",
+      "branch": "flex-contextual-basis",
+      "input": "1 2 calc(1px * sign(1em))",
+      "accepted": true,
+      "observable": "1 2 calc(1px * sign(1em))",
+      "items": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ],
+      "cssText": "flex: 1 2 calc(1px * sign(1em));"
+    },
+    {
+      "id": "number-result-math.grid-column.grid-contextual-end",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "grid-column",
+      "branch": "grid-contextual-end",
+      "input": "2 / sign(1em)",
+      "accepted": true,
+      "observable": "2 / sign(1em)",
+      "items": [
+        "grid-column-start",
+        "grid-column-end"
+      ],
+      "cssText": "grid-column: 2 / sign(1em);"
+    },
+    {
+      "id": "number-result-math.grid-row.grid-contextual-start",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "grid-row",
+      "branch": "grid-contextual-start",
+      "input": "sign(1em) / 3",
+      "accepted": true,
+      "observable": "sign(1em) / 3",
+      "items": [
+        "grid-row-start",
+        "grid-row-end"
+      ],
+      "cssText": "grid-row: sign(1em) / 3;"
+    },
+    {
+      "id": "number-result-math.grid-area.grid-contextual-four-lines",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "grid-area",
+      "branch": "grid-contextual-four-lines",
+      "input": "1 / sign(1em) / 3 / sign(1%)",
+      "accepted": true,
+      "observable": "1 / sign(1em) / 3 / sign(1%)",
+      "items": [
+        "grid-row-start",
+        "grid-column-start",
+        "grid-row-end",
+        "grid-column-end"
+      ],
+      "cssText": "grid-area: 1 / sign(1em) / 3 / sign(1%);"
+    },
+    {
+      "id": "number-result-math.border-image.border-image-contextual-sections",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "border-image",
+      "branch": "border-image-contextual-sections",
+      "input": "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+      "accepted": true,
+      "observable": "url(\"a.png\") sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+      "items": [
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ],
+      "cssText": "border-image: url(\"a.png\") sign(1em) / calc(1px * sign(1em)) / sign(1%) round;"
+    },
+    {
+      "id": "number-result-math.-webkit-mask-box-image.mask-box-image-contextual-sections",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "-webkit-mask-box-image",
+      "branch": "mask-box-image-contextual-sections",
+      "input": "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+      "accepted": true,
+      "observable": "",
+      "items": [
+        "-webkit-mask-box-image-source",
+        "-webkit-mask-box-image-slice",
+        "-webkit-mask-box-image-width",
+        "-webkit-mask-box-image-outset",
+        "-webkit-mask-box-image-repeat"
+      ],
+      "cssText": "-webkit-mask-box-image-source: url(\"a.png\"); -webkit-mask-box-image-slice: sign(1em) fill; -webkit-mask-box-image-width: calc(1px * sign(1em)); -webkit-mask-box-image-outset: sign(1%); -webkit-mask-box-image-repeat: round;"
+    },
+    {
+      "id": "number-result-math.-webkit-border-image.webkit-border-image-contextual-sections",
+      "shorthand": false,
+      "integration": "composite-property",
+      "property": "-webkit-border-image",
+      "branch": "webkit-border-image-contextual-sections",
+      "input": "url(a.png) sign(1em) / calc(1px * sign(1em)) / sign(1%) round",
+      "accepted": true,
+      "observable": "url(\"a.png\") sign(1em) fill / calc(1px * sign(1em)) / sign(1%) round",
+      "items": [
+        "-webkit-border-image"
+      ],
+      "cssText": "-webkit-border-image: url(\"a.png\") sign(1em) fill / calc(1px * sign(1em)) / sign(1%) round;"
+    },
+    {
+      "id": "number-result-math.aspect-ratio.aspect-ratio-contextual-pair",
+      "shorthand": false,
+      "integration": "composite-property",
+      "property": "aspect-ratio",
+      "branch": "aspect-ratio-contextual-pair",
+      "input": "sign(1em) / calc(sign(1%) + 1)",
+      "accepted": true,
+      "observable": "sign(1em) / calc(1 + sign(1%))",
+      "items": [
+        "aspect-ratio"
+      ],
+      "cssText": "aspect-ratio: sign(1em) / calc(1 + sign(1%));"
+    },
+    {
+      "id": "number-result-math.animation.animation-invalid-contextual-dimension",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "animation",
+      "branch": "animation-invalid-contextual-dimension",
+      "input": "1s ease calc(sign(1em) * 1px) foo",
+      "accepted": false
+    },
+    {
+      "id": "number-result-math.flex.flex-invalid-contextual-grow-dimension",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "flex",
+      "branch": "flex-invalid-contextual-grow-dimension",
+      "input": "calc(sign(1em) * 1px) 2 10px",
+      "accepted": false
+    },
+    {
+      "id": "number-result-math.grid-column.grid-invalid-contextual-dimension",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "grid-column",
+      "branch": "grid-invalid-contextual-dimension",
+      "input": "2 / calc(sign(1em) * 1px)",
+      "accepted": false
+    },
+    {
+      "id": "number-result-math.border-image.border-image-invalid-contextual-slice-dimension",
+      "shorthand": true,
+      "integration": "composite-property",
+      "property": "border-image",
+      "branch": "border-image-invalid-contextual-slice-dimension",
+      "input": "url(a.png) calc(sign(1em) * 1px) / 2",
+      "accepted": false
+    },
+    {
+      "id": "number-result-math.aspect-ratio.aspect-ratio-invalid-contextual-dimension",
+      "shorthand": false,
+      "integration": "composite-property",
+      "property": "aspect-ratio",
+      "branch": "aspect-ratio-invalid-contextual-dimension",
+      "input": "sign(1em) / calc(sign(1%) * 1px)",
       "accepted": false
     }
   ]

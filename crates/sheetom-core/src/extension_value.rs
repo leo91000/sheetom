@@ -11,34 +11,94 @@ use lightningcss::{
     },
 };
 
-use crate::{catalog::PropertyGrammarExtension, EngineError};
+use crate::{
+    catalog::PropertyGrammarExtension,
+    shorthand::canonicalize_webkit_border_image,
+    syntax::{split_top_level_delimiter, split_top_level_whitespace},
+    EngineError,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SemanticExtensionValue {
+    AspectRatio(AspectRatioValue),
     IntegerCalculation(IntegerCalculationValue),
     CrossDimensionCalculation(CrossDimensionCalculationValue),
     OffsetPosition(OffsetPositionValue),
     OffsetRotate(OffsetRotateValue),
     PageSize(PageSizeValue),
+    WebkitBorderImage(WebkitBorderImageValue),
+    WebkitMaskBoxImageSlice(WebkitBorderImageValue),
 }
 
 impl SemanticExtensionValue {
     pub fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
+            SemanticExtensionValue::AspectRatio(value) => value.canonical_value(),
             SemanticExtensionValue::IntegerCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::CrossDimensionCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetPosition(value) => value.canonical_value(),
             SemanticExtensionValue::OffsetRotate(value) => value.canonical_value(),
             SemanticExtensionValue::PageSize(value) => value.canonical_value(),
+            SemanticExtensionValue::WebkitBorderImage(value) => value.canonical_value(),
+            SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => value.canonical_value(),
         }
     }
 
     pub(crate) fn retains_context_dependent_math(&self) -> bool {
         match self {
+            SemanticExtensionValue::AspectRatio(value) => value.retains_context_dependent_math(),
             SemanticExtensionValue::CrossDimensionCalculation(value) => {
                 value.retains_context_dependent_math()
             }
+            SemanticExtensionValue::WebkitBorderImage(value) => {
+                value.retains_context_dependent_math()
+            }
+            SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => {
+                value.retains_context_dependent_math()
+            }
             _ => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AspectRatioValue {
+    numerator: Calc<PreservedLengthPercentage>,
+    denominator: Calc<PreservedLengthPercentage>,
+}
+
+impl AspectRatioValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        Ok(format!(
+            "{} / {}",
+            serialize_typed(&self.numerator)?,
+            serialize_typed(&self.denominator)?
+        ))
+    }
+
+    fn retains_context_dependent_math(&self) -> bool {
+        self.numerator.contains_unresolved_sign() || self.denominator.contains_unresolved_sign()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum WebkitBorderImageValue {
+    Compound(String),
+    Slice(Calc<PreservedLengthPercentage>),
+}
+
+impl WebkitBorderImageValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            WebkitBorderImageValue::Compound(value) => Ok(value.clone()),
+            WebkitBorderImageValue::Slice(slice) => Ok(format!("{} fill", serialize_typed(slice)?)),
+        }
+    }
+
+    fn retains_context_dependent_math(&self) -> bool {
+        match self {
+            WebkitBorderImageValue::Compound(_) => true,
+            WebkitBorderImageValue::Slice(slice) => slice.contains_unresolved_sign(),
         }
     }
 }
@@ -308,6 +368,7 @@ pub(crate) fn parse_extension_value(
     let mut last_error = None;
     for extension in extensions {
         let value = match extension {
+            PropertyGrammarExtension::AspectRatio => Some(parse_aspect_ratio(source)),
             PropertyGrammarExtension::IntegerCalculation => Some(parse_integer_calculation(source)),
             PropertyGrammarExtension::LengthNumberCalculation => {
                 Some(parse_length_number_calculation(source))
@@ -323,6 +384,10 @@ pub(crate) fn parse_extension_value(
             }
             PropertyGrammarExtension::OffsetRotate => Some(parse_offset_rotate(source)),
             PropertyGrammarExtension::PageSize => Some(parse_page_size(source)),
+            PropertyGrammarExtension::WebkitBorderImage => Some(parse_webkit_border_image(source)),
+            PropertyGrammarExtension::WebkitMaskBoxImageSlice => {
+                Some(parse_webkit_mask_box_image_slice(source))
+            }
             _ => None,
         };
         match value {
@@ -345,9 +410,12 @@ pub(crate) fn parse_preferred_extension_value(
     let preferred = extensions.iter().copied().filter(|extension| {
         matches!(
             extension,
-            PropertyGrammarExtension::LengthNumberCalculation
+            PropertyGrammarExtension::AspectRatio
+                | PropertyGrammarExtension::LengthNumberCalculation
                 | PropertyGrammarExtension::LengthPercentageNumberCalculation
                 | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
+                | PropertyGrammarExtension::WebkitBorderImage
+                | PropertyGrammarExtension::WebkitMaskBoxImageSlice
         )
     });
     for extension in preferred {
@@ -359,6 +427,70 @@ pub(crate) fn parse_preferred_extension_value(
         }
     }
     None
+}
+
+fn parse_contextual_number(source: &str) -> Result<Calc<PreservedLengthPercentage>, EngineError> {
+    let value = match parse_entire(source, Calc::<PreservedLengthPercentage>::parse) {
+        Ok(value) => value,
+        Err(_) => Calc::Number(parse_entire(source, CSSNumber::parse)?),
+    };
+    if !value.resolves_to_number() {
+        return Err(EngineError::Parse(
+            "calculation does not resolve to a number".to_owned(),
+        ));
+    }
+    Ok(value)
+}
+
+fn parse_aspect_ratio(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let sections = split_top_level_delimiter(source, b'/')
+        .filter(|sections| !sections.is_empty() && sections.len() <= 2)
+        .ok_or_else(|| EngineError::Parse("invalid aspect-ratio structure".to_owned()))?;
+    let numerator = parse_contextual_number(sections[0].trim())?;
+    let denominator = match sections.get(1) {
+        Some(value) => parse_contextual_number(value.trim())?,
+        None => Calc::Number(1.0),
+    };
+    Ok(SemanticExtensionValue::AspectRatio(AspectRatioValue {
+        numerator,
+        denominator,
+    }))
+}
+
+fn parse_webkit_border_image(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let canonical = (|| {
+        let components = split_top_level_whitespace(source)?;
+        if components.len() > 2 || components.get(1).is_some_and(|value| *value != "fill") {
+            return None;
+        }
+        let slice = parse_contextual_number(components.first().copied()?).ok()?;
+        Some(format!("{} fill", serialize_typed(&slice).ok()?))
+    })()
+    .or_else(|| canonicalize_webkit_border_image(source))
+    .ok_or_else(|| EngineError::Parse("invalid -webkit-border-image structure".to_owned()))?;
+    Ok(SemanticExtensionValue::WebkitBorderImage(
+        WebkitBorderImageValue::Compound(canonical),
+    ))
+}
+
+fn parse_webkit_mask_box_image_slice(source: &str) -> Result<SemanticExtensionValue, EngineError> {
+    let components = split_top_level_whitespace(source)
+        .filter(|components| components.len() == 2 && components[1] == "fill")
+        .ok_or_else(|| {
+            EngineError::Parse("invalid -webkit-mask-box-image-slice structure".to_owned())
+        })?;
+    let slice = parse_contextual_number(components[0])?;
+    Ok(SemanticExtensionValue::WebkitMaskBoxImageSlice(
+        WebkitBorderImageValue::Slice(slice),
+    ))
+}
+
+pub(crate) fn parse_contextual_dimension_calculation(source: &str) -> Option<String> {
+    let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse).ok()?;
+    if value.resolves_to_number() || !value.contains_unresolved_sign() {
+        return None;
+    }
+    serialize_typed(&value).ok()
 }
 
 fn parse_length_number_calculation(source: &str) -> Result<SemanticExtensionValue, EngineError> {
@@ -632,6 +764,25 @@ mod tests {
             "calc(1px)"
         )
         .is_err());
+    }
+
+    #[test]
+    fn parses_context_dependent_compound_values() {
+        let ratio = parse(
+            PropertyGrammarExtension::AspectRatio,
+            "aspect-ratio",
+            "sign(1em) / 1",
+        )
+        .unwrap();
+        assert_eq!(ratio.canonical_value().unwrap(), "sign(1em) / 1");
+
+        let image = parse(
+            PropertyGrammarExtension::WebkitBorderImage,
+            "-webkit-border-image",
+            "sign(1em) fill",
+        )
+        .unwrap();
+        assert_eq!(image.canonical_value().unwrap(), "sign(1em) fill");
     }
 
     #[test]
