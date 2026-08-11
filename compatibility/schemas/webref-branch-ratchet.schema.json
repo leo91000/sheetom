@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/webref-branch-ratchet.schema.json",
+  "title": "SheetOM Webref Branch Mismatch Ratchet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "corpusSha256", "mismatchCases", "summary", "unresolved"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "corpusSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "mismatchCases": { "type": "integer", "minimum": 0 },
+    "summary": { "$ref": "#/$defs/summary" },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["property", "sample", "kinds"],
+        "properties": {
+          "property": { "type": "string", "minLength": 1 },
+          "sample": { "type": "string", "pattern": "^webref-sample\\.[a-f0-9]{16}$" },
+          "kinds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["acceptance", "observable", "cssText", "items", "atomicity", "reparse"] }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptance", "observable", "cssText", "items", "atomicity", "reparse"],
+      "properties": {
+        "acceptance": { "type": "integer", "minimum": 0 },
+        "observable": { "type": "integer", "minimum": 0 },
+        "cssText": { "type": "integer", "minimum": 0 },
+        "items": { "type": "integer", "minimum": 0 },
+        "atomicity": { "type": "integer", "minimum": 0 },
+        "reparse": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
