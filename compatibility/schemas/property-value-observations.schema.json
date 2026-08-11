@@ -27,16 +27,16 @@
     "accepted": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["property", "probe", "observable", "cssText", "items"],
-        "properties": {
-          "property": { "type": "string" },
-          "probe": { "type": "string" },
-          "observable": { "type": "string" },
-          "cssText": { "type": "string" },
-          "items": { "type": "array", "items": { "type": "string" } }
-        }
+        "type": "array",
+        "minItems": 5,
+        "maxItems": 5,
+        "prefixItems": [
+          { "type": "string", "description": "Property name" },
+          { "type": "string", "description": "Probe ID" },
+          { "type": "string", "description": "Observable property value" },
+          { "type": "string", "description": "Serialized declaration block" },
+          { "type": "array", "items": { "type": "string" }, "description": "Indexed declaration names" }
+        ]
       }
     }
   }

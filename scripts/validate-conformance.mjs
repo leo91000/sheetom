@@ -136,22 +136,22 @@ const propertyValueProbeIds = new Set(
 );
 const observedPropertyValueKeys = new Set();
 const observedPropertyNames = new Set();
-for (const candidate of propertyValueObservations.accepted) {
+for (const [property, probe] of propertyValueObservations.accepted) {
   assert.ok(
-    chromiumSupportedProperties.has(candidate.property),
-    `Property Value observations contain unknown property ${candidate.property}`,
+    chromiumSupportedProperties.has(property),
+    `Property Value observations contain unknown property ${property}`,
   );
   assert.ok(
-    propertyValueProbeIds.has(candidate.probe),
-    `Property Value observations contain unknown probe ${candidate.probe}`,
+    propertyValueProbeIds.has(probe),
+    `Property Value observations contain unknown probe ${probe}`,
   );
-  const key = `${candidate.property}\0${candidate.probe}`;
+  const key = `${property}\0${probe}`;
   assert.ok(
     !observedPropertyValueKeys.has(key),
-    `Property Value observation ${candidate.property}/${candidate.probe} is duplicated`,
+    `Property Value observation ${property}/${probe} is duplicated`,
   );
   observedPropertyValueKeys.add(key);
-  observedPropertyNames.add(candidate.property);
+  observedPropertyNames.add(property);
 }
 assert.deepEqual(
   [...observedPropertyNames].sort(),

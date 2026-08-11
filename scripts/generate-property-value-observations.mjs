@@ -44,13 +44,13 @@ try {
         style.cssText = "";
         style.setProperty(property, probe.input);
         if (style.length > 0) {
-          accepted.push({
+          accepted.push([
             property,
-            probe: probe.id,
-            observable: style.getPropertyValue(property),
-            cssText: style.cssText,
-            items: Array.from(style),
-          });
+            probe.id,
+            style.getPropertyValue(property),
+            style.cssText,
+            Array.from(style),
+          ]);
           continue;
         }
 
@@ -104,7 +104,12 @@ const observations = {
   },
   accepted: browserResult.accepted,
 };
-const serialized = `${JSON.stringify(observations, null, 2)}\n`;
+const serialized = `${JSON.stringify({ ...observations, accepted: [] }, null, 2).replace(
+  '"accepted": []',
+  `"accepted": [\n${observations.accepted
+    .map(candidate => `    ${JSON.stringify(candidate)}`)
+    .join(",\n")}\n  ]`,
+)}\n`;
 if (mode === "--record") {
   await writeFile(observationsUrl, serialized);
   console.log(`Recorded ${browserResult.accepted.length} accepted property/value probes.`);

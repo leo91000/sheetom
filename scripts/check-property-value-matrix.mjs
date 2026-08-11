@@ -7,9 +7,9 @@ import probes from "../compatibility/property-value-probes.json" with { type: "j
 import { chromiumSupportedProperties } from "../src/chromium-properties.ts";
 
 const expectedByKey = new Map(
-  observations.accepted.map(candidate => [
-    `${candidate.property}\0${candidate.probe}`,
-    candidate,
+  observations.accepted.map(([property, probe, observable, cssText, items]) => [
+    `${property}\0${probe}`,
+    { property, probe, observable, cssText, items },
   ]),
 );
 const sheet = new CSSStyleSheet();
