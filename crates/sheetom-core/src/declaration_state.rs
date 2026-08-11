@@ -794,6 +794,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "grid-template"
             | "mask"
             | "offset"
+            | "position-try"
             | "row-rule"
             | "rule"
             | "rule-color"
@@ -1729,7 +1730,22 @@ mod tests {
             );
         }
 
-        for value in ["center", "left top"] {
+        for (value, expected_fallbacks, expected_shorthand) in [
+            ("center", "center", "center"),
+            ("left top", "left top", "left top"),
+            ("normal top left", "left top", "left top"),
+            (
+                "normal --fallback flip-y flip-x flip-start flip-inline flip-block",
+                "--fallback flip-y flip-x flip-start flip-inline flip-block",
+                "--fallback flip-y flip-x flip-start flip-inline flip-block",
+            ),
+            (
+                "normal flip-block --fallback",
+                "--fallback flip-block",
+                "--fallback flip-block",
+            ),
+            ("most-width none", "none", "most-width none"),
+        ] {
             let mut state = DeclarationState::new();
             assert_eq!(
                 state.set_property("position-try", value, ""),
@@ -1738,10 +1754,14 @@ mod tests {
             );
             assert_eq!(
                 state.get_property_value("position-try-fallbacks"),
-                value,
+                expected_fallbacks,
                 "{value}"
             );
-            assert_eq!(state.get_property_value("position-try"), value, "{value}");
+            assert_eq!(
+                state.get_property_value("position-try"),
+                expected_shorthand,
+                "{value}"
+            );
         }
 
         for (name, input, expected) in [
