@@ -140,6 +140,10 @@ pub(crate) trait PropertyHandler<'i>: Sized {
 pub(crate) mod private {
   pub trait TryAdd<T> {
     fn try_add(&self, other: &T) -> Option<T>;
+
+    fn canonical_order(&self, _other: &T) -> Option<std::cmp::Ordering> {
+      None
+    }
   }
 
   pub trait AddInternal {

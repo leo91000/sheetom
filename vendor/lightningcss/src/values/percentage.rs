@@ -362,6 +362,12 @@ impl<D: TryAdd<D> + Clone + Zero + TrySign + std::fmt::Debug> DimensionPercentag
       return a;
     }
 
+    if let (DimensionPercentage::Dimension(a_value), DimensionPercentage::Dimension(b_value)) = (&a, &b) {
+      if a_value.canonical_order(b_value) == Some(std::cmp::Ordering::Greater) {
+        std::mem::swap(&mut a, &mut b);
+      }
+    }
+
     // CSSOM canonicalizes mixed dimension/percentage sums with the percentage
     // first, regardless of their source order.
     if matches!(a, DimensionPercentage::Dimension(_)) && matches!(b, DimensionPercentage::Percentage(_)) {

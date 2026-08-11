@@ -15,7 +15,7 @@ use crate::values::angle::Angle;
 use crate::values::ident::DashedIdent;
 use crate::values::length::{LengthPercentage, LengthValue};
 use crate::values::number::CSSNumber;
-use crate::values::percentage::DimensionPercentage;
+use crate::values::percentage::{DimensionPercentage, Percentage};
 use crate::values::ratio::Ratio;
 use crate::vendor_prefix::VendorPrefix;
 #[cfg(feature = "visitor")]
@@ -100,11 +100,222 @@ pub enum AnchorSizeOrAuto {
   LengthPercentage(SizeLengthPercentage),
 }
 
+/// A value returned by the [`anchor()`](https://drafts.csswg.org/css-anchor-position/#anchor-pos)
+/// function.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct AnchorPosition {
+  /// The optional anchor name.
+  pub anchor_name: Option<String>,
+  /// The side of the anchor to query.
+  pub side: AnchorSide,
+  /// The optional fallback used when the anchor cannot be resolved.
+  pub fallback: Option<Box<InsetLengthPercentage>>,
+  multiplier: CSSNumber,
+}
+
+/// A side accepted by the `anchor()` function.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum AnchorSide {
+  /// A named physical, logical, or relative side.
+  Keyword(AnchorSideKeyword),
+  /// A percentage between the start and end sides.
+  Percentage(Percentage),
+}
+
+/// A keyword accepted as an `anchor()` side.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Parse, ToCss)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum AnchorSideKeyword {
+  /// The side facing the positioned element.
+  Inside,
+  /// The side facing away from the positioned element.
+  Outside,
+  /// The physical top side.
+  Top,
+  /// The physical left side.
+  Left,
+  /// The physical right side.
+  Right,
+  /// The physical bottom side.
+  Bottom,
+  /// The logical start side.
+  Start,
+  /// The logical end side.
+  End,
+  /// The positioned element's logical start side.
+  SelfStart,
+  /// The positioned element's logical end side.
+  SelfEnd,
+  /// The center of the anchor.
+  Center,
+}
+
+/// A length component accepted by inset properties, including anchor
+/// positioning functions.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum InsetLength {
+  /// An ordinary length value.
+  Length(LengthValue),
+  /// An `anchor-size()` function.
+  AnchorSize(AnchorSize),
+  /// An `anchor()` function.
+  Anchor(AnchorPosition),
+}
+
+/// An inset-aware `<length-percentage>` that supports `anchor()` and
+/// `anchor-size()` within math expressions.
+pub type InsetLengthPercentage = DimensionPercentage<InsetLength>;
+
+/// Either an anchor-aware inset value or the `auto` keyword.
+#[derive(Debug, Clone, PartialEq, Parse, ToCss)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum AnchorPositionOrAuto {
+  /// The `auto` keyword.
+  Auto,
+  /// An inset-aware length-percentage value.
+  LengthPercentage(InsetLengthPercentage),
+}
+
 impl IsCompatible for AnchorSizeOrAuto {
   fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
     match self {
       AnchorSizeOrAuto::Auto => true,
       AnchorSizeOrAuto::LengthPercentage(value) => value.is_compatible(browsers),
+    }
+  }
+}
+
+impl IsCompatible for AnchorPositionOrAuto {
+  fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
+    match self {
+      AnchorPositionOrAuto::Auto => true,
+      AnchorPositionOrAuto::LengthPercentage(value) => value.is_compatible(browsers),
+    }
+  }
+}
+
+impl<'i> Parse<'i> for AnchorPosition {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.expect_function_matching("anchor")?;
+    input.parse_nested_block(|input| {
+      let mut anchor_name = None;
+      let mut side = None;
+      for _ in 0..2 {
+        if anchor_name.is_none() {
+          if let Ok(name) = input.try_parse(parse_anchor_name) {
+            anchor_name = Some(name);
+            continue;
+          }
+        }
+        if side.is_none() {
+          if let Ok(value) = input.try_parse(AnchorSide::parse) {
+            side = Some(value);
+            continue;
+          }
+        }
+        break;
+      }
+      let Some(side) = side else {
+        return Err(input.new_custom_error(ParserError::InvalidValue));
+      };
+      let fallback = if input.try_parse(|input| input.expect_comma()).is_ok() {
+        Some(Box::new(InsetLengthPercentage::parse(input)?))
+      } else {
+        None
+      };
+      Ok(AnchorPosition {
+        anchor_name,
+        side,
+        fallback,
+        multiplier: 1.0,
+      })
+    })
+  }
+}
+
+impl ToCss for AnchorPosition {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    let wrap_calc = self.multiplier != 1.0 && !dest.in_calc;
+    if wrap_calc {
+      dest.write_str("calc(")?;
+      dest.in_calc = true;
+    }
+    let result = (|| {
+      if self.multiplier != 1.0 {
+        self.multiplier.to_css(dest)?;
+        dest.write_str(" * ")?;
+      }
+      dest.write_str("anchor(")?;
+      if let Some(name) = &self.anchor_name {
+        dest.write_dashed_ident(name, true)?;
+        dest.write_char(' ')?;
+      }
+      self.side.to_css(dest)?;
+      if let Some(fallback) = &self.fallback {
+        dest.delim(',', false)?;
+        fallback.to_css(dest)?;
+      }
+      dest.write_char(')')
+    })();
+    if wrap_calc {
+      dest.in_calc = false;
+      result?;
+      return dest.write_char(')');
+    }
+    result
+  }
+}
+
+impl<'i> Parse<'i> for AnchorSide {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if let Ok(value) = input.try_parse(AnchorSideKeyword::parse) {
+      return Ok(AnchorSide::Keyword(value));
+    }
+    Percentage::parse(input).map(AnchorSide::Percentage)
+  }
+}
+
+impl ToCss for AnchorSide {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      AnchorSide::Keyword(value) => value.to_css(dest),
+      AnchorSide::Percentage(value) => value.to_css(dest),
     }
   }
 }
@@ -258,6 +469,15 @@ impl TryAdd<SizeLength> for SizeLength {
       _ => None,
     }
   }
+
+
+  fn canonical_order(&self, other: &SizeLength) -> Option<std::cmp::Ordering> {
+    match (self, other) {
+      (SizeLength::Length(_), SizeLength::AnchorSize(_)) => Some(std::cmp::Ordering::Less),
+      (SizeLength::AnchorSize(_), SizeLength::Length(_)) => Some(std::cmp::Ordering::Greater),
+      _ => None,
+    }
+  }
 }
 
 impl PartialOrd<SizeLength> for SizeLength {
@@ -352,6 +572,173 @@ impl IsCompatible for SizeLength {
 }
 
 impl IsCompatible for DimensionPercentage<SizeLength> {
+  fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
+    match self {
+      DimensionPercentage::Dimension(value) => value.is_compatible(browsers),
+      DimensionPercentage::Percentage(_) => true,
+      DimensionPercentage::Calc(value) => value.is_compatible(browsers),
+    }
+  }
+}
+
+impl<'i> Parse<'i> for InsetLength {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if let Ok(value) = input.try_parse(AnchorPosition::parse) {
+      return Ok(InsetLength::Anchor(value));
+    }
+    if let Ok(value) = input.try_parse(AnchorSize::parse) {
+      return Ok(InsetLength::AnchorSize(value));
+    }
+    LengthValue::parse(input).map(InsetLength::Length)
+  }
+}
+
+impl ToCss for InsetLength {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      InsetLength::Length(value) => value.to_css(dest),
+      InsetLength::AnchorSize(value) => value.to_css(dest),
+      InsetLength::Anchor(value) => value.to_css(dest),
+    }
+  }
+}
+
+impl std::ops::Mul<CSSNumber> for InsetLength {
+  type Output = Self;
+
+  fn mul(self, multiplier: CSSNumber) -> Self {
+    match self {
+      InsetLength::Length(value) => InsetLength::Length(value * multiplier),
+      InsetLength::AnchorSize(mut value) => {
+        value.multiplier *= multiplier;
+        InsetLength::AnchorSize(value)
+      }
+      InsetLength::Anchor(mut value) => {
+        value.multiplier *= multiplier;
+        InsetLength::Anchor(value)
+      }
+    }
+  }
+}
+
+impl TryAdd<InsetLength> for InsetLength {
+  fn try_add(&self, other: &InsetLength) -> Option<InsetLength> {
+    match (self, other) {
+      (InsetLength::Length(a), InsetLength::Length(b)) => {
+        a.try_add(b).map(InsetLength::Length)
+      }
+      _ => None,
+    }
+  }
+
+
+  fn canonical_order(&self, other: &InsetLength) -> Option<std::cmp::Ordering> {
+    match (self, other) {
+      (InsetLength::Length(_), InsetLength::AnchorSize(_) | InsetLength::Anchor(_)) => {
+        Some(std::cmp::Ordering::Less)
+      }
+      (InsetLength::AnchorSize(_) | InsetLength::Anchor(_), InsetLength::Length(_)) => {
+        Some(std::cmp::Ordering::Greater)
+      }
+      _ => None,
+    }
+  }
+}
+
+impl PartialOrd<InsetLength> for InsetLength {
+  fn partial_cmp(&self, other: &InsetLength) -> Option<std::cmp::Ordering> {
+    match (self, other) {
+      (InsetLength::Length(a), InsetLength::Length(b)) => a.partial_cmp(b),
+      _ => None,
+    }
+  }
+}
+
+impl TryOp for InsetLength {
+  fn try_op<F: FnOnce(f32, f32) -> f32>(&self, rhs: &Self, op: F) -> Option<Self> {
+    match (self, rhs) {
+      (InsetLength::Length(a), InsetLength::Length(b)) => {
+        a.try_op(b, op).map(InsetLength::Length)
+      }
+      _ => None,
+    }
+  }
+
+  fn try_op_to<T, F: FnOnce(f32, f32) -> T>(&self, rhs: &Self, op: F) -> Option<T> {
+    match (self, rhs) {
+      (InsetLength::Length(a), InsetLength::Length(b)) => a.try_op_to(b, op),
+      _ => None,
+    }
+  }
+}
+
+impl TryMap for InsetLength {
+  fn try_map<F: FnOnce(f32) -> f32>(&self, op: F) -> Option<Self> {
+    match self {
+      InsetLength::Length(value) => Some(InsetLength::Length(crate::traits::Map::map(value, op))),
+      InsetLength::AnchorSize(_) | InsetLength::Anchor(_) => None,
+    }
+  }
+}
+
+impl Zero for InsetLength {
+  fn zero() -> Self {
+    InsetLength::Length(LengthValue::Px(0.0))
+  }
+
+  fn is_zero(&self) -> bool {
+    matches!(self, InsetLength::Length(value) if value.is_zero())
+  }
+}
+
+impl TrySign for InsetLength {
+  fn try_sign(&self) -> Option<f32> {
+    match self {
+      InsetLength::Length(value) => Some(crate::traits::Sign::sign(value)),
+      InsetLength::AnchorSize(_) | InsetLength::Anchor(_) => None,
+    }
+  }
+}
+
+impl TryFrom<Angle> for InsetLength {
+  type Error = ();
+
+  fn try_from(value: Angle) -> Result<Self, Self::Error> {
+    LengthValue::try_from(value).map(InsetLength::Length)
+  }
+}
+
+impl TryInto<Angle> for InsetLength {
+  type Error = ();
+
+  fn try_into(self) -> Result<Angle, Self::Error> {
+    match self {
+      InsetLength::Length(value) => value.try_into(),
+      InsetLength::AnchorSize(_) | InsetLength::Anchor(_) => Err(()),
+    }
+  }
+}
+
+impl IsCompatible for AnchorPosition {
+  fn is_compatible(&self, _browsers: crate::targets::Browsers) -> bool {
+    false
+  }
+}
+
+impl IsCompatible for InsetLength {
+  fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
+    match self {
+      InsetLength::Length(value) => value.is_compatible(browsers),
+      InsetLength::AnchorSize(value) => value.is_compatible(browsers),
+      InsetLength::Anchor(value) => value.is_compatible(browsers),
+    }
+  }
+}
+
+impl IsCompatible for DimensionPercentage<InsetLength> {
   fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
     match self {
       DimensionPercentage::Dimension(value) => value.is_compatible(browsers),
@@ -893,7 +1280,7 @@ impl SizeHandler {
 
 #[cfg(test)]
 mod tests {
-  use super::{MaxSize, Size};
+  use super::{AnchorPositionOrAuto, AnchorSizeOrAuto, MaxSize, Size};
   use crate::{printer::PrinterOptions, traits::{Parse, ToCss}};
   use cssparser::{Parser, ParserInput};
 
@@ -946,7 +1333,7 @@ mod tests {
       ),
       (
         "calc(anchor-size(width) + 10px)",
-        "calc(anchor-size(width) + 10px)",
+        "calc(10px + anchor-size(width))",
       ),
       (
         "min(anchor-size(width), 10px)",
@@ -957,6 +1344,71 @@ mod tests {
       assert_eq!(
         parse_and_serialize::<MaxSize>(source).unwrap(),
         expected,
+        "{source}"
+      );
+    }
+  }
+
+  #[test]
+  fn parses_anchor_positions_only_for_insets() {
+    for (source, expected) in [
+      ("anchor(inside)", "anchor(inside)"),
+      ("anchor(--x inside)", "anchor(--x inside)"),
+      ("anchor(inside --x)", "anchor(--x inside)"),
+      ("anchor(-10%)", "anchor(-10%)"),
+      ("anchor(--x self-end, 1px)", "anchor(--x self-end, 1px)"),
+      (
+        "anchor(--x inside, calc(1px + 5%))",
+        "anchor(--x inside, calc(5% + 1px))",
+      ),
+      (
+        "calc(anchor(inside) + 1px)",
+        "calc(1px + anchor(inside))",
+      ),
+      (
+        "calc(anchor(inside) * 2)",
+        "calc(2 * anchor(inside))",
+      ),
+      ("min(anchor(inside), 10px)", "min(anchor(inside), 10px)"),
+      (
+        "anchor(inside, anchor-size(width))",
+        "anchor(inside, anchor-size(width))",
+      ),
+      (
+        "anchor(inside, anchor(outside, 1px))",
+        "anchor(inside, anchor(outside, 1px))",
+      ),
+      (
+        "anchor(inside, calc(anchor-size(width) + 1px))",
+        "anchor(inside, calc(1px + anchor-size(width)))",
+      ),
+    ] {
+      assert_eq!(
+        parse_and_serialize::<AnchorPositionOrAuto>(source).unwrap(),
+        expected,
+        "{source}"
+      );
+      assert!(
+        parse_and_serialize::<AnchorSizeOrAuto>(source).is_err(),
+        "margin grammar accepted {source}"
+      );
+    }
+  }
+
+  #[test]
+  fn rejects_invalid_anchor_position_neighbors() {
+    for source in [
+      "anchor()",
+      "anchor(--x)",
+      "anchor(inside,)",
+      "anchor(inside, auto)",
+      "anchor(inside outside)",
+      "anchor(--x --y inside)",
+      "anchor(inside, 1px --x)",
+      "anchor(10px)",
+    ] {
+      assert!(
+        parse_and_serialize::<AnchorPositionOrAuto>(source).is_err(),
         "{source}"
       );
     }
