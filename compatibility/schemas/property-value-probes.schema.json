@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/property-value-probes.schema.json",
+  "title": "Property Value Probe Corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "description", "values"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "input"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "input": { "type": "string" }
+        }
+      }
+    }
+  }
+}

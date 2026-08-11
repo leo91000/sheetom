@@ -68,7 +68,11 @@ test("native and public crash workers run the subprocess safety gate", () => {
 });
 
 test("browser-backed grammar generators still run browser validation", () => {
-    assert.deepEqual(classifyPaths(["scripts/generate-native-grammar-inventory.mjs"]), {
+    assert.deepEqual(classifyPaths([
+        "scripts/generate-native-grammar-inventory.mjs",
+        "scripts/generate-property-value-observations.mjs",
+        "scripts/check-property-value-matrix.mjs",
+    ]), {
         ...none,
         browser: true,
         docs: true,

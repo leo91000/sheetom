@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { chromiumShorthandLonghands } from "../src/chromium-properties.ts";
+import {
+  chromiumShorthandLonghands,
+  chromiumSupportedProperties,
+} from "../src/chromium-properties.ts";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const compatibilityRoot = path.join(repositoryRoot, "compatibility");
@@ -53,6 +56,8 @@ const functionRuleCasesSchema = await readJson(path.join(compatibilityRoot, "sch
 const propertyGrammarExtensionsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-grammar-extensions.schema.json"));
 const relativeColorCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/relative-color-corpus.schema.json"));
 const numberResultMathCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/number-result-math-corpus.schema.json"));
+const propertyValueProbesSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-probes.schema.json"));
+const propertyValueObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-observations.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -66,6 +71,93 @@ const validateFunctionRuleCases = ajv.compile(functionRuleCasesSchema);
 const validatePropertyGrammarExtensions = ajv.compile(propertyGrammarExtensionsSchema);
 const validateRelativeColorCorpus = ajv.compile(relativeColorCorpusSchema);
 const validateNumberResultMathCorpus = ajv.compile(numberResultMathCorpusSchema);
+const validatePropertyValueProbes = ajv.compile(propertyValueProbesSchema);
+const validatePropertyValueObservations = ajv.compile(propertyValueObservationsSchema);
+
+const propertyValueProbesFile = path.join(
+  compatibilityRoot,
+  "property-value-probes.json",
+);
+const propertyValueObservationsFile = path.join(
+  compatibilityRoot,
+  "property-value-observations.json",
+);
+const propertyValueProbesBytes = await readFile(propertyValueProbesFile);
+const propertyValueProbes = JSON.parse(propertyValueProbesBytes.toString("utf8"));
+const propertyValueObservations = await readJson(propertyValueObservationsFile);
+validateOrThrow(
+  validatePropertyValueProbes,
+  propertyValueProbes,
+  propertyValueProbesFile,
+);
+validateOrThrow(
+  validatePropertyValueObservations,
+  propertyValueObservations,
+  propertyValueObservationsFile,
+);
+assert.equal(
+  new Set(propertyValueProbes.values.map(probe => probe.id)).size,
+  propertyValueProbes.values.length,
+  "Property Value Probe IDs must be unique",
+);
+assert.equal(
+  propertyValueObservations.baseline.propertyCount,
+  chromiumSupportedProperties.size,
+  "Property Value observations must cover the complete Chromium manifest",
+);
+assert.equal(
+  propertyValueObservations.baseline.probeCount,
+  propertyValueProbes.values.length,
+  "Property Value observation probe count drifted",
+);
+assert.equal(
+  propertyValueObservations.baseline.acceptedCount,
+  propertyValueObservations.accepted.length,
+  "Property Value accepted count drifted",
+);
+assert.equal(
+  propertyValueObservations.baseline.acceptedCount +
+    propertyValueObservations.baseline.rejectedCount,
+  chromiumSupportedProperties.size * propertyValueProbes.values.length,
+  "Property Value observations must account for the full cross product",
+);
+assert.equal(
+  propertyValueObservations.baseline.atomicNoOpCount,
+  propertyValueObservations.baseline.rejectedCount,
+  "Every Chromium-rejected Property Value probe must be an atomic no-op",
+);
+assert.equal(
+  propertyValueObservations.baseline.probesSha256,
+  createHash("sha256").update(propertyValueProbesBytes).digest("hex"),
+  "Property Value observations are stale for property-value-probes.json",
+);
+const propertyValueProbeIds = new Set(
+  propertyValueProbes.values.map(probe => probe.id),
+);
+const observedPropertyValueKeys = new Set();
+const observedPropertyNames = new Set();
+for (const [property, probe] of propertyValueObservations.accepted) {
+  assert.ok(
+    chromiumSupportedProperties.has(property),
+    `Property Value observations contain unknown property ${property}`,
+  );
+  assert.ok(
+    propertyValueProbeIds.has(probe),
+    `Property Value observations contain unknown probe ${probe}`,
+  );
+  const key = `${property}\0${probe}`;
+  assert.ok(
+    !observedPropertyValueKeys.has(key),
+    `Property Value observation ${property}/${probe} is duplicated`,
+  );
+  observedPropertyValueKeys.add(key);
+  observedPropertyNames.add(property);
+}
+assert.deepEqual(
+  [...observedPropertyNames].sort(),
+  [...chromiumSupportedProperties].sort(),
+  "Every Chromium property must have at least one accepted Property Value probe",
+);
 
 const numberResultMathCorpusFile = path.join(
   compatibilityRoot,
