@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { CSSStyleRule, CSSStyleSheet } from "../dist/index.js";
+import { materializeCrashSource } from "./crash-case-source.mjs";
 
 const [encodedCase] = process.argv.slice(2);
 assert.ok(encodedCase, "encoded crash case is required");
@@ -40,9 +41,7 @@ if (crashCase.mode === "stylesheet-resource") {
     const rule = sheet.cssRules[0];
     assert.ok(rule instanceof CSSStyleRule);
 
-    const source = crashCase.mode === "dynamic-range-depth"
-        ? `dynamic-range-limit: ${"dynamic-range-limit-mix(".repeat(crashCase.nestingDepth)}standard${" 100%)".repeat(crashCase.nestingDepth)}`
-        : crashCase.source;
+    const source = materializeCrashSource(crashCase);
     const separator = source.indexOf(":");
     assert.notEqual(separator, -1, "crash case must contain a property delimiter");
     const property = source.slice(0, separator).trim();

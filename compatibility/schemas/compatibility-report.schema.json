@@ -215,6 +215,30 @@
                 "negative": { "type": "integer", "minimum": 1 },
                 "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
               }
+            },
+            "geometricBranches": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "passed",
+                "total",
+                "reviewed",
+                "generated",
+                "userAgent",
+                "contractsSha256",
+                "generatorSha256",
+                "executionSha256"
+              ],
+              "properties": {
+                "passed": { "type": "integer", "minimum": 1 },
+                "total": { "type": "integer", "minimum": 1 },
+                "reviewed": { "type": "integer", "minimum": 1 },
+                "generated": { "type": "integer", "minimum": 1 },
+                "userAgent": { "type": "string", "minLength": 1 },
+                "contractsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "generatorSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
             }
           }
         },

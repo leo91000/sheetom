@@ -60,6 +60,7 @@ if (!/^[0-9a-f]{64}$/.test(report.evidence.operationFixtures.sha256 ?? "")) {
 }
 const nativeGrammar = report.evidence.nativeGrammar;
 const shorthandGrammar = nativeGrammar?.grammarBranches;
+const geometricGrammar = nativeGrammar?.geometricBranches;
 if (
   nativeGrammar?.codecProfiles !== 24 ||
   nativeGrammar?.shorthandProperties?.passed !== 129 ||
@@ -84,13 +85,21 @@ if (
   nativeGrammar?.relativeColors?.total !== 1_306 ||
   nativeGrammar?.relativeColors?.positive !== 1_146 ||
   nativeGrammar?.relativeColors?.negative !== 160 ||
+  geometricGrammar?.passed !== 199 ||
+  geometricGrammar?.total !== 199 ||
+  geometricGrammar?.reviewed !== 55 ||
+  geometricGrammar?.generated !== 144 ||
+  typeof geometricGrammar?.userAgent !== "string" ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.inventorySha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.contractsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(shorthandGrammar?.observationsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.valueCapabilities?.sha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.numberResultMath?.sha256 ?? "") ||
-  !/^[0-9a-f]{64}$/.test(nativeGrammar?.relativeColors?.sha256 ?? "")
+  !/^[0-9a-f]{64}$/.test(nativeGrammar?.relativeColors?.sha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(geometricGrammar?.contractsSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(geometricGrammar?.generatorSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(geometricGrammar?.executionSha256 ?? "")
 ) {
   throw new Error("Native Grammar Inventory evidence is incomplete");
 }
@@ -104,6 +113,8 @@ for (const [filename, recordedHash] of [
     nativeGrammar.numberResultMath.sha256,
   ],
   ["compatibility/relative-color-capabilities.json", nativeGrammar.relativeColors.sha256],
+  ["compatibility/browser-geometric-contracts.json", geometricGrammar.contractsSha256],
+  ["scripts/browser-geometric-differential.mjs", geometricGrammar.generatorSha256],
 ]) {
   const actualHash = createHash("sha256").update(await readFile(filename)).digest("hex");
   if (actualHash !== recordedHash) {

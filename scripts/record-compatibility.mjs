@@ -34,6 +34,12 @@ const numberResultMathCapabilitiesBytes = await readFile(
 const relativeColorCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "relative-color-capabilities.json"),
 );
+const geometricContractsBytes = await readFile(
+  path.join(compatibilityRoot, "browser-geometric-contracts.json"),
+);
+const geometricGeneratorBytes = await readFile(
+  path.join(repositoryRoot, "scripts/browser-geometric-differential.mjs"),
+);
 const shorthandGrammarContracts = JSON.parse(shorthandGrammarContractsBytes.toString("utf8"));
 const shorthandGrammarObservations = JSON.parse(
   shorthandGrammarObservationsBytes.toString("utf8"),
@@ -216,6 +222,25 @@ for (const adapter of ["native", "public"]) {
   }
 }
 
+const geometricEvidence = await requiredEvidenceReport("geometric-report");
+const geometricReport = geometricEvidence.report;
+if (
+  geometricReport.schemaVersion !== 1
+  || geometricReport.passed !== geometricReport.total
+  || geometricReport.reviewed < 1
+  || geometricReport.generated < 1
+  || geometricReport.reviewed + geometricReport.generated !== geometricReport.total
+  || geometricReport.contractsSha256 !== createHash("sha256")
+    .update(geometricContractsBytes)
+    .digest("hex")
+  || geometricReport.generatorSha256 !== createHash("sha256")
+    .update(geometricGeneratorBytes)
+    .digest("hex")
+  || typeof geometricReport.userAgent !== "string"
+) {
+  throw new Error("Geometric browser differential evidence is incomplete");
+}
+
 const reportArguments = process.argv
   .filter(argument => argument.startsWith("--wpt-report="))
   .map(argument => argument.slice("--wpt-report=".length));
@@ -323,6 +348,16 @@ const report = {
         sha256: createHash("sha256")
           .update(relativeColorCapabilitiesBytes)
           .digest("hex"),
+      },
+      geometricBranches: {
+        passed: geometricReport.passed,
+        total: geometricReport.total,
+        reviewed: geometricReport.reviewed,
+        generated: geometricReport.generated,
+        userAgent: geometricReport.userAgent,
+        contractsSha256: geometricReport.contractsSha256,
+        generatorSha256: geometricReport.generatorSha256,
+        executionSha256: createHash("sha256").update(geometricEvidence.bytes).digest("hex"),
       },
     },
     processSafety: {

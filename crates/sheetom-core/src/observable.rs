@@ -1,7 +1,11 @@
 use crate::catalog::shorthand_longhands;
 use crate::recovered_value::RecoveredObservableText;
-use crate::{EngineError, SemanticDeclaration, SemanticPropertyValue};
+use crate::{EngineError, SemanticDeclaration, SemanticExtensionValue, SemanticPropertyValue};
 use cssparser::{Token, TokenizerWithSpans};
+use lightningcss::{
+    properties::{Property, PropertyId},
+    stylesheet::{ParserOptions, PrinterOptions},
+};
 
 #[derive(Clone, Copy)]
 enum ObservableCategory {
@@ -52,6 +56,16 @@ pub(crate) fn project_declaration(
         } else {
             retained.to_owned()
         }
+    } else if let SemanticPropertyValue::Extension(SemanticExtensionValue::Geometric(value)) =
+        declaration.value()
+    {
+        if let Some(gradient) = value.gradient_observable_value()? {
+            serialize_gradient_observable(&gradient)
+        } else if let Some(observable) = value.image_set_observable_value()? {
+            observable
+        } else {
+            canonical.clone()
+        }
     } else {
         serialize_typed_observable(name, input, closed, &canonical, &recovered)
     };
@@ -60,6 +74,196 @@ pub(crate) fn project_declaration(
         canonical,
         observable,
     })
+}
+
+fn serialize_gradient_observable(input: &str) -> String {
+    let mut value = replace_gradient_color_tokens(input);
+    value = replace_comments_with_space(&value);
+    value = normalize_comma_whitespace(&value);
+    value = canonicalize_leading_decimal(&value);
+    value = canonicalize_color_identifiers(&value);
+    if value
+        .get(..value.find('(').unwrap_or(value.len()))
+        .is_some_and(|name| name.eq_ignore_ascii_case("-webkit-gradient"))
+    {
+        value = normalize_webkit_gradient_points(&value);
+    }
+    if let Some(open) = value.find('(') {
+        value[..open].make_ascii_lowercase();
+    }
+    value
+}
+
+fn normalize_webkit_gradient_points(input: &str) -> String {
+    let mut tokenizer = TokenizerWithSpans::new(input);
+    let mut replacements = Vec::new();
+    while let Ok(token) = tokenizer.next_token() {
+        let Token::Ident(identifier) = token.token else {
+            continue;
+        };
+        let replacement =
+            if identifier.eq_ignore_ascii_case("left") || identifier.eq_ignore_ascii_case("top") {
+                "0%"
+            } else if identifier.eq_ignore_ascii_case("right")
+                || identifier.eq_ignore_ascii_case("bottom")
+            {
+                "100%"
+            } else if identifier.eq_ignore_ascii_case("center") {
+                "50%"
+            } else {
+                continue;
+            };
+        replacements.push((
+            token.start.byte_index(),
+            token.end.byte_index(),
+            replacement,
+        ));
+    }
+
+    let mut output = input.to_owned();
+    for (start, end, replacement) in replacements.into_iter().rev() {
+        output.replace_range(start..end, replacement);
+    }
+    output
+}
+
+fn replace_gradient_color_tokens(input: &str) -> String {
+    #[derive(Clone, Copy)]
+    enum Opening {
+        Parenthesis { color_start: Option<usize> },
+        Square,
+        Curly,
+    }
+
+    let mut tokenizer = TokenizerWithSpans::new(input);
+    let mut openings = Vec::new();
+    let mut replacements = Vec::<(usize, usize, String)>::new();
+    while let Ok(token) = tokenizer.next_token() {
+        match token.token {
+            Token::Function(name) => openings.push(Opening::Parenthesis {
+                color_start: is_serializable_color_function(&name)
+                    .then_some(token.start.byte_index()),
+            }),
+            Token::ParenthesisBlock => openings.push(Opening::Parenthesis { color_start: None }),
+            Token::SquareBracketBlock => openings.push(Opening::Square),
+            Token::CurlyBracketBlock => openings.push(Opening::Curly),
+            Token::CloseParenthesis => {
+                let Some(Opening::Parenthesis { color_start }) = openings.pop() else {
+                    continue;
+                };
+                let Some(start) = color_start else {
+                    continue;
+                };
+                let end = token.end.byte_index();
+                let Some(source) = input.get(start..end) else {
+                    continue;
+                };
+                if let Some(color) = canonicalize_nested_color(source) {
+                    replacements.push((start, end, color));
+                }
+            }
+            Token::CloseSquareBracket => {
+                if matches!(openings.last(), Some(Opening::Square)) {
+                    openings.pop();
+                }
+            }
+            Token::CloseCurlyBracket => {
+                if matches!(openings.last(), Some(Opening::Curly)) {
+                    openings.pop();
+                }
+            }
+            Token::Hash(value) | Token::IDHash(value) => {
+                let source = format!("#{value}");
+                if let Some(color) = serialize_hex_color(&source) {
+                    replacements.push((token.start.byte_index(), token.end.byte_index(), color));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    replacements.sort_unstable_by_key(|(start, _, _)| *start);
+    let mut outermost = Vec::with_capacity(replacements.len());
+    let mut covered_until = 0usize;
+    for replacement in replacements {
+        if replacement.0 < covered_until {
+            continue;
+        }
+        covered_until = replacement.1;
+        outermost.push(replacement);
+    }
+    let mut output = input.to_owned();
+    for (start, end, replacement) in outermost.into_iter().rev() {
+        output.replace_range(start..end, &replacement);
+    }
+    output
+}
+
+fn is_serializable_color_function(name: &str) -> bool {
+    [
+        "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color",
+    ]
+    .iter()
+    .any(|candidate| name.eq_ignore_ascii_case(candidate))
+}
+
+fn canonicalize_nested_color(source: &str) -> Option<String> {
+    let property =
+        Property::parse_string(PropertyId::Color, source, ParserOptions::default()).ok()?;
+    let safe = property
+        .value_to_css_string(PrinterOptions::default())
+        .ok()?;
+    Some(serialize_color(source, &safe))
+}
+
+fn replace_comments_with_space(input: &str) -> String {
+    let mut tokenizer = TokenizerWithSpans::new(input);
+    let mut comments = Vec::new();
+    while let Ok(token) = tokenizer.next_token() {
+        if matches!(token.token, Token::Comment(_)) {
+            comments.push((token.start.byte_index(), token.end.byte_index()));
+        }
+    }
+    let mut output = input.to_owned();
+    for (start, end) in comments.into_iter().rev() {
+        output.replace_range(start..end, " ");
+    }
+    output
+}
+
+fn normalize_comma_whitespace(source: &str) -> String {
+    let mut output = String::with_capacity(source.len() + 4);
+    let mut characters = source.chars().peekable();
+    let mut quote = None;
+    let mut escaped = false;
+    while let Some(character) = characters.next() {
+        if let Some(delimiter) = quote {
+            output.push(character);
+            if escaped {
+                escaped = false;
+            } else if character == '\\' {
+                escaped = true;
+            } else if character == delimiter {
+                quote = None;
+            }
+            continue;
+        }
+        if matches!(character, '\'' | '"') {
+            quote = Some(character);
+            output.push(character);
+            continue;
+        }
+        if character != ',' {
+            output.push(character);
+            continue;
+        }
+        while output.chars().last().is_some_and(char::is_whitespace) {
+            output.pop();
+        }
+        output.push_str(", ");
+        while characters.next_if(|value| value.is_whitespace()).is_some() {}
+    }
+    output
 }
 
 fn serialize_typed_observable(
@@ -524,5 +728,26 @@ mod tests {
             ),
             "lab(from var(--mycolor) l a b / calc(alpha * 0.8))"
         );
+    }
+
+    #[test]
+    fn serializes_gradient_images_without_erasing_authored_color_identity() {
+        for (input, expected) in [
+            ("linear-gradient(red,blue)", "linear-gradient(red, blue)"),
+            (
+                "linear-gradient(red 0%, rgb(0 0 255) 100%)",
+                "linear-gradient(red 0%, rgb(0, 0, 255) 100%)",
+            ),
+            (
+                "LINEAR-GRADIENT(#f00 0%, rgba(0,0,255,.5) 100%)",
+                "linear-gradient(rgb(255, 0, 0) 0%, rgba(0, 0, 255, 0.5) 100%)",
+            ),
+            (
+                "linear-gradient(hsl(120 100% 50%), transparent)",
+                "linear-gradient(rgb(0, 255, 0), transparent)",
+            ),
+        ] {
+            assert_eq!(observable("shape-outside", input), expected, "{input}");
+        }
     }
 }

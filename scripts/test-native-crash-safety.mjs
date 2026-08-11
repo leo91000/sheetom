@@ -41,6 +41,43 @@ const crashCases = [
         public: true,
     },
     {
+        name: "large SVG path command sequence",
+        mode: "geometric-svg-path",
+        repeatCount: 50_000,
+        public: true,
+    },
+    {
+        name: "large CSS shape command sequence",
+        mode: "geometric-shape-commands",
+        repeatCount: 10_000,
+        public: true,
+    },
+    {
+        name: "large polygon point sequence",
+        mode: "geometric-polygon-points",
+        repeatCount: 20_000,
+        public: true,
+    },
+    {
+        name: "nested gradient color functions",
+        mode: "geometric-nested-gradient",
+        nestingDepth: 128,
+        public: true,
+    },
+    {
+        name: "malformed SVG path recovery",
+        source: 'd: path("M0 0 L1")',
+        expectRejected: true,
+        public: true,
+    },
+    {
+        name: "geometric value above the declaration input budget",
+        mode: "geometric-oversized",
+        expectError: "SHEETOM_INPUT_LIMIT",
+        expectPublicError: "SHEETOM_INPUT_LIMIT",
+        public: true,
+    },
+    {
         name: "font stretch incompatible percentage calc",
         source: "font-stretch: calc(1 + 1)",
         public: true,
