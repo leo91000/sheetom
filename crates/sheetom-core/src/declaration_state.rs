@@ -364,9 +364,8 @@ impl DeclarationState {
             DeclarationContext::Style => {
                 parse_value_with_limits(name, value, important, self.limits)
             }
-            DeclarationContext::FontFace => {
-                parse_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
-            }
+            DeclarationContext::FontFace => parse_descriptor_value(name, value, self.limits)
+                .ok_or(MutationOutcome::InvalidValue),
             DeclarationContext::Function => {
                 parse_function_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
             }
@@ -1188,14 +1187,17 @@ mod tests {
                 continue;
             }
             for record in state.records() {
-                if record.value.kind() == DeclarationValueKind::Codec
-                    || record
-                        .pending_group
-                        .as_ref()
-                        .is_some_and(|group| group.value.kind() == DeclarationValueKind::Codec)
-                {
+                if !matches!(
+                    record.value.kind(),
+                    DeclarationValueKind::Semantic | DeclarationValueKind::CssWideKeyword
+                ) || record.pending_group.as_ref().is_some_and(|group| {
+                    !matches!(
+                        group.value.kind(),
+                        DeclarationValueKind::Semantic | DeclarationValueKind::CssWideKeyword
+                    )
+                }) {
                     failures.push(format!(
-                        "{property}: {} retained textual Codec authority",
+                        "{property}: {} retained non-semantic authority",
                         record.name
                     ));
                 }
@@ -1360,14 +1362,17 @@ mod tests {
                 continue;
             }
             for record in state.records() {
-                if record.value.kind() == DeclarationValueKind::Codec
-                    || record
-                        .pending_group
-                        .as_ref()
-                        .is_some_and(|group| group.value.kind() == DeclarationValueKind::Codec)
-                {
+                if !matches!(
+                    record.value.kind(),
+                    DeclarationValueKind::Semantic | DeclarationValueKind::CssWideKeyword
+                ) || record.pending_group.as_ref().is_some_and(|group| {
+                    !matches!(
+                        group.value.kind(),
+                        DeclarationValueKind::Semantic | DeclarationValueKind::CssWideKeyword
+                    )
+                }) {
                     failures.push(format!(
-                        "{id}: {} retained textual Codec authority",
+                        "{id}: {} retained non-semantic authority",
                         record.name
                     ));
                 }

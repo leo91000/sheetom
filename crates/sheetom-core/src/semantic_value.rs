@@ -10,6 +10,7 @@ use crate::{
     analyze_recovered_substitutions,
     catalog::{property_grammar, PropertyGrammarOwner},
     extension_value::{parse_extension_value, parse_preferred_extension_value},
+    font_face::FontFaceDescriptorValue,
     recover_component_values_with_limits, EngineError, PropertyParseKind, RecoveredValue,
     ResourceLimits, SemanticExtensionValue, SemanticSubstitutionValue,
 };
@@ -22,6 +23,7 @@ pub enum SemanticPropertyValue {
     /// semantic longhand set. The recovered component tree is retained only as
     /// CSSOM provenance for reconstructing the shorthand spelling.
     ExpandedShorthand,
+    FontFaceDescriptor(FontFaceDescriptorValue),
     PendingSubstitution(SemanticSubstitutionValue),
     CustomTokenStream,
 }
@@ -61,10 +63,25 @@ impl SemanticDeclaration {
         })
     }
 
+    pub(crate) fn from_font_face_descriptor(
+        descriptor_name: &str,
+        value: FontFaceDescriptorValue,
+        recovered: RecoveredValue,
+    ) -> Self {
+        Self {
+            property_name: Arc::from(descriptor_name),
+            value: SemanticPropertyValue::FontFaceDescriptor(value),
+            recovered,
+            parse_kind: PropertyParseKind::SheetomTyped,
+        }
+    }
+
     pub(crate) fn compact_recovery(&mut self) {
         if !matches!(
             self.value,
-            SemanticPropertyValue::Standard(_) | SemanticPropertyValue::Extension(_)
+            SemanticPropertyValue::Standard(_)
+                | SemanticPropertyValue::Extension(_)
+                | SemanticPropertyValue::FontFaceDescriptor(_)
         ) {
             return;
         }
@@ -96,6 +113,7 @@ impl SemanticDeclaration {
             SemanticPropertyValue::ExpandedShorthand => {
                 self.recovered.reparsable_css_without_comments()
             }
+            SemanticPropertyValue::FontFaceDescriptor(value) => value.canonical_value(),
             SemanticPropertyValue::PendingSubstitution(_)
             | SemanticPropertyValue::CustomTokenStream => self.recovered.reparsable_css(),
         }

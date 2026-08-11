@@ -1,14 +1,16 @@
 use crate::{
+    browser_longhand::{parse_browser_longhand, BrowserLonghandValue},
     shorthand::ParsedValue,
-    syntax::{analyze_substitutions, split_top_level_delimiter},
-    DeclarationValue,
+    syntax::analyze_substitutions,
+    DeclarationValue, EngineError, ResourceLimits, SemanticDeclaration,
 };
-use cssparser::{serialize_string, Parser, ParserInput};
+use cssparser::{Parser, ParserInput};
 use lightningcss::{
+    properties::font::FontStretchKeyword,
     rules::{font_face::FontFaceProperty, CssRule},
     stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
-    traits::{Parse, ToCss},
-    values::percentage::Percentage,
+    traits::{IntoOwned, Parse, ToCss, TrySign},
+    values::{calc::Calc, percentage::Percentage},
 };
 
 const DESCRIPTORS: &[&str] = &[
@@ -28,6 +30,76 @@ const DESCRIPTORS: &[&str] = &[
     "unicode-range",
 ];
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum FontFaceDescriptorValue {
+    Typed(FontFaceProperty<'static>),
+    MetricOverride(FontFaceMetricOverride),
+    FontStretch(FontFaceStretch),
+    BrowserLonghand(BrowserLonghandValue),
+    Keyword(&'static str),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FontFaceMetricOverride {
+    Normal,
+    Percentage(FontFacePercentage),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FontFacePercentage {
+    value: Calc<Percentage>,
+    wrap_calc: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FontFaceStretch {
+    Keyword(FontStretchKeyword),
+    Percentages {
+        first: FontFacePercentage,
+        second: Option<FontFacePercentage>,
+    },
+}
+
+impl FontFaceDescriptorValue {
+    pub(crate) fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            FontFaceDescriptorValue::Typed(value) => typed_descriptor_value_to_css(value),
+            FontFaceDescriptorValue::MetricOverride(FontFaceMetricOverride::Normal) => {
+                Ok("normal".to_owned())
+            }
+            FontFaceDescriptorValue::MetricOverride(FontFaceMetricOverride::Percentage(value)) => {
+                value.canonical_value()
+            }
+            FontFaceDescriptorValue::FontStretch(FontFaceStretch::Keyword(value)) => {
+                serialize_descriptor_component(value)
+            }
+            FontFaceDescriptorValue::FontStretch(FontFaceStretch::Percentages {
+                first,
+                second,
+            }) => {
+                let mut serialized = first.canonical_value()?;
+                if let Some(second) = second {
+                    serialized.push(' ');
+                    serialized.push_str(&second.canonical_value()?);
+                }
+                Ok(serialized)
+            }
+            FontFaceDescriptorValue::BrowserLonghand(value) => value.canonical_value(),
+            FontFaceDescriptorValue::Keyword(value) => Ok((*value).to_owned()),
+        }
+    }
+}
+
+impl FontFacePercentage {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let serialized = serialize_descriptor_component(&self.value)?;
+        if self.wrap_calc && matches!(self.value, Calc::Number(_) | Calc::Value(_)) {
+            return Ok(format!("calc({serialized})"));
+        }
+        Ok(serialized)
+    }
+}
+
 pub(crate) fn canonical_descriptor_name(name: &str) -> Option<String> {
     if name.starts_with("--") {
         return (name.len() > 2).then(|| name.to_owned());
@@ -39,40 +111,51 @@ pub(crate) fn canonical_descriptor_name(name: &str) -> Option<String> {
         .then_some(name)
 }
 
-pub(crate) fn parse_descriptor_value(name: &str, value: &str) -> Option<ParsedValue> {
+pub(crate) fn parse_descriptor_value(
+    name: &str,
+    value: &str,
+    limits: ResourceLimits,
+) -> Option<ParsedValue> {
     let substitutions = analyze_substitutions(value);
     if !substitutions.valid {
         return None;
     }
     if name.starts_with("--") {
-        return crate::shorthand::parse_value(name, value, false).ok();
+        return crate::shorthand::parse_value_with_limits(name, value, false, limits).ok();
     }
     if substitutions.found {
         return None;
     }
 
-    let (observable_value, safe_value) = match name {
+    let descriptor = match name {
         "ascent-override" | "descent-override" | "line-gap-override" => {
             parse_metric_override(value, true)?
         }
         "size-adjust" => parse_metric_override(value, false)?,
-        "font-display" => parse_font_display(value)?,
-        "font-feature-settings" => parse_font_feature_settings(value)?,
-        "font-variation-settings" => parse_font_variation_settings(value)?,
-        "font-variant" => parse_font_variant(value)?,
-        "font-family" | "font-stretch" | "font-style" | "font-weight" | "src" | "unicode-range" => {
+        "font-display" => parse_keyword(value, &["auto", "block", "swap", "fallback", "optional"])
+            .map(FontFaceDescriptorValue::Keyword)?,
+        "font-feature-settings" | "font-variation-settings" => {
+            FontFaceDescriptorValue::BrowserLonghand(parse_browser_longhand(name, value).ok()??)
+        }
+        "font-stretch" => FontFaceDescriptorValue::FontStretch(parse_font_stretch(value)?),
+        "font-variant" => {
+            parse_keyword(value, &["normal", "small-caps"]).map(FontFaceDescriptorValue::Keyword)?
+        }
+        "font-family" | "font-style" | "font-weight" | "src" | "unicode-range" => {
             parse_typed_descriptor(name, value)?
         }
         _ => return None,
     };
+    let recovered = crate::recover_component_values_with_limits(value, limits).ok()?;
+    let semantic = SemanticDeclaration::from_font_face_descriptor(name, descriptor, recovered);
 
     Some(ParsedValue {
-        value: DeclarationValue::codec(safe_value, observable_value),
+        value: DeclarationValue::semantic(semantic).ok()?,
         longhands: None,
     })
 }
 
-fn parse_typed_descriptor(name: &str, value: &str) -> Option<(String, String)> {
+fn parse_typed_descriptor(name: &str, value: &str) -> Option<FontFaceDescriptorValue> {
     let source = format!("@font-face{{{name}:{value}}}");
     let sheet = StyleSheet::parse(&source, ParserOptions::default()).ok()?;
     let CssRule::FontFace(rule) = sheet.rules.0.first()? else {
@@ -82,8 +165,25 @@ fn parse_typed_descriptor(name: &str, value: &str) -> Option<(String, String)> {
     if !typed_variant_matches(name, property) {
         return None;
     }
-    if let FontFaceProperty::UnicodeRange(ranges) = property {
-        let serialized = ranges
+    Some(FontFaceDescriptorValue::Typed(
+        property.clone().into_owned(),
+    ))
+}
+
+fn typed_descriptor_value_to_css(value: &FontFaceProperty<'static>) -> Result<String, EngineError> {
+    match value {
+        FontFaceProperty::Source(sources) => {
+            let mut serialized = Vec::with_capacity(sources.len());
+            for source in sources {
+                serialized.push(serialize_descriptor_component(source)?);
+            }
+            Ok(serialized.join(", "))
+        }
+        FontFaceProperty::FontFamily(value) => serialize_descriptor_component(value),
+        FontFaceProperty::FontStyle(value) => serialize_descriptor_component(value),
+        FontFaceProperty::FontWeight(value) => serialize_descriptor_component(value),
+        FontFaceProperty::FontStretch(value) => serialize_descriptor_component(value),
+        FontFaceProperty::UnicodeRange(ranges) => Ok(ranges
             .iter()
             .map(|range| {
                 if range.start == range.end {
@@ -93,28 +193,17 @@ fn parse_typed_descriptor(name: &str, value: &str) -> Option<(String, String)> {
                 }
             })
             .collect::<Vec<_>>()
-            .join(", ");
-        return Some((serialized.clone(), serialized));
+            .join(", ")),
+        FontFaceProperty::Custom(_) => Err(EngineError::Serialize(
+            "unsupported typed font-face descriptor".to_owned(),
+        )),
     }
-    let declaration = property.to_css_string(PrinterOptions::default()).ok()?;
-    let (_, serialized_value) = declaration.split_once(':')?;
-    let serialized_value = serialized_value.trim().to_owned();
-    let observable_value = if name == "font-family" && value.trim().starts_with(['\'', '"']) {
-        canonical_string(value)?
-    } else {
-        serialized_value.clone()
-    };
-    Some((observable_value, serialized_value))
 }
 
-fn canonical_string(value: &str) -> Option<String> {
-    let mut input = ParserInput::new(value);
-    let mut parser = Parser::new(&mut input);
-    let value = parser.expect_string_cloned().ok()?;
-    parser.expect_exhausted().ok()?;
-    let mut serialized = String::new();
-    serialize_string(&value, &mut serialized).ok()?;
-    Some(serialized)
+fn serialize_descriptor_component<T: ToCss>(value: &T) -> Result<String, EngineError> {
+    value
+        .to_css_string(PrinterOptions::default())
+        .map_err(|error| EngineError::Serialize(error.to_string()))
 }
 
 fn typed_variant_matches(name: &str, property: &FontFaceProperty<'_>) -> bool {
@@ -124,136 +213,86 @@ fn typed_variant_matches(name: &str, property: &FontFaceProperty<'_>) -> bool {
             | ("font-family", FontFaceProperty::FontFamily(_))
             | ("font-style", FontFaceProperty::FontStyle(_))
             | ("font-weight", FontFaceProperty::FontWeight(_))
-            | ("font-stretch", FontFaceProperty::FontStretch(_))
             | ("unicode-range", FontFaceProperty::UnicodeRange(_))
     )
 }
 
-fn parse_metric_override(value: &str, allows_normal: bool) -> Option<(String, String)> {
-    let value = value.trim();
-    if allows_normal && value.eq_ignore_ascii_case("normal") {
-        return Some(("normal".to_owned(), "normal".to_owned()));
-    }
-
+fn parse_metric_override(value: &str, allows_normal: bool) -> Option<FontFaceDescriptorValue> {
     let mut input = ParserInput::new(value);
     let mut parser = Parser::new(&mut input);
-    let percentage = Percentage::parse(&mut parser).ok()?;
+    if allows_normal
+        && parser
+            .try_parse(|input| input.expect_ident_matching("normal"))
+            .is_ok()
+    {
+        parser.expect_exhausted().ok()?;
+        return Some(FontFaceDescriptorValue::MetricOverride(
+            FontFaceMetricOverride::Normal,
+        ));
+    }
+    let percentage = parse_percentage(&mut parser)?;
     parser.expect_exhausted().ok()?;
-    let is_math_function = value
-        .as_bytes()
-        .first()
-        .is_some_and(u8::is_ascii_alphabetic);
-    if !is_math_function && percentage.0 < 0.0 {
+    Some(FontFaceDescriptorValue::MetricOverride(
+        FontFaceMetricOverride::Percentage(percentage),
+    ))
+}
+
+fn parse_font_stretch(value: &str) -> Option<FontFaceStretch> {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    if let Ok(keyword) = parser.try_parse(FontStretchKeyword::parse) {
+        parser.expect_exhausted().ok()?;
+        return Some(FontFaceStretch::Keyword(keyword));
+    }
+    let first = parse_percentage(&mut parser)?;
+    let second = if parser.is_exhausted() {
+        None
+    } else {
+        Some(parse_percentage(&mut parser)?)
+    };
+    parser.expect_exhausted().ok()?;
+    Some(FontFaceStretch::Percentages { first, second })
+}
+
+fn parse_percentage(parser: &mut Parser<'_, '_>) -> Option<FontFacePercentage> {
+    let state = parser.state();
+    let function = parser.expect_function().ok().map(|name| name.to_string());
+    parser.reset(&state);
+    let value = if function.is_some() {
+        Calc::<Percentage>::parse_preserving_math_functions(parser).ok()?
+    } else {
+        Percentage::parse(parser).ok()?.into()
+    };
+    if value.resolves_to_number()
+        || function.is_none() && value.try_sign().is_some_and(|sign| sign < 0.0)
+    {
         return None;
     }
-    let canonical = if is_math_function {
-        value.replace(",", ", ")
-    } else {
-        percentage.to_css_string(PrinterOptions::default()).ok()?
-    };
-    Some((canonical.clone(), canonical))
+    Some(FontFacePercentage {
+        value,
+        wrap_calc: function.is_some_and(|name| name.eq_ignore_ascii_case("calc")),
+    })
 }
 
-fn parse_font_display(value: &str) -> Option<(String, String)> {
-    let value = value.trim().to_ascii_lowercase();
-    matches!(
-        value.as_str(),
-        "auto" | "block" | "swap" | "fallback" | "optional"
-    )
-    .then(|| (value.clone(), value))
-}
-
-fn parse_font_variant(value: &str) -> Option<(String, String)> {
-    let value = value.trim().to_ascii_lowercase();
-    matches!(value.as_str(), "normal" | "small-caps").then(|| (String::new(), value))
-}
-
-fn parse_font_feature_settings(value: &str) -> Option<(String, String)> {
-    let value = value.trim();
-    if value.eq_ignore_ascii_case("normal") {
-        return Some(("normal".to_owned(), "normal".to_owned()));
-    }
-    let mut serialized = Vec::new();
-    for entry in split_top_level_delimiter(value, b',')? {
-        let mut input = ParserInput::new(entry);
-        let mut parser = Parser::new(&mut input);
-        let tag = parser.expect_string_cloned().ok()?;
-        if !valid_opentype_tag(&tag) {
-            return None;
-        }
-        let setting = if parser.is_exhausted()
-            || parser
-                .try_parse(|input| input.expect_ident_matching("on"))
-                .is_ok()
-        {
-            1
-        } else if parser
-            .try_parse(|input| input.expect_ident_matching("off"))
-            .is_ok()
-        {
-            0
-        } else {
-            parser.expect_integer().ok()?
-        };
-        parser.expect_exhausted().ok()?;
-        if setting < 0 {
-            return None;
-        }
-        let mut item = String::new();
-        serialize_string(&tag, &mut item).ok()?;
-        if setting != 1 {
-            item.push(' ');
-            item.push_str(&setting.to_string());
-        }
-        serialized.push(item);
-    }
-    let serialized = serialized.join(", ");
-    Some((serialized.clone(), serialized))
-}
-
-fn parse_font_variation_settings(value: &str) -> Option<(String, String)> {
-    let value = value.trim();
-    if value.eq_ignore_ascii_case("normal") {
-        return Some(("normal".to_owned(), "normal".to_owned()));
-    }
-    let mut serialized = Vec::new();
-    for entry in split_top_level_delimiter(value, b',')? {
-        let mut input = ParserInput::new(entry);
-        let mut parser = Parser::new(&mut input);
-        let tag = parser.expect_string_cloned().ok()?;
-        if !valid_opentype_tag(&tag) {
-            return None;
-        }
-        let setting = parser.expect_number().ok()?;
-        parser.expect_exhausted().ok()?;
-        if !setting.is_finite() {
-            return None;
-        }
-        let mut item = String::new();
-        serialize_string(&tag, &mut item).ok()?;
-        item.push(' ');
-        item.push_str(&serialize_number(setting));
-        serialized.push(item);
-    }
-    let serialized = serialized.join(", ");
-    Some((serialized.clone(), serialized))
-}
-
-fn valid_opentype_tag(tag: &str) -> bool {
-    tag.len() == 4 && tag.bytes().all(|byte| (0x20..=0x7e).contains(&byte))
-}
-
-fn serialize_number(value: f32) -> String {
-    if value.fract() == 0.0 {
-        format!("{value:.0}")
-    } else {
-        value.to_string()
-    }
+fn parse_keyword(value: &str, keywords: &'static [&'static str]) -> Option<&'static str> {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    let identifier = parser.expect_ident_cloned().ok()?;
+    parser.expect_exhausted().ok()?;
+    keywords
+        .iter()
+        .copied()
+        .find(|keyword| identifier.eq_ignore_ascii_case(keyword))
 }
 
 #[cfg(test)]
 mod tests {
     use super::{canonical_descriptor_name, parse_descriptor_value};
+    use crate::{DeclarationValueKind, ResourceLimits, SemanticPropertyValue};
+
+    fn parse(name: &str, value: &str) -> Option<crate::shorthand::ParsedValue> {
+        parse_descriptor_value(name, value, ResourceLimits::default())
+    }
 
     #[test]
     fn accepts_and_canonicalizes_chromium_font_face_descriptors() {
@@ -263,31 +302,86 @@ mod tests {
             ("unicode-range", "U+??", "U+0-FF"),
             ("font-display", "SWAP", "swap"),
             ("ascent-override", "1e2%", "100%"),
+            (
+                "ascent-override",
+                "min(max(10%,20%),30%)",
+                "min(max(10%, 20%), 30%)",
+            ),
+            (
+                "size-adjust",
+                "calc(sign(1%) * 100%)",
+                "calc(100% * sign(1%))",
+            ),
+            (
+                "font-stretch",
+                "min(75%,125%) max(100%,150%)",
+                "min(75%, 125%) max(100%, 150%)",
+            ),
             ("font-feature-settings", "\"kern\" 1", "\"kern\""),
         ];
         for (name, input, expected) in cases {
-            let parsed = parse_descriptor_value(name, input)
-                .unwrap_or_else(|| panic!("{name} descriptor should parse"));
+            let parsed =
+                parse(name, input).unwrap_or_else(|| panic!("{name} descriptor should parse"));
             assert_eq!(parsed.safe_value(), expected, "{name}");
+        }
+    }
+
+    #[test]
+    fn every_ordinary_descriptor_retains_owned_semantic_state() {
+        let cases = [
+            ("ascent-override", "90%"),
+            ("descent-override", "calc(20%)"),
+            ("font-display", "swap"),
+            ("font-family", "Test"),
+            ("font-feature-settings", "\"kern\""),
+            ("font-stretch", "75% 125%"),
+            ("font-style", "oblique 10deg 20deg"),
+            ("font-variant", "small-caps"),
+            ("font-variation-settings", "\"wght\" 500"),
+            ("font-weight", "100 900"),
+            ("line-gap-override", "normal"),
+            ("size-adjust", "100%"),
+            ("src", "local(Test), url(test.woff2)"),
+            ("unicode-range", "U+??"),
+        ];
+        for (name, input) in cases {
+            let parsed = parse(name, input)
+                .unwrap_or_else(|| panic!("{name} descriptor should parse semantically"));
+            assert_eq!(
+                parsed.value.kind(),
+                DeclarationValueKind::Semantic,
+                "{name}"
+            );
+            assert!(
+                matches!(
+                    parsed.value.semantic_value().map(|value| value.value()),
+                    Some(SemanticPropertyValue::FontFaceDescriptor(_))
+                ),
+                "{name}"
+            );
         }
     }
 
     #[test]
     fn rejects_unknown_invalid_and_substituted_descriptors() {
         assert_eq!(canonical_descriptor_name("unknown"), None);
-        assert!(parse_descriptor_value("font-display", "initial").is_none());
-        assert!(parse_descriptor_value("font-family", "A, B").is_none());
-        assert!(parse_descriptor_value("src", "none").is_none());
-        assert!(parse_descriptor_value("font-stretch", "condensed expanded").is_none());
-        assert!(parse_descriptor_value("size-adjust", "-1%").is_none());
-        assert!(parse_descriptor_value("font-display", "var(--x)").is_none());
+        assert!(parse("font-display", "initial").is_none());
+        assert!(parse("font-family", "A, B").is_none());
+        assert!(parse("src", "none").is_none());
+        assert!(parse("font-stretch", "condensed expanded").is_none());
+        assert!(parse("font-stretch", "normal 125%").is_none());
+        assert!(parse("font-stretch", "75% normal").is_none());
+        assert!(parse("font-stretch", "sign(1%)").is_none());
+        assert!(parse("size-adjust", "-1%").is_none());
+        assert!(parse("size-adjust", "sign(1%)").is_none());
+        assert!(parse("font-display", "var(--x)").is_none());
     }
 
     #[test]
     fn preserves_custom_properties_and_font_variant_observability() {
-        let custom = parse_descriptor_value("--x", "var(--y").expect("custom descriptor");
+        let custom = parse("--x", "var(--y").expect("custom descriptor");
         assert_eq!(custom.observable_value(), "var(--y");
-        let variant = parse_descriptor_value("font-variant", "small-caps").expect("variant");
+        let variant = parse("font-variant", "small-caps").expect("variant");
         assert_eq!(variant.observable_value(), "");
         assert_eq!(variant.safe_value(), "small-caps");
     }
