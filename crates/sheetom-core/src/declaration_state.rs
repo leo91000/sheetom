@@ -1,7 +1,7 @@
 use crate::function_rule::{canonical_function_descriptor_name, parse_function_descriptor_value};
 use crate::{
     catalog::{
-        canonical_property_name as canonical_style_property_name,
+        canonical_property_name as canonical_style_property_name, property_alias_hides_value,
         shorthand_longhands as style_shorthand_longhands, shorthand_names,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
@@ -25,6 +25,13 @@ pub struct DeclarationRecord {
     pub value: DeclarationValue,
     pub important: bool,
     pub pending_group: Option<PendingSubstitutionGroup>,
+    pub(crate) alias_value: Option<AliasDeclarationValue>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct AliasDeclarationValue {
+    name: String,
+    value: DeclarationValue,
 }
 
 impl DeclarationRecord {
@@ -112,6 +119,9 @@ impl DeclarationState {
     }
 
     pub fn get_property_value(&self, name: &str) -> String {
+        let hides_semantic_value =
+            self.context == DeclarationContext::Style && property_alias_hides_value(name);
+        let queried_name = name.to_ascii_lowercase();
         let Some(name) = self.canonical_name(name) else {
             return String::new();
         };
@@ -123,7 +133,21 @@ impl DeclarationState {
         self.records
             .iter()
             .find(|record| record.name == name)
-            .map_or_else(String::new, |record| record.observable_value().to_owned())
+            .map_or_else(String::new, |record| {
+                if let Some(alias) = record
+                    .alias_value
+                    .as_ref()
+                    .filter(|alias| alias.name == queried_name)
+                {
+                    return alias.value.observable_css().to_owned();
+                }
+                if hides_semantic_value
+                    && record.value.kind() != crate::DeclarationValueKind::CssWideKeyword
+                {
+                    return String::new();
+                }
+                record.observable_value().to_owned()
+            })
     }
 
     pub fn get_property_priority(&self, name: &str) -> &'static str {
@@ -179,6 +203,7 @@ impl DeclarationState {
     }
 
     fn apply_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
+        let source_name = name.to_ascii_lowercase();
         let Some(name) = self.canonical_name(name) else {
             return MutationOutcome::InvalidName;
         };
@@ -209,6 +234,7 @@ impl DeclarationState {
                         value: DeclarationValue::deferred(true),
                         important,
                         pending_group: Some(group.clone()),
+                        alias_value: None,
                     });
                 }
                 return MutationOutcome::Applied;
@@ -223,11 +249,18 @@ impl DeclarationState {
             return MutationOutcome::Applied;
         }
 
+        let alias_value = self.alias_value_for_record(&source_name, &name, &parsed.value);
+        let record_value = if alias_value.is_some() {
+            DeclarationValue::deferred(true)
+        } else {
+            parsed.value
+        };
         self.commit(DeclarationRecord {
             name,
-            value: parsed.value,
+            value: record_value,
             important,
             pending_group: None,
+            alias_value,
         });
         MutationOutcome::Applied
     }
@@ -246,7 +279,12 @@ impl DeclarationState {
             else {
                 continue;
             };
-            let records = self.records_for_parsed(name, parsed, declaration.important);
+            let records = self.records_for_parsed(
+                name,
+                parsed,
+                declaration.important,
+                &declaration.name.to_ascii_lowercase(),
+            );
             for (sub_index, record) in records.into_iter().enumerate() {
                 if winners
                     .get(&record.name)
@@ -294,10 +332,15 @@ impl DeclarationState {
     }
 
     pub fn remove_property(&mut self, name: &str) -> String {
+        let previous =
+            if self.context == DeclarationContext::Style && property_alias_hides_value(name) {
+                String::new()
+            } else {
+                self.get_property_value(name)
+            };
         let Some(name) = self.canonical_name(name) else {
             return String::new();
         };
-        let previous = self.get_property_value(&name);
         if let Some(longhands) = self.shorthand_longhands(&name) {
             self.records
                 .retain(|record| !longhands.contains(&record.name.as_str()));
@@ -403,6 +446,7 @@ impl DeclarationState {
         name: String,
         mut parsed: crate::shorthand::ParsedValue,
         important: bool,
+        source_name: &str,
     ) -> Vec<DeclarationRecord> {
         if parsed.pending_substitution() {
             if let Some(longhands) = self.shorthand_longhands(&name) {
@@ -414,6 +458,7 @@ impl DeclarationState {
                         value: DeclarationValue::deferred(true),
                         important,
                         pending_group: Some(group.clone()),
+                        alias_value: None,
                     })
                     .collect();
             }
@@ -422,12 +467,35 @@ impl DeclarationState {
             self.attach_static_group(&name, &parsed, &mut longhands);
             return longhands;
         }
+        let alias_value = self.alias_value_for_record(source_name, &name, &parsed.value);
+        let value = if alias_value.is_some() {
+            DeclarationValue::deferred(true)
+        } else {
+            parsed.value
+        };
         vec![DeclarationRecord {
             name,
-            value: parsed.value,
+            value,
             important,
             pending_group: None,
+            alias_value,
         }]
+    }
+
+    fn alias_value_for_record(
+        &self,
+        source_name: &str,
+        canonical_name: &str,
+        value: &DeclarationValue,
+    ) -> Option<AliasDeclarationValue> {
+        (self.context == DeclarationContext::Style
+            && source_name != canonical_name
+            && property_alias_hides_value(source_name)
+            && value.is_pending_substitution())
+        .then(|| AliasDeclarationValue {
+            name: source_name.to_owned(),
+            value: value.clone(),
+        })
     }
 
     fn new_pending_group(
@@ -787,6 +855,78 @@ mod tests {
         );
         assert_eq!(state.get_property_value("width"), "10px");
         assert_eq!(state.len(), 1);
+    }
+
+    #[test]
+    fn preserves_the_write_only_value_behavior_of_legacy_column_break_aliases() {
+        for (alias, canonical) in [
+            ("-webkit-column-break-after", "break-after"),
+            ("-webkit-column-break-before", "break-before"),
+            ("-webkit-column-break-inside", "break-inside"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(alias, "auto", "important"),
+                MutationOutcome::Applied,
+                "{alias}"
+            );
+            assert_eq!(state.item(0), canonical, "{alias} item");
+            assert_eq!(state.get_property_value(alias), "", "{alias} getter");
+            assert_eq!(
+                state.get_property_value(canonical),
+                "auto",
+                "{alias} canonical getter"
+            );
+            assert_eq!(
+                state.get_property_priority(alias),
+                "important",
+                "{alias} priority"
+            );
+            assert_eq!(state.remove_property(alias), "", "{alias} removal result");
+            assert!(state.is_empty(), "{alias} removal");
+
+            state.set_property(alias, "initial", "");
+            assert_eq!(
+                state.get_property_value(alias),
+                "initial",
+                "{alias} CSS-wide getter"
+            );
+            assert_eq!(state.remove_property(alias), "", "{alias} CSS-wide removal");
+
+            state.set_property(alias, "var(--value)", "");
+            assert_eq!(
+                state.get_property_value(alias),
+                "var(--value)",
+                "{alias} substitution getter"
+            );
+            assert_eq!(
+                state.get_property_value(canonical),
+                "",
+                "{alias} canonical substitution getter"
+            );
+            assert_eq!(
+                state.css_text(),
+                format!("{canonical}: ;"),
+                "{alias} substitution cssText"
+            );
+            assert_eq!(
+                state.remove_property(alias),
+                "",
+                "{alias} substitution removal"
+            );
+
+            state.set_property(canonical, "var(--value)", "");
+            assert_eq!(
+                state.get_property_value(alias),
+                "",
+                "{alias} must not expose a canonical substitution write"
+            );
+            assert_eq!(
+                state.get_property_value(canonical),
+                "var(--value)",
+                "{alias} canonical substitution write"
+            );
+        }
     }
 
     #[test]

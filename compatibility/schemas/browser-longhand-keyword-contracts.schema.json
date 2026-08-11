@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leo91000/sheetom/compatibility/schemas/browser-longhand-keyword-contracts.schema.json",
+  "title": "Browser Longhand Keyword Contracts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "baseline", "provenance", "groups", "aliases"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "baseline": { "type": "string", "minLength": 1 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chromiumTag", "source", "sourceSha256"],
+      "properties": {
+        "chromiumTag": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "properties", "values"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "properties": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "separator": { "enum": ["comma"] },
+          "values": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["property", "canonical"],
+        "properties": {
+          "property": { "type": "string", "minLength": 1 },
+          "canonical": { "type": "string", "minLength": 1 },
+          "hidesSemanticValue": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

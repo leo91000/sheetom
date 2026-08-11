@@ -58,6 +58,7 @@ const relativeColorCorpusSchema = await readJson(path.join(compatibilityRoot, "s
 const numberResultMathCorpusSchema = await readJson(path.join(compatibilityRoot, "schemas/number-result-math-corpus.schema.json"));
 const propertyValueProbesSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-probes.schema.json"));
 const propertyValueObservationsSchema = await readJson(path.join(compatibilityRoot, "schemas/property-value-observations.schema.json"));
+const browserLonghandKeywordContractsSchema = await readJson(path.join(compatibilityRoot, "schemas/browser-longhand-keyword-contracts.schema.json"));
 const validateOperation = ajv.compile(operationSchema);
 const validateMappings = ajv.compile(mappingsSchema);
 const validateReport = ajv.compile(reportSchema);
@@ -73,6 +74,7 @@ const validateRelativeColorCorpus = ajv.compile(relativeColorCorpusSchema);
 const validateNumberResultMathCorpus = ajv.compile(numberResultMathCorpusSchema);
 const validatePropertyValueProbes = ajv.compile(propertyValueProbesSchema);
 const validatePropertyValueObservations = ajv.compile(propertyValueObservationsSchema);
+const validateBrowserLonghandKeywordContracts = ajv.compile(browserLonghandKeywordContractsSchema);
 
 const propertyValueProbesFile = path.join(
   compatibilityRoot,
@@ -82,9 +84,16 @@ const propertyValueObservationsFile = path.join(
   compatibilityRoot,
   "property-value-observations.json",
 );
+const browserLonghandKeywordContractsFile = path.join(
+  compatibilityRoot,
+  "browser-longhand-keyword-contracts.json",
+);
 const propertyValueProbesBytes = await readFile(propertyValueProbesFile);
 const propertyValueProbes = JSON.parse(propertyValueProbesBytes.toString("utf8"));
 const propertyValueObservations = await readJson(propertyValueObservationsFile);
+const browserLonghandKeywordContracts = await readJson(
+  browserLonghandKeywordContractsFile,
+);
 validateOrThrow(
   validatePropertyValueProbes,
   propertyValueProbes,
@@ -95,6 +104,61 @@ validateOrThrow(
   propertyValueObservations,
   propertyValueObservationsFile,
 );
+validateOrThrow(
+  validateBrowserLonghandKeywordContracts,
+  browserLonghandKeywordContracts,
+  browserLonghandKeywordContractsFile,
+);
+assert.equal(
+  browserLonghandKeywordContracts.baseline,
+  propertyValueObservations.baseline.userAgent,
+  "Browser Longhand Keyword contracts must use the Property Value Chromium baseline",
+);
+assert.equal(
+  new Set(browserLonghandKeywordContracts.groups.map(group => group.id)).size,
+  browserLonghandKeywordContracts.groups.length,
+  "Browser Longhand Keyword group IDs must be unique",
+);
+const contractedBrowserLonghands = new Set();
+for (const group of browserLonghandKeywordContracts.groups) {
+  assert.equal(
+    new Set(group.properties).size,
+    group.properties.length,
+    `${group.id} properties must be unique`,
+  );
+  assert.equal(
+    new Set(group.values).size,
+    group.values.length,
+    `${group.id} values must be unique`,
+  );
+  for (const property of group.properties) {
+    assert.ok(
+      chromiumSupportedProperties.has(property),
+      `${group.id} references property missing from the Chromium manifest: ${property}`,
+    );
+    assert.ok(
+      !contractedBrowserLonghands.has(property),
+      `Browser Longhand Keyword property ${property} is contracted more than once`,
+    );
+    contractedBrowserLonghands.add(property);
+  }
+}
+const contractedAliases = new Set();
+for (const alias of browserLonghandKeywordContracts.aliases) {
+  assert.ok(
+    chromiumSupportedProperties.has(alias.property),
+    `Browser Longhand alias is missing from the Chromium manifest: ${alias.property}`,
+  );
+  assert.ok(
+    contractedBrowserLonghands.has(alias.canonical),
+    `Browser Longhand alias ${alias.property} has no canonical keyword contract`,
+  );
+  assert.ok(
+    !contractedAliases.has(alias.property),
+    `Browser Longhand alias ${alias.property} is contracted more than once`,
+  );
+  contractedAliases.add(alias.property);
+}
 assert.equal(
   new Set(propertyValueProbes.values.map(probe => probe.id)).size,
   propertyValueProbes.values.length,

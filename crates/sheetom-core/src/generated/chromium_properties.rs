@@ -3073,17 +3073,10 @@ pub static INITIAL_LONGHAND_VALUES: &[(&str, &str)] = &[
 
 pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtension])] = &[
     ("-webkit-animation-iteration-count", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
-    ]),
-    ("-webkit-border-horizontal-spacing", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("-webkit-border-image", &[
         super::PropertyGrammarExtension::WebkitBorderImage,
-    ]),
-    ("-webkit-border-vertical-spacing", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("-webkit-box-flex", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
@@ -3126,7 +3119,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
     ("animation-iteration-count", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
     ("aspect-ratio", &[
@@ -3145,68 +3137,10 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
     ]),
     ("column-count", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
-    ]),
-    ("column-height", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-rule-break", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-rule-inset-cap-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-rule-inset-cap-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-rule-inset-junction-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-rule-inset-junction-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-rule-visibility-items", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-width", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("column-wrap", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("contain-intrinsic-height", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("contain-intrinsic-width", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("content", &[
         super::PropertyGrammarExtension::Content,
-    ]),
-    ("corner-bottom-left-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-bottom-right-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-end-end-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-end-start-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-start-end-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-start-start-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-top-left-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("corner-top-right-shape", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("cx", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
@@ -3229,51 +3163,8 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("flood-opacity", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
-    ("font-feature-settings", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-kerning", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-language-override", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-optical-sizing", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
     ("font-size-adjust", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
-    ]),
-    ("font-synthesis-small-caps", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-synthesis-style", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-synthesis-weight", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variant-alternates", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variant-east-asian", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variant-emoji", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variant-ligatures", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variant-numeric", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variant-position", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("font-variation-settings", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("font-weight", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
@@ -3296,12 +3187,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("initial-letter", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
-    ("interest-delay-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("interest-delay-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
     ("line-height", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
     ]),
@@ -3310,12 +3195,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("offset-anchor", &[
         super::PropertyGrammarExtension::OffsetPosition,
-    ]),
-    ("offset-distance", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("offset-path", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("offset-position", &[
         super::PropertyGrammarExtension::OffsetPosition,
@@ -3332,41 +3211,11 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("orphans", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
-    ("overscroll-behavior-x", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("overscroll-behavior-y", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("position-try-fallbacks", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("position-try-order", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
     ("r", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
     ]),
     ("reading-order", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
-    ]),
-    ("row-rule-break", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("row-rule-inset-cap-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("row-rule-inset-cap-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("row-rule-inset-junction-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("row-rule-inset-junction-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("row-rule-visibility-items", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("rx", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
@@ -3376,12 +3225,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("scale", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
-    ]),
-    ("scroll-timeline-axis", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("scroll-timeline-name", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("shape-image-threshold", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
@@ -3409,51 +3252,6 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("tab-size", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
-    ]),
-    ("text-box-edge", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("text-box-trim", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("text-wrap-mode", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("text-wrap-style", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("timeline-trigger-activation-range-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("timeline-trigger-activation-range-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("timeline-trigger-active-range-end", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("timeline-trigger-active-range-start", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("timeline-trigger-name", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("timeline-trigger-source", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("transition-behavior", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("view-timeline-axis", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("view-timeline-inset", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("view-timeline-name", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
-    ]),
-    ("white-space-collapse", &[
-        super::PropertyGrammarExtension::BrowserLonghand,
     ]),
     ("widows", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,

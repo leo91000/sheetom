@@ -508,102 +508,358 @@ enum BrowserLonghandGrammar {
     OffsetPath,
 }
 
-fn grammar(property_name: &str) -> Option<BrowserLonghandGrammar> {
-    let grammar = match property_name {
-        "-webkit-border-horizontal-spacing"
-        | "-webkit-border-vertical-spacing"
-        | "column-rule-inset-cap-end"
-        | "column-rule-inset-cap-start"
-        | "column-rule-inset-junction-end"
-        | "column-rule-inset-junction-start"
-        | "row-rule-inset-cap-end"
-        | "row-rule-inset-cap-start"
-        | "row-rule-inset-junction-end"
-        | "row-rule-inset-junction-start" => BrowserLonghandGrammar::Length { non_negative: true },
-        "offset-distance" => BrowserLonghandGrammar::LengthPercentage,
-        "column-height" | "column-width" => BrowserLonghandGrammar::AutoLength,
-        "column-count" => BrowserLonghandGrammar::ColumnCount,
-        "contain-intrinsic-height" | "contain-intrinsic-width" => {
-            BrowserLonghandGrammar::ContainIntrinsic
+macro_rules! define_browser_longhand_registry {
+    ($( $grammar:expr => [$( $property:literal ),+ $(,)?] ),+ $(,)?) => {
+        fn grammar(property_name: &str) -> Option<BrowserLonghandGrammar> {
+            match property_name {
+                $( $( $property )|+ => Some($grammar), )+
+                _ => None,
+            }
         }
-        "interest-delay-end" | "interest-delay-start" => BrowserLonghandGrammar::TimeOrNormal,
-        "scroll-timeline-name" | "timeline-trigger-name" | "view-timeline-name" => {
-            BrowserLonghandGrammar::DashedIdentList
+
+        pub(crate) fn has_browser_longhand_grammar(property_name: &str) -> bool {
+            grammar(property_name).is_some()
         }
-        "view-timeline-inset" => BrowserLonghandGrammar::ViewTimelineInset,
-        "corner-bottom-left-shape"
-        | "corner-bottom-right-shape"
-        | "corner-end-end-shape"
-        | "corner-end-start-shape"
-        | "corner-start-end-shape"
-        | "corner-start-start-shape"
-        | "corner-top-left-shape"
-        | "corner-top-right-shape" => BrowserLonghandGrammar::CornerShape,
-        "font-feature-settings" => BrowserLonghandGrammar::FontFeatureSettings,
-        "font-language-override" => BrowserLonghandGrammar::FontLanguageOverride,
-        "font-size-adjust" => BrowserLonghandGrammar::FontSizeAdjust,
-        "font-variant-alternates" => BrowserLonghandGrammar::FontVariantAlternates,
-        "font-variant-east-asian" | "font-variant-ligatures" | "font-variant-numeric" => {
-            BrowserLonghandGrammar::FontVariantKeywords
-        }
-        "font-variation-settings" => BrowserLonghandGrammar::FontVariationSettings,
-        "position-try-fallbacks" => BrowserLonghandGrammar::PositionTryFallbacks,
-        "text-box-edge" => BrowserLonghandGrammar::TextBoxEdge,
-        "timeline-trigger-activation-range-start" => {
-            BrowserLonghandGrammar::TimelineRangeStart { auto: false }
-        }
-        "timeline-trigger-active-range-start" => {
-            BrowserLonghandGrammar::TimelineRangeStart { auto: true }
-        }
-        "timeline-trigger-activation-range-end" => {
-            BrowserLonghandGrammar::TimelineRangeEnd { auto: false }
-        }
-        "timeline-trigger-active-range-end" => {
-            BrowserLonghandGrammar::TimelineRangeEnd { auto: true }
-        }
-        "timeline-trigger-source" => BrowserLonghandGrammar::TimelineTriggerSource,
-        "animation-iteration-count" | "-webkit-animation-iteration-count" => {
-            BrowserLonghandGrammar::AnimationIterationCount
-        }
-        "offset-path" => BrowserLonghandGrammar::OffsetPath,
-        "scroll-timeline-axis" | "view-timeline-axis" => {
-            BrowserLonghandGrammar::KeywordList(&["block", "inline", "x", "y"])
-        }
-        "transition-behavior" => BrowserLonghandGrammar::KeywordList(&["normal", "allow-discrete"]),
-        "text-wrap-style" => {
-            BrowserLonghandGrammar::Keyword(&["auto", "balance", "stable", "pretty"])
-        }
-        name => BrowserLonghandGrammar::Keyword(keyword_grammar(name)?),
+
+        #[cfg(test)]
+        const REGISTERED_BROWSER_LONGHANDS: &[&str] = &[
+            $( $( $property, )+ )+
+        ];
     };
-    Some(grammar)
 }
 
-fn keyword_grammar(property_name: &str) -> Option<&'static [&'static str]> {
-    let values: &'static [&'static str] = match property_name {
-        "column-rule-break" | "row-rule-break" => &["normal", "none"],
-        "column-rule-visibility-items" | "row-rule-visibility-items" => &["normal", "all"],
-        "column-wrap" => &["auto", "wrap", "nowrap"],
-        "font-kerning" => &["auto", "normal", "none"],
-        "font-optical-sizing"
-        | "font-synthesis-small-caps"
-        | "font-synthesis-style"
-        | "font-synthesis-weight" => &["auto", "none"],
-        "font-variant-emoji" => &["normal", "text", "emoji", "unicode"],
-        "font-variant-position" => &["normal", "sub", "super"],
-        "overscroll-behavior-x" | "overscroll-behavior-y" => &["auto", "contain", "none"],
-        "position-try-order" => &[
-            "normal",
-            "most-width",
-            "most-height",
-            "most-block-size",
-            "most-inline-size",
-        ],
-        "text-box-trim" => &["none", "trim-start", "trim-end", "trim-both"],
-        "text-wrap-mode" => &["wrap", "nowrap"],
-        "white-space-collapse" => &["collapse", "preserve", "preserve-breaks", "break-spaces"],
-        _ => return None,
-    };
-    Some(values)
+define_browser_longhand_registry! {
+    BrowserLonghandGrammar::Length { non_negative: true } => [
+        "-webkit-border-horizontal-spacing",
+        "-webkit-border-vertical-spacing",
+        "column-rule-inset-cap-end",
+        "column-rule-inset-cap-start",
+        "column-rule-inset-junction-end",
+        "column-rule-inset-junction-start",
+        "row-rule-inset-cap-end",
+        "row-rule-inset-cap-start",
+        "row-rule-inset-junction-end",
+        "row-rule-inset-junction-start",
+    ],
+    BrowserLonghandGrammar::LengthPercentage => ["offset-distance"],
+    BrowserLonghandGrammar::AutoLength => ["column-height", "column-width"],
+    BrowserLonghandGrammar::ColumnCount => ["column-count"],
+    BrowserLonghandGrammar::ContainIntrinsic => [
+        "contain-intrinsic-height",
+        "contain-intrinsic-width",
+    ],
+    BrowserLonghandGrammar::TimeOrNormal => ["interest-delay-end", "interest-delay-start"],
+    BrowserLonghandGrammar::DashedIdentList => [
+        "scroll-timeline-name",
+        "timeline-trigger-name",
+        "view-timeline-name",
+    ],
+    BrowserLonghandGrammar::ViewTimelineInset => ["view-timeline-inset"],
+    BrowserLonghandGrammar::CornerShape => [
+        "corner-bottom-left-shape",
+        "corner-bottom-right-shape",
+        "corner-end-end-shape",
+        "corner-end-start-shape",
+        "corner-start-end-shape",
+        "corner-start-start-shape",
+        "corner-top-left-shape",
+        "corner-top-right-shape",
+    ],
+    BrowserLonghandGrammar::FontFeatureSettings => ["font-feature-settings"],
+    BrowserLonghandGrammar::FontLanguageOverride => ["font-language-override"],
+    BrowserLonghandGrammar::FontSizeAdjust => ["font-size-adjust"],
+    BrowserLonghandGrammar::FontVariantAlternates => ["font-variant-alternates"],
+    BrowserLonghandGrammar::FontVariantKeywords => [
+        "font-variant-east-asian",
+        "font-variant-ligatures",
+        "font-variant-numeric",
+    ],
+    BrowserLonghandGrammar::FontVariationSettings => ["font-variation-settings"],
+    BrowserLonghandGrammar::PositionTryFallbacks => ["position-try-fallbacks"],
+    BrowserLonghandGrammar::TextBoxEdge => ["text-box-edge"],
+    BrowserLonghandGrammar::TimelineRangeStart { auto: false } => [
+        "timeline-trigger-activation-range-start",
+    ],
+    BrowserLonghandGrammar::TimelineRangeStart { auto: true } => [
+        "timeline-trigger-active-range-start",
+    ],
+    BrowserLonghandGrammar::TimelineRangeEnd { auto: false } => [
+        "timeline-trigger-activation-range-end",
+    ],
+    BrowserLonghandGrammar::TimelineRangeEnd { auto: true } => [
+        "timeline-trigger-active-range-end",
+    ],
+    BrowserLonghandGrammar::TimelineTriggerSource => ["timeline-trigger-source"],
+    BrowserLonghandGrammar::AnimationIterationCount => [
+        "-webkit-animation-iteration-count",
+        "animation-iteration-count",
+    ],
+    BrowserLonghandGrammar::OffsetPath => ["offset-path"],
+    BrowserLonghandGrammar::KeywordList(&["block", "inline", "x", "y"]) => [
+        "scroll-timeline-axis",
+        "view-timeline-axis",
+    ],
+    BrowserLonghandGrammar::KeywordList(&["normal", "allow-discrete"]) => [
+        "transition-behavior",
+    ],
+    BrowserLonghandGrammar::Keyword(&["normal", "none"]) => [
+        "column-rule-break",
+        "row-rule-break",
+    ],
+    BrowserLonghandGrammar::Keyword(&["normal", "all"]) => [
+        "column-rule-visibility-items",
+        "row-rule-visibility-items",
+    ],
+    BrowserLonghandGrammar::Keyword(&["auto", "wrap", "nowrap"]) => ["column-wrap"],
+    BrowserLonghandGrammar::Keyword(&["auto", "normal", "none"]) => ["font-kerning"],
+    BrowserLonghandGrammar::Keyword(&["auto", "none"]) => [
+        "font-optical-sizing",
+        "font-synthesis-small-caps",
+        "font-synthesis-style",
+        "font-synthesis-weight",
+    ],
+    BrowserLonghandGrammar::Keyword(&["normal", "text", "emoji", "unicode"]) => [
+        "font-variant-emoji",
+    ],
+    BrowserLonghandGrammar::Keyword(&["normal", "sub", "super"]) => [
+        "font-variant-position",
+    ],
+    BrowserLonghandGrammar::Keyword(&["auto", "contain", "none"]) => [
+        "overscroll-behavior-x",
+        "overscroll-behavior-y",
+    ],
+    BrowserLonghandGrammar::Keyword(&[
+        "normal",
+        "most-width",
+        "most-height",
+        "most-block-size",
+        "most-inline-size",
+    ]) => ["position-try-order"],
+    BrowserLonghandGrammar::Keyword(&["none", "trim-start", "trim-end", "trim-both"]) => [
+        "text-box-trim",
+    ],
+    BrowserLonghandGrammar::Keyword(&["wrap", "nowrap"]) => ["text-wrap-mode"],
+    BrowserLonghandGrammar::Keyword(&["auto", "balance", "stable", "pretty"]) => [
+        "text-wrap-style",
+    ],
+    BrowserLonghandGrammar::Keyword(&[
+        "collapse",
+        "preserve",
+        "preserve-breaks",
+        "break-spaces",
+    ]) => ["white-space-collapse"],
+    BrowserLonghandGrammar::Keyword(&[
+        "auto",
+        "none",
+        "antialiased",
+        "subpixel-antialiased",
+    ]) => ["-webkit-font-smoothing"],
+    BrowserLonghandGrammar::Keyword(&[
+        "auto",
+        "loose",
+        "normal",
+        "strict",
+        "after-white-space",
+    ]) => ["-webkit-line-break"],
+    BrowserLonghandGrammar::Keyword(&["logical", "visual"]) => ["-webkit-rtl-ordering"],
+    BrowserLonghandGrammar::Keyword(&["before", "after"]) => ["-webkit-ruby-position"],
+    BrowserLonghandGrammar::Keyword(&["none", "horizontal"]) => ["-webkit-text-combine"],
+    BrowserLonghandGrammar::Keyword(&[
+        "sideways",
+        "upright",
+        "sideways-right",
+        "vertical-right",
+    ]) => ["-webkit-text-orientation"],
+    BrowserLonghandGrammar::Keyword(&["none", "disc", "circle", "square"]) => [
+        "-webkit-text-security",
+    ],
+    BrowserLonghandGrammar::Keyword(&["auto", "none", "element"]) => ["-webkit-user-drag"],
+    BrowserLonghandGrammar::Keyword(&[
+        "read-only",
+        "read-write",
+        "read-write-plaintext-only",
+    ]) => ["-webkit-user-modify"],
+    BrowserLonghandGrammar::Keyword(&["horizontal-tb", "vertical-rl", "vertical-lr"]) => [
+        "-webkit-writing-mode",
+    ],
+    BrowserLonghandGrammar::Keyword(&[
+        "auto",
+        "baseline",
+        "alphabetic",
+        "ideographic",
+        "middle",
+        "central",
+        "mathematical",
+        "before-edge",
+        "text-before-edge",
+        "after-edge",
+        "text-after-edge",
+        "hanging",
+    ]) => ["alignment-baseline"],
+    BrowserLonghandGrammar::Keyword(&["none", "drag", "no-drag"]) => ["app-region"],
+    BrowserLonghandGrammar::KeywordList(&[
+        "normal",
+        "multiply",
+        "screen",
+        "overlay",
+        "darken",
+        "lighten",
+        "color-dodge",
+        "color-burn",
+        "hard-light",
+        "soft-light",
+        "difference",
+        "exclusion",
+        "hue",
+        "saturation",
+        "color",
+        "luminosity",
+    ]) => ["background-blend-mode"],
+    BrowserLonghandGrammar::Keyword(&["auto", "first", "last"]) => ["baseline-source"],
+    BrowserLonghandGrammar::Keyword(&["separate", "collapse"]) => ["border-collapse"],
+    BrowserLonghandGrammar::Keyword(&[
+        "auto",
+        "avoid",
+        "avoid-column",
+        "avoid-page",
+        "column",
+        "left",
+        "page",
+        "recto",
+        "right",
+        "verso",
+    ]) => ["break-after", "break-before"],
+    BrowserLonghandGrammar::Keyword(&["auto", "avoid", "avoid-column", "avoid-page"]) => [
+        "break-inside",
+    ],
+    BrowserLonghandGrammar::Keyword(&["auto", "dynamic", "static"]) => ["buffered-rendering"],
+    BrowserLonghandGrammar::Keyword(&["top", "bottom"]) => ["caption-side"],
+    BrowserLonghandGrammar::Keyword(&["auto", "manual"]) => ["caret-animation"],
+    BrowserLonghandGrammar::Keyword(&[
+        "none",
+        "left",
+        "right",
+        "both",
+        "inline-start",
+        "inline-end",
+    ]) => ["clear"],
+    BrowserLonghandGrammar::Keyword(&["balance", "auto"]) => ["column-fill"],
+    BrowserLonghandGrammar::Keyword(&["none", "all"]) => ["column-span"],
+    BrowserLonghandGrammar::Keyword(&["visible", "auto", "hidden"]) => ["content-visibility"],
+    BrowserLonghandGrammar::Keyword(&[
+        "auto",
+        "alphabetic",
+        "ideographic",
+        "middle",
+        "central",
+        "mathematical",
+        "hanging",
+        "use-script",
+        "no-change",
+        "reset-size",
+        "text-after-edge",
+        "text-before-edge",
+    ]) => ["dominant-baseline"],
+    BrowserLonghandGrammar::Keyword(&["show", "hide"]) => ["empty-cells"],
+    BrowserLonghandGrammar::Keyword(&["fixed", "content"]) => ["field-sizing"],
+    BrowserLonghandGrammar::Keyword(&[
+        "none",
+        "left",
+        "right",
+        "inline-start",
+        "inline-end",
+    ]) => ["float"],
+    BrowserLonghandGrammar::Keyword(&["auto", "none", "preserve-parent-color"]) => [
+        "forced-color-adjust",
+    ],
+    BrowserLonghandGrammar::Keyword(&["none", "from-image"]) => ["image-orientation"],
+    BrowserLonghandGrammar::Keyword(&["auto", "inert"]) => ["interactivity"],
+    BrowserLonghandGrammar::Keyword(&["numeric-only", "allow-keywords"]) => [
+        "interpolate-size",
+    ],
+    BrowserLonghandGrammar::Keyword(&["auto", "isolate"]) => ["isolation"],
+    BrowserLonghandGrammar::Keyword(&["normal", "compact"]) => ["math-shift", "math-style"],
+    BrowserLonghandGrammar::Keyword(&["fill", "contain", "cover", "none", "scale-down"]) => [
+        "object-fit",
+    ],
+    BrowserLonghandGrammar::Keyword(&["visible", "none", "auto"]) => ["overflow-anchor"],
+    BrowserLonghandGrammar::Keyword(&["visible", "hidden", "clip", "scroll", "auto"]) => [
+        "overflow-block",
+        "overflow-inline",
+    ],
+    BrowserLonghandGrammar::Keyword(&["none", "auto"]) => ["overlay"],
+    BrowserLonghandGrammar::Keyword(&["auto", "contain", "none"]) => [
+        "overscroll-behavior-block",
+        "overscroll-behavior-inline",
+    ],
+    BrowserLonghandGrammar::Keyword(&["none", "clamp", "add"]) => ["page-margin-safety"],
+    BrowserLonghandGrammar::Keyword(&[
+        "none",
+        "auto",
+        "stroke",
+        "fill",
+        "painted",
+        "visible",
+        "visiblestroke",
+        "visiblefill",
+        "visiblepainted",
+        "bounding-box",
+        "all",
+    ]) => ["pointer-events"],
+    BrowserLonghandGrammar::Keyword(&[
+        "normal",
+        "flex-visual",
+        "flex-flow",
+        "grid-rows",
+        "grid-columns",
+        "grid-order",
+        "source-order",
+    ]) => ["reading-flow"],
+    BrowserLonghandGrammar::Keyword(&["space-around", "start", "center", "space-between"]) => [
+        "ruby-align",
+    ],
+    BrowserLonghandGrammar::Keyword(&["over", "under"]) => ["ruby-position"],
+    BrowserLonghandGrammar::Keyword(&["row-over-column", "column-over-row"]) => ["rule-overlap"],
+    BrowserLonghandGrammar::Keyword(&["auto", "smooth"]) => ["scroll-behavior"],
+    BrowserLonghandGrammar::Keyword(&["none", "nearest"]) => ["scroll-initial-target"],
+    BrowserLonghandGrammar::Keyword(&["none", "after", "before"]) => ["scroll-marker-group"],
+    BrowserLonghandGrammar::Keyword(&["normal", "always"]) => ["scroll-snap-stop"],
+    BrowserLonghandGrammar::Keyword(&["none", "auto"]) => ["scroll-target-group"],
+    BrowserLonghandGrammar::Keyword(&["auto", "thin", "none"]) => ["scrollbar-width"],
+    BrowserLonghandGrammar::Keyword(&[
+        "none",
+        "normal",
+        "spell-out",
+        "digits",
+        "literal-punctuation",
+        "no-punctuation",
+    ]) => ["speak"],
+    BrowserLonghandGrammar::Keyword(&["auto", "fixed"]) => ["table-layout"],
+    BrowserLonghandGrammar::Keyword(&["start", "middle", "end"]) => ["text-anchor"],
+    BrowserLonghandGrammar::Keyword(&["none", "all"]) => ["text-combine-upright"],
+    BrowserLonghandGrammar::Keyword(&[
+        "sideways",
+        "mixed",
+        "upright",
+        "sideways-right",
+    ]) => ["text-orientation"],
+    BrowserLonghandGrammar::Keyword(&["normal", "space-all", "space-first", "trim-start"]) => [
+        "text-spacing-trim",
+    ],
+    BrowserLonghandGrammar::Keyword(&["none", "non-scaling-stroke"]) => ["vector-effect"],
+    BrowserLonghandGrammar::Keyword(&[
+        "horizontal-tb",
+        "vertical-rl",
+        "vertical-lr",
+        "sideways-rl",
+        "sideways-lr",
+        "lr",
+        "rl",
+        "tb",
+        "lr-tb",
+        "rl-tb",
+        "tb-rl",
+    ]) => ["writing-mode"],
 }
 
 fn parse_keyword(
@@ -1324,6 +1580,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     fn canonical(property: &str, source: &str) -> Result<String, EngineError> {
@@ -1348,6 +1606,52 @@ mod tests {
         }
         assert!(canonical("column-wrap", "balance").is_err());
         assert!(canonical("overscroll-behavior-x", "normal").is_err());
+    }
+
+    #[test]
+    fn registered_grammars_are_unique_and_parse_every_declared_keyword() {
+        let mut properties = HashSet::new();
+        for property in REGISTERED_BROWSER_LONGHANDS {
+            assert!(
+                properties.insert(*property),
+                "duplicate grammar for {property}"
+            );
+            let grammar = grammar(property).unwrap_or_else(|| panic!("missing grammar {property}"));
+            match grammar {
+                BrowserLonghandGrammar::Keyword(keywords) => {
+                    for keyword in keywords {
+                        assert_eq!(
+                            canonical(property, keyword).unwrap(),
+                            *keyword,
+                            "{property}"
+                        );
+                    }
+                    assert!(
+                        canonical(property, "--not-a-keyword").is_err(),
+                        "{property}"
+                    );
+                }
+                BrowserLonghandGrammar::KeywordList(keywords) => {
+                    for keyword in keywords {
+                        assert_eq!(
+                            canonical(property, keyword).unwrap(),
+                            *keyword,
+                            "{property}"
+                        );
+                    }
+                    if keywords.len() > 1 {
+                        let input = format!("{},{}", keywords[0], keywords[1]);
+                        let expected = format!("{}, {}", keywords[0], keywords[1]);
+                        assert_eq!(canonical(property, &input).unwrap(), expected, "{property}");
+                    }
+                    assert!(
+                        canonical(property, "--not-a-keyword").is_err(),
+                        "{property}"
+                    );
+                }
+                _ => {}
+            }
+        }
     }
 
     #[test]
