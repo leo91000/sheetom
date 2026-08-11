@@ -43,6 +43,8 @@ const isBrowserPath = filePath =>
     filePath === "scripts/generate-chromium-properties.mjs" ||
     filePath === "scripts/generate-native-grammar-inventory.mjs" ||
     filePath.startsWith("scripts/generate-property-value-") ||
+    filePath === "scripts/generate-webref-property-branches.mjs" ||
+    filePath === "scripts/lib/webref-syntax-samples.mjs" ||
     filePath === "scripts/check-property-value-matrix.mjs" ||
     filePath.startsWith("scripts/generate-shorthand-") ||
     ["package.json", "package-lock.json", "vitest.config.ts"].includes(filePath);
