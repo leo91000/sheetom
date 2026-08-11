@@ -62,14 +62,15 @@ const nativeGrammar = report.evidence.nativeGrammar;
 const shorthandGrammar = nativeGrammar?.grammarBranches;
 const geometricGrammar = nativeGrammar?.geometricBranches;
 const numericProperties = nativeGrammar?.numericProperties;
+const propertyValues = nativeGrammar?.propertyValues;
 if (
   nativeGrammar?.codecProfiles !== 24 ||
   nativeGrammar?.shorthandProperties?.passed !== 129 ||
   nativeGrammar?.shorthandProperties?.total !== 129 ||
-  shorthandGrammar?.passed !== 96 ||
-  shorthandGrammar?.total !== 96 ||
-  shorthandGrammar?.positive !== 72 ||
-  shorthandGrammar?.negative !== 24 ||
+  shorthandGrammar?.passed !== 101 ||
+  shorthandGrammar?.total !== 101 ||
+  shorthandGrammar?.positive !== 76 ||
+  shorthandGrammar?.negative !== 25 ||
   nativeGrammar?.propertyBranches?.passed !== 10 ||
   nativeGrammar?.propertyBranches?.total !== 10 ||
   nativeGrammar?.propertyBranches?.positive !== 5 ||
@@ -86,6 +87,12 @@ if (
   numericProperties?.total !== 627 ||
   numericProperties?.accepted !== 309 ||
   numericProperties?.rejected !== 318 ||
+  propertyValues?.passed !== 66_123 ||
+  propertyValues?.total !== 66_123 ||
+  propertyValues?.properties !== 711 ||
+  propertyValues?.probes !== 93 ||
+  propertyValues?.accepted !== 11_107 ||
+  propertyValues?.rejected !== 55_016 ||
   nativeGrammar?.relativeColors?.passed !== 1_306 ||
   nativeGrammar?.relativeColors?.total !== 1_306 ||
   nativeGrammar?.relativeColors?.positive !== 1_146 ||
@@ -104,6 +111,9 @@ if (
   !/^[0-9a-f]{64}$/.test(numericProperties?.contractSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(numericProperties?.observationsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(numericProperties?.executionSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(propertyValues?.observationsSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(propertyValues?.probesSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(propertyValues?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.relativeColors?.sha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(geometricGrammar?.contractsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(geometricGrammar?.generatorSha256 ?? "") ||
@@ -122,6 +132,8 @@ for (const [filename, recordedHash] of [
   ],
   ["compatibility/numeric-property-contracts.json", numericProperties.contractSha256],
   ["compatibility/property-value-observations.json", numericProperties.observationsSha256],
+  ["compatibility/property-value-observations.json", propertyValues.observationsSha256],
+  ["compatibility/property-value-probes.json", propertyValues.probesSha256],
   ["compatibility/relative-color-capabilities.json", nativeGrammar.relativeColors.sha256],
   ["compatibility/browser-geometric-contracts.json", geometricGrammar.contractsSha256],
   ["scripts/browser-geometric-differential.mjs", geometricGrammar.generatorSha256],

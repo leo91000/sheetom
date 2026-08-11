@@ -125,8 +125,8 @@
           "required": ["profiles", "passed", "total", "contractsSha256", "observationsSha256"],
           "properties": {
             "profiles": { "enum": [23, 24] },
-            "passed": { "enum": [92, 96] },
-            "total": { "enum": [92, 96] },
+            "passed": { "enum": [92, 96, 101] },
+            "total": { "enum": [92, 96, 101] },
             "contractsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
             "observationsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
           }
@@ -223,6 +223,32 @@
                 "rejected": { "type": "integer", "minimum": 1 },
                 "contractSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
                 "observationsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "propertyValues": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "passed",
+                "total",
+                "properties",
+                "probes",
+                "accepted",
+                "rejected",
+                "observationsSha256",
+                "probesSha256",
+                "executionSha256"
+              ],
+              "properties": {
+                "passed": { "type": "integer", "minimum": 1 },
+                "total": { "type": "integer", "minimum": 1 },
+                "properties": { "type": "integer", "minimum": 1 },
+                "probes": { "type": "integer", "minimum": 1 },
+                "accepted": { "type": "integer", "minimum": 1 },
+                "rejected": { "type": "integer", "minimum": 1 },
+                "observationsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "probesSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
                 "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
               }
             },
@@ -369,9 +395,10 @@
             "properties": {
               "nativeGrammar": {
                 "type": "object",
-                "required": ["numericProperties"],
+                "required": ["numericProperties", "propertyValues"],
                 "properties": {
-                  "numericProperties": { "type": "object" }
+                  "numericProperties": { "type": "object" },
+                  "propertyValues": { "type": "object" }
                 }
               }
             }

@@ -37,6 +37,9 @@ const numericPropertyContractsBytes = await readFile(
 const propertyValueObservationsBytes = await readFile(
   path.join(compatibilityRoot, "property-value-observations.json"),
 );
+const propertyValueProbesBytes = await readFile(
+  path.join(compatibilityRoot, "property-value-probes.json"),
+);
 const relativeColorCapabilitiesBytes = await readFile(
   path.join(compatibilityRoot, "relative-color-capabilities.json"),
 );
@@ -62,9 +65,10 @@ const numberResultMathCapabilities = JSON.parse(
 const relativeColorCapabilities = JSON.parse(
   relativeColorCapabilitiesBytes.toString("utf8"),
 );
+const propertyValueObservations = JSON.parse(propertyValueObservationsBytes.toString("utf8"));
 if (
   shorthandGrammarContracts.profiles.length !== 24 ||
-  shorthandGrammarCases.length !== 96 ||
+  shorthandGrammarCases.length !== 101 ||
   shorthandGrammarObservations.cases.length !== shorthandGrammarCases.length
 ) {
   throw new Error("Shorthand Grammar Branch evidence is incomplete");
@@ -243,6 +247,29 @@ if (
   throw new Error("Numeric Property contract execution evidence is incomplete");
 }
 
+const propertyValueEvidence = await requiredEvidenceReport("property-value-report");
+const propertyValueReport = propertyValueEvidence.report;
+const propertyValueMismatchCount = Object.values(propertyValueReport.mismatches ?? {})
+  .reduce((count, mismatches) => count + (Array.isArray(mismatches) ? mismatches.length : 1), 0);
+const propertyValueBaseline = propertyValueObservations.baseline;
+if (
+  propertyValueReport.schemaVersion !== 1
+  || Object.hasOwn(propertyValueReport, "contract")
+  || JSON.stringify(propertyValueReport.checks) !== JSON.stringify([
+    "acceptance",
+    "observable",
+    "cssText",
+    "items",
+    "atomicity",
+  ])
+  || propertyValueReport.properties !== propertyValueBaseline.propertyCount
+  || propertyValueReport.probes !== propertyValueBaseline.probeCount
+  || propertyValueReport.expectedAccepted !== propertyValueBaseline.acceptedCount
+  || propertyValueMismatchCount !== 0
+) {
+  throw new Error("Property Value Matrix execution evidence is incomplete");
+}
+
 const geometricEvidence = await requiredEvidenceReport("geometric-report");
 const geometricReport = geometricEvidence.report;
 if (
@@ -378,6 +405,22 @@ const report = {
           .digest("hex"),
         executionSha256: createHash("sha256")
           .update(numericPropertyEvidence.bytes)
+          .digest("hex"),
+      },
+      propertyValues: {
+        passed: propertyValueReport.properties * propertyValueReport.probes,
+        total: propertyValueReport.properties * propertyValueReport.probes,
+        properties: propertyValueReport.properties,
+        probes: propertyValueReport.probes,
+        accepted: propertyValueReport.expectedAccepted,
+        rejected: propertyValueReport.properties * propertyValueReport.probes
+          - propertyValueReport.expectedAccepted,
+        observationsSha256: createHash("sha256")
+          .update(propertyValueObservationsBytes)
+          .digest("hex"),
+        probesSha256: createHash("sha256").update(propertyValueProbesBytes).digest("hex"),
+        executionSha256: createHash("sha256")
+          .update(propertyValueEvidence.bytes)
           .digest("hex"),
       },
       relativeColors: {

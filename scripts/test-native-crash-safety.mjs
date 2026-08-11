@@ -112,6 +112,35 @@ const crashCases = [
         public: true,
     },
     {
+        name: "negative math result remains reparsable",
+        source: "width: rem(-5px, 2px)",
+        public: true,
+    },
+    {
+        name: "anchor-size shorthand expansion",
+        source: "margin: anchor-size(width)",
+        public: true,
+    },
+    {
+        name: "timeline range expansion",
+        source: "timeline-trigger: scroll",
+        public: true,
+    },
+    {
+        name: "position try area expansion",
+        source: "position-try: most-width left top",
+        public: true,
+    },
+    {
+        name: "balanced flex flow expansion",
+        source: "flex-flow: wrap-reverse balance",
+        public: true,
+    },
+    {
+        name: "webkit mask percentage shorthand expansion",
+        source: "-webkit-mask-box-image: 10%",
+    },
+    {
         name: "context-dependent sign calculation",
         source: "opacity: sign(calc(1px - 2em))",
         public: true,

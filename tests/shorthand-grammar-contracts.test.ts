@@ -14,7 +14,7 @@ function createRule(): CSSStyleRule {
   return rule;
 }
 
-test("every native coverage profile has four to eight reviewed grammar branches", () => {
+test("every native coverage profile has distinct positive and negative grammar branches", () => {
   const coverageProfiles = new Set(inventory.properties.map(property => property.codec));
   assert.equal(coverageProfiles.size, 24);
   assert.deepEqual(
@@ -22,8 +22,14 @@ test("every native coverage profile has four to eight reviewed grammar branches"
     coverageProfiles,
   );
   for (const profile of contracts.profiles) {
-    assert.ok(profile.cases.length >= 4 && profile.cases.length <= 8, profile.codec);
-    assert.equal(new Set(profile.cases.map(grammarCase => grammarCase.branch)).size, 4);
+    assert.ok(profile.cases.length >= 4, profile.codec);
+    assert.equal(
+      new Set(profile.cases.map(grammarCase => grammarCase.branch)).size,
+      profile.cases.length,
+      profile.codec,
+    );
+    assert.ok(profile.cases.some(grammarCase => grammarCase.accepted), profile.codec);
+    assert.ok(profile.cases.some(grammarCase => !grammarCase.accepted), profile.codec);
   }
 });
 

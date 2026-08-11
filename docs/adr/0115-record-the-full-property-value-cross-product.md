@@ -18,9 +18,9 @@ The checked-in browser observations are conformance evidence only. Runtime code 
 
 The broad matrix complements, rather than replaces, property-specific branch corpora. A broad probe can identify an unsupported family; a dedicated branch contract must then cover the valid branches and their invalid neighbors before that family is considered complete.
 
-During the RC6 implementation sequence, the report command may be run with explicit mismatch reporting so each focused PR can reduce the inventory. The RC6 release gate will run the strict form and require zero acceptance, observable, serialization, item-order, or atomicity mismatches.
+During the RC6 implementation sequence, the report command may be run with explicit mismatch reporting so each focused PR can reduce the inventory. The RC6 release gate runs the strict form and requires zero acceptance, observable, serialization, item-order, or atomicity mismatches. The current pinned matrix contains 66,123 checks across 711 properties and 93 probes; its execution report and both browser-evidence inputs are hashed into the release Compatibility Report.
 
-The matrix runner can gate named dimensions independently while the remaining dimensions are still under active migration. CI already requires zero observable-value, `cssText`, indexed-name, and atomicity differences across every pair accepted by both implementations. Acceptance remains a separately visible mismatch inventory until its own strict gate reaches zero; an acceptance mismatch is never silently counted as an observable pass.
+The matrix runner can still gate named dimensions independently while investigating future browser drift. Pull-request and release CI now execute all dimensions together; an acceptance mismatch is never silently counted as an observable pass.
 
 ## Consequences
 

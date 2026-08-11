@@ -182,7 +182,8 @@ jobs:
             --report="$RUNNER_TEMP/native-corpus.json"
           npm run native:numeric-contracts -- \
             --report="$RUNNER_TEMP/numeric-properties.json"
-          npm run native:observable-contracts
+          npm run native:property-contracts -- \
+            --report="$RUNNER_TEMP/property-values.json"
           node scripts/browser-geometric-differential.mjs \
             --report="$RUNNER_TEMP/geometric.json"
           SHEETOM_RECORD_BASELINE=1 node scripts/record-operation-fixtures.mjs \
@@ -192,6 +193,7 @@ jobs:
             --operation-report="$RUNNER_TEMP/operation-fixtures.json" \
             --native-corpus-report="$RUNNER_TEMP/native-corpus.json" \
             --numeric-property-report="$RUNNER_TEMP/numeric-properties.json" \
+            --property-value-report="$RUNNER_TEMP/property-values.json" \
             --process-safety-report="$RUNNER_TEMP/process-safety.json" \
             --geometric-report="$RUNNER_TEMP/geometric.json" \
             --wpt-report=chrome=reports/chrome/wpt-chrome.json \
