@@ -288,7 +288,7 @@ fn synthesize_position_try(records: &[&DeclarationRecord], safe: bool) -> Option
     Some(match (order, fallbacks) {
         ("normal", "none") => "none".to_owned(),
         ("normal", fallbacks) => fallbacks.to_owned(),
-        (order, "none") => order.to_owned(),
+        (order, "none") => format!("{order} none"),
         (order, fallbacks) => format!("{order} {fallbacks}"),
     })
 }

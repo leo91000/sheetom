@@ -2703,25 +2703,33 @@ fn parse_position_try_fallbacks(source: &str) -> Result<BrowserLonghandValue, En
             return Ok(BrowserLonghandValue::PositionTryFallbacks(None));
         }
         let fallbacks = input.parse_comma_separated(|input| {
-            let area = input
-                .try_parse(|input| parse_position_area_value(input, false))
-                .ok();
-            let name = if area.is_none() {
-                input
-                    .try_parse(DashedIdent::parse)
-                    .ok()
-                    .map(IntoOwned::into_owned)
-            } else {
-                None
-            };
-            let mut tactics = Vec::with_capacity(3);
+            if let Ok(area) = input.try_parse(parse_complete_position_area) {
+                return Ok(PositionTryFallback {
+                    name: None,
+                    area: Some(area),
+                    tactics: Vec::new(),
+                });
+            }
+            let mut name = None;
+            let mut tactics = Vec::with_capacity(5);
             while !input.is_exhausted() {
+                if name.is_none() {
+                    if let Ok(value) = input.try_parse(DashedIdent::parse) {
+                        name = Some(value.into_owned());
+                        continue;
+                    }
+                }
                 let location = input.current_source_location();
                 let identifier = input.expect_ident_cloned()?;
-                let Some(tactic) = ["flip-block", "flip-inline", "flip-start"]
-                    .into_iter()
-                    .find(|candidate| identifier.eq_ignore_ascii_case(candidate))
-                else {
+                let Some(tactic) = [
+                    "flip-block",
+                    "flip-inline",
+                    "flip-start",
+                    "flip-x",
+                    "flip-y",
+                ]
+                .into_iter()
+                .find(|candidate| identifier.eq_ignore_ascii_case(candidate)) else {
                     return Err(
                         location.new_custom_error(lightningcss::error::ParserError::InvalidValue)
                     );
@@ -2733,17 +2741,25 @@ fn parse_position_try_fallbacks(source: &str) -> Result<BrowserLonghandValue, En
                 }
                 tactics.push(tactic);
             }
-            if name.is_none() && area.is_none() && tactics.is_empty() {
+            if name.is_none() && tactics.is_empty() {
                 return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
             }
             Ok(PositionTryFallback {
                 name,
-                area,
+                area: None,
                 tactics,
             })
         })?;
         Ok(BrowserLonghandValue::PositionTryFallbacks(Some(fallbacks)))
     })
+}
+
+fn parse_complete_position_area<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<PositionAreaValue, ParseError<'i>> {
+    let area = parse_position_area_value(input, false)?;
+    input.expect_exhausted()?;
+    Ok(area)
 }
 
 fn parse_text_box_edge(source: &str) -> Result<BrowserLonghandValue, EngineError> {
@@ -3709,8 +3725,13 @@ mod tests {
         for (property, source, expected) in [
             (
                 "position-try-fallbacks",
-                "--foo, flip-block flip-inline",
-                "--foo, flip-block flip-inline",
+                "--foo, flip-block flip-inline flip-x flip-y",
+                "--foo, flip-block flip-inline flip-x flip-y",
+            ),
+            (
+                "position-try-fallbacks",
+                "flip-block --foo",
+                "--foo flip-block",
             ),
             ("position-try-fallbacks", "center", "center"),
             ("position-try-fallbacks", "left top", "left top"),
@@ -3748,6 +3769,7 @@ mod tests {
         }
         for (property, source) in [
             ("position-try-fallbacks", "flip-block flip-block"),
+            ("position-try-fallbacks", "flip-x flip-x"),
             ("text-box-edge", "cap"),
             ("timeline-trigger-activation-range-start", "auto"),
             ("timeline-trigger-activation-range-start", "red"),

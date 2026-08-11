@@ -144,7 +144,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.41",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.42",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
