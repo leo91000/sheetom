@@ -3139,6 +3139,15 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ("column-count", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
     ]),
+    ("column-rule-color", &[
+        super::PropertyGrammarExtension::GapRuleLonghand,
+    ]),
+    ("column-rule-style", &[
+        super::PropertyGrammarExtension::GapRuleLonghand,
+    ]),
+    ("column-rule-width", &[
+        super::PropertyGrammarExtension::GapRuleLonghand,
+    ]),
     ("content", &[
         super::PropertyGrammarExtension::Content,
     ]),
@@ -3216,6 +3225,15 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("reading-order", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
+    ]),
+    ("row-rule-color", &[
+        super::PropertyGrammarExtension::GapRuleLonghand,
+    ]),
+    ("row-rule-style", &[
+        super::PropertyGrammarExtension::GapRuleLonghand,
+    ]),
+    ("row-rule-width", &[
+        super::PropertyGrammarExtension::GapRuleLonghand,
     ]),
     ("rx", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,

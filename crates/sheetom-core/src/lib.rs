@@ -11,6 +11,7 @@ mod declaration_value;
 mod extension_value;
 mod font_face;
 mod function_rule;
+mod gap_rule;
 mod geometric_value;
 mod observable;
 mod property_constraints;
@@ -43,6 +44,8 @@ pub use extension_value::{
     OffsetRotateDirection, OffsetRotateValue, PageLength, PageOrientation, PageSizeValue,
     SemanticExtensionValue,
 };
+#[doc(hidden)]
+pub use gap_rule::GapRuleLonghandValue;
 #[doc(hidden)]
 pub use recovered_value::{
     recover_component_values, recover_component_values_with_limits, RecoveredBlockDelimiter,

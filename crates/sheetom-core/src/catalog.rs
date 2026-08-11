@@ -9,6 +9,7 @@ pub(crate) enum PropertyGrammarExtension {
     AspectRatio,
     BrowserLonghand,
     Content,
+    GapRuleLonghand,
     Geometric,
     IntegerCalculation,
     LengthNumberCalculation,

@@ -25,6 +25,7 @@ use lightningcss::{
 use crate::{
     browser_longhand::{parse_browser_longhand, BrowserLonghandValue},
     catalog::PropertyGrammarExtension,
+    gap_rule::{parse_gap_rule_longhand, GapRuleLonghandValue},
     geometric_value::{parse_geometric_property, GeometricValue},
     shorthand::canonicalize_webkit_border_image,
     syntax::{split_top_level_delimiter, split_top_level_whitespace},
@@ -36,6 +37,7 @@ pub enum SemanticExtensionValue {
     AspectRatio(AspectRatioValue),
     BrowserLonghand(BrowserLonghandValue),
     Content(ContentValue),
+    GapRuleLonghand(GapRuleLonghandValue),
     Geometric(Box<GeometricValue>),
     IntegerCalculation(IntegerCalculationValue),
     CrossDimensionCalculation(CrossDimensionCalculationValue),
@@ -54,6 +56,7 @@ impl SemanticExtensionValue {
             SemanticExtensionValue::AspectRatio(value) => value.canonical_value(),
             SemanticExtensionValue::BrowserLonghand(value) => value.canonical_value(),
             SemanticExtensionValue::Content(value) => value.canonical_value(),
+            SemanticExtensionValue::GapRuleLonghand(value) => value.canonical_value(),
             SemanticExtensionValue::Geometric(value) => value.canonical_value(),
             SemanticExtensionValue::IntegerCalculation(value) => value.canonical_value(),
             SemanticExtensionValue::CrossDimensionCalculation(value) => value.canonical_value(),
@@ -795,6 +798,10 @@ pub(crate) fn parse_extension_value(
                 }
             }
             PropertyGrammarExtension::Content => Some(parse_content(source)),
+            PropertyGrammarExtension::GapRuleLonghand => Some(
+                parse_gap_rule_longhand(property_name, source)
+                    .map(SemanticExtensionValue::GapRuleLonghand),
+            ),
             PropertyGrammarExtension::Geometric => {
                 match parse_geometric_property(property_name, source) {
                     Ok(Some(value)) => Some(Ok(SemanticExtensionValue::Geometric(Box::new(value)))),

@@ -629,10 +629,14 @@ impl DeclarationState {
                 .is_some_and(|group| group.id == group_id)
             {
                 if !record.pending_substitution() {
-                    let observable = materialize_static_observable(
-                        record.observable_value(),
-                        record.safe_value(),
-                    );
+                    let observable = if is_gap_rule_longhand(&record.name) {
+                        record.observable_value().to_owned()
+                    } else {
+                        materialize_static_observable(
+                            record.observable_value(),
+                            record.safe_value(),
+                        )
+                    };
                     record.value.replace_observable(observable);
                 }
                 record.pending_group = None;
@@ -759,11 +763,24 @@ impl DeclarationState {
     }
 }
 
+fn is_gap_rule_longhand(name: &str) -> bool {
+    matches!(
+        name,
+        "column-rule-width"
+            | "column-rule-style"
+            | "column-rule-color"
+            | "row-rule-width"
+            | "row-rule-style"
+            | "row-rule-color"
+    )
+}
+
 fn prefers_synthesized_provenance(name: &str) -> bool {
     matches!(
         name,
         "animation"
             | "background"
+            | "column-rule"
             | "border-image"
             | "columns"
             | "container"
@@ -775,6 +792,11 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "grid-template"
             | "mask"
             | "offset"
+            | "row-rule"
+            | "rule"
+            | "rule-color"
+            | "rule-style"
+            | "rule-width"
             | "scroll-timeline"
             | "text-box"
             | "text-wrap"
@@ -1403,6 +1425,80 @@ mod tests {
         assert_eq!(
             text_stroke.get_property_value("-webkit-text-stroke-color"),
             "green"
+        );
+    }
+
+    #[test]
+    fn gap_rule_lists_expand_atomically_and_remain_mutable() {
+        let source = "1px, repeat(auto, red, 2px dotted), repeat(2, color-mix(in srgb, red, blue))";
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("column-rule", source, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("column-rule"), source);
+        assert_eq!(
+            state.get_property_value("column-rule-width"),
+            "1px, repeat(auto, medium, 2px), repeat(2, medium)"
+        );
+        assert_eq!(
+            state.get_property_value("column-rule-style"),
+            "none, repeat(auto, none, dotted), repeat(2, none)"
+        );
+        assert_eq!(
+            state.get_property_value("column-rule-color"),
+            "currentcolor, repeat(auto, red, currentcolor), repeat(2, color-mix(in srgb, red, blue))"
+        );
+        assert_eq!(state.css_text(), format!("column-rule: {source};"));
+
+        assert_eq!(
+            state.set_property(
+                "column-rule-style",
+                "solid, repeat(auto, none, dotted), repeat(2, none)",
+                "",
+            ),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.get_property_value("column-rule"),
+            "1px solid, repeat(auto, red, 2px dotted), repeat(2, color-mix(in srgb, red, blue))"
+        );
+
+        let before = state.css_text();
+        assert_eq!(
+            state.set_property(
+                "column-rule-width",
+                "1px, repeat(auto, 2px), repeat(auto, 3px)",
+                "",
+            ),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(state.css_text(), before);
+
+        state.remove_property("column-rule-color");
+        assert_eq!(state.get_property_value("column-rule"), "");
+    }
+
+    #[test]
+    fn rule_component_lists_expand_to_both_axes() {
+        let mut state = DeclarationState::new();
+        let source = "1px, repeat(auto, thick), repeat(2, 0px)";
+        assert_eq!(
+            state.set_property("rule-width", source, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("rule-width"), source);
+        assert_eq!(state.get_property_value("column-rule-width"), source);
+        assert_eq!(state.get_property_value("row-rule-width"), source);
+
+        let color = "red, repeat(auto, oklch(50% .2 120)), red";
+        assert_eq!(
+            state.set_property("rule-color", color, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.get_property_value("rule-color"),
+            "red, repeat(auto, oklch(0.5 0.2 120)), red"
         );
     }
 
