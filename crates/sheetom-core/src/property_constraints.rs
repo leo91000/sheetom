@@ -20,7 +20,7 @@ use lightningcss::{
     },
 };
 
-use crate::EngineError;
+use crate::{syntax::split_top_level_delimiter, EngineError};
 
 /// Validates browser parse-time constraints that are narrower than the
 /// reusable value types in Lightning CSS.
@@ -54,6 +54,7 @@ pub(crate) fn validate_standard_property(
     {
         return invalid(authored_name, authored_value);
     }
+    validate_authored_property_capability(authored_name, &canonical)?;
     if matches!(
         property,
         Property::TransformOrigin(position, _)
@@ -113,6 +114,14 @@ fn validate_longhand_candidate(
     if SIZE_LONGHANDS.contains(&canonical_name) && value.eq_ignore_ascii_case("contain") {
         return invalid(name, value);
     }
+    if SIZE_LONGHANDS.contains(&canonical_name) && has_top_level_function(value, "fit-content") {
+        return invalid(name, value);
+    }
+    if matches!(canonical_name, "align-content")
+        && has_all_top_level_idents(value, &["last", "baseline"])
+    {
+        return invalid(name, value);
+    }
     if matches!(canonical_name, "outline-style") && value.eq_ignore_ascii_case("hidden") {
         return invalid(name, value);
     }
@@ -127,6 +136,164 @@ fn validate_longhand_candidate(
     }
 
     Ok(())
+}
+
+pub(crate) fn validate_authored_property_capability(
+    name: &str,
+    value: &str,
+) -> Result<(), EngineError> {
+    if valid_chromium_property_capability(name, value) {
+        return Ok(());
+    }
+    invalid(name, value)
+}
+
+fn valid_chromium_property_capability(name: &str, value: &str) -> bool {
+    if is_css_wide_keyword(value) {
+        return true;
+    }
+    let canonical_name = name.strip_prefix("-webkit-").unwrap_or(name);
+
+    if canonical_name.eq_ignore_ascii_case("text-transform")
+        && has_any_top_level_ident(value, &["full-size-kana", "full-width"])
+    {
+        return false;
+    }
+    if canonical_name.eq_ignore_ascii_case("stroke-linejoin") && has_top_level_ident(value, "arcs")
+    {
+        return false;
+    }
+    if canonical_name.eq_ignore_ascii_case("display")
+        && has_any_top_level_ident(
+            value,
+            &[
+                "run-in",
+                "ruby-base",
+                "ruby-base-container",
+                "ruby-text-container",
+            ],
+        )
+    {
+        return false;
+    }
+    if canonical_name.eq_ignore_ascii_case("text-align")
+        && has_any_top_level_ident(value, &["justify-all", "match-parent"])
+    {
+        return false;
+    }
+    if canonical_name.eq_ignore_ascii_case("text-align-last")
+        && has_top_level_ident(value, "match-parent")
+    {
+        return false;
+    }
+    if matches!(canonical_name, "list-style" | "list-style-type")
+        && has_top_level_function(value, "symbols")
+    {
+        return false;
+    }
+    if matches!(canonical_name, "transition") && !valid_transition_list(value) {
+        return false;
+    }
+
+    if name.eq_ignore_ascii_case("-webkit-column-break-before")
+        || name.eq_ignore_ascii_case("-webkit-column-break-after")
+    {
+        return matches_ascii_case(value, &["auto", "always", "avoid"]);
+    }
+    if name.eq_ignore_ascii_case("-webkit-column-break-inside") {
+        return matches_ascii_case(value, &["auto", "avoid"]);
+    }
+    if name.eq_ignore_ascii_case("-webkit-mask")
+        && has_any_top_level_ident(
+            value,
+            &[
+                "fill-box",
+                "margin-box",
+                "no-clip",
+                "stroke-box",
+                "view-box",
+            ],
+        )
+    {
+        return false;
+    }
+    if name.eq_ignore_ascii_case("mask") && has_top_level_ident(value, "margin-box") {
+        return false;
+    }
+    if name.eq_ignore_ascii_case("-webkit-mask-clip")
+        && has_any_top_level_ident(value, &["fill-box", "no-clip", "stroke-box", "view-box"])
+    {
+        return false;
+    }
+    if name.eq_ignore_ascii_case("-webkit-mask-origin")
+        && has_any_top_level_ident(value, &["fill-box", "stroke-box", "view-box"])
+    {
+        return false;
+    }
+    if name.eq_ignore_ascii_case("-webkit-mask-composite")
+        && has_any_top_level_ident(value, &["add", "exclude", "intersect", "subtract"])
+    {
+        return false;
+    }
+
+    true
+}
+
+fn valid_transition_list(source: &str) -> bool {
+    let Some(entries) = split_top_level_delimiter(source, b',') else {
+        return false;
+    };
+    entries.len() == 1
+        || entries
+            .iter()
+            .all(|entry| !has_top_level_ident(entry, "none"))
+}
+
+fn is_css_wide_keyword(value: &str) -> bool {
+    matches_ascii_case(
+        value,
+        &["inherit", "initial", "revert", "revert-layer", "unset"],
+    )
+}
+
+fn matches_ascii_case(value: &str, candidates: &[&str]) -> bool {
+    candidates
+        .iter()
+        .any(|candidate| value.eq_ignore_ascii_case(candidate))
+}
+
+fn has_all_top_level_idents(source: &str, expected: &[&str]) -> bool {
+    expected
+        .iter()
+        .all(|expected| has_top_level_ident(source, expected))
+}
+
+fn has_any_top_level_ident(source: &str, expected: &[&str]) -> bool {
+    expected
+        .iter()
+        .any(|expected| has_top_level_ident(source, expected))
+}
+
+fn has_top_level_ident(source: &str, expected: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    while let Ok(token) = parser.next() {
+        if matches!(token, Token::Ident(value) if value.eq_ignore_ascii_case(expected)) {
+            return true;
+        }
+    }
+    false
+}
+
+fn has_top_level_function(source: &str, expected: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    while let Ok(token) = parser.next() {
+        if matches!(token, Token::Function(value) if value.eq_ignore_ascii_case(expected)) {
+            return true;
+        }
+    }
+    false
 }
 
 fn invalid<T>(name: &str, value: &str) -> Result<T, EngineError> {
@@ -359,13 +526,19 @@ const SIZE_LONGHANDS: &[&str] = &[
     "block-size",
     "height",
     "inline-size",
+    "logical-height",
+    "logical-width",
     "max-block-size",
     "max-height",
     "max-inline-size",
+    "max-logical-height",
+    "max-logical-width",
     "max-width",
     "min-block-size",
     "min-height",
     "min-inline-size",
+    "min-logical-height",
+    "min-logical-width",
     "min-width",
     "width",
 ];
@@ -500,6 +673,53 @@ mod tests {
         }
         assert!(valid_appearance("base-select"));
         assert!(!valid_appearance("base"));
+    }
+
+    #[test]
+    fn enforces_pinned_chromium_capability_boundaries() {
+        for (name, value) in [
+            ("width", "fit-content(10px)"),
+            ("-webkit-logical-width", "fit-content(10px)"),
+            ("text-transform", "capitalize full-width"),
+            ("stroke-linejoin", "arcs"),
+            ("display", "run-in flow"),
+            ("align-content", "last baseline"),
+            ("list-style-type", "symbols(cyclic \"x\")"),
+            ("transition", "none, none"),
+            ("-webkit-column-break-before", "page"),
+            ("-webkit-column-break-inside", "avoid-page"),
+            ("mask", "margin-box"),
+            ("-webkit-mask", "view-box"),
+            ("-webkit-mask-clip", "no-clip"),
+            ("-webkit-mask-origin", "fill-box"),
+            ("-webkit-mask-composite", "add"),
+        ] {
+            assert!(
+                validate_standard_property(name, value, &parsed(name, value)).is_err(),
+                "{name}: {value}"
+            );
+        }
+
+        for (name, value) in [
+            ("width", "fit-content"),
+            ("text-transform", "math-auto"),
+            ("display", "ruby-text"),
+            ("align-content", "baseline"),
+            ("list-style-type", "sheetom-ident"),
+            ("transition", "none"),
+            ("transition", "opacity 1s, transform 2s"),
+            ("-webkit-column-break-before", "always"),
+            ("-webkit-column-break-inside", "avoid"),
+            ("-webkit-mask", "content-box"),
+            ("-webkit-mask-clip", "content-box"),
+            ("-webkit-mask-origin", "padding-box"),
+            ("-webkit-mask-composite", "source-over"),
+        ] {
+            assert!(
+                validate_standard_property(name, value, &parsed(name, value)).is_ok(),
+                "{name}: {value}"
+            );
+        }
     }
 
     #[test]

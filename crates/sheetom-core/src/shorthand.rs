@@ -1234,6 +1234,9 @@ pub(crate) fn parse_value_for_source_with_limits(
         });
     }
 
+    crate::property_constraints::validate_authored_property_capability(source_name, value)
+        .map_err(map_engine_error)?;
+
     let legacy_webkit_radius;
     let value = if source_name == "-webkit-border-radius"
         && !value.contains('/')

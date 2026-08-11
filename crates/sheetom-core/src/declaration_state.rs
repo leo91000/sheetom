@@ -954,10 +954,10 @@ mod tests {
 
     #[test]
     fn preserves_the_write_only_value_behavior_of_legacy_column_break_aliases() {
-        for (alias, canonical) in [
-            ("-webkit-column-break-after", "break-after"),
-            ("-webkit-column-break-before", "break-before"),
-            ("-webkit-column-break-inside", "break-inside"),
+        for (alias, canonical, invalid) in [
+            ("-webkit-column-break-after", "break-after", "page"),
+            ("-webkit-column-break-before", "break-before", "page"),
+            ("-webkit-column-break-inside", "break-inside", "avoid-page"),
         ] {
             let mut state = DeclarationState::new();
             assert_eq!(
@@ -966,6 +966,13 @@ mod tests {
                 "{alias}"
             );
             assert_eq!(state.item(0), canonical, "{alias} item");
+            let before = state.clone();
+            assert_eq!(
+                state.set_property(alias, invalid, ""),
+                MutationOutcome::InvalidValue,
+                "{alias} invalid capability"
+            );
+            assert_eq!(state, before, "{alias} atomic capability rejection");
             assert_eq!(state.get_property_value(alias), "", "{alias} getter");
             assert_eq!(
                 state.get_property_value(canonical),
@@ -1021,6 +1028,33 @@ mod tests {
                 "var(--value)",
                 "{alias} canonical substitution write"
             );
+        }
+    }
+
+    #[test]
+    fn browser_capability_constraints_cover_shorthand_and_alias_fallbacks() {
+        for (name, valid, invalid) in [
+            ("transition", "opacity 1s", "none, none"),
+            ("-webkit-transition", "opacity 1s", "none, none"),
+            ("mask", "content-box", "margin-box"),
+            ("-webkit-mask", "content-box", "view-box"),
+            ("-webkit-mask-clip", "content-box", "no-clip"),
+            ("-webkit-mask-origin", "padding-box", "fill-box"),
+            ("-webkit-mask-composite", "initial", "add"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(name, valid, ""),
+                MutationOutcome::Applied,
+                "{name}: {valid}"
+            );
+            let before = state.clone();
+            assert_eq!(
+                state.set_property(name, invalid, ""),
+                MutationOutcome::InvalidValue,
+                "{name}: {invalid}"
+            );
+            assert_eq!(state, before, "{name} atomicity");
         }
     }
 
