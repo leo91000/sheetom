@@ -2,24 +2,16 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 5569,
+  "mismatchCases": 5363,
   "summary": {
-    "acceptance": 3118,
+    "acceptance": 2912,
     "observable": 2123,
     "cssText": 2123,
     "items": 1822,
-    "atomicity": 206,
+    "atomicity": 0,
     "reparse": 27
   },
   "unresolved": [
-    {
-      "property": "-webkit-align-content",
-      "sample": "webref-sample.915ba2033cfb1341",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
     {
       "property": "-webkit-animation",
       "sample": "webref-sample.130f47a432270149",
@@ -117,101 +109,6 @@
     },
     {
       "property": "-webkit-column-break-after",
-      "sample": "webref-sample.0ac0f7bb0ae762d7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.44394c133725b7eb",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.55f653c96d2a09e7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.9b7fa097487b80aa",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.9f5a740b176c24c2",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.abf2aa4f3b6a359a",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.afae3de62a250ac6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.c0dc24c11b3d5583",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.d867ac8d7e7dc775",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.0ac0f7bb0ae762d7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.44394c133725b7eb",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.55f653c96d2a09e7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
       "sample": "webref-sample.9b7fa097487b80aa",
       "kinds": [
         "acceptance"
@@ -219,58 +116,9 @@
     },
     {
       "property": "-webkit-column-break-before",
-      "sample": "webref-sample.9f5a740b176c24c2",
+      "sample": "webref-sample.9b7fa097487b80aa",
       "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.abf2aa4f3b6a359a",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.afae3de62a250ac6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.c0dc24c11b3d5583",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.d867ac8d7e7dc775",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-inside",
-      "sample": "webref-sample.01ec50e49d6d33bc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-inside",
-      "sample": "webref-sample.c5665183b15b4689",
-      "kinds": [
-        "acceptance",
-        "atomicity"
+        "acceptance"
       ]
     },
     {
@@ -1395,45 +1243,6 @@
     },
     {
       "property": "-webkit-logical-height",
-      "sample": "webref-sample.5971279cdeff73b6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-logical-height",
-      "sample": "webref-sample.6bdf46aab04b9410",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-logical-height",
-      "sample": "webref-sample.9cd4f65b4884aa2e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-logical-height",
-      "sample": "webref-sample.b321d19cf2458eda",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-logical-width",
-      "sample": "webref-sample.5971279cdeff73b6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-logical-width",
       "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
         "acceptance"
@@ -1441,18 +1250,9 @@
     },
     {
       "property": "-webkit-logical-width",
-      "sample": "webref-sample.9cd4f65b4884aa2e",
+      "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-logical-width",
-      "sample": "webref-sample.b321d19cf2458eda",
-      "kinds": [
-        "acceptance",
-        "atomicity"
+        "acceptance"
       ]
     },
     {
@@ -1471,14 +1271,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.03acde4ea525aba7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -1511,14 +1303,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.0cc179caf1b3ccb7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -1589,27 +1373,11 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.2f9b4d514b6050af",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.321fa20a7fce9acd",
       "kinds": [
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.38840f91246f97a0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -1707,22 +1475,6 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.60a26bc95d8467b1",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.612114b8f38a1f8d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.63c853c633166d88",
       "kinds": [
         "cssText",
@@ -1780,27 +1532,11 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.72ede434c485fee8",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.748990946d7291ef",
       "kinds": [
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.775d582e1d38d258",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -1826,14 +1562,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.85d536361a62bcdd",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -1972,27 +1700,11 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.c4b8863fbb9fa926",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.c68e48a5610111c7",
       "kinds": [
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.c6d52a6405b4eef0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -2011,22 +1723,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.caddb6170d8d25e1",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.cc37141b46f36cb0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -2205,14 +1901,6 @@
       "sample": "webref-sample.ff05b16040e9ccdd",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.ff305a8e795b8f82",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -2476,102 +2164,6 @@
       ]
     },
     {
-      "property": "-webkit-mask-clip",
-      "sample": "webref-sample.1a3e3ce03d69f260",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-clip",
-      "sample": "webref-sample.394a83229e93d035",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-clip",
-      "sample": "webref-sample.d06d0b382fec4143",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-clip",
-      "sample": "webref-sample.fa4d99cdc771b8bf",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-composite",
-      "sample": "webref-sample.4738911cc950a9eb",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-composite",
-      "sample": "webref-sample.6f22742c73c09078",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-composite",
-      "sample": "webref-sample.81b478256d0e8bbd",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-composite",
-      "sample": "webref-sample.c4f9b367e6232614",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-composite",
-      "sample": "webref-sample.c89030308a3bb7ff",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-origin",
-      "sample": "webref-sample.ce89329f32626a4e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-origin",
-      "sample": "webref-sample.ec52eeb2bb56c26e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-mask-origin",
-      "sample": "webref-sample.fdf9c0e4b4ffd206",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "-webkit-mask-position",
       "sample": "webref-sample.1ddeba2e1e105643",
       "kinds": [
@@ -2602,62 +2194,6 @@
       ]
     },
     {
-      "property": "-webkit-max-logical-height",
-      "sample": "webref-sample.1b893a693b897bac",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-max-logical-height",
-      "sample": "webref-sample.53790ac4cfb0123b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-max-logical-height",
-      "sample": "webref-sample.9def1f1215f78f5c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-max-logical-width",
-      "sample": "webref-sample.1b893a693b897bac",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-max-logical-width",
-      "sample": "webref-sample.53790ac4cfb0123b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-max-logical-width",
-      "sample": "webref-sample.9def1f1215f78f5c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-height",
-      "sample": "webref-sample.186b518536acda95",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "-webkit-min-logical-height",
       "sample": "webref-sample.69cf2381dc1226a6",
       "kinds": [
@@ -2665,50 +2201,10 @@
       ]
     },
     {
-      "property": "-webkit-min-logical-height",
-      "sample": "webref-sample.b6a97f8525bce248",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-height",
-      "sample": "webref-sample.b979962ef63508dc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-width",
-      "sample": "webref-sample.186b518536acda95",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "-webkit-min-logical-width",
       "sample": "webref-sample.69cf2381dc1226a6",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-width",
-      "sample": "webref-sample.b6a97f8525bce248",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-width",
-      "sample": "webref-sample.b979962ef63508dc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -3030,14 +2526,6 @@
     },
     {
       "property": "-webkit-transition",
-      "sample": "webref-sample.a7895683bdbb6034",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
       "sample": "webref-sample.bd236713231afa59",
       "kinds": [
         "cssText",
@@ -3066,14 +2554,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "align-content",
-      "sample": "webref-sample.915ba2033cfb1341",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -4131,33 +3611,9 @@
     },
     {
       "property": "block-size",
-      "sample": "webref-sample.5971279cdeff73b6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "block-size",
       "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "block-size",
-      "sample": "webref-sample.9cd4f65b4884aa2e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "block-size",
-      "sample": "webref-sample.b321d19cf2458eda",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -10752,54 +10208,6 @@
       ]
     },
     {
-      "property": "display",
-      "sample": "webref-sample.602f3c1bb367f11f",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "display",
-      "sample": "webref-sample.64544a418ae74bf9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "display",
-      "sample": "webref-sample.659b936452dd362a",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "display",
-      "sample": "webref-sample.b25e56d52a599b2b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "display",
-      "sample": "webref-sample.bb250fe05c2243e7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "display",
-      "sample": "webref-sample.cf064148cdfe29b9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "fill-opacity",
       "sample": "webref-sample.34dd25b141e323a8",
       "kinds": [
@@ -14068,14 +13476,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.0eed11af8b334a37",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.0f11eab32b4c9cdf",
       "kinds": [
         "cssText",
@@ -15120,14 +14520,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.354977e95ba30d9d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.35605997d2d5c74c",
       "kinds": [
         "items"
@@ -15242,14 +14634,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.37a36830e645c73e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -16151,14 +15535,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.565addcfd2d32679",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.5663f55a4c5edab5",
       "kinds": [
         "cssText",
@@ -16266,14 +15642,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.5b0887316c3a20fb",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -16488,14 +15856,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.611d656e3703b53a",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.614365889ee6deda",
       "kinds": [
         "cssText",
@@ -16540,14 +15900,6 @@
       "sample": "webref-sample.6272f011622a813b",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.6278518160ae508f",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -16635,14 +15987,6 @@
       "sample": "webref-sample.64f09463c2843b50",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.65084bd36c72a3c2",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -16951,14 +16295,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.6f4d196f2ba6c479",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.6f80dfcbcc2ac578",
       "kinds": [
         "cssText",
@@ -17050,14 +16386,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.71f434766ea03de8",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -17931,14 +17259,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.92a65fdf252c1814",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.92c649bd14b2ea52",
       "kinds": [
         "cssText",
@@ -17994,14 +17314,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.94af92265a4390cc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -18126,14 +17438,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.994901a816a8136c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.9958525ab44fa5bf",
       "kinds": [
         "acceptance"
@@ -18218,14 +17522,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.9b848578eacb7ba0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -18534,14 +17830,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.a7d0e22662a87e48",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.a7e30cea53039f34",
       "kinds": [
         "cssText",
@@ -18644,14 +17932,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.aaaddf82d84f9456",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.aad0fafd1e35a702",
       "kinds": [
         "acceptance"
@@ -18749,14 +18029,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.afcd595e07f5d109",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -19133,14 +18405,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.bc4d488b338f72c9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -19819,14 +19083,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.d426077c552c4868",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.d442833097b490e7",
       "kinds": [
         "cssText",
@@ -20260,14 +19516,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.e23aa3d8d619f25d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.e2687499686c7605",
       "kinds": [
         "cssText",
@@ -20346,14 +19594,6 @@
     },
     {
       "property": "grid",
-      "sample": "webref-sample.e3fcd237344d0925",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
       "sample": "webref-sample.e43b9b0c9569f1c0",
       "kinds": [
         "acceptance"
@@ -20384,14 +19624,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.e5046a6e9d2418bd",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -20585,22 +19817,6 @@
       "sample": "webref-sample.eb44dd211f1539d8",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.eb684056198f7f83",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid",
-      "sample": "webref-sample.eb75c8fc3e7a4f86",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -21952,14 +21168,6 @@
     },
     {
       "property": "grid-template",
-      "sample": "webref-sample.0ee1db1b32dde4a4",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template",
       "sample": "webref-sample.0fbf5cb1cd2eab3a",
       "kinds": [
         "cssText",
@@ -21974,14 +21182,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template",
-      "sample": "webref-sample.100c6d622472851e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -22241,14 +21441,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template",
-      "sample": "webref-sample.21b1e13344e1057c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -23238,14 +22430,6 @@
     },
     {
       "property": "grid-template",
-      "sample": "webref-sample.6434aad0427ecf2b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template",
       "sample": "webref-sample.64c941a3288a3e70",
       "kinds": [
         "acceptance"
@@ -23784,14 +22968,6 @@
     },
     {
       "property": "grid-template",
-      "sample": "webref-sample.8f43f004e43b356b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template",
       "sample": "webref-sample.90a348d4b8e5ce40",
       "kinds": [
         "acceptance"
@@ -23850,14 +23026,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template",
-      "sample": "webref-sample.956282b0e7ad1e37",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -23942,14 +23110,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template",
-      "sample": "webref-sample.9d6f40844f025430",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -25098,14 +24258,6 @@
     },
     {
       "property": "grid-template",
-      "sample": "webref-sample.f4f088308305e944",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template",
       "sample": "webref-sample.f4f33425c30a800a",
       "kinds": [
         "cssText",
@@ -25687,14 +24839,6 @@
     },
     {
       "property": "grid-template-columns",
-      "sample": "webref-sample.3ca774c3a1ed9fe3",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
       "sample": "webref-sample.3e351bfe2db2f454",
       "kinds": [
         "cssText",
@@ -25754,14 +24898,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
-      "sample": "webref-sample.42c8528d2a659e8e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -25964,14 +25100,6 @@
     },
     {
       "property": "grid-template-columns",
-      "sample": "webref-sample.6bc004cca680c6ae",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
       "sample": "webref-sample.6cbba8b23574a03c",
       "kinds": [
         "cssText",
@@ -26044,14 +25172,6 @@
     },
     {
       "property": "grid-template-columns",
-      "sample": "webref-sample.78672d54628fc2d6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
       "sample": "webref-sample.79cf85c94e2c7f34",
       "kinds": [
         "cssText",
@@ -26084,14 +25204,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
-      "sample": "webref-sample.7e8ef902b7eefb22",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -26258,14 +25370,6 @@
     },
     {
       "property": "grid-template-columns",
-      "sample": "webref-sample.9642fe64dc7c5c47",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
       "sample": "webref-sample.967dd34f25250c35",
       "kinds": [
         "cssText",
@@ -26397,14 +25501,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
-      "sample": "webref-sample.a97f5e6e729ca460",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -26558,14 +25654,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-columns",
-      "sample": "webref-sample.c671b41230de47c0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -27335,14 +26423,6 @@
     },
     {
       "property": "grid-template-rows",
-      "sample": "webref-sample.3ca774c3a1ed9fe3",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
       "sample": "webref-sample.3e351bfe2db2f454",
       "kinds": [
         "cssText",
@@ -27402,14 +26482,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
-      "sample": "webref-sample.42c8528d2a659e8e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -27612,14 +26684,6 @@
     },
     {
       "property": "grid-template-rows",
-      "sample": "webref-sample.6bc004cca680c6ae",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
       "sample": "webref-sample.6cbba8b23574a03c",
       "kinds": [
         "cssText",
@@ -27692,14 +26756,6 @@
     },
     {
       "property": "grid-template-rows",
-      "sample": "webref-sample.78672d54628fc2d6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
       "sample": "webref-sample.79cf85c94e2c7f34",
       "kinds": [
         "cssText",
@@ -27732,14 +26788,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
-      "sample": "webref-sample.7e8ef902b7eefb22",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -27906,14 +26954,6 @@
     },
     {
       "property": "grid-template-rows",
-      "sample": "webref-sample.9642fe64dc7c5c47",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
       "sample": "webref-sample.967dd34f25250c35",
       "kinds": [
         "cssText",
@@ -28045,14 +27085,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
-      "sample": "webref-sample.a97f5e6e729ca460",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -28206,14 +27238,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-template-rows",
-      "sample": "webref-sample.c671b41230de47c0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -28605,33 +27629,9 @@
     },
     {
       "property": "height",
-      "sample": "webref-sample.ac6b180bf2e2186c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "height",
-      "sample": "webref-sample.d4144265ab397eb7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "height",
       "sample": "webref-sample.e0ad5904211201f6",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "height",
-      "sample": "webref-sample.eaa2660b0923e0a9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -28706,33 +27706,9 @@
     },
     {
       "property": "inline-size",
-      "sample": "webref-sample.5971279cdeff73b6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "inline-size",
       "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "inline-size",
-      "sample": "webref-sample.9cd4f65b4884aa2e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "inline-size",
-      "sample": "webref-sample.b321d19cf2458eda",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -29267,26 +28243,10 @@
     },
     {
       "property": "list-style",
-      "sample": "webref-sample.0625c5aa9211b443",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
       "sample": "webref-sample.08b2fd430b277ef8",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.0952b9d9655dae47",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -29298,25 +28258,9 @@
     },
     {
       "property": "list-style",
-      "sample": "webref-sample.0fd3f9a5972e386a",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
       "sample": "webref-sample.22db1ec0896181d8",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.25f721e3674badbe",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -29326,30 +28270,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.3c62b86a5a1e759f",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.4739ba6be152b32f",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.4917ff05ba505897",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -29369,14 +28289,6 @@
     },
     {
       "property": "list-style",
-      "sample": "webref-sample.56eed0cb41ef70f9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
       "sample": "webref-sample.5c8663021bd8f32b",
       "kinds": [
         "items"
@@ -29384,49 +28296,9 @@
     },
     {
       "property": "list-style",
-      "sample": "webref-sample.6b0367124f3e4999",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.6b3ac97475c438f2",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.72fbf7126ad824bf",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.75fcf5152bf6cc87",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
       "sample": "webref-sample.810fd92c9435bdc8",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.82c19cce12a9562d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -29452,38 +28324,6 @@
     },
     {
       "property": "list-style",
-      "sample": "webref-sample.a5d0b018bf85620e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.ae8ec95fbc12030a",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.b38097ee7b1ed531",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.cc6e5db979a34e65",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
       "sample": "webref-sample.d05df243e494bbc1",
       "kinds": [
         "cssText",
@@ -29503,110 +28343,6 @@
       "sample": "webref-sample.d92e4d1e73ec881a",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.ddaf713c93f31e5d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.ec90313f9ff66088",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style",
-      "sample": "webref-sample.f4e570f0e17547b6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.2b8d863aeec73ba3",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.324a447b387e9c51",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.4f70fad1cf3e7f12",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.5e008aa5048e1e39",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.5e22264ffd5c6339",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.7c3762df4d35dd96",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.822beb8a9b4cb823",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.976fe6cf3b5b98cc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.c6a618b5939a693d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "list-style-type",
-      "sample": "webref-sample.db586d10bcbd52e5",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -29780,14 +28516,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.2f9b4d514b6050af",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -30214,22 +28942,6 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.caddb6170d8d25e1",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.cc37141b46f36cb0",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.cd39e01cb2a537f0",
       "kinds": [
         "items"
@@ -30472,146 +29184,10 @@
       ]
     },
     {
-      "property": "max-block-size",
-      "sample": "webref-sample.1b893a693b897bac",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-block-size",
-      "sample": "webref-sample.53790ac4cfb0123b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-block-size",
-      "sample": "webref-sample.9def1f1215f78f5c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-height",
-      "sample": "webref-sample.1ced7724362f4f02",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-height",
-      "sample": "webref-sample.3dea12d78a38838e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-height",
-      "sample": "webref-sample.3ff9a75769bfa36b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-inline-size",
-      "sample": "webref-sample.1b893a693b897bac",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-inline-size",
-      "sample": "webref-sample.53790ac4cfb0123b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-inline-size",
-      "sample": "webref-sample.9def1f1215f78f5c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-width",
-      "sample": "webref-sample.1ced7724362f4f02",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-width",
-      "sample": "webref-sample.3dea12d78a38838e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "max-width",
-      "sample": "webref-sample.3ff9a75769bfa36b",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-block-size",
-      "sample": "webref-sample.186b518536acda95",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "min-block-size",
       "sample": "webref-sample.69cf2381dc1226a6",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "min-block-size",
-      "sample": "webref-sample.b6a97f8525bce248",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-block-size",
-      "sample": "webref-sample.b979962ef63508dc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-height",
-      "sample": "webref-sample.ac6b180bf2e2186c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-height",
-      "sample": "webref-sample.d4144265ab397eb7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -30622,22 +29198,6 @@
       ]
     },
     {
-      "property": "min-height",
-      "sample": "webref-sample.eaa2660b0923e0a9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-inline-size",
-      "sample": "webref-sample.186b518536acda95",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "min-inline-size",
       "sample": "webref-sample.69cf2381dc1226a6",
       "kinds": [
@@ -30645,50 +29205,10 @@
       ]
     },
     {
-      "property": "min-inline-size",
-      "sample": "webref-sample.b6a97f8525bce248",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-inline-size",
-      "sample": "webref-sample.b979962ef63508dc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-width",
-      "sample": "webref-sample.ac6b180bf2e2186c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "min-width",
-      "sample": "webref-sample.d4144265ab397eb7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "min-width",
       "sample": "webref-sample.e0ad5904211201f6",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "min-width",
-      "sample": "webref-sample.eaa2660b0923e0a9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -31746,14 +30266,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "place-content",
-      "sample": "webref-sample.bbe2ddd9561550f4",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -40188,44 +38700,12 @@
       ]
     },
     {
-      "property": "stroke-linejoin",
-      "sample": "webref-sample.bb8f549b6da13b29",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
       "property": "stroke-opacity",
       "sample": "webref-sample.34dd25b141e323a8",
       "kinds": [
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "text-align",
-      "sample": "webref-sample.13f644c14d5775f6",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-align",
-      "sample": "webref-sample.a0c8db470d6c38a2",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-align-last",
-      "sample": "webref-sample.698c4d6f1cb53e28",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -41058,105 +39538,9 @@
     },
     {
       "property": "text-transform",
-      "sample": "webref-sample.08e7a4f25a2fd013",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.14d3c2405517c73d",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
       "sample": "webref-sample.3147794264b09230",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.3306167f2e6a8991",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.506016152f345c43",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.5d0ef22fc9e11538",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.693638606e4b1038",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.c19048480971c59e",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.c4fa12afa281a279",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.cf019181f11d1443",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.e4a354378e254e17",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.e8bd73b6841500fc",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.f9af166aeee33943",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
@@ -42686,14 +41070,6 @@
     },
     {
       "property": "transition",
-      "sample": "webref-sample.a7895683bdbb6034",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "transition",
       "sample": "webref-sample.bd236713231afa59",
       "kinds": [
         "cssText",
@@ -42809,33 +41185,9 @@
     },
     {
       "property": "width",
-      "sample": "webref-sample.ac6b180bf2e2186c",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "width",
-      "sample": "webref-sample.d4144265ab397eb7",
-      "kinds": [
-        "acceptance",
-        "atomicity"
-      ]
-    },
-    {
-      "property": "width",
       "sample": "webref-sample.e0ad5904211201f6",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "width",
-      "sample": "webref-sample.eaa2660b0923e0a9",
-      "kinds": [
-        "acceptance",
-        "atomicity"
       ]
     },
     {
