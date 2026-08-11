@@ -56,6 +56,51 @@ const cases = [
         probes: ["overflow", "overflow-x", "overflow-y"],
     },
     {
+        id: "intrinsic-flex-basis-calc-size",
+        operations: [[
+            "set",
+            "flex-basis",
+            "calc-size(auto, size / 2 + 1px)",
+            "important",
+        ]],
+        probes: ["flex-basis"],
+    },
+    {
+        id: "intrinsic-flex-shorthand-order",
+        operations: [["set", "flex", "content 2 3", "important"]],
+        probes: ["flex", "flex-grow", "flex-shrink", "flex-basis"],
+    },
+    {
+        id: "intrinsic-webkit-flex-shorthand",
+        operations: [["set", "-webkit-flex", "2 stretch", ""]],
+        probes: ["-webkit-flex", "flex", "flex-grow", "flex-shrink", "flex-basis"],
+    },
+    {
+        id: "intrinsic-flex-shorthand-remove",
+        operations: [
+            ["set", "flex", "2 3 max-content", "important"],
+            ["set", "flex-basis", "content", "important"],
+            ["remove", "flex-basis"],
+        ],
+        probes: ["flex", "flex-grow", "flex-shrink", "flex-basis"],
+    },
+    {
+        id: "invalid-flex-calc-size-is-atomic",
+        operations: [
+            ["set", "flex", "0 0 auto", "important"],
+            ["set", "flex", "1 1 calc-size(auto, size)", ""],
+        ],
+        probes: ["flex", "flex-grow", "flex-shrink", "flex-basis"],
+    },
+    {
+        id: "invalid-flex-basis-calc-size-is-atomic",
+        operations: [
+            ["set", "flex-basis", "content", "important"],
+            ["set", "flex-basis", "calc-size(any, size)", ""],
+        ],
+        probes: ["flex-basis"],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",

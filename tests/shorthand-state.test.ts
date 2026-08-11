@@ -226,6 +226,59 @@ test("representative static shorthands never become standalone records", () => {
   }
 });
 
+test("intrinsic flex branches expand into Chromium longhand state", () => {
+  const cases = [
+    ["content", "1 1 content"],
+    ["content 2 3", "2 3 content"],
+    ["2 max-content", "2 1 max-content"],
+    ["2 3 fit-content", "2 3 fit-content"],
+    ["stretch 2", "2 1 stretch"],
+  ] as const;
+
+  for (const [input, expected] of cases) {
+    const rule = createStyleRule(".x");
+    rule.style.setProperty("flex", input);
+
+    assert.deepEqual(
+      Array.from({ length: rule.style.length }, (_, index) => rule.style.item(index)),
+      ["flex-grow", "flex-shrink", "flex-basis"],
+      input,
+    );
+    assert.equal(rule.style.getPropertyValue("flex"), expected, input);
+    assert.equal(rule.style.cssText, `flex: ${expected};`, input);
+  }
+});
+
+test("flex-basis owns typed calc-size state without weakening flex atomicity", () => {
+  const rule = createStyleRule(".x");
+  rule.style.setProperty("flex-basis", "calc-size(auto, size / 2 + 1px)", "important");
+
+  assert.equal(
+    rule.style.getPropertyValue("flex-basis"),
+    "calc-size(auto, 1px + (0.5 * size))",
+  );
+  assert.equal(rule.style.getPropertyPriority("flex-basis"), "important");
+
+  rule.style.setProperty("flex", "0 0 auto", "important");
+  const before = rule.style.cssText;
+  rule.style.setProperty("flex", "1 1 calc-size(auto, size)");
+  assert.equal(rule.style.cssText, before);
+
+  rule.style.setProperty("flex-basis", "calc-size(any, size)");
+  assert.equal(rule.style.cssText, before);
+});
+
+test("removing an intrinsic flex longhand cannot reactivate shorthand state", () => {
+  const rule = createStyleRule(".x");
+  rule.style.setProperty("flex", "2 3 max-content", "important");
+  rule.style.setProperty("flex-basis", "content", "important");
+
+  assert.equal(rule.style.getPropertyValue("flex"), "2 3 content");
+  assert.equal(rule.style.removeProperty("flex-basis"), "content");
+  assert.equal(rule.style.getPropertyValue("flex"), "");
+  assert.equal(rule.style.cssText, "flex-grow: 2 !important; flex-shrink: 3 !important;");
+});
+
 test("an unexpanded shorthand never creates parallel shorthand state", () => {
   const rule = createStyleRule(".x");
   rule.style.setProperty("mask", "none");

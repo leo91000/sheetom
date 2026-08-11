@@ -8,6 +8,7 @@ use crate::{
     syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
     DeclarationValue, EngineError, PropertyParseKind, ResourceLimits,
 };
+use cssparser::{Parser, ParserInput, Token};
 use lightningcss::{
     declaration::DeclarationBlock,
     properties::{Property, PropertyId},
@@ -2301,8 +2302,20 @@ fn expand_contextual_flex(components: &[&str]) -> Option<Vec<(&'static str, Stri
 }
 
 fn typed_flex_basis(value: &str) -> Option<String> {
+    if leading_function_is(value, "calc-size") {
+        return None;
+    }
     parse_contextual_dimension_calculation(value)
         .or_else(|| typed_longhand_value("flex-basis", value))
+}
+
+fn leading_function_is(value: &str, expected: &str) -> bool {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    matches!(
+        parser.next(),
+        Ok(Token::Function(name)) if name.eq_ignore_ascii_case(expected)
+    )
 }
 
 fn expand_contextual_grid_line(
