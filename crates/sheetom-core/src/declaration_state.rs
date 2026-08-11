@@ -803,6 +803,8 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "text-box"
             | "text-wrap"
             | "timeline-trigger"
+            | "timeline-trigger-activation-range"
+            | "timeline-trigger-active-range"
             | "transition"
             | "view-timeline"
             | "white-space"
@@ -819,6 +821,8 @@ fn prefers_synthesized_safe_provenance(name: &str) -> bool {
             | "grid-column"
             | "grid-row"
             | "timeline-trigger"
+            | "timeline-trigger-activation-range"
+            | "timeline-trigger-active-range"
     ) || name.ends_with("-color")
 }
 
@@ -1784,6 +1788,93 @@ mod tests {
             );
             assert_eq!(state.css_text(), before, "{name}: {value}");
         }
+    }
+
+    #[test]
+    fn timeline_trigger_owns_lists_sources_ranges_and_abbreviated_serialization() {
+        for (input, observable, expected) in [
+            (
+                "none scroll(block root) normal normal / auto auto",
+                "scroll(root)",
+                ["none", "scroll(root)", "normal", "normal", "auto", "auto"],
+            ),
+            (
+                "none auto entry-crossing 1px normal / auto auto",
+                "entry-crossing 1px",
+                [
+                    "none",
+                    "auto",
+                    "entry-crossing 1px",
+                    "normal",
+                    "auto",
+                    "auto",
+                ],
+            ),
+            (
+                "none auto normal normal / scroll 1px auto",
+                " / scroll 1px",
+                ["none", "auto", "normal", "normal", "scroll 1px", "auto"],
+            ),
+            (
+                "none auto normal normal / auto auto, --x view(block 1px) normal normal / auto auto",
+                "none, --x view(1px)",
+                [
+                    "none, --x",
+                    "auto, view(1px)",
+                    "normal, normal",
+                    "normal, normal",
+                    "auto, auto",
+                    "auto, auto",
+                ],
+            ),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("timeline-trigger", input, ""),
+                MutationOutcome::Applied,
+                "{input}"
+            );
+            assert_eq!(state.get_property_value("timeline-trigger"), observable);
+            for (index, longhand) in [
+                "timeline-trigger-name",
+                "timeline-trigger-source",
+                "timeline-trigger-activation-range-start",
+                "timeline-trigger-activation-range-end",
+                "timeline-trigger-active-range-start",
+                "timeline-trigger-active-range-end",
+            ]
+            .iter()
+            .enumerate()
+            {
+                assert_eq!(state.item(index), *longhand, "{input}");
+                assert_eq!(state.get_property_value(longhand), expected[index], "{input}");
+            }
+        }
+
+        let mut ranges = DeclarationState::new();
+        assert_eq!(
+            ranges.set_property("timeline-trigger-active-range", "auto, cover 1px auto", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            ranges.get_property_value("timeline-trigger-active-range"),
+            "auto, cover 1px"
+        );
+        assert_eq!(
+            ranges.get_property_value("timeline-trigger-active-range-start"),
+            "auto, cover 1px"
+        );
+        assert_eq!(
+            ranges.get_property_value("timeline-trigger-active-range-end"),
+            "auto, auto"
+        );
+
+        let before = ranges.css_text();
+        assert_eq!(
+            ranges.set_property("timeline-trigger-active-range", "auto,", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(ranges.css_text(), before);
     }
 
     #[test]
