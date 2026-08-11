@@ -385,6 +385,15 @@ fn synthesize_transition(records: &[&DeclarationRecord], safe: bool) -> Option<S
         if property != "all" {
             components.push(property);
         }
+        if duration == "0s"
+            && timing == "ease"
+            && behavior == "normal"
+            && crate::property_constraints::has_direct_negative_component(delay)
+        {
+            components.push(delay);
+            transitions.push(components.join(" "));
+            continue;
+        }
         if duration != "0s" || timing != "ease" || delay != "0s" || behavior != "normal" {
             components.push(duration);
         }
@@ -2621,15 +2630,17 @@ fn expand_transition(value: &str) -> Option<Vec<(&'static str, String)>> {
                 }
                 continue;
             }
-            if let Some(canonical) = typed_longhand_value("transition-duration", component) {
-                if duration.is_none() {
+            if duration.is_none() {
+                if let Some(canonical) = typed_longhand_value("transition-duration", component) {
                     duration = Some(canonical);
-                } else if delay.is_none() {
-                    delay = Some(canonical);
-                } else {
-                    return None;
+                    continue;
                 }
-                continue;
+            }
+            if delay.is_none() {
+                if let Some(canonical) = typed_longhand_value("transition-delay", component) {
+                    delay = Some(canonical);
+                    continue;
+                }
             }
             if let Some(canonical) = typed_longhand_value("transition-timing-function", component) {
                 if timing.replace(canonical).is_some() {

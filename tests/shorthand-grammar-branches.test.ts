@@ -192,6 +192,23 @@ test("parallel transition and timeline lists match Chromium", () => {
   }
 });
 
+test("a negative transition time fills delay rather than duration", () => {
+  const rule = createRule();
+  rule.style.setProperty("transition", "none 1s linear -1s normal");
+
+  assert.equal(rule.style.getPropertyValue("transition-duration"), "1s");
+  assert.equal(rule.style.getPropertyValue("transition-delay"), "-1s");
+  assert.equal(rule.style.getPropertyValue("transition"), "none 1s linear -1s");
+  assert.equal(rule.style.cssText, "transition: none 1s linear -1s;");
+
+  const delayOnly = createRule();
+  delayOnly.style.setProperty("transition", "-1s");
+  assert.equal(delayOnly.style.getPropertyValue("transition-duration"), "0s");
+  assert.equal(delayOnly.style.getPropertyValue("transition-delay"), "-1s");
+  assert.equal(delayOnly.style.getPropertyValue("transition"), "-1s");
+  assert.equal(delayOnly.style.cssText, "transition: -1s;");
+});
+
 test("text-box accepts a two-keyword edge branch", () => {
   const rule = createRule();
   rule.style.setProperty("text-box", "trim-both cap alphabetic");

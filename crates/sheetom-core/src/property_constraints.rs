@@ -1,12 +1,22 @@
 use cssparser::{Parser, ParserInput, Token};
 use lightningcss::{
-    properties::{border::BorderSideWidth, Property},
+    error::ParserError,
+    properties::{
+        animation::{
+            AnimationDirection, AnimationDuration, AnimationFillMode, AnimationIterationCount,
+            AnimationName, AnimationPlayState,
+        },
+        border::BorderSideWidth,
+        Property,
+    },
     stylesheet::PrinterOptions,
     traits::Parse,
     values::{
         color::CssColor,
+        easing::EasingFunction,
         length::Length,
         position::{HorizontalPosition, VerticalPosition},
+        time::Time,
     },
 };
 
@@ -26,6 +36,19 @@ pub(crate) fn validate_standard_property(
     let canonical = property
         .value_to_css_string(PrinterOptions::default())
         .map_err(|error| EngineError::Serialize(error.to_string()))?;
+    let canonical_name = authored_name
+        .strip_prefix("-webkit-")
+        .unwrap_or(authored_name);
+    if canonical_name.eq_ignore_ascii_case("animation-duration")
+        && !valid_duration_list(&canonical, true)
+    {
+        return invalid(authored_name, authored_value);
+    }
+    if canonical_name.eq_ignore_ascii_case("transition-duration")
+        && !valid_duration_list(&canonical, false)
+    {
+        return invalid(authored_name, authored_value);
+    }
     if authored_name.eq_ignore_ascii_case("-webkit-text-stroke")
         && !valid_webkit_text_stroke(authored_value)
     {
@@ -36,6 +59,14 @@ pub(crate) fn validate_standard_property(
         Property::TransformOrigin(position, _)
             if has_side_offset(&position.x) && has_vertical_side_offset(&position.y)
     ) {
+        return invalid(authored_name, authored_value);
+    }
+    if authored_name
+        .strip_prefix("-webkit-")
+        .unwrap_or(authored_name)
+        .eq_ignore_ascii_case("animation")
+        && !valid_chromium_animation(authored_value)
+    {
         return invalid(authored_name, authored_value);
     }
     let has_direct_negative = has_direct_negative_component(authored_value);
@@ -109,6 +140,7 @@ fn valid_appearance(value: &str) -> bool {
         value.to_ascii_lowercase().as_str(),
         "none"
             | "auto"
+            | "base-select"
             | "textfield"
             | "menulist-button"
             | "button"
@@ -124,6 +156,89 @@ fn valid_appearance(value: &str) -> bool {
             | "square-button"
             | "textarea"
     )
+}
+
+fn valid_chromium_animation(source: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser
+        .parse_entirely(|input| input.parse_comma_separated(parse_chromium_animation_item))
+        .is_ok()
+}
+
+fn parse_chromium_animation_item<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<(), cssparser::ParseError<'i, ParserError<'i>>> {
+    let mut duration = false;
+    let mut timing_function = false;
+    let mut delay = false;
+    let mut iteration_count = false;
+    let mut direction = false;
+    let mut fill_mode = false;
+    let mut play_state = false;
+    let mut name = false;
+    let mut consumed = false;
+
+    macro_rules! parse_once {
+        ($seen:ident, $parser:expr) => {
+            if !$seen && input.try_parse($parser).is_ok() {
+                $seen = true;
+                consumed = true;
+                continue;
+            }
+        };
+    }
+
+    loop {
+        parse_once!(duration, parse_non_negative_animation_duration);
+        parse_once!(timing_function, EasingFunction::parse);
+        parse_once!(delay, Time::parse);
+        parse_once!(iteration_count, AnimationIterationCount::parse);
+        parse_once!(direction, AnimationDirection::parse);
+        parse_once!(fill_mode, AnimationFillMode::parse);
+        parse_once!(play_state, AnimationPlayState::parse);
+        parse_once!(name, AnimationName::parse);
+        break;
+    }
+
+    if consumed {
+        Ok(())
+    } else {
+        Err(input.new_custom_error(ParserError::InvalidValue))
+    }
+}
+
+fn parse_non_negative_animation_duration<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<(), cssparser::ParseError<'i, ParserError<'i>>> {
+    let duration = AnimationDuration::parse(input)?;
+    if matches!(duration, AnimationDuration::Time(ref time) if time.to_ms() < 0.0) {
+        return Err(input.new_custom_error(ParserError::InvalidValue));
+    }
+    Ok(())
+}
+
+fn valid_duration_list(source: &str, allow_auto: bool) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    parser
+        .parse_entirely(|input| {
+            input.parse_comma_separated(|input| {
+                if allow_auto
+                    && input
+                        .try_parse(|input| input.expect_ident_matching("auto"))
+                        .is_ok()
+                {
+                    return Ok(());
+                }
+                let time = Time::parse(input)?;
+                if time.to_ms() < 0.0 {
+                    return Err(input.new_custom_error(ParserError::InvalidValue));
+                }
+                Ok(())
+            })
+        })
+        .is_ok()
 }
 
 pub(crate) fn has_direct_negative_component(source: &str) -> bool {
@@ -370,10 +485,12 @@ mod tests {
     fn enforces_property_specific_domains() {
         for (name, value) in [
             ("appearance", "red"),
+            ("animation-duration", "-1s"),
             ("padding", "auto"),
             ("scroll-margin", "10%"),
             ("width", "contain"),
             ("outline", "hidden"),
+            ("transition-duration", "-1s"),
             ("z-index", "1.5"),
         ] {
             assert!(
@@ -381,6 +498,8 @@ mod tests {
                 "{name}: {value}"
             );
         }
+        assert!(valid_appearance("base-select"));
+        assert!(!valid_appearance("base"));
     }
 
     #[test]
@@ -417,5 +536,26 @@ mod tests {
                 "{value}"
             );
         }
+        assert!(validate_standard_property(
+            "animation",
+            "auto ease 1s foo",
+            &parsed("animation", "auto ease 1s foo")
+        )
+        .is_ok());
+        assert!(
+            validate_standard_property("animation", "-1s", &parsed("animation", "-1s")).is_ok()
+        );
+        assert!(validate_standard_property(
+            "transition",
+            "none 1s linear -1s normal",
+            &parsed("transition", "none 1s linear -1s normal")
+        )
+        .is_ok());
+        assert!(validate_standard_property(
+            "animation",
+            "1s foo scroll(root)",
+            &parsed("animation", "1s foo scroll(root)")
+        )
+        .is_err());
     }
 }

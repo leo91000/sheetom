@@ -2207,20 +2207,33 @@ fn parse_color_scheme(source: &str) -> Result<BrowserLonghandValue, EngineError>
             return Ok(BrowserLonghandValue::ColorScheme(ColorSchemeValue::Normal));
         }
 
+        #[derive(Clone, Copy, PartialEq)]
+        enum OnlyPosition {
+            Prefix,
+            Suffix,
+        }
+
         let mut values = Vec::new();
-        let mut only = false;
+        let mut only = None;
         while !input.is_exhausted() {
             if input
                 .try_parse(|input| input.expect_ident_matching("only"))
                 .is_ok()
             {
-                if only {
+                if only.is_some() {
                     return Err(
                         input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
                     );
                 }
-                only = true;
+                only = Some(if values.is_empty() {
+                    OnlyPosition::Prefix
+                } else {
+                    OnlyPosition::Suffix
+                });
                 continue;
+            }
+            if only == Some(OnlyPosition::Suffix) {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
             }
             if input
                 .try_parse(|input| input.expect_ident_matching("normal"))
@@ -2234,7 +2247,10 @@ fn parse_color_scheme(source: &str) -> Result<BrowserLonghandValue, EngineError>
             return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
         Ok(BrowserLonghandValue::ColorScheme(
-            ColorSchemeValue::Schemes { values, only },
+            ColorSchemeValue::Schemes {
+                values,
+                only: only.is_some(),
+            },
         ))
     })
 }
@@ -3216,7 +3232,13 @@ mod tests {
                 "{source}"
             );
         }
-        for source in ["normal dark", "only", "dark only only", "1"] {
+        for source in [
+            "normal dark",
+            "only",
+            "dark only only",
+            "dark only light",
+            "1",
+        ] {
             assert!(canonical("color-scheme", source).is_err(), "{source}");
         }
         for (source, expected) in [
