@@ -42,7 +42,8 @@ use crate::{
 };
 use crate::{
   error::{Error, ParserError},
-  media_query::MediaList,
+  media_query::{MediaList, MediaQuery},
+  printer::PrinterOptions,
   rules::{
     import::ImportRule,
     media::MediaRule,
@@ -386,6 +387,7 @@ where
           entry.media.media_queries.clear();
         } else if !entry.media.media_queries.is_empty() {
           entry.media.or(&rule.media);
+          entry.media.media_queries.sort_by_cached_key(media_query_sort_key);
         }
 
         if let Some(supports) = rule.supports {
@@ -821,6 +823,15 @@ where
 
     process(self.stylesheets.get_mut().unwrap(), 0, dest, &self.options.filename)
   }
+}
+
+fn media_query_sort_key(query: &MediaQuery<'_>) -> String {
+  query
+    .to_css_string(PrinterOptions {
+      minify: true,
+      ..PrinterOptions::default()
+    })
+    .unwrap_or_else(|_| format!("{query:?}"))
 }
 
 fn combine_supports<'a>(

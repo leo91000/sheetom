@@ -286,7 +286,9 @@ impl<V> Calc<V> {
       Calc::ProductExpression(left, right) => {
         left.resolves_to_dimension() || right.resolves_to_dimension()
       }
-      Calc::QuotientExpression(value, _) => value.resolves_to_dimension(),
+      Calc::QuotientExpression(value, divisor) => {
+        value.resolves_to_dimension() && !divisor.resolves_to_dimension()
+      }
       Calc::Function(function) => function.resolves_to_dimension(),
     }
   }
@@ -711,10 +713,20 @@ impl<
         Ok(&Token::Delim('/')) => {
           let rhs = Self::parse_value(input, parse_ident)?;
           if let Calc::Number(val) = rhs {
-            if val != 0.0 {
-              node = node * (1.0 / val);
-              continue;
+            let mut multiplier = 1.0 / val;
+            if !multiplier.is_finite() {
+              if let Calc::Value(value) = &node {
+                if let Some(basis) = value.try_map(|value| {
+                  multiplier *= value;
+                  1.0
+                }) {
+                  node = Calc::Product(multiplier, Box::new(Calc::Value(Box::new(basis))));
+                  continue;
+                }
+              }
             }
+            node = node * multiplier;
+            continue;
           }
           if rhs.resolves_to_number() {
             node = Calc::QuotientExpression(Box::new(node), Box::new(rhs));

@@ -1512,6 +1512,7 @@ impl ToCss for RelativeColorComponent {
   {
     match self {
       Self::None => dest.write_str("none"),
+      Self::Value(value) if value.requires_cssom_calc_wrapper() => write_calc_function(value, dest),
       Self::Value(value) => value.to_css(dest),
     }
   }
@@ -1527,6 +1528,27 @@ impl ToCss for RelativeColorExpression {
 }
 
 impl RelativeColorExpression {
+  fn requires_cssom_calc_wrapper(&self) -> bool {
+    matches!(
+      self,
+      Self::Function(function)
+        if matches!(
+          &**function,
+          RelativeMathFunction::Sin { .. }
+            | RelativeMathFunction::Cos { .. }
+            | RelativeMathFunction::Tan { .. }
+            | RelativeMathFunction::Asin { .. }
+            | RelativeMathFunction::Acos { .. }
+            | RelativeMathFunction::Atan { .. }
+            | RelativeMathFunction::Atan2 { .. }
+            | RelativeMathFunction::Pow { .. }
+            | RelativeMathFunction::Log { .. }
+            | RelativeMathFunction::Sqrt { .. }
+            | RelativeMathFunction::Exp { .. }
+        )
+    )
+  }
+
   fn to_css_with_precedence<W>(&self, dest: &mut Printer<W>, parent_precedence: u8) -> Result<(), PrinterError>
   where
     W: std::fmt::Write,
