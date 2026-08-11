@@ -18,7 +18,10 @@ const groups = [
     ["product-dimension-first", "calc(1px * 2)"],
     ["product-number-first", "calc(2 * 1px)"],
     ["division-by-number", "calc(1px / 2)"],
+    ["division-by-zero", "calc(500px / 0)"],
+    ["division-by-negative-zero", "calc(500px / -0)"],
     ["invalid-division-by-dimension", "calc(1px / 1px)"],
+    ["invalid-zero-dimension-divisor", "calc(500px / 0px)"],
     ["min-same-dimension", "min(1px, 2px)"],
     ["invalid-min-number", "min(1px, 2)"],
     ["min-mixed-percentage", "min(1px, 2%)"],
@@ -114,6 +117,20 @@ const groups = [
     ["sign-time", "sign(1s)"],
     ["sign-angle", "sign(1deg)"],
   ]],
+  ["color", [
+    ["relative-bare-sin", "lch(from currentColor l c sin(h))"],
+    ["relative-bare-cos", "lch(from currentColor l c cos(h))"],
+    ["relative-bare-tan", "lch(from currentColor l c tan(h))"],
+    ["relative-bare-asin", "lch(from currentColor l c asin(alpha))"],
+    ["relative-bare-acos", "lch(from currentColor l c acos(alpha))"],
+    ["relative-bare-atan", "lch(from currentColor l c atan(alpha))"],
+    ["relative-bare-atan2", "lch(from currentColor l c atan2(alpha, alpha))"],
+    ["relative-bare-pow", "lch(from currentColor l c pow(alpha, 2))"],
+    ["relative-bare-log", "lch(from currentColor l c log(alpha, 2))"],
+    ["relative-bare-sqrt", "lch(from currentColor l c sqrt(alpha))"],
+    ["relative-bare-exp", "lch(from currentColor l c exp(alpha))"],
+    ["relative-invalid-mixed-angle", "lch(from currentColor l c calc(h + 180deg))"],
+  ]],
 ];
 
 const candidates = groups.flatMap(([property, values]) => values.map(([branch, input]) => ({
@@ -148,13 +165,29 @@ const chromiumMajor = Number(/(?:Chrome|HeadlessChrome)\/(\d+)/.exec(userAgent)?
 assert.equal(chromiumMajor, 151, `expected pinned Chromium 151, got ${userAgent}`);
 
 const corpus = JSON.parse(await readFile(corpusUrl, "utf8"));
-const retained = corpus.cases.filter(candidate => !candidate.id.startsWith("math."));
 const mathCases = observations.map(candidate => candidate.accepted ? candidate : {
   id: candidate.id,
   property: candidate.property,
   input: candidate.input,
   accepted: false,
 });
-corpus.cases = [...retained, ...mathCases];
+const mathCasesById = new Map(mathCases.map(candidate => [candidate.id, candidate]));
+const recordedIds = new Set();
+const updatedCases = [];
+for (const existing of corpus.cases) {
+  if (!existing.id.startsWith("math.")) {
+    updatedCases.push(existing);
+    continue;
+  }
+  const updated = mathCasesById.get(existing.id);
+  if (!updated) continue;
+  updatedCases.push(updated);
+  recordedIds.add(existing.id);
+}
+for (const candidate of mathCases) {
+  if (recordedIds.has(candidate.id)) continue;
+  updatedCases.push(candidate);
+}
+corpus.cases = updatedCases;
 await writeFile(corpusUrl, `${JSON.stringify(corpus, null, 2)}\n`);
 console.log(`Recorded ${mathCases.length} CSS Math cases from Chromium ${chromiumMajor}.`);
