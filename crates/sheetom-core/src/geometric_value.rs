@@ -1039,7 +1039,7 @@ fn parse_svg_path_string<'i, 't>(
 }
 
 impl SvgPathData {
-    fn parse(source: &str) -> Result<Self, ()> {
+    pub(crate) fn parse(source: &str) -> Result<Self, ()> {
         let mut commands = Vec::new();
         for segment in PathParser::from(source) {
             commands.push(SvgPathCommand::from_segment(segment.map_err(|_| ())?));
@@ -2251,7 +2251,7 @@ impl SvgPathData {
             .join(" ")
     }
 
-    fn css_string(&self) -> Result<String, EngineError> {
+    pub(crate) fn css_string(&self) -> Result<String, EngineError> {
         let mut output = String::new();
         cssparser::serialize_string(&self.canonical_data(), &mut output)
             .map_err(|_| EngineError::Serialize("could not serialize SVG path".to_owned()))?;

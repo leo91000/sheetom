@@ -1587,6 +1587,43 @@ fn parse_offset_rotate(source: &str) -> Result<SemanticExtensionValue, EngineErr
     Ok(SemanticExtensionValue::OffsetRotate(value))
 }
 
+pub(crate) fn offset_rotate_is_shorthand_default(source: &str) -> bool {
+    parse_entire(source, |input| {
+        let mut auto = false;
+        let mut zero_angle = false;
+        while !input.is_exhausted() {
+            if !auto
+                && input
+                    .try_parse(|input| input.expect_ident_matching("auto"))
+                    .is_ok()
+            {
+                auto = true;
+                continue;
+            }
+            if !zero_angle {
+                let token = input.next()?;
+                if let Token::Dimension { value, unit, .. } = token {
+                    if *value == 0.0
+                        && ["deg", "grad", "rad", "turn"]
+                            .iter()
+                            .any(|candidate| unit.eq_ignore_ascii_case(candidate))
+                    {
+                        zero_angle = true;
+                        continue;
+                    }
+                }
+            }
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        if auto {
+            Ok(())
+        } else {
+            Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+        }
+    })
+    .is_ok()
+}
+
 fn parse_page_size(source: &str) -> Result<SemanticExtensionValue, EngineError> {
     let value = parse_entire(source, |input| {
         if let Ok(first) = input.try_parse(|input| input.expect_ident_cloned()) {
@@ -2118,6 +2155,12 @@ mod tests {
 
     #[test]
     fn parses_unordered_offset_rotation_components() {
+        for source in ["auto", "auto 0deg", "0rad auto", "auto -0turn"] {
+            assert!(offset_rotate_is_shorthand_default(source), "{source}");
+        }
+        for source in ["0deg", "reverse 0deg", "auto 1deg", "auto calc(0deg)"] {
+            assert!(!offset_rotate_is_shorthand_default(source), "{source}");
+        }
         for (source, expected) in [
             ("auto", "auto"),
             ("reverse", "reverse"),

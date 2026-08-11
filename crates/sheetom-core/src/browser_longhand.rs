@@ -4,7 +4,7 @@ use lightningcss::{
         animation::{
             AnimationAttachmentRange, AnimationRangeEnd, AnimationRangeStart, AnimationTimeline,
         },
-        masking::ClipPath,
+        masking::GeometryBox,
     },
     stylesheet::PrinterOptions,
     traits::{IntoOwned, Parse, ToCss, TrySign},
@@ -16,12 +16,14 @@ use lightningcss::{
         number::CSSNumber,
         percentage::Percentage,
         position::Position,
+        shape::BasicShape,
         string::CSSString,
         time::Time,
+        url::Url,
     },
 };
 
-use crate::EngineError;
+use crate::{geometric_value::SvgPathData, EngineError};
 
 type ParseError<'i> = cssparser::ParseError<'i, lightningcss::error::ParserError<'i>>;
 
@@ -212,13 +214,26 @@ pub enum AnimationIterationCountValue {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum OffsetPathValue {
-    ClipPath(ClipPath<'static>),
+pub struct OffsetPathValue {
+    path: Option<OffsetPathComponent>,
+    coord_box: Option<GeometryBox>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum OffsetPathComponent {
+    None,
+    Url(Url<'static>),
+    Shape(BasicShape),
     Path {
         fill_rule: Option<&'static str>,
-        data: CSSString<'static>,
+        data: SvgPathData,
     },
-    Ray(Angle),
+    Ray {
+        angle: Angle,
+        size: Option<&'static str>,
+        contain: bool,
+        position: Option<Position>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -642,20 +657,55 @@ impl PositionAreaValue {
 
 impl OffsetPathValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
-        match self {
-            OffsetPathValue::ClipPath(value) => serialize_typed(value),
-            OffsetPathValue::Path { fill_rule, data } => {
+        let mut output = match &self.path {
+            None => String::new(),
+            Some(OffsetPathComponent::None) => "none".to_owned(),
+            Some(OffsetPathComponent::Url(value)) => serialize_typed(value)?,
+            Some(OffsetPathComponent::Shape(value)) => serialize_typed(value)?,
+            Some(OffsetPathComponent::Path { fill_rule, data }) => {
                 let mut output = "path(".to_owned();
                 if let Some(fill_rule) = fill_rule {
                     output.push_str(fill_rule);
                     output.push_str(", ");
                 }
-                output.push_str(&serialize_typed(data)?);
+                output.push_str(&data.css_string()?);
                 output.push(')');
-                Ok(output)
+                output
             }
-            OffsetPathValue::Ray(angle) => Ok(format!("ray({})", serialize_typed(angle)?)),
+            Some(OffsetPathComponent::Ray {
+                angle,
+                size,
+                contain,
+                position,
+            }) => {
+                let mut components = vec![serialize_typed(angle)?];
+                if let Some(size) = size.filter(|size| *size != "closest-side") {
+                    components.push((*size).to_owned());
+                }
+                if *contain {
+                    components.push("contain".to_owned());
+                }
+                if let Some(position) = position {
+                    components.push(format!(
+                        "at {} {}",
+                        serialize_position_component(&position.x)?,
+                        serialize_position_component(&position.y)?,
+                    ));
+                }
+                format!("ray({})", components.join(" "))
+            }
+        };
+        if let Some(coord_box) = self
+            .coord_box
+            .as_ref()
+            .filter(|coord_box| self.path.is_none() || **coord_box != GeometryBox::BorderBox)
+        {
+            if !output.is_empty() {
+                output.push(' ');
+            }
+            output.push_str(&serialize_typed(coord_box)?);
         }
+        Ok(output)
     }
 }
 
@@ -1986,32 +2036,137 @@ fn parse_animation_iteration_count(source: &str) -> Result<BrowserLonghandValue,
 
 fn parse_offset_path(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
-        if let Ok(value) = input.try_parse(ClipPath::parse) {
-            return Ok(BrowserLonghandValue::OffsetPath(OffsetPathValue::ClipPath(
-                value.into_owned(),
-            )));
+        let mut path = None;
+        let mut coord_box = None;
+        while !input.is_exhausted() {
+            if path.is_none() {
+                if let Ok(value) = input.try_parse(parse_offset_path_component) {
+                    path = Some(value);
+                    continue;
+                }
+            }
+            if coord_box.is_none() {
+                if let Ok(value) = input.try_parse(parse_offset_coord_box) {
+                    coord_box = Some(value);
+                    continue;
+                }
+            }
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
-        let location = input.current_source_location();
-        let function = input.expect_function()?.clone();
-        if function.eq_ignore_ascii_case("path") {
-            let (fill_rule, data) = input.parse_nested_block(|input| {
-                let fill_rule = input.try_parse(parse_fill_rule_and_comma).ok();
-                let data = CSSString::parse(input)?.into_owned();
-                Ok((fill_rule, data))
-            })?;
-            return Ok(BrowserLonghandValue::OffsetPath(OffsetPathValue::Path {
-                fill_rule,
-                data,
-            }));
+        if path.is_none() && coord_box.is_none() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
-        if function.eq_ignore_ascii_case("ray") {
-            let angle = input.parse_nested_block(Angle::parse)?;
-            return Ok(BrowserLonghandValue::OffsetPath(OffsetPathValue::Ray(
-                angle,
-            )));
+        if matches!(path, Some(OffsetPathComponent::None)) && coord_box.is_some() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
-        Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+        Ok(BrowserLonghandValue::OffsetPath(OffsetPathValue {
+            path,
+            coord_box,
+        }))
     })
+}
+
+fn parse_offset_path_component<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<OffsetPathComponent, ParseError<'i>> {
+    if input
+        .try_parse(|input| input.expect_ident_matching("none"))
+        .is_ok()
+    {
+        return Ok(OffsetPathComponent::None);
+    }
+    if let Ok(value) = input.try_parse(Url::parse) {
+        return Ok(OffsetPathComponent::Url(value.into_owned()));
+    }
+    if let Ok(value) = input.try_parse(BasicShape::parse) {
+        return Ok(OffsetPathComponent::Shape(value));
+    }
+
+    let location = input.current_source_location();
+    let function = input.expect_function()?.clone();
+    if function.eq_ignore_ascii_case("path") {
+        let (fill_rule, data) = input.parse_nested_block(|input| {
+            let fill_rule = input.try_parse(parse_fill_rule_and_comma).ok();
+            let value = CSSString::parse(input)?;
+            let data = SvgPathData::parse(&value.0).map_err(|()| {
+                input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+            })?;
+            Ok((fill_rule, data))
+        })?;
+        return Ok(OffsetPathComponent::Path { fill_rule, data });
+    }
+    if function.eq_ignore_ascii_case("ray") {
+        return input.parse_nested_block(parse_ray);
+    }
+    Err(location.new_custom_error(lightningcss::error::ParserError::InvalidValue))
+}
+
+fn parse_ray<'i, 't>(input: &mut Parser<'i, 't>) -> Result<OffsetPathComponent, ParseError<'i>> {
+    let mut angle = None;
+    let mut size = None;
+    let mut contain = false;
+    let mut position = None;
+    while !input.is_exhausted() {
+        if angle.is_none() {
+            if let Ok(value) = input.try_parse(Angle::parse) {
+                angle = Some(value);
+                continue;
+            }
+        }
+        if size.is_none() {
+            if let Ok(value) = input.try_parse(|input| {
+                parse_one_keyword(
+                    input,
+                    &[
+                        "closest-side",
+                        "closest-corner",
+                        "farthest-side",
+                        "farthest-corner",
+                        "sides",
+                    ],
+                )
+            }) {
+                size = Some(value);
+                continue;
+            }
+        }
+        if !contain
+            && input
+                .try_parse(|input| input.expect_ident_matching("contain"))
+                .is_ok()
+        {
+            contain = true;
+            continue;
+        }
+        if position.is_none()
+            && input
+                .try_parse(|input| input.expect_ident_matching("at"))
+                .is_ok()
+        {
+            position = Some(Position::parse(input)?);
+            continue;
+        }
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    let Some(angle) = angle else {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    };
+    Ok(OffsetPathComponent::Ray {
+        angle,
+        size,
+        contain,
+        position,
+    })
+}
+
+fn parse_offset_coord_box<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<GeometryBox, ParseError<'i>> {
+    let value = GeometryBox::parse(input)?;
+    if value == GeometryBox::MarginBox {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    Ok(value)
 }
 
 fn parse_fill_rule_and_comma<'i, 't>(
@@ -3601,6 +3756,42 @@ mod tests {
             ("timeline-trigger-active-range-start", "auto,"),
         ] {
             assert!(canonical(property, source).is_err(), "{property}: {source}");
+        }
+    }
+
+    #[test]
+    fn parses_complete_offset_path_ray_and_coordinate_box_grammar() {
+        for (source, expected) in [
+            (
+                "ray(at center contain closest-corner 45deg)",
+                "ray(45deg closest-corner contain at center center)",
+            ),
+            (
+                "content-box ray(45deg closest-side contain at left 10px top 20px)",
+                "ray(45deg contain at left 10px top 20px) content-box",
+            ),
+            ("path(\"M0 0\") content-box", "path(\"M 0 0\") content-box"),
+            ("url(\"x\") content-box", "url(\"x\") content-box"),
+            ("inset(1px) content-box", "inset(1px) content-box"),
+            ("view-box", "view-box"),
+        ] {
+            assert_eq!(
+                canonical("offset-path", source).unwrap(),
+                expected,
+                "{source}"
+            );
+        }
+
+        for source in [
+            "ray(contain)",
+            "ray(45deg contain contain)",
+            "ray(45deg closest-side farthest-side)",
+            "ray(45deg at center at left)",
+            "none content-box",
+            "margin-box",
+            "url(\"x\") content-box border-box",
+        ] {
+            assert!(canonical("offset-path", source).is_err(), "{source}");
         }
     }
 

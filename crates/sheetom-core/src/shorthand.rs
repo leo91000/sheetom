@@ -1,7 +1,7 @@
 use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
-    extension_value::parse_contextual_dimension_calculation,
+    extension_value::{offset_rotate_is_shorthand_default, parse_contextual_dimension_calculation},
     gap_rule::{canonical_gap_rule_longhand, expand_gap_rule, synthesize_gap_rule},
     observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
@@ -973,10 +973,11 @@ fn synthesize_offset(records: &[&DeclarationRecord], safe: bool) -> Option<Strin
     let distance = record_value(records, "offset-distance", safe)?;
     let rotate = record_value(records, "offset-rotate", safe)?;
     let anchor = record_value(records, "offset-anchor", safe)?;
+    let rotate_is_default = offset_rotate_is_shorthand_default(rotate);
     if position == "normal"
         && path == "none"
         && distance == "0px"
-        && rotate == "auto"
+        && rotate_is_default
         && anchor == "auto"
     {
         return Some("normal".to_owned());
@@ -985,13 +986,14 @@ fn synthesize_offset(records: &[&DeclarationRecord], safe: bool) -> Option<Strin
     if position != "normal" {
         components.push(position.to_owned());
     }
-    if path != "none" {
+    let motion_is_non_default = distance != "0px" || !rotate_is_default || anchor != "auto";
+    if path != "none" || motion_is_non_default {
         components.push(path.to_owned());
     }
     if distance != "0px" {
         components.push(distance.to_owned());
     }
-    if rotate != "auto" {
+    if !rotate_is_default {
         components.push(rotate.to_owned());
     }
     if anchor != "auto" {
@@ -2817,7 +2819,7 @@ fn offset_path_value(value: &str) -> Option<String> {
 }
 
 fn offset_distance_value(value: &str) -> Option<String> {
-    typed_longhand_value("offset-distance", value).or_else(|| typed_longhand_value("width", value))
+    typed_longhand_value("offset-distance", value)
 }
 
 fn offset_rotate_value(components: &[&str]) -> Option<String> {

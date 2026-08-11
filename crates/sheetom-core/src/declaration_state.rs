@@ -1878,6 +1878,82 @@ mod tests {
     }
 
     #[test]
+    fn offset_owns_ray_coordinate_boxes_and_unordered_motion_components() {
+        for (input, observable, expected_path, expected_distance, expected_rotate) in [
+            (
+                "normal ray(at center contain closest-corner 45deg) content-box 1px / auto",
+                "ray(45deg closest-corner contain at center center) content-box 1px",
+                "ray(45deg closest-corner contain at center center) content-box",
+                "1px",
+                "auto",
+            ),
+            (
+                "normal none auto 45deg / auto",
+                "none auto 45deg",
+                "none",
+                "0px",
+                "auto 45deg",
+            ),
+            (
+                "normal none auto 1px / auto",
+                "none 1px",
+                "none",
+                "1px",
+                "auto",
+            ),
+            (
+                "normal none 1px auto 0deg / auto",
+                "none 1px",
+                "none",
+                "1px",
+                "auto 0deg",
+            ),
+            (
+                "normal none auto 0deg / auto",
+                "normal",
+                "none",
+                "0px",
+                "auto 0deg",
+            ),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("offset", input, ""),
+                MutationOutcome::Applied,
+                "{input}"
+            );
+            assert_eq!(state.get_property_value("offset"), observable, "{input}");
+            assert_eq!(
+                state.get_property_value("offset-path"),
+                expected_path,
+                "{input}"
+            );
+            assert_eq!(
+                state.get_property_value("offset-distance"),
+                expected_distance,
+                "{input}"
+            );
+            assert_eq!(
+                state.get_property_value("offset-rotate"),
+                expected_rotate,
+                "{input}"
+            );
+        }
+
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("offset", "normal none 1px / auto", ""),
+            MutationOutcome::Applied
+        );
+        let before = state.css_text();
+        assert_eq!(
+            state.set_property("offset", "normal none auto auto / auto", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(state.css_text(), before);
+    }
+
+    #[test]
     fn structural_grammars_reject_invalid_neighbors_atomically() {
         let mut state = DeclarationState::new();
         for name in ["border-image", "-webkit-border-image"] {
