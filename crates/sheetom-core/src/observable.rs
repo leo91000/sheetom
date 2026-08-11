@@ -188,7 +188,7 @@ fn serialize_font_family(
     if is_identifier(value) && !is_generic_font_family(value) {
         return value.to_owned();
     }
-    if !recovered && input.ends_with(['\'', '"']) {
+    if !recovered && input.ends_with(['\'', '"']) && safe_value.starts_with(['\'', '"']) {
         return safe_value.to_owned();
     }
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
