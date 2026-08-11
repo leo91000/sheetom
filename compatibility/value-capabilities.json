@@ -1152,6 +1152,109 @@
       "property": "-webkit-box-reflect",
       "input": "below 0px junk",
       "accepted": false
+    },
+    {
+      "id": "math.width.division-by-zero",
+      "property": "width",
+      "input": "calc(500px / 0)",
+      "accepted": true,
+      "observable": "calc(infinity * 1px)"
+    },
+    {
+      "id": "math.width.division-by-negative-zero",
+      "property": "width",
+      "input": "calc(500px / -0)",
+      "accepted": true,
+      "observable": "calc(-infinity * 1px)"
+    },
+    {
+      "id": "math.width.invalid-zero-dimension-divisor",
+      "property": "width",
+      "input": "calc(500px / 0px)",
+      "accepted": false
+    },
+    {
+      "id": "math.color.relative-bare-sin",
+      "property": "color",
+      "input": "lch(from currentColor l c sin(h))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(sin(h)))"
+    },
+    {
+      "id": "math.color.relative-bare-cos",
+      "property": "color",
+      "input": "lch(from currentColor l c cos(h))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(cos(h)))"
+    },
+    {
+      "id": "math.color.relative-bare-tan",
+      "property": "color",
+      "input": "lch(from currentColor l c tan(h))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(tan(h)))"
+    },
+    {
+      "id": "math.color.relative-bare-asin",
+      "property": "color",
+      "input": "lch(from currentColor l c asin(alpha))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(asin(alpha)))"
+    },
+    {
+      "id": "math.color.relative-bare-acos",
+      "property": "color",
+      "input": "lch(from currentColor l c acos(alpha))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(acos(alpha)))"
+    },
+    {
+      "id": "math.color.relative-bare-atan",
+      "property": "color",
+      "input": "lch(from currentColor l c atan(alpha))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(atan(alpha)))"
+    },
+    {
+      "id": "math.color.relative-bare-atan2",
+      "property": "color",
+      "input": "lch(from currentColor l c atan2(alpha, alpha))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(atan2(alpha, alpha)))"
+    },
+    {
+      "id": "math.color.relative-bare-pow",
+      "property": "color",
+      "input": "lch(from currentColor l c pow(alpha, 2))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(pow(alpha, 2)))"
+    },
+    {
+      "id": "math.color.relative-bare-log",
+      "property": "color",
+      "input": "lch(from currentColor l c log(alpha, 2))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(log(alpha, 2)))"
+    },
+    {
+      "id": "math.color.relative-bare-sqrt",
+      "property": "color",
+      "input": "lch(from currentColor l c sqrt(alpha))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(sqrt(alpha)))"
+    },
+    {
+      "id": "math.color.relative-bare-exp",
+      "property": "color",
+      "input": "lch(from currentColor l c exp(alpha))",
+      "accepted": true,
+      "observable": "lch(from currentcolor l c calc(exp(alpha)))"
+    },
+    {
+      "id": "math.color.relative-invalid-mixed-angle",
+      "property": "color",
+      "input": "lch(from currentColor l c calc(h + 180deg))",
+      "accepted": false
     }
   ]
 }
