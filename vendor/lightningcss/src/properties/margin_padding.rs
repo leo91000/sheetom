@@ -12,7 +12,7 @@ use crate::values::{
   rect::Rect,
   size::Size2D,
 };
-use super::size::AnchorSizeOrAuto;
+use super::size::{AnchorPositionOrAuto, AnchorSizeOrAuto};
 #[cfg(feature = "visitor")]
 use crate::visitor::Visit;
 use cssparser::*;
@@ -59,7 +59,7 @@ rect_shorthand! {
 
 rect_shorthand! {
   /// A value for the [inset](https://drafts.csswg.org/css-logical/#propdef-inset) shorthand property.
-  pub struct Inset<AnchorSizeOrAuto> {
+  pub struct Inset<AnchorPositionOrAuto> {
     Top,
     Right,
     Bottom,
@@ -149,7 +149,7 @@ size_shorthand! {
 
 size_shorthand! {
   /// A value for the [inset-block](https://drafts.csswg.org/css-logical/#propdef-inset-block) shorthand property.
-  pub struct InsetBlock<AnchorSizeOrAuto> {
+  pub struct InsetBlock<AnchorPositionOrAuto> {
      /// The block start value.
     block_start: InsetBlockStart,
     /// The block end value.
@@ -159,7 +159,7 @@ size_shorthand! {
 
 size_shorthand! {
   /// A value for the [inset-inline](https://drafts.csswg.org/css-logical/#propdef-inset-inline) shorthand property.
-  pub struct InsetInline<AnchorSizeOrAuto> {
+  pub struct InsetInline<AnchorPositionOrAuto> {
     /// The inline start value.
     inline_start: InsetInlineStart,
     /// The inline end value.
@@ -488,7 +488,7 @@ side_handler!(
 
 side_handler!(
   InsetHandler,
-  AnchorSizeOrAuto,
+  AnchorPositionOrAuto,
   Top,
   Bottom,
   Left,
