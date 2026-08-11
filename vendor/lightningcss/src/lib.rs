@@ -9574,7 +9574,7 @@ mod tests {
     );
     error_test(
       "@media (width >= 2/1) { .foo { color: chartreuse }}",
-      ParserError::UnexpectedToken(Token::Delim('/')),
+      ParserError::InvalidMediaQuery,
     );
     error_test(
       "@media (600px <= min-height) { .foo { color: chartreuse }}",

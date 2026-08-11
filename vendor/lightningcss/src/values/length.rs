@@ -115,10 +115,7 @@ macro_rules! define_length_units {
               _ => return Err(location.new_unexpected_token_error(token.clone())),
             })
           },
-          Token::Number { value, .. } => {
-            // TODO: quirks mode only?
-            Ok(LengthValue::Px(value))
-          }
+          Token::Number { value, .. } if value == 0.0 => Ok(LengthValue::Px(value)),
           ref token => return Err(location.new_unexpected_token_error(token.clone())),
         }
       }
@@ -1068,9 +1065,11 @@ mod tests {
   }
 
   #[test]
-  fn retains_chromium_unitless_length_compatibility_outside_calc() {
-    assert!(parses::<Length>("1"));
-    assert!(parses::<LengthPercentage>("1"));
+  fn accepts_only_unitless_zero_as_a_length_outside_quirks_mode() {
+    assert!(parses::<Length>("0"));
+    assert!(parses::<LengthPercentage>("-0"));
+    assert!(!parses::<Length>("1"));
+    assert!(!parses::<LengthPercentage>("-1"));
   }
 
   #[test]
