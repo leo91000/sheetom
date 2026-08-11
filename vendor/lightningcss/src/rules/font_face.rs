@@ -9,6 +9,7 @@ use crate::properties::font::{FontFamily, FontStretch, FontStyle as FontStylePro
 use crate::stylesheet::ParserOptions;
 use crate::traits::{Parse, ToCss};
 use crate::values::angle::Angle;
+use crate::values::percentage::Percentage;
 use crate::values::size::Size2D;
 use crate::values::string::CowArcStr;
 use crate::values::url::Url;
@@ -472,7 +473,13 @@ impl<'i> cssparser::DeclarationParser<'i> for FontFaceDeclarationParser {
       "font-family" => property!(FontFamily, FontFamily),
       "font-weight" => property!(FontWeight, Size2D<FontWeight>),
       "font-style" => property!(FontStyle, FontStyle),
-      "font-stretch" => property!(FontStretch, Size2D<FontStretch>),
+      "font-stretch" => {
+        if let Ok(value) = parse_font_stretch_range(input) {
+          if input.expect_exhausted().is_ok() {
+            return Ok(FontFaceProperty::FontStretch(value))
+          }
+        }
+      },
       "unicode-range" => property!(UnicodeRange, Vec<UnicodeRange>),
       _ => {}
     }
@@ -484,6 +491,45 @@ impl<'i> cssparser::DeclarationParser<'i> for FontFaceDeclarationParser {
       &ParserOptions::default(),
     )?));
   }
+}
+
+fn parse_font_stretch_range<'i, 't>(
+  input: &mut Parser<'i, 't>,
+) -> Result<Size2D<FontStretch>, ParseError<'i, ParserError<'i>>> {
+  let first = parse_font_stretch_component(input)?;
+  let second = match &first {
+    FontStretch::Keyword(_) => first.clone(),
+    FontStretch::Percentage(_) => input
+      .try_parse(parse_font_stretch_percentage)
+      .unwrap_or_else(|_| first.clone()),
+  };
+  Ok(Size2D(first, second))
+}
+
+fn parse_font_stretch_component<'i, 't>(
+  input: &mut Parser<'i, 't>,
+) -> Result<FontStretch, ParseError<'i, ParserError<'i>>> {
+  let state = input.state();
+  let is_calculation = input.expect_function().is_ok();
+  input.reset(&state);
+  let value = FontStretch::parse(input)?;
+  if matches!(&value, FontStretch::Percentage(value) if value.0 < 0.0) && !is_calculation {
+    return Err(input.new_custom_error(ParserError::InvalidValue))
+  }
+  Ok(value)
+}
+
+fn parse_font_stretch_percentage<'i, 't>(
+  input: &mut Parser<'i, 't>,
+) -> Result<FontStretch, ParseError<'i, ParserError<'i>>> {
+  let state = input.state();
+  let is_calculation = input.expect_function().is_ok();
+  input.reset(&state);
+  let value = Percentage::parse(input)?;
+  if value.0 < 0.0 && !is_calculation {
+    return Err(input.new_custom_error(ParserError::InvalidValue))
+  }
+  Ok(FontStretch::Percentage(value))
 }
 
 /// Default methods reject all at rules.
@@ -573,5 +619,51 @@ impl<'i> ToCss for FontFaceProperty<'i> {
         custom.value.to_css(dest, true)
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn parse_font_stretch(value: &str) -> FontFaceProperty<'_> {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    let state = parser.state();
+    FontFaceDeclarationParser
+      .parse_value("font-stretch".into(), &mut parser, &state)
+      .expect("font-stretch declaration should parse")
+  }
+
+  #[test]
+  fn only_percentage_font_stretch_ranges_are_typed() {
+    assert!(matches!(
+      parse_font_stretch("75% 125%"),
+      FontFaceProperty::FontStretch(_)
+    ));
+    assert!(matches!(
+      parse_font_stretch("condensed"),
+      FontFaceProperty::FontStretch(_)
+    ));
+    assert!(matches!(
+      parse_font_stretch("condensed expanded"),
+      FontFaceProperty::Custom(_)
+    ));
+    assert!(matches!(
+      parse_font_stretch("75% expanded"),
+      FontFaceProperty::Custom(_)
+    ));
+    assert!(matches!(
+      parse_font_stretch("-1%"),
+      FontFaceProperty::Custom(_)
+    ));
+    assert!(matches!(
+      parse_font_stretch("75% -1%"),
+      FontFaceProperty::Custom(_)
+    ));
+    assert!(matches!(
+      parse_font_stretch("calc(-1%)"),
+      FontFaceProperty::FontStretch(_)
+    ));
   }
 }

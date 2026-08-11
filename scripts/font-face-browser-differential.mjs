@@ -10,6 +10,8 @@ const operations = [
   ["set", "font-family", '"A B"', ""],
   ["set", "font-feature-settings", '"kern" 1, "liga" off', ""],
   ["set", "font-stretch", "75% 125%", ""],
+  ["set", "font-stretch", "condensed expanded", ""],
+  ["set", "font-stretch", "75% -1%", ""],
   ["set", "font-style", "oblique 10deg 20deg", ""],
   ["set", "font-variant", "small-caps", ""],
   ["set", "font-variation-settings", '"wght" 500', ""],
