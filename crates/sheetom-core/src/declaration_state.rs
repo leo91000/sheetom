@@ -1574,6 +1574,34 @@ mod tests {
     }
 
     #[test]
+    fn transition_observable_omits_defaults_without_weakening_safe_output() {
+        for (input, observable) in [
+            ("normal linear", "linear"),
+            ("1s 1s", "1s 1s"),
+            ("none 0s linear 1s normal", "none linear 1s"),
+            ("allow-discrete", "allow-discrete"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("transition", input, ""),
+                MutationOutcome::Applied,
+                "{input} should expand"
+            );
+            assert_eq!(
+                state.get_property_value("transition"),
+                observable,
+                "{input}"
+            );
+            assert_eq!(state.css_text(), format!("transition: {observable};"));
+
+            let serialized = state.serialize_safe();
+            let mut reparsed = DeclarationState::new();
+            reparsed.replace_css_text(&serialized);
+            assert_eq!(reparsed.serialize_safe(), serialized, "{input}");
+        }
+    }
+
+    #[test]
     fn sheetom_border_grammars_expand_to_semantic_longhands() {
         let mut column_rule = DeclarationState::new();
         assert_eq!(
