@@ -144,6 +144,24 @@ const cases = [
         probes: ["width", "color"],
     },
     {
+        id: "text-fit-complete-components",
+        operations: [["set", "text-fit", "grow per-line 25%", "important"]],
+        probes: ["text-fit"],
+    },
+    {
+        id: "text-fit-calculated-limit",
+        operations: [["set", "text-fit", "none consistent calc(5% + 5%)", ""]],
+        probes: ["text-fit"],
+    },
+    {
+        id: "invalid-text-fit-is-atomic",
+        operations: [
+            ["set", "text-fit", "shrink consistent 10%", "important"],
+            ["set", "text-fit", "none consistent -1%", ""],
+        ],
+        probes: ["text-fit"],
+    },
+    {
         id: "rule-inset-canonicalization",
         operations: [[
             "set",

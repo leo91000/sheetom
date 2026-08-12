@@ -52,6 +52,7 @@ pub enum BrowserLonghandValue {
     FontVariationSettings(Option<Vec<FontVariationSetting>>),
     PositionTryFallbacks(Option<Vec<PositionTryFallback>>),
     TextBoxEdge(TextBoxEdgeValue),
+    TextFit(TextFitValue),
     TimelineRangeStart(Vec<TimelineRangeStartValue>),
     TimelineRangeEnd(Vec<TimelineRangeEndValue>),
     TimelineTriggerName(Vec<Option<DashedIdent<'static>>>),
@@ -203,6 +204,14 @@ pub enum TextBoxEdgeValue {
         over: &'static str,
         under: Option<&'static str>,
     },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextFitValue {
+    mode: &'static str,
+    line_strategy: Option<&'static str>,
+    limit: Option<Calc<Percentage>>,
+    authored_calculation: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -454,6 +463,7 @@ impl BrowserLonghandValue {
                 Ok(output.join(", "))
             }
             BrowserLonghandValue::TextBoxEdge(value) => value.canonical_value(),
+            BrowserLonghandValue::TextFit(value) => value.canonical_value(),
             BrowserLonghandValue::TimelineRangeStart(values) => {
                 serialize_timeline_range_starts(values)
             }
@@ -823,6 +833,28 @@ impl TextBoxEdgeValue {
     }
 }
 
+impl TextFitValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let mut output = self.mode.to_owned();
+        if let Some(line_strategy) = self.line_strategy {
+            output.push(' ');
+            output.push_str(line_strategy);
+        }
+        if let Some(limit) = &self.limit {
+            output.push(' ');
+            let serialized = serialize_typed(limit)?;
+            if self.authored_calculation && matches!(limit, Calc::Value(_) | Calc::Number(_)) {
+                output.push_str("calc(");
+                output.push_str(&serialized);
+                output.push(')');
+            } else {
+                output.push_str(&serialized);
+            }
+        }
+        Ok(output)
+    }
+}
+
 impl ColumnCountValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         let Some(count) = &self.count else {
@@ -916,6 +948,7 @@ pub(crate) fn parse_browser_longhand(
         }
         Some(BrowserLonghandGrammar::PositionTryFallbacks) => parse_position_try_fallbacks(source),
         Some(BrowserLonghandGrammar::TextBoxEdge) => parse_text_box_edge(source),
+        Some(BrowserLonghandGrammar::TextFit) => parse_text_fit(source),
         Some(BrowserLonghandGrammar::TimelineRangeStart { auto }) => {
             parse_timeline_range_start(source, auto)
         }
@@ -1037,6 +1070,7 @@ enum BrowserLonghandGrammar {
     FontVariationSettings,
     PositionTryFallbacks,
     TextBoxEdge,
+    TextFit,
     TimelineRangeStart { auto: bool },
     TimelineRangeEnd { auto: bool },
     TimelineTriggerName,
@@ -1148,6 +1182,7 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::FontVariationSettings => ["font-variation-settings"],
     BrowserLonghandGrammar::PositionTryFallbacks => ["position-try-fallbacks"],
     BrowserLonghandGrammar::TextBoxEdge => ["text-box-edge"],
+    BrowserLonghandGrammar::TextFit => ["text-fit"],
     BrowserLonghandGrammar::TimelineRangeStart { auto: false } => [
         "timeline-trigger-activation-range-start",
     ],
@@ -1457,7 +1492,6 @@ define_browser_longhand_registry! {
         "no-punctuation",
     ]) => ["speak"],
     BrowserLonghandGrammar::Keyword(&["auto", "fixed"]) => ["table-layout"],
-    BrowserLonghandGrammar::Keyword(&["none", "shrink", "grow"]) => ["text-fit"],
     BrowserLonghandGrammar::Keyword(&["start", "middle", "end"]) => ["text-anchor"],
     BrowserLonghandGrammar::Keyword(&["none", "all"]) => ["text-combine-upright"],
     BrowserLonghandGrammar::Keyword(&[
@@ -2852,6 +2886,37 @@ fn parse_text_box_edge(source: &str) -> Result<BrowserLonghandValue, EngineError
     })
 }
 
+fn parse_text_fit(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let mode = parse_one_keyword(input, &["none", "grow", "shrink"])?;
+        let line_strategy = input
+            .try_parse(|input| {
+                parse_one_keyword(input, &["consistent", "per-line", "per-line-all"])
+            })
+            .ok();
+        let state = input.state();
+        let authored_calculation = matches!(input.next(), Ok(Token::Function(_)));
+        input.reset(&state);
+        let limit = if input.is_exhausted() {
+            None
+        } else if authored_calculation {
+            Some(Calc::<Percentage>::parse_preserving_math_functions(input)?)
+        } else {
+            let value = Percentage::parse(input)?;
+            if value.0 < 0.0 {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            Some(value.into())
+        };
+        Ok(BrowserLonghandValue::TextFit(TextFitValue {
+            mode,
+            line_strategy,
+            limit,
+            authored_calculation,
+        }))
+    })
+}
+
 fn parse_timeline_range_start(
     source: &str,
     accepts_auto: bool,
@@ -3930,6 +3995,35 @@ mod tests {
                 canonical("corner-top-left-shape", source).is_err(),
                 "{source}"
             );
+        }
+    }
+
+    #[test]
+    fn parses_complete_text_fit_grammar() {
+        for (source, expected) in [
+            ("none", "none"),
+            ("grow consistent", "grow consistent"),
+            ("shrink per-line 10%", "shrink per-line 10%"),
+            ("none per-line-all 0%", "none per-line-all 0%"),
+            ("none consistent calc(5% + 5%)", "none consistent calc(10%)"),
+            (
+                "none consistent min(10%, 20%)",
+                "none consistent min(10%, 20%)",
+            ),
+            ("none consistent calc(-1%)", "none consistent calc(-1%)"),
+        ] {
+            assert_eq!(canonical("text-fit", source).unwrap(), expected, "{source}");
+        }
+        for source in [
+            "consistent",
+            "10%",
+            "consistent none 10%",
+            "none 10% consistent",
+            "none consistent -1%",
+            "none consistent per-line",
+            "none 10% 20%",
+        ] {
+            assert!(canonical("text-fit", source).is_err(), "{source}");
         }
     }
 }

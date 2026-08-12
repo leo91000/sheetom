@@ -1759,6 +1759,65 @@
       "property": "max-width",
       "input": "calc-size(auto, size)",
       "accepted": false
+    },
+    {
+      "id": "text-fit.complete-components",
+      "property": "text-fit",
+      "input": "grow consistent 10%",
+      "accepted": true,
+      "observable": "grow consistent 10%"
+    },
+    {
+      "id": "text-fit.line-strategy",
+      "property": "text-fit",
+      "input": "shrink per-line-all 100%",
+      "accepted": true,
+      "observable": "shrink per-line-all 100%"
+    },
+    {
+      "id": "text-fit.omitted-strategy",
+      "property": "text-fit",
+      "input": "none 25%",
+      "accepted": true,
+      "observable": "none 25%"
+    },
+    {
+      "id": "text-fit.calculated-limit",
+      "property": "text-fit",
+      "input": "none consistent calc(5% + 5%)",
+      "accepted": true,
+      "observable": "none consistent calc(10%)"
+    },
+    {
+      "id": "text-fit.deferred-negative-limit",
+      "property": "text-fit",
+      "input": "none consistent calc(-1%)",
+      "accepted": true,
+      "observable": "none consistent calc(-1%)"
+    },
+    {
+      "id": "text-fit.missing-mode-invalid",
+      "property": "text-fit",
+      "input": "consistent 10%",
+      "accepted": false
+    },
+    {
+      "id": "text-fit.reordered-components-invalid",
+      "property": "text-fit",
+      "input": "none 10% consistent",
+      "accepted": false
+    },
+    {
+      "id": "text-fit.direct-negative-limit-invalid",
+      "property": "text-fit",
+      "input": "none consistent -1%",
+      "accepted": false
+    },
+    {
+      "id": "text-fit.duplicate-limit-invalid",
+      "property": "text-fit",
+      "input": "none 10% 20%",
+      "accepted": false
     }
   ]
 }
