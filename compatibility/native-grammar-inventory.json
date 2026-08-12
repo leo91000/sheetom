@@ -6,9 +6,9 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "c21356045a5f772c6e86af031d4db3d0d070e79147bf17bba7fd7896829114a8",
+    "shorthandGrammarContractsSha256": "d8c4f97c2edbcd432eaff468e49291bb54f43e50e2df971d65053e7a538de129",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "43cda0808696f72d33019981e660e62bab6b89eee40414dc6349ca82a729c051"
+    "valueCapabilitiesSha256": "77e5853ccef0bddafe348a68095bbd18a8c8b5988b0eae26249cc721378ab9ef"
   },
   "profiles": [
     {
@@ -281,6 +281,12 @@
         "grammar.repeated-pair.one",
         "grammar.repeated-pair.two",
         "grammar.repeated-pair.compound",
+        "grammar.repeated-pair.anchor-center",
+        "grammar.repeated-pair.anchor-second",
+        "grammar.repeated-pair.legacy-items",
+        "grammar.repeated-pair.legacy-items-reordered",
+        "grammar.repeated-pair.legacy-self-invalid",
+        "grammar.repeated-pair.anchor-items-invalid",
         "grammar.repeated-pair.extra-invalid"
       ]
     },

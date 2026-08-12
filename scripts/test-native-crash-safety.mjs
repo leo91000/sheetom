@@ -152,6 +152,16 @@ const crashCases = [
         public: true,
     },
     {
+        name: "anchored self alignment",
+        source: "place-self: safe anchor-center unsafe anchor-center",
+        public: true,
+    },
+    {
+        name: "bare legacy item alignment",
+        source: "place-items: normal legacy",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
