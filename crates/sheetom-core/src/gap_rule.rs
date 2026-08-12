@@ -115,6 +115,7 @@ where
 pub struct Authored<T> {
     value: T,
     source: String,
+    authored: bool,
 }
 
 impl<T: Default> Default for Authored<T> {
@@ -122,6 +123,7 @@ impl<T: Default> Default for Authored<T> {
         Self {
             value: T::default(),
             source: String::new(),
+            authored: false,
         }
     }
 }
@@ -172,14 +174,17 @@ impl<'i> Parse<'i> for GapRule {
             width: width.unwrap_or_else(|| Authored {
                 value: BorderSideWidth::default(),
                 source: "medium".to_owned(),
+                authored: false,
             }),
             style: style.unwrap_or_else(|| Authored {
                 value: LineStyle::default(),
                 source: "none".to_owned(),
+                authored: false,
             }),
             color: color.unwrap_or_else(|| Authored {
                 value: CssColor::current_color(),
                 source: "currentcolor".to_owned(),
+                authored: false,
             }),
         })
     }
@@ -194,6 +199,7 @@ where
     Ok(Authored {
         value,
         source: input.slice_from(start).trim().to_owned(),
+        authored: true,
     })
 }
 
@@ -242,6 +248,23 @@ pub(crate) struct GapRuleExpansion {
     pub(crate) style_observable: String,
     pub(crate) color: String,
     pub(crate) color_observable: String,
+}
+
+pub(crate) struct BorderSideObservableExpansion {
+    pub(crate) width: String,
+    pub(crate) style: String,
+    pub(crate) color: String,
+}
+
+pub(crate) fn expand_border_side_observable(
+    source: &str,
+) -> Result<BorderSideObservableExpansion, EngineError> {
+    let rule = parse_entire::<GapRule>(source)?;
+    Ok(BorderSideObservableExpansion {
+        width: observable_authored_component("border-top-width", &rule.width)?,
+        style: observable_authored_component("border-top-style", &rule.style)?,
+        color: observable_authored_component("border-top-color", &rule.color)?,
+    })
 }
 
 pub(crate) fn parse_gap_rule_longhand(
@@ -442,6 +465,16 @@ fn observable_component<T>(
             value.source
         ))
     })
+}
+
+fn observable_authored_component<T>(
+    property_name: &str,
+    value: &Authored<T>,
+) -> Result<String, EngineError> {
+    if !value.authored {
+        return Ok("initial".to_owned());
+    }
+    observable_component(property_name, value)
 }
 
 #[cfg(test)]
