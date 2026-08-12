@@ -172,6 +172,24 @@ const cases = [
         probes: ["initial-letter"],
     },
     {
+        id: "white-space-omitted-mode",
+        operations: [["set", "white-space", "preserve-breaks", "important"]],
+        probes: ["white-space", "white-space-collapse", "text-wrap-mode"],
+    },
+    {
+        id: "white-space-unordered-components",
+        operations: [["set", "white-space", "nowrap preserve", ""]],
+        probes: ["white-space", "white-space-collapse", "text-wrap-mode"],
+    },
+    {
+        id: "invalid-white-space-is-atomic",
+        operations: [
+            ["set", "white-space", "preserve nowrap", "important"],
+            ["set", "white-space", "wrap nowrap", ""],
+        ],
+        probes: ["white-space", "white-space-collapse", "text-wrap-mode"],
+    },
+    {
         id: "invalid-text-fit-is-atomic",
         operations: [
             ["set", "text-fit", "shrink consistent 10%", "important"],

@@ -3718,6 +3718,75 @@
       "cssText": "white-space: pre;"
     },
     {
+      "id": "grammar.white-space.omitted-mode",
+      "accepted": true,
+      "items": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ],
+      "longhands": [
+        {
+          "name": "white-space-collapse",
+          "value": "preserve-breaks",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-mode",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "pre-line",
+      "priority": "",
+      "cssText": "white-space: pre-line;"
+    },
+    {
+      "id": "grammar.white-space.omitted-collapse",
+      "accepted": true,
+      "items": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ],
+      "longhands": [
+        {
+          "name": "white-space-collapse",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-mode",
+          "value": "wrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "normal",
+      "priority": "",
+      "cssText": "white-space: normal;"
+    },
+    {
+      "id": "grammar.white-space.unordered",
+      "accepted": true,
+      "items": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ],
+      "longhands": [
+        {
+          "name": "white-space-collapse",
+          "value": "preserve",
+          "priority": ""
+        },
+        {
+          "name": "text-wrap-mode",
+          "value": "nowrap",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "pre",
+      "priority": "",
+      "cssText": "white-space: pre;"
+    },
+    {
       "id": "grammar.white-space.break-spaces",
       "accepted": true,
       "items": [
@@ -3739,6 +3808,15 @@
       "shorthandValue": "break-spaces",
       "priority": "",
       "cssText": "white-space: break-spaces;"
+    },
+    {
+      "id": "grammar.white-space.duplicate-domain-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
     },
     {
       "id": "grammar.white-space.extra-invalid",

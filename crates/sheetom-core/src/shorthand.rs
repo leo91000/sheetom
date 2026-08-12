@@ -1146,8 +1146,14 @@ fn synthesize_text_box(records: &[&DeclarationRecord], safe: bool) -> Option<Str
 }
 
 fn synthesize_white_space(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
-    let collapse = record_value(records, "white-space-collapse", safe)?;
-    let mode = record_value(records, "text-wrap-mode", safe)?;
+    let collapse = match record_value(records, "white-space-collapse", safe)? {
+        "initial" => "collapse",
+        value => value,
+    };
+    let mode = match record_value(records, "text-wrap-mode", safe)? {
+        "initial" => "wrap",
+        value => value,
+    };
     Some(match (collapse, mode) {
         ("collapse", "wrap") => "normal".to_owned(),
         ("preserve", "nowrap") => "pre".to_owned(),
@@ -3402,13 +3408,11 @@ fn expand_white_space(components: &[&str]) -> Option<Vec<(&'static str, String)>
         ["pre-line"] => ("preserve-breaks", "wrap"),
         ["nowrap"] => ("collapse", "nowrap"),
         ["break-spaces"] => ("break-spaces", "wrap"),
-        [first, second]
-            if matches!(
-                *first,
-                "collapse" | "preserve" | "preserve-breaks" | "break-spaces"
-            ) && matches!(*second, "wrap" | "nowrap") =>
-        {
-            (*first, *second)
+        [collapse @ ("collapse" | "preserve" | "preserve-breaks")] => (*collapse, "initial"),
+        ["wrap"] => ("initial", "wrap"),
+        [collapse @ ("collapse" | "preserve" | "preserve-breaks" | "break-spaces"), mode @ ("wrap" | "nowrap")]
+        | [mode @ ("wrap" | "nowrap"), collapse @ ("collapse" | "preserve" | "preserve-breaks" | "break-spaces")] => {
+            (*collapse, *mode)
         }
         _ => return None,
     };

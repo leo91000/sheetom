@@ -92,6 +92,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "white space unordered level four components",
+        source: "white-space: nowrap preserve-breaks",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

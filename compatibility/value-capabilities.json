@@ -1897,6 +1897,72 @@
       "property": "initial-letter",
       "input": "normal 1",
       "accepted": false
+    },
+    {
+      "id": "white-space.collapse-only",
+      "property": "white-space",
+      "input": "collapse",
+      "accepted": true,
+      "observable": "normal"
+    },
+    {
+      "id": "white-space.preserve-only",
+      "property": "white-space",
+      "input": "preserve",
+      "accepted": true,
+      "observable": "pre-wrap"
+    },
+    {
+      "id": "white-space.preserve-breaks-only",
+      "property": "white-space",
+      "input": "preserve-breaks",
+      "accepted": true,
+      "observable": "pre-line"
+    },
+    {
+      "id": "white-space.wrap-only",
+      "property": "white-space",
+      "input": "wrap",
+      "accepted": true,
+      "observable": "normal"
+    },
+    {
+      "id": "white-space.unordered-components",
+      "property": "white-space",
+      "input": "nowrap preserve",
+      "accepted": true,
+      "observable": "pre"
+    },
+    {
+      "id": "white-space.break-spaces-nowrap",
+      "property": "white-space",
+      "input": "break-spaces nowrap",
+      "accepted": true,
+      "observable": "break-spaces nowrap"
+    },
+    {
+      "id": "white-space.duplicate-mode-invalid",
+      "property": "white-space",
+      "input": "wrap nowrap",
+      "accepted": false
+    },
+    {
+      "id": "white-space.duplicate-collapse-invalid",
+      "property": "white-space",
+      "input": "collapse preserve",
+      "accepted": false
+    },
+    {
+      "id": "white-space.extra-component-invalid",
+      "property": "white-space",
+      "input": "preserve wrap nowrap",
+      "accepted": false
+    },
+    {
+      "id": "white-space.unknown-component-invalid",
+      "property": "white-space",
+      "input": "preserve unknown",
+      "accepted": false
     }
   ]
 }

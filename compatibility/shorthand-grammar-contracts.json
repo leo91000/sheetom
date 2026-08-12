@@ -163,7 +163,11 @@
     { "codec": "white-space", "cases": [
       { "id": "grammar.white-space.alias", "branch": "legacy alias", "property": "white-space", "input": "pre-wrap", "accepted": true },
       { "id": "grammar.white-space.collapse-mode", "branch": "collapse and mode", "property": "white-space", "input": "preserve nowrap", "accepted": true },
+      { "id": "grammar.white-space.omitted-mode", "branch": "collapse with omitted mode", "property": "white-space", "input": "preserve-breaks", "accepted": true },
+      { "id": "grammar.white-space.omitted-collapse", "branch": "mode with omitted collapse", "property": "white-space", "input": "wrap", "accepted": true },
+      { "id": "grammar.white-space.unordered", "branch": "mode before collapse", "property": "white-space", "input": "nowrap preserve", "accepted": true },
       { "id": "grammar.white-space.break-spaces", "branch": "break spaces", "property": "white-space", "input": "break-spaces", "accepted": true },
+      { "id": "grammar.white-space.duplicate-domain-invalid", "branch": "duplicate component domain", "property": "white-space", "input": "wrap nowrap", "accepted": false, "preserves": "grammar.white-space.collapse-mode" },
       { "id": "grammar.white-space.extra-invalid", "branch": "extra keyword", "property": "white-space", "input": "preserve wrap nowrap", "accepted": false, "preserves": "grammar.white-space.collapse-mode" }
     ] }
   ]
