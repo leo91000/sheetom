@@ -1111,7 +1111,7 @@ pub(crate) fn parse_browser_fallback(
         "baseline-shift" => &["sub", "super"],
         "box-shadow" | "text-shadow" => &["none"],
         "font-size" => &["math"],
-        "font-palette" | "zoom" => &["normal"],
+        "zoom" => &["normal"],
         "hyphenate-limit-chars" | "resize" | "rx" | "ry" => &["auto"],
         "text-transform" => &["math-auto"],
         "-webkit-line-clamp" => &["none"],

@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 863,
+  "mismatchCases": 860,
   "summary": {
-    "acceptance": 54,
+    "acceptance": 51,
     "observable": 540,
     "cssText": 540,
     "items": 478,
@@ -4317,27 +4317,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "font-palette",
-      "sample": "webref-sample.16b86abb711133a9",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "font-palette",
-      "sample": "webref-sample.3ec2748f005a55f7",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "font-palette",
-      "sample": "webref-sample.8555d0e937a47a83",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
