@@ -36,6 +36,16 @@ const crashCases = [
         public: true,
     },
     {
+        name: "cursor image-set with hotspot",
+        source: "cursor: image-set(url(a.png) 1x, url(b.png) 2x type(\"image/png\")) 1 1, auto",
+        public: true,
+    },
+    {
+        name: "modern clip path SVG path and geometry box",
+        source: "clip-path: content-box path(evenodd, \"M0 0 L10 10\")",
+        public: true,
+    },
+    {
         name: "multiple image-set layers",
         source: "background: image-set(url(a.png) 1x), image-set(url(b.png) 2x) center/contain no-repeat",
         public: true,

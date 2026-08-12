@@ -21,7 +21,13 @@ use crate::{syntax::split_top_level_delimiter, EngineError};
 
 type ParseError<'i> = cssparser::ParseError<'i, ParserError<'i>>;
 
-const GEOMETRIC_PROPERTIES: &[&str] = &["border-shape", "d", "object-view-box", "shape-outside"];
+const GEOMETRIC_PROPERTIES: &[&str] = &[
+    "border-shape",
+    "clip-path",
+    "d",
+    "object-view-box",
+    "shape-outside",
+];
 
 pub(crate) fn has_geometric_property_grammar(property_name: &str) -> bool {
     GEOMETRIC_PROPERTIES.contains(&property_name)
@@ -30,9 +36,16 @@ pub(crate) fn has_geometric_property_grammar(property_name: &str) -> bool {
 #[derive(Clone, Debug, PartialEq)]
 pub enum GeometricValue {
     BorderShape(Box<BorderShapeValue>),
+    ClipPath(Box<ClipPathValue>),
     D(Box<PathPropertyValue>),
     ObjectViewBox(Box<ObjectViewBoxValue>),
     ShapeOutside(Box<ShapeOutsideValue>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClipPathValue {
+    shape: BasicShapeValue,
+    geometry_box: Option<&'static str>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -265,6 +278,7 @@ pub(crate) fn parse_geometric_property(
 ) -> Result<Option<GeometricValue>, EngineError> {
     let value = match property_name {
         "border-shape" => GeometricValue::BorderShape(Box::new(parse_border_shape(source)?)),
+        "clip-path" => GeometricValue::ClipPath(Box::new(parse_clip_path(source)?)),
         "d" => GeometricValue::D(Box::new(parse_path_property(source)?)),
         "object-view-box" => {
             GeometricValue::ObjectViewBox(Box::new(parse_object_view_box(source)?))
@@ -273,6 +287,23 @@ pub(crate) fn parse_geometric_property(
         _ => return Ok(None),
     };
     Ok(Some(value))
+}
+
+fn parse_clip_path(source: &str) -> Result<ClipPathValue, EngineError> {
+    validate_strict_shape_numbers(source)?;
+    parse_entire(source, |input| {
+        let leading_box = input.try_parse(parse_clip_geometry_box).ok();
+        let shape = parse_basic_shape(input)?;
+        let geometry_box = if leading_box.is_some() {
+            leading_box
+        } else {
+            input.try_parse(parse_clip_geometry_box).ok()
+        };
+        Ok(ClipPathValue {
+            shape,
+            geometry_box: geometry_box.filter(|value| *value != "border-box"),
+        })
+    })
 }
 
 fn parse_path_property(source: &str) -> Result<PathPropertyValue, EngineError> {
@@ -1018,6 +1049,23 @@ fn parse_border_geometry_box<'i, 't>(
     )
 }
 
+fn parse_clip_geometry_box<'i, 't>(
+    input: &mut Parser<'i, 't>,
+) -> Result<&'static str, ParseError<'i>> {
+    parse_keyword(
+        input,
+        &[
+            "border-box",
+            "padding-box",
+            "content-box",
+            "margin-box",
+            "fill-box",
+            "stroke-box",
+            "view-box",
+        ],
+    )
+}
+
 fn parse_keyword<'i, 't>(
     input: &mut Parser<'i, 't>,
     accepted: &'static [&'static str],
@@ -1548,6 +1596,7 @@ impl GeometricValue {
     pub(crate) fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             Self::BorderShape(value) => value.canonical_value(),
+            Self::ClipPath(value) => value.canonical_value(),
             Self::D(value) => value.canonical_value(),
             Self::ObjectViewBox(value) => value.canonical_value(),
             Self::ShapeOutside(value) => value.canonical_value(),
@@ -1597,6 +1646,17 @@ impl GeometricValue {
             return Ok(None);
         };
         authored.canonical_value(gradient).map(Some)
+    }
+}
+
+impl ClipPathValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let mut output = self.shape.canonical_value()?;
+        if let Some(geometry_box) = self.geometry_box {
+            output.push(' ');
+            output.push_str(geometry_box);
+        }
+        Ok(output)
     }
 }
 
@@ -2541,6 +2601,50 @@ mod tests {
             "path(\"M 1.00000e-19 0\")"
         );
         assert!(canonical("d", "path(\"M0 0 Z 1 2\")").is_err());
+    }
+
+    #[test]
+    fn owns_modern_clip_path_shapes_and_geometry_boxes() {
+        for (source, expected) in [
+            ("path(\"M0 0\")", "path(\"M 0 0\")"),
+            (
+                "path(evenodd, \"M0 0 L10 10\")",
+                "path(evenodd, \"M 0 0 L 10 10\")",
+            ),
+            (
+                "content-box path(nonzero, \"M0 0\")",
+                "path(\"M 0 0\") content-box",
+            ),
+            (
+                "rect(auto 1px 20% -3px round 5px) padding-box",
+                "rect(auto 1px 20% -3px round 5px) padding-box",
+            ),
+            (
+                "xywh(0 0 10px 20px round 2px) fill-box",
+                "xywh(0px 0px 10px 20px round 2px) fill-box",
+            ),
+            (
+                "shape(from 0 0, line to 10px 20px) stroke-box",
+                "shape(from 0px 0px, line to 10px 20px) stroke-box",
+            ),
+        ] {
+            assert_eq!(
+                canonical("clip-path", source).unwrap(),
+                expected,
+                "{source}"
+            );
+        }
+
+        for source in [
+            "path()",
+            "path(\"M0\")",
+            "half-border-box",
+            "path(\"M0 0\") half-border-box",
+            "content-box path(\"M0 0\") padding-box",
+            "path(\"M0 0\"), content-box",
+        ] {
+            assert!(canonical("clip-path", source).is_err(), "{source}");
+        }
     }
 
     #[test]

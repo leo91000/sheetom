@@ -54,6 +54,7 @@ test("geometric properties retain malformed pending substitutions like Chromium"
 
   for (const [property, value] of [
     ["border-shape", "var(--border"],
+    ["clip-path", "var(--clip"],
     ["d", "var(--path"],
     ["object-view-box", "var(--view"],
     ["shape-outside", "var(--shape"],

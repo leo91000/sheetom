@@ -130,7 +130,7 @@ assert.equal(
 );
 assert.deepEqual(
   browserGeometricContracts.properties.map(entry => entry.property).sort(),
-  ["border-shape", "d", "object-view-box", "shape-outside"],
+  ["border-shape", "clip-path", "d", "object-view-box", "shape-outside"],
   "Browser Geometric contracts must cover every SheetOM-owned geometric property exactly once",
 );
 for (const entry of browserGeometricContracts.properties) {

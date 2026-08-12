@@ -9,9 +9,12 @@ use crate::properties::{Property, PropertyId};
 use crate::targets::{should_compile, Browsers, Targets};
 use crate::traits::{FallbackValues, IsCompatible, Parse, PropertyHandler, Shorthand, ToCss};
 use crate::values::color::CssColor;
+use crate::values::image::{Image, ImageSet};
 use crate::values::number::CSSNumber;
+use crate::values::resolution::Resolution;
 use crate::values::string::CowArcStr;
 use crate::values::url::Url;
+use crate::vendor_prefix::VendorPrefix;
 #[cfg(feature = "visitor")]
 use crate::visitor::Visit;
 use bitflags::bitflags;
@@ -48,16 +51,46 @@ enum_property! {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct CursorImage<'i> {
-  /// A url to the cursor image.
+  /// A URL or image set supplying the cursor image.
   #[cfg_attr(feature = "serde", serde(borrow))]
-  pub url: Url<'i>,
+  pub source: CursorImageSource<'i>,
   /// The location in the image where the mouse pointer appears.
   pub hotspot: Option<(CSSNumber, CSSNumber)>,
 }
 
+/// A source accepted by the `<url-set>` cursor grammar.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum CursorImageSource<'i> {
+  /// A single URL.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  Url(Url<'i>),
+  /// A density-dependent URL set.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  ImageSet(ImageSet<'i>),
+}
+
 impl<'i> Parse<'i> for CursorImage<'i> {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
-    let url = Url::parse(input)?;
+    let source = if let Ok(url) = input.try_parse(Url::parse) {
+      CursorImageSource::Url(url)
+    } else {
+      let mut image_set = ImageSet::parse(input)?;
+      if image_set.options.iter().any(|option| {
+        !matches!(option.image, Image::Url(_)) || resolution_is_negative(&option.resolution)
+      }) {
+        return Err(input.new_custom_error(ParserError::InvalidValue));
+      }
+      image_set.vendor_prefix = VendorPrefix::None;
+      CursorImageSource::ImageSet(image_set)
+    };
     let hotspot = if let Ok(x) = input.try_parse(CSSNumber::parse) {
       let y = CSSNumber::parse(input)?;
       Some((x, y))
@@ -65,7 +98,7 @@ impl<'i> Parse<'i> for CursorImage<'i> {
       None
     };
 
-    Ok(CursorImage { url, hotspot })
+    Ok(CursorImage { source, hotspot })
   }
 }
 
@@ -74,7 +107,10 @@ impl<'i> ToCss for CursorImage<'i> {
   where
     W: std::fmt::Write,
   {
-    self.url.to_css(dest)?;
+    match &self.source {
+      CursorImageSource::Url(url) => url.to_css(dest)?,
+      CursorImageSource::ImageSet(image_set) => serialize_cursor_image_set(image_set, dest)?,
+    }
 
     if let Some((x, y)) = self.hotspot {
       dest.write_char(' ')?;
@@ -83,6 +119,36 @@ impl<'i> ToCss for CursorImage<'i> {
       y.to_css(dest)?;
     }
     Ok(())
+  }
+}
+
+fn serialize_cursor_image_set<W>(image_set: &ImageSet, dest: &mut Printer<W>) -> Result<(), PrinterError>
+where
+  W: std::fmt::Write,
+{
+  dest.write_str("image-set(")?;
+  for (index, option) in image_set.options.iter().enumerate() {
+    if index > 0 {
+      dest.delim(',', false)?;
+    }
+    match &option.image {
+      Image::Url(url) => url.to_css(dest)?,
+      image => image.to_css(dest)?,
+    }
+    dest.write_char(' ')?;
+    option.resolution.to_css(dest)?;
+    if let Some(file_type) = &option.file_type {
+      dest.write_str(" type(")?;
+      serialize_string(file_type, dest)?;
+      dest.write_char(')')?;
+    }
+  }
+  dest.write_char(')')
+}
+
+fn resolution_is_negative(resolution: &Resolution) -> bool {
+  match resolution {
+    Resolution::Dpi(value) | Resolution::Dpcm(value) | Resolution::Dppx(value) => *value < 0.0,
   }
 }
 
@@ -314,6 +380,53 @@ impl FallbackValues for Caret {
         shape: self.shape.clone(),
       })
       .collect()
+  }
+}
+
+#[cfg(test)]
+mod cursor_image_set_tests {
+  use super::*;
+  use crate::{printer::PrinterOptions, traits::ToCss};
+
+  fn parse(source: &str) -> Result<String, ()> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let value = parser.parse_entirely(Cursor::parse).map_err(|_| ())?;
+    value
+      .to_css_string(PrinterOptions::default())
+      .map_err(|_| ())
+  }
+
+  #[test]
+  fn parses_url_sets_with_hotspots_and_canonicalizes_the_vendor_prefix() {
+    for (source, expected) in [
+      (
+        "image-set(url(a.png) 1x) 1 1, auto",
+        "image-set(url(\"a.png\") 1x) 1 1, auto",
+      ),
+      (
+        "-webkit-image-set(url(a.png)) 2 3, pointer",
+        "image-set(url(\"a.png\") 1x) 2 3, pointer",
+      ),
+      (
+        "url(a.cur), image-set(\"a.png\" 2x) 2 3, move",
+        "url(\"a.cur\"), image-set(url(\"a.png\") 2x) 2 3, move",
+      ),
+    ] {
+      assert_eq!(parse(source).as_deref(), Ok(expected), "{source}");
+    }
+  }
+
+  #[test]
+  fn rejects_non_url_sets_negative_resolution_and_incomplete_hotspots() {
+    for source in [
+      "image-set(linear-gradient(red, blue) 1x), auto",
+      "image-set(url(a.png) -1x), auto",
+      "image-set(url(a.png) 1x) 1, auto",
+      "image-set(url(a.png) 1x) 1 1 auto",
+    ] {
+      assert!(parse(source).is_err(), "{source}");
+    }
   }
 }
 
