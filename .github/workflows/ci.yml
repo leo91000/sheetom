@@ -197,8 +197,11 @@ jobs:
             os: ubuntu-24.04-arm
           - target: x86_64-pc-windows-msvc
             os: windows-2025
+          # Cross-compile on the faster x64 image; the package-consumer matrix
+          # still loads these exact bytes on windows-11-arm.
           - target: aarch64-pc-windows-msvc
-            os: windows-11-vs2026-arm
+            os: windows-2025
+            load_on_builder: false
           # Apple Silicon cross-compiles the x64 binary faster; the packaged
           # bytes are still executed by the macos-15-intel consumer job.
           - target: x86_64-apple-darwin
@@ -228,7 +231,7 @@ jobs:
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - name: Install the cross-compiled Rust target
-        if: matrix.target == 'x86_64-apple-darwin'
+        if: matrix.target == 'x86_64-apple-darwin' || matrix.target == 'aarch64-pc-windows-msvc'
         run: rustup target add ${{ matrix.target }}
       - name: Build the native target
         run: npm run native:build:target -- ${{ matrix.target }}

@@ -17,7 +17,15 @@ const targets = new Map([
       suffix: "darwin-x64",
     },
   ],
-  ["aarch64-pc-windows-msvc", { platform: "win32", arch: "arm64", suffix: "win32-arm64-msvc" }],
+  [
+    "aarch64-pc-windows-msvc",
+    {
+      platform: "win32",
+      arch: "arm64",
+      buildArchitectures: ["arm64", "x64"],
+      suffix: "win32-arm64-msvc",
+    },
+  ],
   ["x86_64-pc-windows-msvc", { platform: "win32", arch: "x64", suffix: "win32-x64-msvc" }],
   ["aarch64-unknown-linux-gnu", { platform: "linux", arch: "arm64", suffix: "linux-arm64-gnu", napiCross: true }],
   ["x86_64-unknown-linux-gnu", { platform: "linux", arch: "x64", suffix: "linux-x64-gnu", napiCross: true }],
