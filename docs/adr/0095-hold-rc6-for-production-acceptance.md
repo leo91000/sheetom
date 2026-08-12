@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR 0170
 ---
 
 # Hold RC6 for production acceptance

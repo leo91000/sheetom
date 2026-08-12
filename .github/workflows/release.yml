@@ -246,14 +246,14 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Require the seven-night RC6 soak on the release pull request SHA
+      - name: Require the seven-night soak for the first stable release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           version=$(node -p "require('./package.json').version")
-          if [ "$version" != "0.1.0-rc.6" ]; then
-            echo "The seven-night RC6 gate does not apply to $version."
+          if [ "$version" != "0.1.0" ]; then
+            echo "The seven-night first-stable gate does not apply to $version."
             exit 0
           fi
           pulls=$(gh api \
@@ -270,7 +270,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "repos/$GITHUB_REPOSITORY/commits/$soak_sha/statuses?per_page=100" \
             > "$RUNNER_TEMP/soak-statuses.json"
-          node scripts/verify-rc6-soak.mjs \
+          node scripts/verify-release-soak.mjs \
             --statuses="$RUNNER_TEMP/soak-statuses.json"
 
   publish:

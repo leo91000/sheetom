@@ -1,4 +1,4 @@
-name: RC6 Soak
+name: First Stable Soak
 
 on:
   schedule:
@@ -12,7 +12,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: rc6-soak
+  group: first-stable-soak
   cancel-in-progress: false
 
 jobs:
@@ -43,14 +43,27 @@ jobs:
             exit 0
           fi
           test "$(jq length <<<"$release")" -eq 1
+          head_sha=$(jq -r '.[0].headRefOid' <<<"$release")
+          version=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$head_sha" \
+            --jq .content \
+            | tr -d '\n' \
+            | base64 --decode \
+            | jq -r .version)
+          if [ "$version" != "0.1.0" ]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "The first-stable soak does not apply to $version."
+            exit 0
+          fi
           echo "eligible=true" >> "$GITHUB_OUTPUT"
           echo "head_ref=$(jq -r '.[0].headRefName' <<<"$release")" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$(jq -r '.[0].headRefOid' <<<"$release")" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo "base_sha=$(jq -r '.[0].baseRefOid' <<<"$release")" >> "$GITHUB_OUTPUT"
           if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
-            echo "context=sheetom/rc6-soak/$(date -u +%F)" >> "$GITHUB_OUTPUT"
+            echo "context=sheetom/stable-soak/$(date -u +%F)" >> "$GITHUB_OUTPUT"
           else
-            echo "context=sheetom/rc6-soak-manual/$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "context=sheetom/stable-soak-manual/$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
           fi
 
   validate:
@@ -112,10 +125,10 @@ jobs:
           CI_RUN_URL: ${{ needs.validate.outputs.ci-run-url }}
         run: |
           state=failure
-          description="RC6 full-matrix soak failed"
+          description="First stable full-matrix soak failed"
           if [ "$VALIDATION_RESULT" = "success" ]; then
             state=success
-            description="RC6 full-matrix soak passed"
+            description="First stable full-matrix soak passed"
           fi
           gh api \
             --method POST \

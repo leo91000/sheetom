@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-export const soakContextPrefix = "sheetom/rc6-soak/";
+export const soakContextPrefix = "sheetom/stable-soak/";
 
 function utcDate(date) {
   return date.toISOString().slice(0, 10);
@@ -32,14 +32,14 @@ export function verifyConsecutiveSoakStatuses(
     .filter(date => /^\d{4}-\d{2}-\d{2}$/u.test(date))
     .sort();
   const latestDate = successfulDates.at(-1);
-  if (!latestDate) throw new Error("RC6 has no successful scheduled soak run");
+  if (!latestDate) throw new Error("The first stable release has no successful scheduled soak run");
 
   const ageInDays = Math.floor(
     (Date.parse(`${utcDate(now)}T00:00:00.000Z`) - Date.parse(`${latestDate}T00:00:00.000Z`))
       / 86_400_000,
   );
   if (ageInDays < 0 || ageInDays > 1) {
-    throw new Error(`Latest successful RC6 soak run is stale: ${latestDate}`);
+    throw new Error(`Latest successful first-stable soak run is stale: ${latestDate}`);
   }
 
   const successfulDateSet = new Set(successfulDates);
@@ -49,19 +49,19 @@ export function verifyConsecutiveSoakStatuses(
   );
   const missingDates = requiredDates.filter(date => !successfulDateSet.has(date));
   if (missingDates.length > 0) {
-    throw new Error(`RC6 soak is missing consecutive dates: ${missingDates.join(", ")}`);
+    throw new Error(`First-stable soak is missing consecutive dates: ${missingDates.join(", ")}`);
   }
   return requiredDates;
 }
 
 async function main() {
   const statusesArgument = process.argv.find(argument => argument.startsWith("--statuses="));
-  if (!statusesArgument) throw new Error("Usage: verify-rc6-soak.mjs --statuses=path");
+  if (!statusesArgument) throw new Error("Usage: verify-release-soak.mjs --statuses=path");
   const statuses = JSON.parse(
     await readFile(statusesArgument.slice("--statuses=".length), "utf8"),
   );
   const dates = verifyConsecutiveSoakStatuses(statuses);
-  console.log(`Verified seven consecutive RC6 soak runs: ${dates.join(", ")}`);
+  console.log(`Verified seven consecutive first-stable soak runs: ${dates.join(", ")}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
