@@ -3230,6 +3230,89 @@ mod tests {
     }
 
     #[test]
+    fn final_indexed_shorthands_match_chromium_longhand_state() {
+        let cases = [
+            (
+                "marker",
+                "url(\"x\")",
+                vec![
+                    ("marker-start", "url(\"x\")"),
+                    ("marker-mid", "url(\"x\")"),
+                    ("marker-end", "url(\"x\")"),
+                ],
+            ),
+            (
+                "mask-position",
+                "left 10px top 20px, center",
+                vec![
+                    ("-webkit-mask-position-x", "left 10px, center"),
+                    ("-webkit-mask-position-y", "top 20px, center"),
+                ],
+            ),
+            (
+                "border-spacing",
+                "1px 2px",
+                vec![
+                    ("-webkit-border-horizontal-spacing", "1px"),
+                    ("-webkit-border-vertical-spacing", "2px"),
+                ],
+            ),
+            (
+                "animation",
+                "-1s",
+                vec![("animation-duration", "auto"), ("animation-delay", "-1s")],
+            ),
+        ];
+        for (shorthand, input, expected) in cases {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(shorthand, input, ""),
+                MutationOutcome::Applied,
+                "{shorthand}: {input}",
+            );
+            for (longhand, value) in expected {
+                assert_eq!(
+                    state.get_property_value(longhand),
+                    value,
+                    "{shorthand}: {input} -> {longhand}",
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn legacy_background_size_duplicates_each_list_member() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("-webkit-background-size", "1px, 1px", ""),
+            MutationOutcome::Applied,
+        );
+        assert_eq!(state.get_property_value("background-size"), "1px, 1px 1px");
+
+        state.set_property("-webkit-background-size", "1px, 2px, 3px", "");
+        assert_eq!(
+            state.get_property_value("background-size"),
+            "1px, 2px, 3px 3px"
+        );
+    }
+
+    #[test]
+    fn cursor_hotspots_truncate_toward_zero_for_cssom_observability() {
+        for (input, expected) in [
+            ("url(\"x\") 1.5 1.5, auto", "url(\"x\") 1 1, auto"),
+            ("url(\"x\") -1.5 -2.9, auto", "url(\"x\") -1 -2, auto"),
+            ("url(\"x\") .9 2.1, auto", "url(\"x\") 0 2, auto"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("cursor", input, ""),
+                MutationOutcome::Applied,
+            );
+            assert_eq!(state.get_property_value("cursor"), expected, "{input}");
+        }
+    }
+
+    #[test]
     fn border_shorthands_separate_omitted_longhands_from_semantic_initials() {
         let mut state = DeclarationState::new();
         state.set_property("border-block-start", "red none 1px", "");

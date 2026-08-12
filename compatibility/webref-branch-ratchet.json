@@ -2,70 +2,21 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 55,
+  "mismatchCases": 43,
   "summary": {
     "acceptance": 0,
-    "observable": 47,
-    "cssText": 47,
-    "items": 15,
+    "observable": 43,
+    "cssText": 43,
+    "items": 0,
     "atomicity": 0,
     "reparse": 0
   },
   "unresolved": [
     {
-      "property": "-webkit-animation",
-      "sample": "webref-sample.130f47a432270149",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-background-size",
-      "sample": "webref-sample.b6d18364600187ca",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask-position",
-      "sample": "webref-sample.1ddeba2e1e105643",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask-position",
-      "sample": "webref-sample.2b8bf4341a616056",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask-position",
-      "sample": "webref-sample.509351d5dd88dc9b",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
       "property": "-webkit-mask-position",
       "sample": "webref-sample.db5d7f3bb485d353",
       "kinds": [
         "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "animation",
-      "sample": "webref-sample.130f47a432270149",
-      "kinds": [
-        "cssText",
-        "items",
         "observable"
       ]
     },
@@ -98,15 +49,7 @@
       "sample": "webref-sample.8bd1cc6a826455d5",
       "kinds": [
         "cssText",
-        "items",
         "observable"
-      ]
-    },
-    {
-      "property": "border-spacing",
-      "sample": "webref-sample.cf4ce3798812c615",
-      "kinds": [
-        "items"
       ]
     },
     {
@@ -138,15 +81,6 @@
       "sample": "webref-sample.b53513356eea5223",
       "kinds": [
         "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "cursor",
-      "sample": "webref-sample.edf50703f6bec7e9",
-      "kinds": [
-        "cssText",
-        "items",
         "observable"
       ]
     },
@@ -263,39 +197,10 @@
       ]
     },
     {
-      "property": "marker",
-      "sample": "webref-sample.8f86e5f3b47d8290",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "mask-position",
-      "sample": "webref-sample.1ddeba2e1e105643",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "mask-position",
-      "sample": "webref-sample.2b8bf4341a616056",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "mask-position",
-      "sample": "webref-sample.509351d5dd88dc9b",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
       "property": "mask-position",
       "sample": "webref-sample.db5d7f3bb485d353",
       "kinds": [
         "cssText",
-        "items",
         "observable"
       ]
     },

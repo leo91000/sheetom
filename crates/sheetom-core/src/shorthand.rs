@@ -1890,13 +1890,27 @@ pub(crate) fn parse_value_for_source_with_limits(
 }
 
 fn duplicate_single_component(value: &str) -> String {
-    if matches!(value, "contain" | "cover") {
-        return value.to_owned();
-    }
-    if split_top_level_whitespace(value).is_some_and(|components| components.len() == 1) {
-        return format!("{value} {value}");
-    }
-    value.to_owned()
+    split_top_level_delimiter(value, b',')
+        .and_then(|layers| {
+            let last_index = layers.len().checked_sub(1)?;
+            layers
+                .into_iter()
+                .enumerate()
+                .map(|(index, layer)| {
+                    if index != last_index || matches!(layer, "contain" | "cover") {
+                        return Some(layer.to_owned());
+                    }
+                    let components = split_top_level_whitespace(layer)?;
+                    Some(if components.len() == 1 {
+                        format!("{layer} {layer}")
+                    } else {
+                        layer.to_owned()
+                    })
+                })
+                .collect::<Option<Vec<_>>>()
+                .map(|layers| layers.join(", "))
+        })
+        .unwrap_or_else(|| value.to_owned())
 }
 
 fn css_wide_keyword(value: &str) -> Option<String> {
@@ -2316,6 +2330,9 @@ fn expand_special_shorthand(
 
     if matches!(name, "column-rule" | "row-rule" | "rule") {
         return expand_gap_rule_records(name, value, important, limits);
+    }
+    if name == "border-spacing" {
+        return expand_border_spacing_records(value, important, limits);
     }
     if name == "-webkit-text-stroke" {
         return expand_text_stroke_records(value, important, limits);
@@ -3953,6 +3970,11 @@ fn shorthand_longhand<'i>(
     if let Some(longhand) = property.longhand(&direct) {
         return Some(longhand);
     }
+    if let Some(parser_name) = sheetom_parser_property_name(longhand_name) {
+        if let Some(longhand) = property.longhand(&PropertyId::from(parser_name)) {
+            return Some(longhand);
+        }
+    }
     if sheetom_parser_property_name(shorthand_name) != Some("border") {
         return None;
     }
@@ -3963,6 +3985,35 @@ fn shorthand_longhand<'i>(
         BorderComponent::Color => "border-top-color",
     };
     property.longhand(&PropertyId::from(source_name))
+}
+
+fn expand_border_spacing_records(
+    value: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Option<Vec<DeclarationRecord>> {
+    let components = split_top_level_whitespace(value)?;
+    let [horizontal, vertical] = match components.as_slice() {
+        [value] => [*value, *value],
+        [horizontal, vertical] => [*horizontal, *vertical],
+        _ => return None,
+    };
+    [
+        ("-webkit-border-horizontal-spacing", horizontal),
+        ("-webkit-border-vertical-spacing", vertical),
+    ]
+    .into_iter()
+    .map(|(name, source)| {
+        let canonical = typed_longhand_value(name, source)?;
+        Some(DeclarationRecord {
+            name: name.to_owned(),
+            value: semantic_longhand_value(name, &canonical, source, limits)?,
+            important,
+            pending_group: None,
+            alias_value: None,
+        })
+    })
+    .collect()
 }
 
 fn parse_typed_property<'i>(name: &'i str, value: &'i str) -> Result<Property<'i>, EngineError> {

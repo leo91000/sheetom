@@ -913,6 +913,32 @@ macro_rules! define_properties {
           }
         }
 
+        // `marker` uses the same value grammar as each of its three longhands,
+        // but is not declared through the shorthand macro because it has no
+        // wrapper struct. Still expose the CSSOM shorthand relationship.
+        if let Property::Marker(value) = self {
+          return match property_id {
+            PropertyId::MarkerStart => Some(Property::MarkerStart(value.clone())),
+            PropertyId::MarkerMid => Some(Property::MarkerMid(value.clone())),
+            PropertyId::MarkerEnd => Some(Property::MarkerEnd(value.clone())),
+            _ => None,
+          }
+        }
+
+        // `mask-position` is a list shorthand declared outside the shorthand
+        // macro. Project its parallel x/y lists just like `background-position`.
+        if let Property::MaskPosition(values, _) = self {
+          return match property_id {
+            PropertyId::MaskPositionX => Some(Property::MaskPositionX(
+              values.iter().map(|value| value.x.clone()).collect(),
+            )),
+            PropertyId::MaskPositionY => Some(Property::MaskPositionY(
+              values.iter().map(|value| value.y.clone()).collect(),
+            )),
+            _ => None,
+          }
+        }
+
         // The border-image shorthand carries a vendor-prefix bitset, while
         // its standard longhands do not. Expose the semantic longhands before
         // the generic prefix guard for both unprefixed and legacy-prefixed

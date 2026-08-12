@@ -64,7 +64,11 @@ impl<'i> Parse<'i> for AnimationDuration {
       return Ok(Self::Auto);
     }
 
-    Time::parse(input).map(Self::Time)
+    let time = Time::parse(input)?;
+    if time.to_ms() < 0.0 {
+      return Err(input.new_custom_error(ParserError::InvalidValue))
+    }
+    Ok(Self::Time(time))
   }
 }
 
@@ -1231,6 +1235,37 @@ mod tests {
         .expect("animation shorthand should serialize"),
       "auto 1s foo"
     );
+  }
+
+  #[test]
+  fn assigns_a_negative_time_to_the_animation_delay() {
+    let property = Property::parse_string(
+      PropertyId::from("animation"),
+      "-1s",
+      ParserOptions::default(),
+    )
+    .expect("a negative animation delay should parse");
+
+    for (name, expected) in [("animation-duration", "auto"), ("animation-delay", "-1s")] {
+      assert_eq!(
+        property
+          .longhand(&PropertyId::from(name))
+          .expect("animation shorthand should expose its longhand")
+          .value_to_css_string(PrinterOptions::default())
+          .expect("animation longhand should serialize"),
+        expected,
+        "{name}",
+      );
+    }
+  }
+
+  #[test]
+  fn rejects_a_negative_animation_duration() {
+    assert!(matches!(Property::parse_string(
+      PropertyId::from("animation-duration"),
+      "-1s",
+      ParserOptions::default(),
+    ), Ok(Property::Unparsed(_))));
   }
 
   #[test]
