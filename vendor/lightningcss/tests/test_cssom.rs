@@ -396,6 +396,33 @@ fn mask_shorthand_longhands_retain_composite_and_mode() {
   );
 }
 
+#[test]
+fn border_image_shorthand_exposes_unprefixed_longhands() {
+  let property = Property::parse_string(
+    PropertyId::BorderImage(VendorPrefix::None),
+    r#"image-set(url(a.png) 1x) 1 fill / 1px repeat"#,
+    ParserOptions::default(),
+  )
+  .unwrap();
+  for (id, expected) in [
+    (PropertyId::BorderImageSource, r#"image-set("a.png" 1x)"#),
+    (PropertyId::BorderImageSlice, "1 fill"),
+    (PropertyId::BorderImageWidth, "1px"),
+    (PropertyId::BorderImageOutset, "0"),
+    (PropertyId::BorderImageRepeat, "repeat"),
+  ] {
+    assert_eq!(
+      property
+        .longhand(&id)
+        .unwrap()
+        .value_to_css_string(PrinterOptions::default())
+        .unwrap(),
+      expected,
+      "{id:?}",
+    );
+  }
+}
+
 fn set_test(orig: &str, property: &str, value: &str, important: bool, expected: &str) {
   let mut decls = DeclarationBlock::parse_string(orig, ParserOptions::default()).unwrap();
   decls.set(

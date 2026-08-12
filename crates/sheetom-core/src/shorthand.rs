@@ -1649,6 +1649,16 @@ pub(crate) fn parse_value_for_source_with_limits(
             PropertyParseKind::Typed | PropertyParseKind::SheetomTyped
         )
     }) {
+        if name == "border-image" {
+            if let Some(longhands) = expand_border_image(value)
+                .and_then(|values| records_from_values(name, value, values, important, limits))
+            {
+                return Ok(ParsedValue {
+                    value: validated_expanded_shorthand_value(name, value, limits)?,
+                    longhands: Some(longhands),
+                });
+            }
+        }
         return Err(MutationOutcome::InvalidValue);
     }
     let semantic = semantic.map_err(map_engine_error)?;
@@ -1808,7 +1818,18 @@ fn semantic_value_matches(name: &str, source: &str, canonical: &str) -> bool {
                     .strip_prefix("calc(")
                     .and_then(|value| value.strip_suffix(')'))
                     .is_some_and(|value| value == canonical)
+                || canonical == "0" && is_explicit_zero_dimension(source)
         })
+}
+
+fn is_explicit_zero_dimension(source: &str) -> bool {
+    let mut input = ParserInput::new(source.trim());
+    let mut parser = Parser::new(&mut input);
+    let value = match parser.next() {
+        Ok(Token::Dimension { value, .. }) => *value,
+        _ => return false,
+    };
+    value == 0.0 && parser.is_exhausted()
 }
 
 fn observable_shorthand_override(
@@ -2087,7 +2108,6 @@ fn expand_special_shorthand(
     let values = match name {
         "animation" | "-webkit-animation" => expand_contextual_animation(value)?,
         "columns" | "-webkit-columns" => expand_columns(value)?,
-        "border-image" => expand_border_image(value)?,
         "flex" | "-webkit-flex" => expand_contextual_flex(&components)?,
         "grid-area" => expand_contextual_grid_area(value)?,
         "grid-column" => {
@@ -3916,7 +3936,8 @@ fn validate_structural_longhand(name: &str, value: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{border_component, BorderComponent};
+    use super::{border_component, parse_typed_property, shorthand_longhand, BorderComponent};
+    use lightningcss::stylesheet::PrinterOptions;
 
     #[test]
     fn border_component_registry_excludes_similarly_suffixed_properties() {
@@ -3934,5 +3955,39 @@ mod tests {
         );
         assert_eq!(border_component("border-image-width"), None);
         assert_eq!(border_component("text-decoration-color"), None);
+    }
+
+    #[test]
+    fn typed_border_image_owns_slash_sections_and_trailing_repeat() {
+        let property = parse_typed_property("border-image", "none 1 fill / 1px repeat")
+            .expect("Lightning should parse the complete shorthand");
+        for (name, expected) in [
+            ("border-image-source", "none"),
+            ("border-image-slice", "1 fill"),
+            ("border-image-width", "1px"),
+            ("border-image-outset", "0"),
+            ("border-image-repeat", "repeat"),
+        ] {
+            let actual = shorthand_longhand(&property, "border-image", name)
+                .unwrap_or_else(|| panic!("typed shorthand should expose {name}"))
+                .value_to_css_string(PrinterOptions::default())
+                .expect("typed longhand should serialize");
+            assert_eq!(actual, expected, "{name}");
+        }
+
+        let property = parse_typed_property("border-image", "none 1 / 1px / 0px")
+            .expect("typed border image should retain an explicit zero dimension");
+        let outset = shorthand_longhand(&property, "border-image", "border-image-outset")
+            .expect("typed shorthand should expose its outset");
+        assert_eq!(
+            super::authored_longhand_source(
+                "border-image-outset",
+                &outset
+                    .value_to_css_string(PrinterOptions::default())
+                    .expect("outset should serialize"),
+                "none 1 / 1px / 0px",
+            ),
+            "0px"
+        );
     }
 }
