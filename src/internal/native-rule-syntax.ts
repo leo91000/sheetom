@@ -1,4 +1,4 @@
-import { nativeBinding } from "./native-binding.js";
+import { engineBinding } from "./default-engine-binding.js";
 import {
   defaultResourceBudget,
   nativeBudgetArguments,
@@ -21,7 +21,7 @@ export function normalizeNativeSelector(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): string | null {
-  return callNative(() => nativeBinding.normalizeSelector(
+  return callNative(() => engineBinding.normalizeSelector(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));
@@ -31,7 +31,7 @@ export function normalizeNativeMedia(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): string | null {
-  return callNative(() => nativeBinding.normalizeMedia(
+  return callNative(() => engineBinding.normalizeMedia(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));
@@ -41,7 +41,7 @@ export function normalizeNativeSupports(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): string | null {
-  return callNative(() => nativeBinding.normalizeSupports(
+  return callNative(() => engineBinding.normalizeSupports(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));
@@ -51,7 +51,7 @@ export function parseNativeContainerPrelude(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeContainerPrelude | null {
-  const parsed = callNative(() => nativeBinding.parseContainerPreludeJson(
+  const parsed = callNative(() => engineBinding.parseContainerPreludeJson(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));
@@ -75,7 +75,7 @@ export function parseNativeScopePrelude(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeScopePrelude | null {
-  const parsed = callNative(() => nativeBinding.parseScopePreludeJson(
+  const parsed = callNative(() => engineBinding.parseScopePreludeJson(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));

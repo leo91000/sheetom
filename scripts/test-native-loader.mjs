@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { copyFile, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -51,6 +52,10 @@ assert.equal(
 
 const binding = require(`${repositoryRoot}/native/index.cjs`);
 assert.equal(typeof binding.NativeDeclarationState, "function");
+assert.deepEqual(
+  JSON.parse(binding.engineAbiIdentity()),
+  JSON.parse(await readFile(`${repositoryRoot}/engine-abi.json`, "utf8")),
+);
 assert.equal(
   binding.nativeEngineRevision(),
   await readNativeEngineRevision(repositoryRoot),
@@ -92,5 +97,43 @@ await assertLoaderFailure("SHEETOM_NATIVE_BINDING_MISSING");
 await assertLoaderFailure("SHEETOM_NATIVE_BINDING_LOAD_FAILED", async directory => {
   await writeFile(path.join(directory, `sheetom-native.${localTarget}.node`), "not an addon");
 });
+
+async function assertFacadeRejectsIdentity(identity, expectedCode) {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "sheetom-engine-abi-"));
+  try {
+    const distDirectory = path.join(temporaryDirectory, "dist");
+    const nativeDirectory = path.join(temporaryDirectory, "native");
+    await mkdir(distDirectory);
+    await mkdir(nativeDirectory);
+    await copyFile(`${repositoryRoot}/dist/index.cjs`, path.join(distDirectory, "index.cjs"));
+    await writeFile(
+      path.join(nativeDirectory, "index.cjs"),
+      `module.exports = { engineAbiIdentity: () => ${JSON.stringify(identity)} };\n`,
+    );
+    const probe = `
+      try {
+        require(${JSON.stringify(path.join(distDirectory, "index.cjs"))});
+        process.exitCode = 2;
+      } catch (error) {
+        if (error.code !== ${JSON.stringify(expectedCode)}) {
+          console.error(error);
+          process.exitCode = 3;
+        }
+      }
+    `;
+    execFileSync(process.execPath, ["--eval", probe], { stdio: "inherit" });
+  } finally {
+    await rm(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
+const expectedIdentity = JSON.parse(await readFile(`${repositoryRoot}/engine-abi.json`, "utf8"));
+if (existsSync(`${repositoryRoot}/dist/index.cjs`)) {
+  await assertFacadeRejectsIdentity(
+    JSON.stringify({ ...expectedIdentity, sheetomVersion: "0.0.0-incompatible" }),
+    "SHEETOM_ENGINE_ABI_MISMATCH",
+  );
+  await assertFacadeRejectsIdentity("not-json", "SHEETOM_ENGINE_ABI_INVALID");
+}
 
 console.log("Native loader selected and loaded the exact local binding.");

@@ -13,8 +13,16 @@ The repository-owned Rust module that parses and recovers CSS syntax, validates 
 _Avoid_: Native helper, Lightning CSS wrapper, JavaScript parser
 
 **JavaScript CSSOM Facade**:
-The public JavaScript classes and proxies that own WebIDL coercion, indexed access, live rule identity, detachment, and runtime ergonomics while delegating syntax and declaration semantics to the Rust CSS Engine.
+The public JavaScript classes and proxies that own WebIDL coercion, indexed access, live rule identity, detachment, and runtime ergonomics while delegating syntax and declaration semantics to one injected Engine Binding.
 _Avoid_: CSS engine, parser binding, generated N-API classes
+
+**Engine Binding**:
+The private transport-neutral contract through which the JavaScript CSSOM Facade invokes one initialized and identity-verified Rust CSS Engine backend. Native and WebAssembly adapters implement the same synchronous operations after backend loading without duplicating CSSOM classes or state semantics.
+_Avoid_: Public adapter, parser abstraction, runtime fallback, generated binding API
+
+**Engine ABI Identity**:
+The generated tuple of binding ABI version, SheetOM version and Syntax Engine Set hash exported by every native and WebAssembly engine and required by its JavaScript facade. A mismatch prevents all public object construction even when a package manager allowed incompatible artifact bytes to coexist.
+_Avoid_: Package version, Node-API version, best-effort compatibility, loader metadata
 
 **Vendored Lightning Source**:
 The complete upstream Lightning CSS source snapshot imported as ordinary repository files in one isolated commit, built through local Cargo paths and modified in later focused commits. Its recorded upstream revision and MPL notices make local changes reproducible and extractable for upstream contribution.
@@ -37,12 +45,20 @@ The per-sheet, explicitly configurable upper bounds checked before native mutati
 _Avoid_: Global limit, parser timeout, silent truncation
 
 **Native Platform Package**:
-An exact-version optional npm package containing one prebuilt Rust CSS Engine binary for a single supported operating-system, CPU, and libc target. The root `sheetom` package selects it locally and never downloads executable code during installation.
+An exact-version optional npm package named `@sheetom/native-<target>` and containing one prebuilt Rust CSS Engine binary for a single supported operating-system, CPU, and libc target. The root `sheetom` package selects it locally and never downloads executable code during installation.
 _Avoid_: Universal binary, postinstall download, optional engine
 
 **Supported Native Matrix**:
-The release-blocking set of real consumer environments for RC6: Linux x64 GNU, Linux ARM64 GNU, Windows x64, and macOS ARM64 for Node.js 22 and 24, with Bun and Deno additionally exercised on Linux x64. A platform outside this matrix fails explicitly instead of selecting a second syntax engine.
-_Avoid_: Node-API compatible platforms, best-effort architecture, WASM fallback
+The release-blocking set of native targets whose exact platform package is both built and executed in a matching Node.js environment. It currently covers GNU and musl Linux on x64 and ARM64, Windows on x64 and ARM64, and macOS on x64 and ARM64; Windows x86 plus GNU Linux ARMv7, ppc64le and s390x and musl Linux ARMv7 are graduation candidates, while compiling a Node-API-compatible target alone never adds it to the matrix.
+_Avoid_: Build target list, Node-API compatible platforms, best-effort architecture, WASM fallback
+
+**WebAssembly Browser Backend**:
+The separately installed `@sheetom/wasm` build of the Rust CSS Engine for browsers and compatible isolates. Its asynchronous factory returns an initialized JavaScript CSSOM Facade and it never silently replaces a missing Native Platform Package.
+_Avoid_: Native fallback, universal entry, synchronous browser binding, WASI package
+
+**Poisoned Engine Instance**:
+A WebAssembly Engine Binding that encountered an unexpected trap and permanently rejects every subsequent operation so potentially partial native state can never become observable. A caller creates a new initialized facade rather than reviving the instance.
+_Avoid_: Recovered backend, automatic retry, parser error, invalid stylesheet
 
 **Shadow Engine Run**:
 A test-only execution that applies the same operation to the incumbent TypeScript declaration engine and the candidate Rust CSS Engine, compares complete observable state and reparsable output, and has no authority to choose a result at runtime.
@@ -233,7 +249,7 @@ The exact Playwright Chromium, Firefox, and WebKit builds recorded for one relea
 _Avoid_: System Chrome, current stable, reusable previous-release baseline
 
 **Compatibility Report**:
-The immutable, schema-validated release artifact containing a Compatibility Baseline, WPT Dispositions, Oracle Observations, Compatibility Resolutions, shorthand corpus and branch-model hashes, exact gate outcomes, and their summary counts.
+The immutable, schema-validated release artifact containing a Compatibility Baseline, backend-specific outcomes, WPT Dispositions, Oracle Observations, Compatibility Resolutions, shorthand corpus and branch-model hashes, exact gate outcomes, and their summary counts.
 _Avoid_: Release notes, mutable dashboard, test log
 
 **Baseline Draft**:

@@ -1,4 +1,4 @@
-import { nativeBinding } from "./native-binding.js";
+import { engineBinding } from "./default-engine-binding.js";
 import {
   defaultResourceBudget,
   nativeBudgetArguments,
@@ -21,7 +21,7 @@ export function parseNativeCounterStyleName(
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeCounterStyleName | null {
   try {
-    const encoded = nativeBinding.parseCounterStyleNameJson(
+    const encoded = engineBinding.parseCounterStyleNameJson(
       source,
       ...nativeBudgetArguments(resourceBudget),
     );
@@ -38,11 +38,11 @@ export function parseNativeCounterStyleName(
 }
 
 export function serializeNativeIdentifier(value: string): string {
-  return nativeBinding.serializeIdentifierValue(value);
+  return engineBinding.serializeIdentifierValue(value);
 }
 
 export function serializeNativeFontFamily(value: string): string {
-  return nativeBinding.serializeFontFamilyValue(value);
+  return engineBinding.serializeFontFamilyValue(value);
 }
 
 export function parseNativeCounterStyleDescriptor(
@@ -51,7 +51,7 @@ export function parseNativeCounterStyleDescriptor(
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): string | null {
   try {
-    return nativeBinding.parseCounterStyleDescriptorValue(
+    return engineBinding.parseCounterStyleDescriptorValue(
       name,
       value,
       ...nativeBudgetArguments(resourceBudget),
@@ -67,7 +67,7 @@ export function parseNativeCounterStyleDescriptors(
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeCounterStyleDescriptor[] {
   try {
-    const parsed: unknown = JSON.parse(nativeBinding.parseCounterStyleDescriptorsJson(
+    const parsed: unknown = JSON.parse(engineBinding.parseCounterStyleDescriptorsJson(
       source,
       ...nativeBudgetArguments(resourceBudget),
     ));

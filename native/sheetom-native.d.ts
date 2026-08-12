@@ -24,6 +24,9 @@ export declare class NativeDeclarationState {
  */
 export declare function canonicalizeDeclarationBlock(source: string, maxStylesheetBytes?: number | undefined | null, maxDeclarationValueBytes?: number | undefined | null, maxNestingDepth?: number | undefined | null, maxRules?: number | undefined | null, maxDeclarationsPerBlock?: number | undefined | null): string
 
+/** Identifies the exact private contract and Syntax Engine Set compiled into the addon. */
+export declare function engineAbiIdentity(): string
+
 /** Identifies the exact parser baseline compiled into the native addon. */
 export declare function nativeEngineRevision(): string
 

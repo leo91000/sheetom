@@ -11,6 +11,7 @@ const isDocumentationPath = filePath =>
 const isReleaseMetadataPath = filePath => filePath.startsWith(".changeset/");
 
 const isNativePath = filePath =>
+    filePath === "engine-abi.json" ||
     filePath === "Cargo.lock" ||
     filePath === "Cargo.toml" ||
     filePath === "rust-toolchain.toml" ||
@@ -20,6 +21,7 @@ const isNativePath = filePath =>
     filePath.startsWith("vendor/cssparser/") ||
     filePath.startsWith("vendor/lightningcss/") ||
     filePath === "scripts/check-native-public-corpus.mjs" ||
+    filePath === "scripts/engine-abi.mjs" ||
     filePath === "scripts/generate-native-property-catalog.mjs" ||
     filePath === "scripts/native-crash-worker.mjs" ||
     filePath === "scripts/public-crash-worker.mjs" ||

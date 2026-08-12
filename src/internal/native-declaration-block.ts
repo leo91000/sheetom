@@ -1,9 +1,9 @@
 import type { SheetOMDiagnosticCode } from "../diagnostics.js";
 import {
-  nativeBinding,
-  type NativeDeclarationStateHandle,
-  type NativeMutationOutcome,
-} from "./native-binding.js";
+  type EngineDeclarationStateHandle,
+  type EngineMutationOutcome,
+} from "./engine-binding.js";
+import { engineBinding } from "./default-engine-binding.js";
 import {
   defaultResourceBudget,
   nativeBudgetArguments,
@@ -19,7 +19,7 @@ type ReportDeclarationDiagnostic = (
 
 /** Thin JS ownership boundary around the Rust declaration state machine. */
 export class NativeDeclarationBlock {
-  readonly #state: NativeDeclarationStateHandle;
+  readonly #state: EngineDeclarationStateHandle;
   readonly #reportDiagnostic: ReportDeclarationDiagnostic;
   readonly #reservedNestingDepth: () => number;
   #observableCache: string | undefined;
@@ -33,7 +33,7 @@ export class NativeDeclarationBlock {
   ) {
     this.#reportDiagnostic = reportDiagnostic;
     this.#reservedNestingDepth = reservedNestingDepth;
-    this.#state = new nativeBinding.NativeDeclarationState(
+    this.#state = engineBinding.createDeclarationState(
       context,
       ...nativeBudgetArguments(resourceBudget),
     );
@@ -61,7 +61,7 @@ export class NativeDeclarationBlock {
   }
 
   setProperty(name: string, value: string, priority: string): void {
-    let outcome: NativeMutationOutcome;
+    let outcome: EngineMutationOutcome;
     try {
       outcome = this.#state.setProperty(name, value, priority, this.#reservedNestingDepth());
     } catch (error) {

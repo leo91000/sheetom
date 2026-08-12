@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0171
 ---
 
 # Ship one tarball with eight native binaries
