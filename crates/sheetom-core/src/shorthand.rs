@@ -2,7 +2,10 @@ use crate::{
     catalog::{initial_longhand_value, observed_shorthand_longhands, shorthand_longhands},
     declaration_state::{DeclarationRecord, MutationOutcome},
     extension_value::{offset_rotate_is_shorthand_default, parse_contextual_dimension_calculation},
-    gap_rule::{canonical_gap_rule_longhand, expand_gap_rule, synthesize_gap_rule},
+    gap_rule::{
+        canonical_gap_rule_longhand, expand_border_side_observable, expand_gap_rule,
+        synthesize_gap_rule,
+    },
     observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{
@@ -1266,10 +1269,10 @@ fn synthesize_border_like(
     records: &[&DeclarationRecord],
     safe: bool,
 ) -> Option<String> {
-    let collect_suffix = |suffix: &str| {
+    let collect_component = |component: BorderComponent| {
         records
             .iter()
-            .filter(|record| record.name.ends_with(suffix))
+            .filter(|record| border_component(&record.name) == Some(component))
             .map(|record| {
                 if safe {
                     record.safe_value()
@@ -1279,36 +1282,105 @@ fn synthesize_border_like(
             })
             .collect::<Vec<_>>()
     };
-    let widths = collect_suffix("-width");
-    let styles = collect_suffix("-style");
-    let colors = collect_suffix("-color");
+    let widths = collect_component(BorderComponent::Width);
+    let styles = collect_component(BorderComponent::Style);
+    let colors = collect_component(BorderComponent::Color);
     let width = uniform_value(&widths)?;
     let style = uniform_value(&styles)?;
     let color = uniform_value(&colors)?;
     if matches!(name, "column-rule" | "row-rule" | "rule") {
         return synthesize_gap_rule(width, style, color).ok();
     }
-    if width == "medium" && style == "none" && color == "currentcolor" {
+    if !safe {
+        let logical_side = matches!(
+            name,
+            "border-block-end" | "border-block-start" | "border-inline-end" | "border-inline-start"
+        );
+        let mut components = Vec::new();
+        if !width.eq_ignore_ascii_case("initial")
+            && (logical_side || !width.eq_ignore_ascii_case("medium"))
+        {
+            components.push(width);
+        }
+        if !style.eq_ignore_ascii_case("initial")
+            && (logical_side || !style.eq_ignore_ascii_case("none"))
+        {
+            components.push(style);
+        }
+        if !color.eq_ignore_ascii_case("initial")
+            && (logical_side || !color.eq_ignore_ascii_case("currentcolor"))
+        {
+            components.push(color);
+        }
+        return (!components.is_empty()).then(|| components.join(" "));
+    }
+    if width.eq_ignore_ascii_case("medium")
+        && style.eq_ignore_ascii_case("none")
+        && color.eq_ignore_ascii_case("currentcolor")
+    {
         if matches!(
             name,
             "border-block-end" | "border-block-start" | "border-inline-end" | "border-inline-start"
         ) {
             return Some("medium none currentcolor".to_owned());
         }
-        if name.starts_with("border") {
-            return None;
+        if is_border_like(name) {
+            return safe.then(|| "none".to_owned());
         }
         return Some("medium".to_owned());
     }
     let mut components = Vec::new();
-    if width != "medium" {
+    if !width.eq_ignore_ascii_case("medium") {
         components.push(width);
     }
     components.push(style);
-    if color != "currentcolor" {
+    if !color.eq_ignore_ascii_case("currentcolor") {
         components.push(color);
     }
     Some(components.join(" "))
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum BorderComponent {
+    Width,
+    Style,
+    Color,
+}
+
+fn border_component(name: &str) -> Option<BorderComponent> {
+    match name {
+        "border-top-width"
+        | "border-right-width"
+        | "border-bottom-width"
+        | "border-left-width"
+        | "border-block-start-width"
+        | "border-block-end-width"
+        | "border-inline-start-width"
+        | "border-inline-end-width"
+        | "column-rule-width"
+        | "row-rule-width" => Some(BorderComponent::Width),
+        "border-top-style"
+        | "border-right-style"
+        | "border-bottom-style"
+        | "border-left-style"
+        | "border-block-start-style"
+        | "border-block-end-style"
+        | "border-inline-start-style"
+        | "border-inline-end-style"
+        | "column-rule-style"
+        | "row-rule-style" => Some(BorderComponent::Style),
+        "border-top-color"
+        | "border-right-color"
+        | "border-bottom-color"
+        | "border-left-color"
+        | "border-block-start-color"
+        | "border-block-end-color"
+        | "border-inline-start-color"
+        | "border-inline-end-color"
+        | "column-rule-color"
+        | "row-rule-color" => Some(BorderComponent::Color),
+        _ => None,
+    }
 }
 
 fn synthesize_text_decoration(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1750,6 +1822,18 @@ fn observable_shorthand_override(
     }
     if shorthand == "background" {
         return observable_background_longhand(longhand, input).map(|value| (value, None));
+    }
+    if matches!(
+        shorthand,
+        "border-block-end" | "border-block-start" | "border-inline-end" | "border-inline-start"
+    ) {
+        let expansion = expand_border_side_observable(input).ok()?;
+        let observable = match border_component(longhand)? {
+            BorderComponent::Width => expansion.width,
+            BorderComponent::Style => expansion.style,
+            BorderComponent::Color => expansion.color,
+        };
+        return Some((observable, None));
     }
     if matches!(shorthand, "mask" | "-webkit-mask") {
         if longhand == "mask-image" {
@@ -3828,4 +3912,27 @@ fn validate_structural_longhand(name: &str, value: &str) -> Option<String> {
     };
 
     typed_longhand_value(validation_name?, value)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{border_component, BorderComponent};
+
+    #[test]
+    fn border_component_registry_excludes_similarly_suffixed_properties() {
+        assert_eq!(
+            border_component("border-inline-start-width"),
+            Some(BorderComponent::Width)
+        );
+        assert_eq!(
+            border_component("column-rule-style"),
+            Some(BorderComponent::Style)
+        );
+        assert_eq!(
+            border_component("row-rule-color"),
+            Some(BorderComponent::Color)
+        );
+        assert_eq!(border_component("border-image-width"), None);
+        assert_eq!(border_component("text-decoration-color"), None);
+    }
 }

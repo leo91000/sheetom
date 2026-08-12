@@ -799,8 +799,19 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
         name,
         "animation"
             | "background"
+            | "border"
+            | "border-block"
+            | "border-block-end"
+            | "border-block-start"
+            | "border-bottom"
             | "column-rule"
             | "border-image"
+            | "border-inline"
+            | "border-inline-end"
+            | "border-inline-start"
+            | "border-left"
+            | "border-right"
+            | "border-top"
             | "columns"
             | "contain-intrinsic-size"
             | "container"
@@ -836,7 +847,18 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
 fn prefers_synthesized_safe_provenance(name: &str) -> bool {
     matches!(
         name,
-        "border-image"
+        "border"
+            | "border-block"
+            | "border-block-end"
+            | "border-block-start"
+            | "border-bottom"
+            | "border-image"
+            | "border-inline"
+            | "border-inline-end"
+            | "border-inline-start"
+            | "border-left"
+            | "border-right"
+            | "border-top"
             | "contain-intrinsic-size"
             | "font-variant"
             | "flex-flow"
@@ -918,7 +940,7 @@ fn requires_default_shorthand_synthesis(name: &str, observable: &str) -> bool {
             | "row-rule"
             | "rule"
     );
-    border_like && matches!(observable, "none" | "currentcolor")
+    border_like && matches!(observable, "medium" | "none" | "currentcolor")
         || name == "text-decoration" && matches!(observable, "auto" | "solid" | "currentcolor")
 }
 
@@ -2939,6 +2961,44 @@ mod tests {
 
         state.set_property("mask", "no-clip", "");
         assert_eq!(state.get_property_value("mask"), "no-clip");
+    }
+
+    #[test]
+    fn border_shorthands_separate_omitted_longhands_from_semantic_initials() {
+        let mut state = DeclarationState::new();
+        state.set_property("border-block-start", "red none 1px", "");
+        assert_eq!(
+            state.get_property_value("border-block-start"),
+            "1px none red"
+        );
+        assert_eq!(state.get_property_value("border-block-start-width"), "1px");
+        assert_eq!(state.get_property_value("border-block-start-style"), "none");
+        assert_eq!(state.get_property_value("border-block-start-color"), "red");
+
+        state.set_property("border-block-start", "1px", "");
+        assert_eq!(state.get_property_value("border-block-start-width"), "1px");
+        assert_eq!(
+            state.get_property_value("border-block-start-style"),
+            "initial"
+        );
+        assert_eq!(
+            state.get_property_value("border-block-start-color"),
+            "initial"
+        );
+
+        let mut state = DeclarationState::new();
+        state.set_property("border", "1px none red", "");
+        assert_eq!(state.get_property_value("border"), "1px red");
+
+        state.set_property("border", "medium", "");
+        assert_eq!(state.get_property_value("border"), "");
+        assert_eq!(
+            state.css_text(),
+            "border-width: medium; border-style: none; border-color: currentcolor; border-image: none;"
+        );
+
+        state.set_property("border", "none", "");
+        assert_eq!(state.serialize_safe(), "border: none;");
     }
 
     #[test]
