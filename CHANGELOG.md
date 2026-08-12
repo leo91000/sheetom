@@ -1,5 +1,16 @@
 # sheetom
 
+## 0.1.0-rc.8
+
+### Patch Changes
+
+- c3163c5: Align the published TypeScript interface with CSSOM construction rules and expose pinned Chromium named properties directly on `CSSStyleDeclaration`.
+- a2477b4: Replace prerelease implementation notes with concise product, architecture,
+  compatibility, contribution, and release documentation for the stable package.
+- 5f72f3f: Keep immutable compatibility reports as verified GitHub Release assets without
+  including the evidence corpus in the runtime npm package.
+- dde8730: Remove conformance evidence from the npm tarball, drop obsolete JavaScript parser dependencies, and gate the root package below 200 kB compressed and 750 kB unpacked.
+
 ## 0.1.0-rc.7
 
 ### Patch Changes
