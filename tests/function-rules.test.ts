@@ -73,9 +73,9 @@ test("CSSFunctionRule exposes parameters, return types, escapes, and live descri
 });
 
 test("custom function CSSOM interfaces reject direct construction", () => {
-  assert.throws(() => new CSSFunctionRule("--f", [], "*"), TypeError);
-  assert.throws(() => new CSSFunctionDeclarations(), TypeError);
-  assert.throws(() => new CSSFunctionDescriptors(null as never), TypeError);
+  assert.throws(() => Reflect.construct(CSSFunctionRule, ["--f", [], "*"]), TypeError);
+  assert.throws(() => Reflect.construct(CSSFunctionDeclarations, []), TypeError);
+  assert.throws(() => Reflect.construct(CSSFunctionDescriptors, [null]), TypeError);
 });
 
 test("getParameters returns independent mutable records like Chromium", () => {

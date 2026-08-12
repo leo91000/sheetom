@@ -12,11 +12,11 @@ import {
 } from "../src/index.js";
 
 test("browser-created rule interfaces reject direct construction", () => {
-  assert.throws(() => new CSSStyleRule(".x"), TypeError);
-  assert.throws(() => new CSSMediaRule("screen"), TypeError);
-  assert.throws(() => new MediaList(), TypeError);
-  assert.throws(() => new CSSStyleDeclaration(null as never), TypeError);
-  assert.throws(() => new CSSRuleList([]), TypeError);
+  assert.throws(() => Reflect.construct(CSSStyleRule, [".x"]), TypeError);
+  assert.throws(() => Reflect.construct(CSSMediaRule, ["screen"]), TypeError);
+  assert.throws(() => Reflect.construct(MediaList, []), TypeError);
+  assert.throws(() => Reflect.construct(CSSStyleDeclaration, [null]), TypeError);
+  assert.throws(() => Reflect.construct(CSSRuleList, [[]]), TypeError);
 });
 
 test("assigning rule cssText is a successful no-op", () => {
