@@ -32,6 +32,15 @@ export function assessImplementationPackageChannels(
   version: string,
 ): { ready: boolean; reasons: string[] };
 
+export function assessNpmPublication(
+  name: string,
+  published: { name?: string; dist?: { integrity?: string } } | null,
+  distTags: Record<string, string>,
+  tag: string,
+  version: string,
+  integrity: string,
+): "published" | "scanning" | "unpublished";
+
 export function waitForDistTag(
   name: string,
   tag: string,
@@ -43,3 +52,18 @@ export function waitForDistTag(
     wait?: (milliseconds: number) => Promise<void>;
   },
 ): Promise<Record<string, string>>;
+
+export function waitForPublishedVersion(
+  name: string,
+  version: string,
+  integrity: string,
+  options?: {
+    attempts?: number;
+    intervalMs?: number;
+    readVersion?: (
+      name: string,
+      version: string,
+    ) => Promise<{ dist?: { integrity?: string } } | null>;
+    wait?: (milliseconds: number) => Promise<void>;
+  },
+): Promise<{ dist?: { integrity?: string } }>;
