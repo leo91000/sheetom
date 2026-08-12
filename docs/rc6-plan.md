@@ -48,7 +48,7 @@ RC6 replaces SheetOM's JavaScript syntax-engine stack with one repository-owned 
 9. **Conformance and stabilization**
    - Record a fresh Pinned Browser Baseline and immutable compatibility report.
    - Complete applicable WPT, differential generation, native reparsing, extended fuzzing and the Publisher Performance Regression Gate.
-   - Require seven consecutive nightly full-CI runs on the unchanged release pull request SHA before publishing RC6.
+   - Require one complete release-PR validation on the unchanged RC6 SHA; retain the seven-consecutive-night full-CI soak for the first stable release.
 
 ## Completion contract
 

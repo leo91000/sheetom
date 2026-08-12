@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR 0170
 ---
 
 # Gate RC6 on the exact release SHA

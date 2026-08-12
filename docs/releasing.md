@@ -8,8 +8,8 @@ Changesets prepares versions and changelogs. The release workflow publishes only
 2. Merge the implementation pull requests only after their complete CI is green.
 3. Successful `main` CI maintains a draft `chore: release packages (rc)` pull request. The workflow versions the package, runs the native Chrome and Firefox oracles, records the immutable Compatibility Report, and marks the pull request ready.
 4. Review the version, changelog, npm and Cargo lockfiles, Native Engine evidence, Compatibility Report, and green release-PR CI. RC6 reports must identify the exact vendored source manifest, every manifested shorthand, the complete versioned grammar and value-capability corpora, the Chromium property/value cross-product, the Webref-derived property branches, and complete native/public process-safety execution. The verifier derives corpus counts from reviewed release evidence so this guide cannot silently become a stale numeric allowance.
-5. Leave the generated release pull request unchanged while the RC6 Soak workflow records seven consecutive nightly full-CI successes on its exact SHA. Any update resets the evidence. Manual workflow runs are diagnostic and do not count. Merge only after all seven dated statuses are present.
-6. Successful `main` CI builds one tarball containing all eight supported native binaries and tests that exact artifact across the complete Node, Bun, Deno, glibc, musl, Windows and macOS consumer matrix. The Release workflow resolves and verifies the seven-night evidence, downloads the artifact from that successful CI run, rejects an incomplete native set, creates a draft GitHub prerelease with it and the report, and publishes those exact bytes to npm through Trusted Publishing under `next`. A manual Release rerun resolves the successful CI run for the unchanged release commit; it never repacks the checkout.
+5. Leave the generated RC6 release pull request unchanged while its complete CI matrix runs on the final evidence commit. Any update invalidates that run and requires a fresh complete validation.
+6. Successful `main` CI builds one tarball containing all eight supported native binaries and tests that exact artifact across the complete Node, Bun, Deno, glibc, musl, Windows and macOS consumer matrix. The Release workflow downloads the artifact from that successful CI run, rejects an incomplete native set, creates a draft GitHub prerelease with it and the report, and publishes those exact bytes to npm through Trusted Publishing under `next`. A manual Release rerun resolves the successful CI run for the unchanged release commit; it never repacks the checkout.
 
 Before the first stable release, npm's `latest` and `next` channels must both point to the active release candidate. Trusted Publishing cannot mutate dist-tags or deprecations, so the initial publish leaves the GitHub Release as a draft and reports a maintainer checkpoint when reconciliation is needed.
 
@@ -27,7 +27,7 @@ Verify `latest === next === <active-rc>` and the deprecation, then rerun the Rel
 
 ## Stable releases
 
-Exit Changesets prerelease mode in a reviewed change, then follow the same release-PR and CI flow. The publication places the stable version under `latest`. Before the GitHub Release can become public, authenticate with npm, remove `next`, and deprecate every replaced prerelease:
+Exit Changesets prerelease mode in a reviewed change, then follow the same release-PR and CI flow. Leave the generated `0.1.0` release pull request unchanged while the First Stable Soak workflow records seven consecutive nightly full-CI successes on its exact SHA. Any update resets the evidence; manual runs are diagnostic and do not count. Merge only after all seven dated statuses are present. The publication places the stable version under `latest`. Before the GitHub Release can become public, authenticate with npm, remove `next`, and deprecate every replaced prerelease:
 
 ```sh
 npm login --auth-type=web
