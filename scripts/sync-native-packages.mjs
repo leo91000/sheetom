@@ -44,7 +44,7 @@ for (const target of NATIVE_TARGETS) {
 }
 
 if (!check) {
-  rootManifest.workspaces = ["packages/native-*"];
+  rootManifest.workspaces = [".", "packages/native-*", "packages/wasm"];
   rootManifest.optionalDependencies = Object.fromEntries(
     NATIVE_TARGETS
       .map(target => [target.packageName, rootManifest.version])

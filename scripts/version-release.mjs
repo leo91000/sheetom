@@ -5,6 +5,9 @@ execFileSync(process.execPath, ["scripts/sync-cargo-version.mjs"], { stdio: "inh
 execFileSync(process.execPath, ["scripts/sync-native-packages.mjs", "--record"], {
   stdio: "inherit",
 });
+execFileSync(process.execPath, ["scripts/sync-wasm-package.mjs", "--record"], {
+  stdio: "inherit",
+});
 execFileSync(
   "npm",
   ["install", "--package-lock-only", "--ignore-scripts"],

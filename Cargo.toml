@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/sheetom-core", "crates/sheetom-native"]
+members = ["crates/sheetom-core", "crates/sheetom-native", "crates/sheetom-wasm"]
 resolver = "2"
 
 [workspace.package]

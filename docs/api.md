@@ -18,6 +18,16 @@ All exported rule, rule-list, declaration, media-list, and feature-map classes
 exist for `instanceof` and typing. Direct construction throws `TypeError`, as it
 does in browsers. Obtain their objects from a sheet or parent rule.
 
+The browser WebAssembly backend exports `createSheetOM(source?)` from
+`@sheetom/wasm`. Its promise resolves to a frozen object containing the same
+public constructors and functions as `sheetom`. Calls without a source share
+one concurrent default initialization per JavaScript realm. An explicit
+`URL`, `Response`, `ArrayBuffer`, or `WebAssembly.Module` creates an independent
+backend and independent class identities. Applications must compare objects
+with constructors from the same returned facade. Initialization and traps use
+`SheetOMWasmBindingError` with stable `SHEETOM_WASM_*` codes; ordinary CSS and
+Resource Budget failures retain the native facade contract.
+
 ## Stylesheets and identity
 
 `CSSStyleSheet.cssRules` is stable and live. `insertRule` and `deleteRule` use

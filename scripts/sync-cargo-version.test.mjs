@@ -33,7 +33,7 @@ test("release versioning rejects ambiguous package metadata", () => {
   );
 });
 
-test("release versioning updates both workspace entries in Cargo.lock", () => {
+test("release versioning updates every workspace entry in Cargo.lock", () => {
   const source = `[[package]]
 name = "dependency"
 version = "1.2.3"
@@ -47,8 +47,13 @@ dependencies = ["dependency"]
 name = "sheetom-native"
 version = "0.1.0-rc.5"
 dependencies = ["sheetom-core"]
+
+[[package]]
+name = "sheetom-wasm"
+version = "0.1.0-rc.5"
+dependencies = ["sheetom-core"]
 `;
   const updated = replaceCargoLockVersions(source, "0.1.0-rc.6");
   assert.match(updated, /name = "dependency"\nversion = "1\.2\.3"/u);
-  assert.equal(updated.match(/version = "0\.1\.0-rc\.6"/gu)?.length, 2);
+  assert.equal(updated.match(/version = "0\.1\.0-rc\.6"/gu)?.length, 3);
 });

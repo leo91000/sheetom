@@ -37,6 +37,7 @@ jobs:
       performance: ${{ steps.classify.outputs.performance }}
       quality: ${{ steps.classify.outputs.quality }}
       vendor: ${{ steps.classify.outputs.vendor }}
+      wasm: ${{ steps.classify.outputs.wasm }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -182,6 +183,56 @@ jobs:
         run: npx playwright install chromium
       - name: Compare native declaration sequences with Chromium
         run: npm run native:browser-differential:run
+
+  wasm-quality:
+    needs: changes
+    if: needs.changes.outputs.wasm == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      WASM_BINDGEN_VERSION: 0.2.127
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: wasm32-release
+      - uses: actions/cache@v5
+        id: wasm-bindgen-cache
+        with:
+          path: |
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+          key: wasm-bindgen-${{ runner.os }}-${{ env.WASM_BINDGEN_VERSION }}
+      - name: Install the pinned WebAssembly toolchain
+        run: |
+          rustup target add wasm32-unknown-unknown
+          if [[ "${{ steps.wasm-bindgen-cache.outputs.cache-hit }}" != "true" ]]; then
+            cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+          fi
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run wasm:check
+      - run: npm run wasm:build
+      - run: npm run wasm:test
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Exercise direct HTTP and worker initialization
+        run: npm run wasm:test:browsers
+      - name: Pack the tested WebAssembly package
+        run: |
+          mkdir wasm-package
+          npm pack --workspace @sheetom/wasm --pack-destination wasm-package
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sheetom-wasm-package
+          path: wasm-package/*.tgz
+          if-no-files-found: error
 
   native-bindings:
     needs: changes

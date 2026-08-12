@@ -33,3 +33,9 @@ test("performance runtimes build in parallel and benchmark on one runner", () =>
   assert.match(comparison, /performance-candidate\/dist\/index\.js/u);
   assert.match(comparison, /performance-baseline\/dist\/index\.js/u);
 });
+
+test("the shared benchmark harness accepts an explicit WASM backend", async () => {
+  const harness = await readFile(new URL("./benchmark.mjs", import.meta.url), "utf8");
+  assert.match(harness, /--wasm-binary/u);
+  assert.match(harness, /createSheetOM/u);
+});

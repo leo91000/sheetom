@@ -11,6 +11,7 @@ const none = {
     performance: false,
     quality: false,
     vendor: false,
+    wasm: false,
 };
 
 test("documentation changes run only documentation validation", () => {
@@ -24,6 +25,7 @@ test("vendored source changes rebuild native validation and package artifacts", 
         package: true,
         performance: true,
         vendor: true,
+        wasm: true,
     });
 });
 
@@ -42,7 +44,7 @@ test("the generated native property catalog does not trigger browser jobs", () =
             "scripts/generate-native-property-catalog.mjs",
             "crates/sheetom-core/src/generated/chromium_properties.rs",
         ]),
-        { ...none, native: true, package: true, performance: true },
+        { ...none, native: true, package: true, performance: true, wasm: true },
     );
 });
 
@@ -73,6 +75,7 @@ test("the generated Engine ABI Identity rebuilds native and package artifacts", 
         ...none,
         native: true,
         package: true,
+        wasm: true,
     });
 });
 
@@ -119,6 +122,7 @@ test("public runtime changes run every relevant JavaScript gate", () => {
         performance: true,
         quality: true,
         vendor: false,
+        wasm: true,
     });
 });
 
@@ -131,6 +135,7 @@ test("workflow and classifier changes fail safe to the complete matrix", () => {
         performance: true,
         quality: true,
         vendor: true,
+        wasm: true,
     });
 });
 
@@ -143,6 +148,7 @@ test("scheduled runs force the complete matrix", () => {
         performance: true,
         quality: true,
         vendor: true,
+        wasm: true,
     });
 });
 
@@ -150,4 +156,14 @@ test("root Rust and package command changes keep vendored tests enabled", () => 
     for (const filePath of ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "package.json"]) {
         assert.equal(classifyPaths([filePath]).vendor, true, filePath);
     }
+});
+
+test("WASM implementation changes run the shared and browser backend gates", () => {
+    assert.deepEqual(classifyPaths(["packages/wasm/src/index.ts"]), {
+        ...none,
+        docs: true,
+        package: true,
+        quality: true,
+        wasm: true,
+    });
 });
