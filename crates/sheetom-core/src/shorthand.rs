@@ -106,6 +106,9 @@ fn synthesize_shorthand_inner(
     if has_grouped_records && !can_synthesize_static_rule_inset {
         return None;
     }
+    if !safe && records.iter().any(|record| record.pending_substitution()) {
+        return None;
+    }
 
     let values = records
         .iter()
@@ -193,11 +196,18 @@ fn synthesize_special_shorthand(
         "flex" => synthesize_flex(records, safe),
         "font" => synthesize_font(records, safe),
         "font-variant" => synthesize_font_variant(records, safe),
+        "font-synthesis" => synthesize_font_synthesis(records, safe),
         "grid" => synthesize_grid(records, safe),
         "grid-area" => synthesize_grid_area(records, safe),
         "grid-column" | "grid-row" => synthesize_grid_line(name, records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
         "mask" => synthesize_mask(records, safe),
+        "mask-position" | "-webkit-mask-position" => synthesize_position_lists(
+            records,
+            safe,
+            "-webkit-mask-position-x",
+            "-webkit-mask-position-y",
+        ),
         "list-style" => synthesize_list_style(records, safe),
         "offset" => synthesize_offset(records, safe),
         "outline" => synthesize_outline(records, safe),
@@ -260,11 +270,14 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "flex"
             | "font"
             | "font-variant"
+            | "font-synthesis"
             | "grid"
             | "grid-area"
             | "grid-column"
             | "grid-row"
             | "mask"
+            | "mask-position"
+            | "-webkit-mask-position"
             | "list-style"
             | "offset"
             | "outline"
@@ -1292,7 +1305,12 @@ fn synthesize_structural_shorthand(
     safe: bool,
 ) -> Option<String> {
     if name == "background-position" {
-        return synthesize_background_position(records, safe);
+        return synthesize_position_lists(
+            records,
+            safe,
+            "background-position-x",
+            "background-position-y",
+        );
     }
     if name == "place-self" {
         let align = record_value(records, "align-self", safe)?;
@@ -1332,9 +1350,14 @@ fn synthesize_structural_shorthand(
     synthesize_repeated_pair(name, records, safe)
 }
 
-fn synthesize_background_position(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
-    let x = value_list(record_value(records, "background-position-x", safe)?)?;
-    let y = value_list(record_value(records, "background-position-y", safe)?)?;
+fn synthesize_position_lists(
+    records: &[&DeclarationRecord],
+    safe: bool,
+    x_name: &str,
+    y_name: &str,
+) -> Option<String> {
+    let x = value_list(record_value(records, x_name, safe)?)?;
+    let y = value_list(record_value(records, y_name, safe)?)?;
     if x.len() != y.len() || x.is_empty() {
         return None;
     }
@@ -1348,6 +1371,24 @@ fn synthesize_background_position(records: &[&DeclarationRecord], safe: bool) ->
         })
         .collect::<Option<Vec<_>>>()
         .map(|layers| layers.join(", "))
+}
+
+fn synthesize_font_synthesis(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let components = [
+        ("font-synthesis-weight", "weight"),
+        ("font-synthesis-style", "style"),
+        ("font-synthesis-small-caps", "small-caps"),
+    ]
+    .into_iter()
+    .filter_map(|(longhand, component)| {
+        (record_value(records, longhand, safe)? == "auto").then_some(component)
+    })
+    .collect::<Vec<_>>();
+    Some(if components.is_empty() {
+        "none".to_owned()
+    } else {
+        components.join(" ")
+    })
 }
 
 fn record_values(records: &[&DeclarationRecord], safe: bool) -> Option<Vec<String>> {
@@ -1574,11 +1615,16 @@ fn is_two_value(name: &str) -> bool {
         name,
         "gap"
             | "grid-gap"
+            | "border-spacing"
+            | "interest-delay"
             | "inset-block"
             | "inset-inline"
             | "margin-block"
             | "margin-inline"
             | "overscroll-behavior"
+            | "overflow"
+            | "place-content"
+            | "place-items"
             | "padding-block"
             | "padding-inline"
             | "scroll-margin-block"
@@ -1611,7 +1657,14 @@ fn is_repeated_two_value(name: &str) -> bool {
 fn is_repeated_four_value(name: &str) -> bool {
     matches!(
         name,
-        "border-color" | "border-style" | "border-width" | "corner-shape"
+        "border-color"
+            | "border-style"
+            | "border-width"
+            | "corner-shape"
+            | "margin"
+            | "padding"
+            | "scroll-margin"
+            | "scroll-padding"
     )
 }
 
