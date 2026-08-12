@@ -62,7 +62,8 @@ pub use rules::{
     parse_recovered_single_rule_tree_with_limits, parse_rule_tree, parse_rule_tree_with_limits,
     parse_scope_prelude, parse_scope_prelude_with_limits, parse_stylesheet_tree,
     parse_stylesheet_tree_with_limits, scan_top_level_rules, scan_top_level_rules_with_limits,
-    serialize_font_family_setter, ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
+    serialize_font_family_setter, serialize_parsed_rule_json, serialize_parsed_rules_json,
+    ParsedContainerPrelude, ParsedRule, ParsedScopePrelude,
 };
 #[doc(hidden)]
 pub use semantic_value::{
@@ -80,7 +81,7 @@ pub fn serialize_css_identifier(value: &str) -> String {
     syntax::serialize_identifier(value)
 }
 
-#[cfg(panic = "abort")]
+#[cfg(all(panic = "abort", not(target_arch = "wasm32")))]
 compile_error!("sheetom-core must be compiled with panic=unwind");
 
 use lightningcss::{

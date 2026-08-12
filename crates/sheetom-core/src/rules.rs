@@ -5,7 +5,7 @@ use crate::{
     syntax::{parse_declaration_list, serialize_identifier, split_top_level_whitespace},
     EngineError, ResourceLimits,
 };
-use cssparser::{serialize_string, Parser, ParserInput, SourcePosition, Token};
+use cssparser::{serialize_string, Parser, ParserInput, SourcePosition, Token, TokenizerWithSpans};
 use lightningcss::{
     rules::{
         font_palette_values::FontPaletteValuesProperty, view_transition::ViewTransitionProperty,
@@ -18,18 +18,16 @@ use lightningcss::{
 use serde::Serialize;
 use std::{
     cell::Cell,
+    collections::HashMap,
+    ops::Range,
     panic::{catch_unwind, AssertUnwindSafe},
-    thread::{self, Builder},
 };
 
 thread_local! {
     static ACTIVE_RESOURCE_LIMITS: Cell<ResourceLimits> = Cell::new(ResourceLimits::default());
-    static ACTIVE_LARGE_STACK: Cell<bool> = const { Cell::new(false) };
 }
 
 const LARGE_STACK_DEPTH_THRESHOLD: usize = 256;
-const MINIMUM_PARSER_STACK_BYTES: usize = 32 * 1024 * 1024;
-const PARSER_STACK_BYTES_PER_LEVEL: usize = 32 * 1024;
 
 fn current_resource_limits() -> ResourceLimits {
     ACTIVE_RESOURCE_LIMITS.with(Cell::get)
@@ -52,42 +50,12 @@ fn with_resource_limits<T>(limits: ResourceLimits, operation: impl FnOnce() -> T
     })
 }
 
-fn run_parser_operation<T: Send>(
+fn run_parser_operation<T>(
     source: &str,
-    operation: impl FnOnce() -> Result<T, EngineError> + Send,
+    operation: impl FnOnce() -> Result<T, EngineError>,
 ) -> Result<T, EngineError> {
     validate_stylesheet_budget(source)?;
-    let depth = scan_safety_metrics(source).maximum_depth;
-    let already_on_large_stack = ACTIVE_LARGE_STACK.with(Cell::get);
-    if depth <= LARGE_STACK_DEPTH_THRESHOLD || already_on_large_stack {
-        return run_caught(operation);
-    }
-
-    let limits = current_resource_limits();
-    let stack_size = MINIMUM_PARSER_STACK_BYTES.max(
-        depth
-            .saturating_add(1)
-            .saturating_mul(PARSER_STACK_BYTES_PER_LEVEL),
-    );
-    thread::scope(|scope| {
-        let worker = Builder::new()
-            .name("sheetom-css-parser".to_owned())
-            .stack_size(stack_size)
-            .spawn_scoped(scope, move || {
-                with_resource_limits(limits, || {
-                    ACTIVE_LARGE_STACK.with(|active| {
-                        let previous = active.replace(true);
-                        let result = run_caught(operation);
-                        active.set(previous);
-                        result
-                    })
-                })
-            })
-            .map_err(|error| {
-                EngineError::Parse(format!("could not allocate the parser stack: {error}"))
-            })?;
-        worker.join().unwrap_or(Err(EngineError::UnexpectedPanic))
-    })
+    run_caught(operation)
 }
 
 fn run_caught<T>(operation: impl FnOnce() -> Result<T, EngineError>) -> Result<T, EngineError> {
@@ -98,7 +66,7 @@ fn run_caught<T>(operation: impl FnOnce() -> Result<T, EngineError>) -> Result<T
 ///
 /// This is the only rule representation allowed to cross Node-API. In
 /// particular, Lightning CSS AST nodes always remain inside Rust.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParsedRule {
     pub kind: String,
@@ -106,6 +74,160 @@ pub struct ParsedRule {
     pub declarations: String,
     pub children: Vec<ParsedRule>,
     pub css_text: String,
+}
+
+impl Clone for ParsedRule {
+    fn clone(&self) -> Self {
+        let mut nodes = Vec::<Option<ParsedRule>>::new();
+        let mut parents = Vec::<Option<usize>>::new();
+        let mut pending = vec![(self, None)];
+        while let Some((rule, parent)) = pending.pop() {
+            let index = nodes.len();
+            nodes.push(Some(ParsedRule {
+                kind: rule.kind.clone(),
+                prelude: rule.prelude.clone(),
+                declarations: rule.declarations.clone(),
+                children: Vec::with_capacity(rule.children.len()),
+                css_text: rule.css_text.clone(),
+            }));
+            parents.push(parent);
+            for child in rule.children.iter().rev() {
+                pending.push((child, Some(index)));
+            }
+        }
+
+        for index in (0..nodes.len()).rev() {
+            let Some(mut rule) = nodes[index].take() else {
+                continue;
+            };
+            rule.children.reverse();
+            let Some(parent) = parents[index] else {
+                return rule;
+            };
+            if let Some(parent_rule) = nodes.get_mut(parent).and_then(Option::as_mut) {
+                parent_rule.children.push(rule);
+            }
+        }
+        ParsedRule {
+            kind: self.kind.clone(),
+            prelude: self.prelude.clone(),
+            declarations: self.declarations.clone(),
+            children: Vec::new(),
+            css_text: self.css_text.clone(),
+        }
+    }
+}
+
+impl PartialEq for ParsedRule {
+    fn eq(&self, other: &Self) -> bool {
+        let mut pending = vec![(self, other)];
+        while let Some((left, right)) = pending.pop() {
+            if left.kind != right.kind
+                || left.prelude != right.prelude
+                || left.declarations != right.declarations
+                || left.css_text != right.css_text
+                || left.children.len() != right.children.len()
+            {
+                return false;
+            }
+            pending.extend(left.children.iter().zip(&right.children));
+        }
+        true
+    }
+}
+
+enum RuleJsonWork<'a> {
+    Rule(&'a ParsedRule),
+    RuleSuffix(&'a ParsedRule),
+    Rules {
+        rules: &'a [ParsedRule],
+        index: usize,
+    },
+}
+
+/// Serializes one owned rule DTO without recursing through its child tree.
+pub fn serialize_parsed_rule_json(rule: &ParsedRule) -> Result<String, EngineError> {
+    serialize_parsed_rule_forest_json(std::slice::from_ref(rule), false)
+}
+
+/// Serializes an owned rule forest without consuming native call-stack depth.
+pub fn serialize_parsed_rules_json(rules: &[ParsedRule]) -> Result<String, EngineError> {
+    serialize_parsed_rule_forest_json(rules, true)
+}
+
+fn serialize_parsed_rule_forest_json(
+    rules: &[ParsedRule],
+    include_root_array: bool,
+) -> Result<String, EngineError> {
+    let mut output = String::new();
+    let mut pending = if include_root_array {
+        vec![RuleJsonWork::Rules { rules, index: 0 }]
+    } else {
+        let Some(rule) = rules.first() else {
+            return Err(EngineError::Serialize(
+                "a single rule JSON payload requires one rule".to_owned(),
+            ));
+        };
+        vec![RuleJsonWork::Rule(rule)]
+    };
+
+    while let Some(work) = pending.pop() {
+        match work {
+            RuleJsonWork::Rule(rule) => {
+                output.push_str("{\"kind\":");
+                push_json_string(&mut output, &rule.kind)?;
+                output.push_str(",\"prelude\":");
+                push_json_string(&mut output, &rule.prelude)?;
+                output.push_str(",\"declarations\":");
+                push_json_string(&mut output, &rule.declarations)?;
+                output.push_str(",\"children\":");
+                pending.push(RuleJsonWork::RuleSuffix(rule));
+                pending.push(RuleJsonWork::Rules {
+                    rules: &rule.children,
+                    index: 0,
+                });
+            }
+            RuleJsonWork::RuleSuffix(rule) => {
+                output.push_str(",\"cssText\":");
+                push_json_string(&mut output, &rule.css_text)?;
+                output.push('}');
+            }
+            RuleJsonWork::Rules { rules, index } => {
+                if index == 0 {
+                    output.push('[');
+                }
+                if index == rules.len() {
+                    output.push(']');
+                    continue;
+                }
+                if index > 0 {
+                    output.push(',');
+                }
+                pending.push(RuleJsonWork::Rules {
+                    rules,
+                    index: index + 1,
+                });
+                pending.push(RuleJsonWork::Rule(&rules[index]));
+            }
+        }
+    }
+    Ok(output)
+}
+
+fn push_json_string(output: &mut String, value: &str) -> Result<(), EngineError> {
+    let encoded =
+        serde_json::to_string(value).map_err(|error| EngineError::Serialize(error.to_string()))?;
+    output.push_str(&encoded);
+    Ok(())
+}
+
+impl Drop for ParsedRule {
+    fn drop(&mut self) {
+        let mut pending = std::mem::take(&mut self.children);
+        while let Some(mut descendant) = pending.pop() {
+            pending.append(&mut descendant.children);
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -186,12 +308,12 @@ pub fn normalize_supports_text_with_limits(
 
 fn normalize_supports_text_active(source: &str) -> Result<String, EngineError> {
     let wrapper = format!("@supports {source}{{}}");
-    let parsed =
+    let mut parsed =
         with_internal_wrapper_budget(source, &wrapper, || parse_rule_tree_active(&wrapper))?;
     if parsed.kind != "supports" {
         return Err(EngineError::Parse("invalid supports condition".to_owned()));
     }
-    Ok(parsed.prelude)
+    Ok(std::mem::take(&mut parsed.prelude))
 }
 
 pub fn parse_container_prelude(source: &str) -> Result<ParsedContainerPrelude, EngineError> {
@@ -497,6 +619,10 @@ fn is_css_whitespace(character: char) -> bool {
     matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{000c}')
 }
 
+fn is_css_whitespace_byte(byte: u8) -> bool {
+    matches!(byte, b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+}
+
 /// Consumes top-level CSS Syntax rules while preserving their exact source.
 pub fn scan_top_level_rules(source: &str) -> Result<Vec<String>, EngineError> {
     scan_top_level_rules_with_limits(source, ResourceLimits::default())
@@ -794,6 +920,275 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             limit: limits.max_nesting_depth,
         });
     }
+    if scan_safety_metrics(source).maximum_depth > LARGE_STACK_DEPTH_THRESHOLD {
+        if let Some(parsed) = recover_function_tree_iterative(source, depth) {
+            return parsed;
+        }
+        if let Some(parsed) = recover_single_child_rule_chain_from_source(source, depth) {
+            return parsed;
+        }
+        if let Some(parsed) = recover_grouping_tree_iterative(source, depth) {
+            return parsed;
+        }
+    }
+    parse_recovered_rule_tree_noniterative(source, depth)
+}
+
+fn recover_single_child_rule_chain_from_source(
+    source: &str,
+    depth: usize,
+) -> Option<Result<ParsedRule, EngineError>> {
+    let limits = current_resource_limits();
+    let mut current_source = trim_css_whitespace(source);
+    let mut current_depth = depth;
+    let mut ancestors = Vec::<ParsedRule>::new();
+
+    loop {
+        if current_depth > limits.max_nesting_depth {
+            return Some(Err(EngineError::NestingLimitExceeded {
+                actual: current_depth,
+                limit: limits.max_nesting_depth,
+            }));
+        }
+        let (header, body) = split_single_rule_block(current_source)?;
+        if is_function_rule_header(header) {
+            return None;
+        }
+        let probe_source = format!("{header}{{}}");
+        let mut probe = parse_rule_tree_active(&probe_source).ok()?;
+        if probe.kind != "style" && !is_grouping_rule(&probe) {
+            return None;
+        }
+        preserve_source_prelude(&mut probe, header);
+        probe.css_text.clear();
+        probe.declarations.clear();
+        probe.children.clear();
+
+        let child_source = trim_css_whitespace(body);
+        let Some((child_header, _)) = split_single_rule_block(child_source) else {
+            if contains_curly_block(child_source) {
+                return None;
+            }
+            let mut parsed = match recover_block_rule(probe, body, current_depth) {
+                Ok(parsed) => parsed,
+                Err(error) => return Some(Err(error)),
+            };
+            while let Some(mut ancestor) = ancestors.pop() {
+                ancestor.children.push(parsed);
+                parsed = ancestor;
+            }
+            return Some(Ok(parsed));
+        };
+        let child_probe_source = format!("{child_header}{{}}");
+        let Ok(child_probe) = parse_rule_tree_active(&child_probe_source) else {
+            return None;
+        };
+        if child_probe.kind != "style" && !is_grouping_rule(&child_probe) {
+            return None;
+        }
+        ancestors.push(probe);
+        current_source = child_source;
+        current_depth = current_depth.saturating_add(1);
+    }
+}
+
+fn contains_curly_block(source: &str) -> bool {
+    let mut tokenizer = TokenizerWithSpans::new(source);
+    while let Ok(token) = tokenizer.next_token() {
+        if matches!(token.token, Token::CurlyBracketBlock) {
+            return true;
+        }
+    }
+    false
+}
+
+enum FunctionBodyPart {
+    Rule(ParsedRule),
+    Nested,
+}
+
+enum FunctionTreeWork {
+    ParseBody {
+        wrapper: ParsedRule,
+        body: String,
+        depth: usize,
+    },
+    Assemble {
+        wrapper: ParsedRule,
+        parts: Vec<FunctionBodyPart>,
+        child_count: usize,
+    },
+}
+
+fn recover_function_tree_iterative(
+    source: &str,
+    depth: usize,
+) -> Option<Result<ParsedRule, EngineError>> {
+    let (header, body) = split_outer_block(source)?;
+    if !is_function_rule_header(header) {
+        return None;
+    }
+    let prelude = match parse_function_prelude(header) {
+        Some(prelude) => prelude,
+        None => {
+            return Some(Err(EngineError::Parse(
+                "invalid @function prelude".to_owned(),
+            )))
+        }
+    };
+    let wrapper = ParsedRule {
+        kind: "function".to_owned(),
+        prelude: prelude.name,
+        declarations: prelude.return_type,
+        children: prelude
+            .parameters
+            .iter()
+            .map(function_parameter_metadata)
+            .collect(),
+        css_text: String::new(),
+    };
+    let mut pending = vec![FunctionTreeWork::ParseBody {
+        wrapper,
+        body: body.to_owned(),
+        depth: depth.saturating_add(1),
+    }];
+    let mut completed = Vec::<ParsedRule>::new();
+    let limits = current_resource_limits();
+
+    while let Some(work) = pending.pop() {
+        match work {
+            FunctionTreeWork::ParseBody {
+                mut wrapper,
+                body,
+                depth,
+            } => {
+                if depth > limits.max_nesting_depth {
+                    return Some(Err(EngineError::NestingLimitExceeded {
+                        actual: depth,
+                        limit: limits.max_nesting_depth,
+                    }));
+                }
+                let items = match scan_function_block_items(&body) {
+                    Ok(items) => items,
+                    Err(error) => return Some(Err(error)),
+                };
+                let mut parts = std::mem::take(&mut wrapper.children)
+                    .into_iter()
+                    .map(FunctionBodyPart::Rule)
+                    .collect::<Vec<_>>();
+                let mut declarations = Vec::<String>::new();
+                let mut nested = Vec::<(ParsedRule, String)>::new();
+                for item in items {
+                    if let Some((conditional, conditional_body)) =
+                        prepare_function_conditional(&item)
+                    {
+                        push_function_declaration_part(&mut parts, &mut declarations);
+                        parts.push(FunctionBodyPart::Nested);
+                        nested.push((conditional, conditional_body));
+                    } else if !is_at_rule_source(&item) {
+                        declarations.push(item);
+                    }
+                }
+                push_function_declaration_part(&mut parts, &mut declarations);
+
+                if nested.is_empty() {
+                    wrapper.children = parts
+                        .into_iter()
+                        .filter_map(|part| match part {
+                            FunctionBodyPart::Rule(rule) => Some(rule),
+                            FunctionBodyPart::Nested => None,
+                        })
+                        .collect();
+                    completed.push(wrapper);
+                    continue;
+                }
+
+                pending.push(FunctionTreeWork::Assemble {
+                    wrapper,
+                    parts,
+                    child_count: nested.len(),
+                });
+                for (conditional, conditional_body) in nested.into_iter().rev() {
+                    pending.push(FunctionTreeWork::ParseBody {
+                        wrapper: conditional,
+                        body: conditional_body,
+                        depth: depth.saturating_add(1),
+                    });
+                }
+            }
+            FunctionTreeWork::Assemble {
+                mut wrapper,
+                parts,
+                child_count,
+            } => {
+                if completed.len() < child_count {
+                    return Some(Err(EngineError::UnexpectedPanic));
+                }
+                let first_child = completed.len() - child_count;
+                let drained = completed.drain(first_child..).collect::<Vec<_>>();
+                let mut nested = drained.into_iter();
+                let mut children = Vec::with_capacity(parts.len());
+                for part in parts {
+                    match part {
+                        FunctionBodyPart::Rule(rule) => children.push(rule),
+                        FunctionBodyPart::Nested => {
+                            let Some(rule) = nested.next() else {
+                                return Some(Err(EngineError::UnexpectedPanic));
+                            };
+                            children.push(rule);
+                        }
+                    }
+                }
+                if nested.next().is_some() {
+                    return Some(Err(EngineError::UnexpectedPanic));
+                }
+                wrapper.children = children;
+                completed.push(wrapper);
+            }
+        }
+    }
+
+    if completed.len() != 1 {
+        return Some(Err(EngineError::UnexpectedPanic));
+    }
+    completed.pop().map(Ok)
+}
+
+fn prepare_function_conditional(source: &str) -> Option<(ParsedRule, String)> {
+    let (header, body) = split_outer_block(source)?;
+    let probe_source = format!("{header}{{}}");
+    let mut probe = parse_rule_tree_active(&probe_source).ok()?;
+    if !matches!(probe.kind.as_str(), "media" | "supports" | "container") {
+        return None;
+    }
+    preserve_source_prelude(&mut probe, header);
+    probe.declarations.clear();
+    probe.children.clear();
+    probe.css_text.clear();
+    Some((probe, body.to_owned()))
+}
+
+fn push_function_declaration_part(
+    parts: &mut Vec<FunctionBodyPart>,
+    declarations: &mut Vec<String>,
+) {
+    if declarations.is_empty() {
+        return;
+    }
+    parts.push(FunctionBodyPart::Rule(ParsedRule {
+        kind: "function-declarations".to_owned(),
+        prelude: String::new(),
+        declarations: declarations.join(" "),
+        children: Vec::new(),
+        css_text: String::new(),
+    }));
+    declarations.clear();
+}
+
+fn parse_recovered_rule_tree_noniterative(
+    source: &str,
+    depth: usize,
+) -> Result<ParsedRule, EngineError> {
     let function_rule = is_function_rule_header(source);
     let Some((header, body)) = split_outer_block(source) else {
         if function_rule {
@@ -865,6 +1260,274 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
     recover_block_rule(probe, body, depth)
 }
 
+enum GroupingTreeWork {
+    Parse {
+        range: Range<usize>,
+        depth: usize,
+    },
+    Assemble {
+        probe: ParsedRule,
+        child_count: usize,
+    },
+}
+
+fn recover_grouping_tree_iterative(
+    source: &str,
+    depth: usize,
+) -> Option<Result<ParsedRule, EngineError>> {
+    let limits = current_resource_limits();
+    let curly_closes = matching_curly_closes(source);
+    let mut pending = vec![GroupingTreeWork::Parse {
+        range: trim_css_range(source, 0..source.len()),
+        depth,
+    }];
+    let mut completed = Vec::<ParsedRule>::new();
+
+    while let Some(work) = pending.pop() {
+        match work {
+            GroupingTreeWork::Parse { range, depth } => {
+                if depth > limits.max_nesting_depth {
+                    return Some(Err(EngineError::NestingLimitExceeded {
+                        actual: depth,
+                        limit: limits.max_nesting_depth,
+                    }));
+                }
+                let rule_source = source.get(range.clone())?;
+                let Some(open) = outer_block_open_index(rule_source) else {
+                    let parsed = parse_recovered_rule_tree_noniterative(rule_source, depth).ok()?;
+                    completed.push(parsed);
+                    continue;
+                };
+                let absolute_open = range.start.saturating_add(open);
+                let close = *curly_closes.get(&absolute_open)?;
+                if close > range.end || close <= absolute_open {
+                    return None;
+                }
+                let header = rule_source.get(..open)?;
+                let body_range = absolute_open.saturating_add(1)..close.saturating_sub(1);
+                let probe_source = format!("{header}{{}}");
+                let mut probe = parse_rule_tree_active(&probe_source).ok()?;
+                if !is_grouping_rule(&probe) {
+                    let parsed = parse_recovered_rule_tree_noniterative(rule_source, depth).ok()?;
+                    completed.push(parsed);
+                    continue;
+                }
+
+                let children = scan_recovered_item_ranges(source, body_range, &curly_closes)?;
+                preserve_source_prelude(&mut probe, header);
+                probe.css_text.clear();
+                probe.declarations.clear();
+                probe.children.clear();
+                if children.is_empty() {
+                    completed.push(probe);
+                    continue;
+                }
+
+                pending.push(GroupingTreeWork::Assemble {
+                    probe,
+                    child_count: children.len(),
+                });
+                for range in children.into_iter().rev() {
+                    pending.push(GroupingTreeWork::Parse {
+                        range,
+                        depth: depth.saturating_add(1),
+                    });
+                }
+            }
+            GroupingTreeWork::Assemble {
+                mut probe,
+                child_count,
+            } => {
+                if completed.len() < child_count {
+                    return Some(Err(EngineError::UnexpectedPanic));
+                }
+                let first_child = completed.len() - child_count;
+                probe.children.extend(completed.drain(first_child..));
+                completed.push(probe);
+            }
+        }
+    }
+
+    if completed.len() != 1 {
+        return Some(Err(EngineError::UnexpectedPanic));
+    }
+    completed.pop().map(Ok)
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum LexicalBlock {
+    Parenthesis,
+    Square,
+    Curly(usize),
+}
+
+fn matching_curly_closes(source: &str) -> HashMap<usize, usize> {
+    let mut tokenizer = TokenizerWithSpans::new(source);
+    let mut blocks = Vec::<LexicalBlock>::new();
+    let mut closes = HashMap::<usize, usize>::new();
+    while let Ok(token) = tokenizer.next_token() {
+        match token.token {
+            Token::Function(_) | Token::ParenthesisBlock => {
+                blocks.push(LexicalBlock::Parenthesis);
+            }
+            Token::SquareBracketBlock => blocks.push(LexicalBlock::Square),
+            Token::CurlyBracketBlock => {
+                blocks.push(LexicalBlock::Curly(token.start.byte_index()));
+            }
+            Token::CloseParenthesis => {
+                if blocks.last() == Some(&LexicalBlock::Parenthesis) {
+                    blocks.pop();
+                }
+            }
+            Token::CloseSquareBracket => {
+                if blocks.last() == Some(&LexicalBlock::Square) {
+                    blocks.pop();
+                }
+            }
+            Token::CloseCurlyBracket => {
+                if let Some(LexicalBlock::Curly(open)) = blocks.last().copied() {
+                    blocks.pop();
+                    closes.insert(open, token.end.byte_index());
+                }
+            }
+            _ => {}
+        }
+    }
+    closes
+}
+
+fn scan_recovered_item_ranges(
+    source: &str,
+    range: Range<usize>,
+    curly_closes: &HashMap<usize, usize>,
+) -> Option<Vec<Range<usize>>> {
+    let bytes = source.as_bytes();
+    let mut output = Vec::<Range<usize>>::new();
+    let mut start = None;
+    let mut index = range.start;
+    let mut component_depth = 0usize;
+    let mut quote = None;
+    let mut in_comment = false;
+
+    while index < range.end {
+        let byte = *bytes.get(index)?;
+        if in_comment {
+            if byte == b'*' && bytes.get(index + 1) == Some(&b'/') {
+                in_comment = false;
+                index += 2;
+                continue;
+            }
+            index += 1;
+            continue;
+        }
+        if let Some(delimiter) = quote {
+            if byte == b'\\' {
+                index = (index + 2).min(range.end);
+                continue;
+            }
+            if byte == delimiter {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if byte == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            if start.is_none() {
+                start = Some(index);
+            }
+            in_comment = true;
+            index += 2;
+            continue;
+        }
+        if matches!(byte, b'\'' | b'"') {
+            if start.is_none() {
+                start = Some(index);
+            }
+            quote = Some(byte);
+            index += 1;
+            continue;
+        }
+        if byte == b'\\' {
+            if start.is_none() {
+                start = Some(index);
+            }
+            index = (index + 2).min(range.end);
+            continue;
+        }
+        if start.is_none() {
+            if is_css_whitespace_byte(byte) || matches!(byte, b';' | b'}') {
+                index += 1;
+                continue;
+            }
+            start = Some(index);
+        }
+
+        match byte {
+            b'(' | b'[' => component_depth = component_depth.saturating_add(1),
+            b')' | b']' => component_depth = component_depth.saturating_sub(1),
+            b'{' => {
+                let close = *curly_closes.get(&index)?;
+                if close > range.end {
+                    return None;
+                }
+                if component_depth == 0 {
+                    push_recovered_range(source, start.take(), close, &mut output);
+                }
+                index = close;
+                continue;
+            }
+            b';' if component_depth == 0 => {
+                push_recovered_range(source, start.take(), index + 1, &mut output);
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+    push_recovered_range(source, start, range.end, &mut output);
+    Some(output)
+}
+
+fn push_recovered_range(
+    source: &str,
+    start: Option<usize>,
+    end: usize,
+    output: &mut Vec<Range<usize>>,
+) {
+    let Some(start) = start else {
+        return;
+    };
+    let range = trim_css_range(source, start..end);
+    if range.start < range.end {
+        output.push(range);
+    }
+}
+
+fn trim_css_range(source: &str, mut range: Range<usize>) -> Range<usize> {
+    let bytes = source.as_bytes();
+    while range.start < range.end
+        && bytes
+            .get(range.start)
+            .is_some_and(|byte| is_css_whitespace_byte(*byte))
+    {
+        range.start += 1;
+    }
+    while range.start < range.end
+        && bytes
+            .get(range.end - 1)
+            .is_some_and(|byte| is_css_whitespace_byte(*byte))
+    {
+        range.end -= 1;
+    }
+    range
+}
+
+fn is_grouping_rule(rule: &ParsedRule) -> bool {
+    matches!(
+        rule.kind.as_str(),
+        "media" | "supports" | "container" | "layer-block" | "scope" | "starting-style"
+    )
+}
+
 /// Recovers a valid, deeply nested grouping-rule chain without reparsing every
 /// suffix of the same source. The general recovery path remains responsible
 /// for branching or structurally ambiguous blocks; this fast path only applies
@@ -917,6 +1580,12 @@ fn is_single_child_group(rule: &ParsedRule) -> bool {
 
 fn split_single_rule_block(source: &str) -> Option<(&str, &str)> {
     let source = trim_css_whitespace(source);
+    let index = outer_block_open_index(source)?;
+    let body_with_close = source.get(index + 1..)?.strip_suffix('}')?;
+    Some((trim_css_whitespace(&source[..index]), body_with_close))
+}
+
+fn outer_block_open_index(source: &str) -> Option<usize> {
     let bytes = source.as_bytes();
     let mut index = 0usize;
     let mut quote = None;
@@ -962,10 +1631,7 @@ fn split_single_rule_block(source: &str) -> Option<(&str, &str)> {
         match byte {
             b'(' | b'[' => component_depth = component_depth.saturating_add(1),
             b')' | b']' => component_depth = component_depth.saturating_sub(1),
-            b'{' if component_depth == 0 => {
-                let body_with_close = source.get(index + 1..)?.strip_suffix('}')?;
-                return Some((trim_css_whitespace(&source[..index]), body_with_close));
-            }
+            b'{' if component_depth == 0 => return Some(index),
             b';' if component_depth == 0 => return None,
             _ => {}
         }
@@ -1299,14 +1965,14 @@ fn recover_font_feature_values_body(probe: &mut ParsedRule, body: &str) {
             };
             map
         };
-        for entry in entries {
+        for mut entry in entries {
             if let Some(existing) = map
                 .children
                 .iter_mut()
                 .find(|candidate| candidate.prelude == entry.prelude)
             {
-                existing.declarations = entry.declarations;
-                existing.css_text = entry.css_text;
+                existing.declarations = std::mem::take(&mut entry.declarations);
+                existing.css_text = std::mem::take(&mut entry.css_text);
             } else {
                 map.children.push(entry);
             }
@@ -1463,17 +2129,14 @@ fn recover_keyframes_body(
         let (header, declarations) = split_outer_block(fragment)
             .ok_or_else(|| EngineError::Parse("invalid keyframe rule".to_owned()))?;
         let wrapper = format!("@keyframes sheetom{{{header}{{}}}}");
-        let parsed = parse_rule_tree_active(&wrapper)?;
-        let keyframe = parsed
+        let mut parsed = parse_rule_tree_active(&wrapper)?;
+        let mut keyframe = parsed
             .children
-            .into_iter()
-            .next()
+            .pop()
             .ok_or_else(|| EngineError::Parse("invalid keyframe selector".to_owned()))?;
-        probe.children.push(ParsedRule {
-            declarations: trim_css_whitespace(declarations).to_owned(),
-            css_text: String::new(),
-            ..keyframe
-        });
+        keyframe.declarations = trim_css_whitespace(declarations).to_owned();
+        keyframe.css_text.clear();
+        probe.children.push(keyframe);
     }
     let limits = current_resource_limits();
     if depth > limits.max_nesting_depth {
@@ -2009,11 +2672,14 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
 }
 
 fn add_parsed_descendant_count(rule: &ParsedRule, count: &mut usize) -> Result<(), EngineError> {
-    let descendants = rule
-        .children
-        .iter()
-        .map(parsed_rule_node_count)
-        .sum::<usize>();
+    let mut descendants = 0usize;
+    let mut pending = rule.children.iter().collect::<Vec<_>>();
+    while let Some(descendant) = pending.pop() {
+        if parsed_rule_counts_as_node(descendant) {
+            descendants = descendants.saturating_add(1);
+        }
+        pending.extend(descendant.children.iter());
+    }
     *count = count.saturating_add(descendants);
     let limits = current_resource_limits();
     if *count > limits.max_rules {
@@ -2026,19 +2692,21 @@ fn add_parsed_descendant_count(rule: &ParsedRule, count: &mut usize) -> Result<(
 }
 
 fn parsed_rule_node_count(rule: &ParsedRule) -> usize {
-    let own = if matches!(
+    let mut count = 0usize;
+    let mut pending = vec![rule];
+    while let Some(current) = pending.pop() {
+        if parsed_rule_counts_as_node(current) {
+            count = count.saturating_add(1);
+        }
+        pending.extend(current.children.iter());
+    }
+    count
+}
+
+fn parsed_rule_counts_as_node(rule: &ParsedRule) -> bool {
+    !matches!(
         rule.kind.as_str(),
         "function-parameter" | "property-descriptor" | "view-transition-type" | "layer-name"
-    ) {
-        0usize
-    } else {
-        1usize
-    };
-    own.saturating_add(
-        rule.children
-            .iter()
-            .map(parsed_rule_node_count)
-            .sum::<usize>(),
     )
 }
 
@@ -2385,6 +3053,98 @@ mod tests {
         assert_eq!(recovered_depth, group_depth);
         assert_eq!(parsed.kind, "style");
         assert_eq!(parsed.declarations, "color:red");
+    }
+
+    #[test]
+    fn recovers_a_nested_style_chain_at_the_default_nesting_boundary() {
+        let style_depth = crate::DEFAULT_MAX_NESTING_DEPTH - 1;
+        let source = format!(
+            "{}color:red{}",
+            ".x{".repeat(style_depth),
+            "}".repeat(style_depth)
+        );
+        let mut parsed = parse_recovered_rule_tree(&source).unwrap();
+        let mut recovered_depth = 0usize;
+        while parsed.kind == "style" {
+            recovered_depth += 1;
+            if parsed.children.is_empty() {
+                break;
+            }
+            assert_eq!(parsed.children.len(), 1);
+            parsed = parsed.children.pop().unwrap();
+        }
+        assert_eq!(recovered_depth, style_depth);
+        assert_eq!(parsed.declarations, "color:red");
+    }
+
+    #[test]
+    fn recovers_a_branching_grouping_tree_at_the_default_nesting_boundary() {
+        let group_depth = crate::DEFAULT_MAX_NESTING_DEPTH - 1;
+        let mut source = String::with_capacity(group_depth * 32);
+        for _ in 0..group_depth {
+            source.push_str("@media all{");
+        }
+        source.push_str(".leaf{color:red}");
+        for _ in 0..group_depth {
+            source.push_str(".sibling{color:blue}}");
+        }
+
+        let mut parsed = parse_recovered_rule_tree(&source).unwrap();
+        let cloned = parsed.clone();
+        assert_eq!(cloned, parsed);
+        let json = serialize_parsed_rule_json(&parsed).unwrap();
+        assert_eq!(json.matches("\"kind\":\"media\"").count(), group_depth);
+        assert!(json.starts_with("{\"kind\":\"media\""));
+        assert!(json.ends_with("}"));
+        let mut recovered_depth = 0usize;
+        while parsed.kind == "media" {
+            assert_eq!(parsed.children.len(), 2);
+            parsed = parsed.children.remove(0);
+            recovered_depth += 1;
+        }
+        assert_eq!(recovered_depth, group_depth);
+        assert_eq!(parsed.kind, "style");
+        assert_eq!(parsed.declarations, "color:red");
+    }
+
+    #[test]
+    fn recovers_deep_function_conditionals_without_native_recursion() {
+        let conditional_depth = LARGE_STACK_DEPTH_THRESHOLD + 1;
+        let source = format!(
+            "@function --nested() {{ {}result: 1;{} }}",
+            "@supports (display:grid) {".repeat(conditional_depth),
+            "}".repeat(conditional_depth)
+        );
+        let mut parsed = parse_recovered_rule_tree(&source).unwrap();
+        assert_eq!(parsed.kind, "function");
+        let mut recovered_depth = 0usize;
+        while parsed.kind == "function" || parsed.kind == "supports" {
+            if parsed.kind == "supports" {
+                recovered_depth += 1;
+            }
+            assert_eq!(parsed.children.len(), 1);
+            parsed = parsed.children.pop().unwrap();
+        }
+        assert_eq!(recovered_depth, conditional_depth);
+        assert_eq!(parsed.kind, "function-declarations");
+        assert_eq!(parsed.declarations, "result: 1;");
+    }
+
+    #[test]
+    fn iterative_rule_json_matches_serde_for_shallow_forests() {
+        let rules = parse_stylesheet_tree(
+            "@media screen { .x { color: red } .y { padding: 1px } } @layer theme;",
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            serialize_parsed_rules_json(&rules).unwrap(),
+            serde_json::to_string(&rules).unwrap()
+        );
+        assert_eq!(
+            serialize_parsed_rule_json(&rules[0]).unwrap(),
+            serde_json::to_string(&rules[0]).unwrap()
+        );
     }
 
     #[test]
