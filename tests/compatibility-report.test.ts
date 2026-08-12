@@ -122,6 +122,74 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         reparse: [],
       },
     }));
+    const wasmBrowsers = ["chromium", "firefox", "webkit"];
+    const wasmBundlers = ["esbuild", "rollup", "vite", "webpack"];
+    const wasmDirectReportPath = path.join(directory, "wasm-direct.json");
+    await writeFile(wasmDirectReportPath, JSON.stringify({
+      schemaVersion: 1,
+      observations: wasmBrowsers.map(browser => ({
+        browser,
+        version: `${browser}-test-version`,
+        mainThread: true,
+        worker: true,
+        streaming: true,
+        bufferedFallback: true,
+        independentInstances: true,
+      })),
+    }));
+    const wasmBundlerReportPath = path.join(directory, "wasm-bundlers.json");
+    await writeFile(wasmBundlerReportPath, JSON.stringify({
+      schemaVersion: 1,
+      observations: wasmBundlers.flatMap(bundler =>
+        wasmBrowsers.map(browser => ({
+          bundler,
+          browser,
+          version: `${browser}-test-version`,
+          mainThread: true,
+          worker: true,
+        })),
+      ),
+    }));
+    const wasmPerformanceReportPath = path.join(directory, "wasm-performance.json");
+    await writeFile(wasmPerformanceReportPath, JSON.stringify({
+      schemaVersion: 1,
+      observations: wasmBrowsers.map(browser => ({
+        browser,
+        version: `${browser}-test-version`,
+        stylesheetCount: 21,
+        ruleCount: 11_000,
+        initializationMilliseconds: 10,
+        totalMilliseconds: 1_000,
+        serializationMilliseconds: 100,
+        secondSerializationMilliseconds: 10,
+      })),
+    }));
+    const wasmMemoryReportPath = path.join(directory, "wasm-memory.json");
+    await writeFile(wasmMemoryReportPath, JSON.stringify({
+      schemaVersion: 1,
+      cycles: 36,
+      rssGrowth: 1,
+      secondCycleExternalGrowth: 1,
+      secondCycleHeapGrowth: 1,
+    }));
+    const wasmBackendReportPath = path.join(directory, "wasm-backend.json");
+    execFileSync(
+      process.execPath,
+      [
+        "scripts/compose-wasm-backend-evidence.mjs",
+        "--direct",
+        wasmDirectReportPath,
+        "--bundlers",
+        wasmBundlerReportPath,
+        "--performance",
+        wasmPerformanceReportPath,
+        "--memory",
+        wasmMemoryReportPath,
+        "--output",
+        wasmBackendReportPath,
+      ],
+      { stdio: "ignore" },
+    );
     const argumentsList: string[] = [];
     for (const engine of ["chrome", "firefox", "safari"]) {
       const reportPath = path.join(directory, `${engine}.json`);
@@ -149,12 +217,13 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         `--property-value-report=${propertyValueReportPath}`,
         `--webref-property-report=${webrefPropertyReportPath}`,
         `--geometric-report=${geometricReportPath}`,
+        `--wasm-backend-report=${wasmBackendReportPath}`,
         ...argumentsList,
       ],
       { env: { ...process.env, SHEETOM_RECORD_BASELINE: "1" }, stdio: "ignore" },
     );
     const report = JSON.parse(await readFile(output, "utf8"));
-    assert.equal(report.schemaVersion, 6);
+    assert.equal(report.schemaVersion, 7);
     assert.deepEqual(report.baseline.nativeEngine.upstream, {
       repository: "https://github.com/parcel-bundler/lightningcss",
       version: "1.33.0",
@@ -296,6 +365,14 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     );
     assert.deepEqual(report.evidence.processSafety.native, { passed: 33, total: 33 });
     assert.deepEqual(report.evidence.processSafety.public, { passed: 7, total: 7 });
+    assert.deepEqual(
+      report.evidence.wasmBackend.browsers.map(
+        (evidence: { browser: string }) => evidence.browser,
+      ),
+      wasmBrowsers,
+    );
+    assert.equal(report.evidence.wasmBackend.bundlers.length, 12);
+    assert.match(report.evidence.wasmBackend.executionSha256, /^[0-9a-f]{64}$/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
