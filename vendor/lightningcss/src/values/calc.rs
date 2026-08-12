@@ -270,6 +270,12 @@ pub enum Calc<V> {
   Function(Box<MathFunction<V>>),
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum CalcResolvedType {
+  Number,
+  Dimension,
+}
+
 impl<V> Calc<V> {
   /// Returns whether this calculation resolves to the dimension represented by
   /// `V`, rather than to a plain `<number>`.
@@ -278,18 +284,30 @@ impl<V> Calc<V> {
   /// coefficients. That does not make a standalone number, or a function such
   /// as `sign()`, valid where a dimension is required.
   pub(crate) fn resolves_to_dimension(&self) -> bool {
+    self.resolved_type() == Some(CalcResolvedType::Dimension)
+  }
+
+  fn resolved_type(&self) -> Option<CalcResolvedType> {
     match self {
-      Calc::Value(_) => true,
-      Calc::Number(_) => false,
-      Calc::Sum(a, b) => a.resolves_to_dimension() && b.resolves_to_dimension(),
-      Calc::Product(_, value) => value.resolves_to_dimension(),
-      Calc::ProductExpression(left, right) => {
-        left.resolves_to_dimension() || right.resolves_to_dimension()
-      }
-      Calc::QuotientExpression(value, divisor) => {
-        value.resolves_to_dimension() && !divisor.resolves_to_dimension()
-      }
-      Calc::Function(function) => function.resolves_to_dimension(),
+      Calc::Value(_) => Some(CalcResolvedType::Dimension),
+      Calc::Number(_) => Some(CalcResolvedType::Number),
+      Calc::Sum(a, b) => (a.resolved_type() == b.resolved_type())
+        .then(|| a.resolved_type())
+        .flatten(),
+      Calc::Product(_, value) => value.resolved_type(),
+      Calc::ProductExpression(left, right) => match (left.resolved_type()?, right.resolved_type()?) {
+        (CalcResolvedType::Number, CalcResolvedType::Number) => Some(CalcResolvedType::Number),
+        (CalcResolvedType::Number, CalcResolvedType::Dimension)
+        | (CalcResolvedType::Dimension, CalcResolvedType::Number) => Some(CalcResolvedType::Dimension),
+        (CalcResolvedType::Dimension, CalcResolvedType::Dimension) => None,
+      },
+      Calc::QuotientExpression(value, divisor) => match (value.resolved_type()?, divisor.resolved_type()?) {
+        (CalcResolvedType::Number, CalcResolvedType::Number)
+        | (CalcResolvedType::Dimension, CalcResolvedType::Dimension) => Some(CalcResolvedType::Number),
+        (CalcResolvedType::Dimension, CalcResolvedType::Number) => Some(CalcResolvedType::Dimension),
+        (CalcResolvedType::Number, CalcResolvedType::Dimension) => None,
+      },
+      Calc::Function(function) => function.resolved_type(),
     }
   }
 
@@ -301,7 +319,7 @@ impl<V> Calc<V> {
   /// dimensional argument still needs to be retained until computed-value
   /// time, even though the result of the outer calculation is a number.
   pub fn resolves_to_number(&self) -> bool {
-    !self.resolves_to_dimension()
+    self.resolved_type() == Some(CalcResolvedType::Number)
   }
 
   /// Returns whether this calculation still contains a `sign()` function that
@@ -321,21 +339,17 @@ impl<V> Calc<V> {
 }
 
 impl<V> MathFunction<V> {
-  fn resolves_to_dimension(&self) -> bool {
+  fn resolved_type(&self) -> Option<CalcResolvedType> {
     match self {
-      MathFunction::Calc(value) | MathFunction::Abs(value) => value.resolves_to_dimension(),
+      MathFunction::Calc(value) | MathFunction::Abs(value) => value.resolved_type(),
       MathFunction::Min(values) | MathFunction::Max(values) | MathFunction::Hypot(values) => {
-        values.iter().all(Calc::resolves_to_dimension)
+        common_resolved_type(values)
       }
-      MathFunction::Clamp(min, center, max) => {
-        min.resolves_to_dimension()
-          && center.resolves_to_dimension()
-          && max.resolves_to_dimension()
-      }
+      MathFunction::Clamp(min, center, max) => common_resolved_type([min, center, max]),
       MathFunction::Round(_, value, step) | MathFunction::Rem(value, step) | MathFunction::Mod(value, step) => {
-        value.resolves_to_dimension() && step.resolves_to_dimension()
+        common_resolved_type([value, step])
       }
-      MathFunction::Sign(_) => false,
+      MathFunction::Sign(_) => Some(CalcResolvedType::Number),
     }
   }
 
@@ -358,6 +372,17 @@ impl<V> MathFunction<V> {
       }
     }
   }
+}
+
+fn common_resolved_type<'a, V>(values: impl IntoIterator<Item = &'a Calc<V>>) -> Option<CalcResolvedType>
+where
+  V: 'a,
+{
+  let mut values = values.into_iter();
+  let first = values.next()?.resolved_type()?;
+  values
+    .all(|value| value.resolved_type() == Some(first))
+    .then_some(first)
 }
 
 impl<V: IsCompatible> IsCompatible for Calc<V> {
@@ -1403,5 +1428,16 @@ mod tests {
   fn default_parser_keeps_reducing_static_math_functions() {
     assert_eq!(serialize(&parse_percentage("min(10%, 20%)", false)), "10%");
     assert_eq!(serialize(&parse_percentage("clamp(10%, 20%, 30%)", false)), "20%");
+  }
+
+  #[test]
+  fn distinguishes_invalid_mixed_sum_result_types() {
+    let percentage = parse_percentage("min(10%, 20%)", true);
+    assert!(percentage.resolves_to_dimension());
+    assert!(!percentage.resolves_to_number());
+
+    let mixed = parse_percentage("calc(1 + 1%)", true);
+    assert!(!mixed.resolves_to_dimension());
+    assert!(!mixed.resolves_to_number());
   }
 }
