@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assessImplementationPackageChannels,
   assessReleaseChannels,
   extractReleaseNotes,
   npmTagForVersion,
@@ -15,6 +16,10 @@ import {
   assertPlatformTarballEntries,
   assertRootTarballHasNoNativeAddon,
 } from "../scripts/native-artifact-contract.mjs";
+import {
+  assertReleaseArtifactManifest,
+  expectedReleasePackages,
+} from "../scripts/release-artifact-set.mjs";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -80,6 +85,27 @@ describe("release automation", () => {
     });
   });
 
+  it("keeps native prereleases on next without requiring a latest tag", () => {
+    expect(assessImplementationPackageChannels({
+      "dist-tags": { next: "0.1.0-rc.7" },
+      versions: { "0.1.0-rc.7": {} },
+    }, "0.1.0-rc.7")).toEqual({ ready: true, reasons: [] });
+
+    expect(assessImplementationPackageChannels({
+      "dist-tags": { next: "0.1.0-rc.6" },
+      versions: {
+        "0.1.0-rc.6": {},
+        "0.1.0-rc.7": {},
+      },
+    }, "0.1.0-rc.7")).toEqual({
+      ready: false,
+      reasons: [
+        "next must point to active prerelease 0.1.0-rc.7",
+        "superseded prerelease 0.1.0-rc.6 must be deprecated",
+      ],
+    });
+  });
+
   it("routes prereleases to next and stable releases to latest", () => {
     expect(npmTagForVersion("0.1.0-rc.1")).toBe("next");
     expect(npmTagForVersion("0.1.0")).toBe("latest");
@@ -126,6 +152,41 @@ describe("release automation", () => {
       "package/index.cjs",
       "package/sheetom-native.linux-x64-gnu.node",
     ], "sheetom-native.linux-x64-gnu.node")).not.toThrow();
+  });
+
+  it("requires a lockstep native, WebAssembly, and root release artifact set", () => {
+    const rootManifest = { name: "sheetom", version: "0.1.0-rc.7" };
+    const expected = expectedReleasePackages(rootManifest);
+    expect(expected).toHaveLength(15);
+    expect(expected.at(-2)).toMatchObject({ name: "@sheetom/wasm", role: "wasm" });
+    expect(expected.at(-1)).toMatchObject({ name: "sheetom", role: "root" });
+
+    const packages = expected.map((entry, index) => ({
+      name: entry.name,
+      version: entry.version,
+      role: entry.role,
+      ...(entry.target === undefined ? {} : { target: entry.target }),
+      filename: `artifact-${index}.tgz`,
+      integrity: "sha512-YQ==",
+      sha256: "a".repeat(64),
+      size: index + 1,
+    }));
+    const manifest = {
+      schemaVersion: 1 as const,
+      version: rootManifest.version,
+      packages,
+      totalSize: packages.reduce((sum, artifact) => sum + artifact.size, 0),
+    };
+
+    expect(() => assertReleaseArtifactManifest(manifest, rootManifest)).not.toThrow();
+    expect(() => assertReleaseArtifactManifest({
+      ...manifest,
+      packages: packages.slice(1),
+    }, rootManifest)).toThrow(/incomplete/u);
+    expect(() => assertReleaseArtifactManifest({
+      ...manifest,
+      packages: [packages[1]!, packages[0]!, ...packages.slice(2)],
+    }, rootManifest)).toThrow(/must be/u);
   });
 
   it("uses the exact prebuilt release tarball and computes npm integrity", async () => {
