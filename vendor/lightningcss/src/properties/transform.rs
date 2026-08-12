@@ -7,17 +7,179 @@ use crate::error::{ParserError, PrinterError};
 use crate::macros::enum_property;
 use crate::prefixes::Feature;
 use crate::printer::Printer;
-use crate::traits::{Parse, PropertyHandler, ToCss, Zero};
+use crate::targets::Browsers;
+use crate::traits::{IsCompatible, Parse, PropertyHandler, ToCss, Zero};
 use crate::values::{
   angle::Angle,
   length::{Length, LengthPercentage},
   percentage::NumberOrPercentage,
+  position::{
+    HorizontalPosition, HorizontalPositionKeyword, Position, VerticalPosition, VerticalPositionKeyword,
+  },
 };
 use crate::vendor_prefix::VendorPrefix;
 #[cfg(feature = "visitor")]
 use crate::visitor::Visit;
 use cssparser::*;
 use std::f32::consts::PI;
+
+/// A value for the [transform-origin](https://drafts.csswg.org/css-transforms-2/#transform-origin-property)
+/// property.
+///
+/// Unlike a general [`Position`], `transform-origin` accepts only one or two
+/// position components followed by an optional third-axis length. Four-value
+/// side-offset positions are not part of this property's grammar.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct TransformOrigin {
+  /// The two-dimensional origin.
+  pub position: Position,
+  /// The optional depth offset. Percentages are not allowed on this axis.
+  pub z: Option<Length>,
+}
+
+enum TransformOriginComponent {
+  Horizontal(HorizontalPositionKeyword),
+  Vertical(VerticalPositionKeyword),
+  Center,
+  Length(LengthPercentage),
+}
+
+impl<'i> Parse<'i> for TransformOriginComponent {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("center")).is_ok() {
+      return Ok(Self::Center);
+    }
+    if let Ok(value) = input.try_parse(HorizontalPositionKeyword::parse) {
+      return Ok(Self::Horizontal(value));
+    }
+    if let Ok(value) = input.try_parse(VerticalPositionKeyword::parse) {
+      return Ok(Self::Vertical(value));
+    }
+    LengthPercentage::parse(input).map(Self::Length)
+  }
+}
+
+impl TransformOriginComponent {
+  fn resolve_one(self) -> Position {
+    match self {
+      Self::Horizontal(side) => Position {
+        x: HorizontalPosition::Side { side, offset: None },
+        y: VerticalPosition::Center,
+      },
+      Self::Vertical(side) => Position {
+        x: HorizontalPosition::Center,
+        y: VerticalPosition::Side { side, offset: None },
+      },
+      Self::Center => Position::center(),
+      Self::Length(value) => Position {
+        x: HorizontalPosition::Length(value),
+        y: VerticalPosition::Center,
+      },
+    }
+  }
+
+  fn resolve_pair<'i>(
+    first: Self,
+    second: Self,
+    input: &Parser<'i, '_>,
+  ) -> Result<Position, ParseError<'i, ParserError<'i>>> {
+    use TransformOriginComponent::*;
+
+    let position = match (first, second) {
+      (Horizontal(x), Vertical(y)) | (Vertical(y), Horizontal(x)) => Position {
+        x: HorizontalPosition::Side { side: x, offset: None },
+        y: VerticalPosition::Side { side: y, offset: None },
+      },
+      (Horizontal(x), Center) | (Center, Horizontal(x)) => Position {
+        x: HorizontalPosition::Side { side: x, offset: None },
+        y: VerticalPosition::Center,
+      },
+      (Center, Vertical(y)) | (Vertical(y), Center) => Position {
+        x: HorizontalPosition::Center,
+        y: VerticalPosition::Side { side: y, offset: None },
+      },
+      (Horizontal(x), Length(y)) => Position {
+        x: HorizontalPosition::Side { side: x, offset: None },
+        y: VerticalPosition::Length(y),
+      },
+      (Length(x), Vertical(y)) => Position {
+        x: HorizontalPosition::Length(x),
+        y: VerticalPosition::Side { side: y, offset: None },
+      },
+      (Center, Length(y)) => Position {
+        x: HorizontalPosition::Center,
+        y: VerticalPosition::Length(y),
+      },
+      (Length(x), Center) => Position {
+        x: HorizontalPosition::Length(x),
+        y: VerticalPosition::Center,
+      },
+      (Length(x), Length(y)) => Position {
+        x: HorizontalPosition::Length(x),
+        y: VerticalPosition::Length(y),
+      },
+      (Center, Center) => Position::center(),
+      _ => return Err(input.new_custom_error(ParserError::InvalidValue)),
+    };
+    Ok(position)
+  }
+}
+
+impl<'i> Parse<'i> for TransformOrigin {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let first = TransformOriginComponent::parse(input)?;
+    if input.is_exhausted() {
+      return Ok(Self {
+        position: first.resolve_one(),
+        z: None,
+      });
+    }
+
+    let second = TransformOriginComponent::parse(input)?;
+    let position = TransformOriginComponent::resolve_pair(first, second, input)?;
+    if input.is_exhausted() {
+      return Ok(Self { position, z: None });
+    }
+
+    let z = Length::parse(input)?;
+    input.expect_exhausted()?;
+    Ok(Self {
+      position,
+      z: Some(z),
+    })
+  }
+}
+
+impl ToCss for TransformOrigin {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    if dest.minify && self.z.is_none() {
+      return self.position.to_css(dest);
+    }
+
+    self.position.x.to_css(dest)?;
+    dest.write_str(" ")?;
+    self.position.y.to_css(dest)?;
+    if let Some(z) = &self.z {
+      dest.write_str(" ")?;
+      z.to_css(dest)?;
+    }
+    Ok(())
+  }
+}
+
+impl IsCompatible for TransformOrigin {
+  fn is_compatible(&self, browsers: Browsers) -> bool {
+    self.position.is_compatible(browsers)
+      && self.z.as_ref().is_none_or(|value| value.is_compatible(browsers))
+  }
+}
 
 /// A value for the [transform](https://www.w3.org/TR/2019/CR-css-transforms-1-20190214/#propdef-transform) property.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -1828,6 +1990,75 @@ impl TransformHandler {
 
     if let Some(scale) = scale {
       dest.push(Property::Scale(scale))
+    }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::{
+    properties::{Property, PropertyId},
+    stylesheet::{ParserOptions, PrinterOptions},
+  };
+
+  fn parse(source: &str) -> Result<String, ()> {
+    let property = Property::parse_string(
+      PropertyId::from("transform-origin"),
+      source,
+      ParserOptions::default(),
+    )
+    .map_err(|_| ())?;
+    if matches!(property, Property::Unparsed(_)) {
+      return Err(());
+    }
+    property
+      .value_to_css_string(PrinterOptions::default())
+      .map_err(|_| ())
+  }
+
+  #[test]
+  fn parses_transform_origin_depth() {
+    for (source, expected) in [
+      ("left top 1px", "left top 1px"),
+      ("top left 1px", "left top 1px"),
+      ("1px top 1px", "1px top 1px"),
+      ("left 10% 1px", "left 10% 1px"),
+      ("center center -1px", "center center -1px"),
+      ("center center 0", "center center 0"),
+    ] {
+      assert_eq!(parse(source).as_deref(), Ok(expected), "{source}");
+    }
+  }
+
+  #[test]
+  fn canonicalizes_the_two_dimensional_origin() {
+    for (source, expected) in [
+      ("left", "left center"),
+      ("top", "center top"),
+      ("center", "center center"),
+      ("10px", "10px center"),
+      ("top left", "left top"),
+      ("center left", "left center"),
+      ("0 0", "0 0"),
+    ] {
+      assert_eq!(parse(source).as_deref(), Ok(expected), "{source}");
+    }
+  }
+
+  #[test]
+  fn rejects_general_position_offsets_and_non_length_depths() {
+    for source in [
+      "left 10px top",
+      "left 10px top 20px",
+      "left 10% top 20% 1px",
+      "left top 10%",
+      "center center calc(10%)",
+      "left top 1px 2px",
+      "top 10px",
+      "10px left",
+      "left left",
+    ] {
+      assert!(parse(source).is_err(), "{source}");
     }
   }
 }

@@ -1471,7 +1471,7 @@ define_properties! {
 
   // https://drafts.csswg.org/css-transforms-2/
   "transform": Transform(TransformList, VendorPrefix) / WebKit / Moz / Ms / O,
-  "transform-origin": TransformOrigin(Position, VendorPrefix) / WebKit / Moz / Ms / O, // TODO: handle z offset syntax
+  "transform-origin": TransformOrigin(TransformOrigin, VendorPrefix) / WebKit / Moz / Ms / O,
   "transform-style": TransformStyle(TransformStyle, VendorPrefix) / WebKit / Moz,
   "transform-box": TransformBox(TransformBox),
   "backface-visibility": BackfaceVisibility(BackfaceVisibility, VendorPrefix) / WebKit / Moz,
