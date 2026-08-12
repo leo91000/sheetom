@@ -1,0 +1,26 @@
+{
+  "name": "@sheetom/native-linux-x64-gnu",
+  "version": "0.1.0-rc.6",
+  "description": "Native SheetOM engine for linux-x64-gnu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leo91000/sheetom.git",
+    "directory": "packages/native-linux-x64-gnu"
+  },
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "files": [
+    "index.cjs",
+    "sheetom-native.linux-x64-gnu.node",
+    "LICENSE",
+    "README.md"
+  ],
+  "preferUnplugged": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

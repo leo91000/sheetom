@@ -18,6 +18,7 @@ const isNativePath = filePath =>
     filePath.startsWith("crates/") ||
     filePath.startsWith("fuzz/") ||
     filePath.startsWith("native/") ||
+    filePath.startsWith("packages/native-") ||
     filePath.startsWith("vendor/cssparser/") ||
     filePath.startsWith("vendor/lightningcss/") ||
     filePath === "scripts/check-native-public-corpus.mjs" ||
@@ -28,6 +29,10 @@ const isNativePath = filePath =>
     filePath.startsWith("scripts/sync-cargo-version") ||
     filePath.startsWith("scripts/build-native-") ||
     filePath.startsWith("scripts/collect-native-") ||
+    filePath.startsWith("scripts/install-local-native-") ||
+    filePath.startsWith("scripts/native-package-") ||
+    filePath.startsWith("scripts/pack-native-") ||
+    filePath.startsWith("scripts/sync-native-") ||
     filePath.startsWith("scripts/test-native-");
 
 const isVendorPath = filePath =>
@@ -65,6 +70,7 @@ const isPackagePath = filePath =>
     filePath === "scripts/verify-release.mjs" ||
     filePath.startsWith("scripts/test-package") ||
     filePath.startsWith("scripts/test-tarball") ||
+    filePath.startsWith("packages/native-") ||
     ["package.json", "package-lock.json", "tsdown.config.ts", "tsconfig.json"].includes(filePath);
 
 const isPerformancePath = filePath =>

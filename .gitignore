@@ -1,6 +1,7 @@
 dist/
 node_modules/
 native/*.node
+packages/native-*/*.node
 target/
 fuzz/artifacts/
 fuzz/coverage/

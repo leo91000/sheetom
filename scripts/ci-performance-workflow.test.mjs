@@ -21,6 +21,7 @@ test("performance runtimes build in parallel and benchmark on one runner", () =>
 
   assert.match(candidate, /npm run native:build/u);
   assert.match(candidate, /sheetom-performance-candidate/u);
+  assert.match(candidate, /packages\/native-linux-x64-gnu/u);
   assert.match(baseline, /npm run native:build/u);
   assert.match(baseline, /sheetom-performance-baseline/u);
   assert.match(
@@ -28,6 +29,7 @@ test("performance runtimes build in parallel and benchmark on one runner", () =>
     /needs: \[changes, performance-candidate, performance-baseline\]/u,
   );
   assert.doesNotMatch(comparison, /npm run native:build/u);
+  assert.match(comparison, /Link split native packages into each benchmark runtime/u);
   assert.match(comparison, /performance-candidate\/dist\/index\.js/u);
   assert.match(comparison, /performance-baseline\/dist\/index\.js/u);
 });

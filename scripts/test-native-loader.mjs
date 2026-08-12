@@ -15,13 +15,16 @@ const { detectLinuxLibc, resolveTarget, SUPPORTED_TARGETS } = require(
   `${repositoryRoot}/native/resolve-target.cjs`,
 );
 
-assert.equal(SUPPORTED_TARGETS.size, 8);
+assert.equal(SUPPORTED_TARGETS.size, 13);
 assert.equal(resolveTarget({ platform: "darwin", arch: "arm64" }), "darwin-arm64");
 assert.equal(resolveTarget({ platform: "darwin", arch: "x64" }), "darwin-x64");
 assert.equal(resolveTarget({ platform: "win32", arch: "x64" }), "win32-x64-msvc");
 assert.equal(resolveTarget({ platform: "win32", arch: "arm64" }), "win32-arm64-msvc");
+assert.equal(resolveTarget({ platform: "win32", arch: "ia32" }), "win32-ia32-msvc");
 assert.equal(resolveTarget({ platform: "freebsd", arch: "x64" }), null);
 assert.equal(resolveTarget({ platform: "linux", arch: "riscv64" }), null);
+assert.equal(resolveTarget({ platform: "linux", arch: "arm", armVersion: "6" }), null);
+assert.equal(resolveTarget({ platform: "linux", arch: "arm", armVersion: "unknown" }), null);
 
 const gnuReport = { getReport: () => ({ header: { glibcVersionRuntime: "2.39" } }) };
 const muslReport = {
@@ -48,6 +51,22 @@ assert.equal(
 assert.equal(
   resolveTarget({ platform: "linux", arch: "arm64" }, { report: muslReport }),
   "linux-arm64-musl",
+);
+assert.equal(
+  resolveTarget({ platform: "linux", arch: "arm" }, { report: gnuReport }),
+  "linux-arm-gnueabihf",
+);
+assert.equal(
+  resolveTarget({ platform: "linux", arch: "arm" }, { report: muslReport }),
+  "linux-arm-musleabihf",
+);
+assert.equal(
+  resolveTarget({ platform: "linux", arch: "ppc64" }, { report: gnuReport }),
+  "linux-ppc64-gnu",
+);
+assert.equal(
+  resolveTarget({ platform: "linux", arch: "s390x" }, { report: gnuReport }),
+  "linux-s390x-gnu",
 );
 
 const binding = require(`${repositoryRoot}/native/index.cjs`);
@@ -95,7 +114,29 @@ const localTarget = resolveTarget();
 assert.ok(localTarget);
 await assertLoaderFailure("SHEETOM_NATIVE_BINDING_MISSING");
 await assertLoaderFailure("SHEETOM_NATIVE_BINDING_LOAD_FAILED", async directory => {
-  await writeFile(path.join(directory, `sheetom-native.${localTarget}.node`), "not an addon");
+  const packageDirectory = path.join(
+    directory,
+    "node_modules",
+    "@sheetom",
+    `native-${localTarget}`,
+  );
+  await mkdir(packageDirectory, { recursive: true });
+  await copyFile(
+    `${repositoryRoot}/native/platform-package.cjs`,
+    path.join(packageDirectory, "index.cjs"),
+  );
+  await writeFile(
+    path.join(packageDirectory, "package.json"),
+    `${JSON.stringify({
+      name: `@sheetom/native-${localTarget}`,
+      version: "0.0.0-test",
+      main: "./index.cjs",
+    })}\n`,
+  );
+  await writeFile(
+    path.join(packageDirectory, `sheetom-native.${localTarget}.node`),
+    "not an addon",
+  );
 });
 
 async function assertFacadeRejectsIdentity(identity, expectedCode) {

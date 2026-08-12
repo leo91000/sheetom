@@ -1,8 +1,6 @@
 "use strict";
 
-const { existsSync } = require("node:fs");
-const path = require("node:path");
-const { resolveTarget } = require("./resolve-target.cjs");
+const { resolveTarget, TARGET_BY_NAME } = require("./resolve-target.cjs");
 
 function bindingError(code, message, cause) {
   const error = new Error(message, cause ? { cause } : undefined);
@@ -19,22 +17,28 @@ if (!target) {
   );
 }
 
-const bindingPath = `./sheetom-native.${target}.node`;
-const absoluteBindingPath = path.join(__dirname, bindingPath);
-if (!existsSync(absoluteBindingPath)) {
+const metadata = TARGET_BY_NAME.get(target);
+if (!metadata) {
   throw bindingError(
-    "SHEETOM_NATIVE_BINDING_MISSING",
-    `SheetOM's ${target} native binding is missing from ${absoluteBindingPath}. ` +
-      "Reinstall the package for this exact operating system, CPU, and libc.",
+    "SHEETOM_NATIVE_PLATFORM_UNSUPPORTED",
+    `SheetOM has no native package metadata for ${target}.`,
   );
 }
 
 try {
-  module.exports = require(bindingPath);
+  module.exports = require(metadata.packageName);
 } catch (cause) {
+  if (cause?.code === "MODULE_NOT_FOUND" && cause.message?.includes(metadata.packageName)) {
+    throw bindingError(
+      "SHEETOM_NATIVE_BINDING_MISSING",
+      `SheetOM requires ${metadata.packageName} for ${target}. ` +
+        "Reinstall without omitting optional dependencies for this exact operating system, CPU, and libc.",
+      cause,
+    );
+  }
   throw bindingError(
     "SHEETOM_NATIVE_BINDING_LOAD_FAILED",
-    `SheetOM found but could not load its ${target} native binding at ${absoluteBindingPath}.`,
+    `SheetOM found but could not load ${metadata.packageName} for ${target}.`,
     cause,
   );
 }

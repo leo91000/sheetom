@@ -1,13 +1,14 @@
-export const expectedNativeArtifacts = Object.freeze([
-  "sheetom-native.darwin-arm64.node",
-  "sheetom-native.darwin-x64.node",
-  "sheetom-native.linux-arm64-gnu.node",
-  "sheetom-native.linux-arm64-musl.node",
-  "sheetom-native.linux-x64-gnu.node",
-  "sheetom-native.linux-x64-musl.node",
-  "sheetom-native.win32-arm64-msvc.node",
-  "sheetom-native.win32-x64-msvc.node",
-]);
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { NATIVE_TARGETS } = require("../native/resolve-target.cjs");
+
+export const expectedNativeArtifacts = Object.freeze(
+  NATIVE_TARGETS.map(target => target.artifact),
+);
+export const expectedNativePackages = Object.freeze(
+  NATIVE_TARGETS.map(target => target.packageName),
+);
 
 export function assertCompleteNativeArtifactNames(names) {
   const actual = [...names].sort();
@@ -19,9 +20,17 @@ export function assertCompleteNativeArtifactNames(names) {
   );
 }
 
-export function assertCompleteNativeTarballEntries(entries) {
-  const names = entries
-    .filter(entry => /^package\/native\/[^/]+\.node$/u.test(entry))
-    .map(entry => entry.slice("package/native/".length));
-  assertCompleteNativeArtifactNames(names);
+export function assertRootTarballHasNoNativeAddon(entries) {
+  const addons = entries.filter(entry => entry.endsWith(".node"));
+  if (addons.length === 0) return;
+  throw new Error(`Root SheetOM tarball contains native addons: ${addons.join(", ")}`);
+}
+
+export function assertPlatformTarballEntries(entries, artifact) {
+  const addons = entries.filter(entry => entry.endsWith(".node"));
+  const expected = [`package/${artifact}`];
+  if (JSON.stringify(addons) === JSON.stringify(expected)) return;
+  throw new Error(
+    `Native platform tarball must contain only ${expected[0]}; received ${addons.join(", ")}`,
+  );
 }

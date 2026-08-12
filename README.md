@@ -20,14 +20,21 @@ After the first stable release, use `npm install sheetom@next` to opt into an
 active prerelease. Until then, the `latest` and `next` dist-tags both identify
 the active release candidate.
 
-The package has no JavaScript runtime or peer dependencies. Its native engine
-includes a pinned, locally maintained Lightning CSS source snapshot; consumers
-do not install a second parser, provide globals, or select a fallback engine.
+The root package has no JavaScript runtime or peer dependencies and contains no
+native addon. It pins one matching `@sheetom/native-*` implementation as an
+optional dependency, so npm installs only the binary for the current operating
+system, CPU, and Linux libc. Installing with `--omit=optional` is unsupported
+and produces an explicit missing-binding error rather than a behavioral
+fallback. The native engine includes a pinned, locally maintained Lightning CSS
+source snapshot; consumers do not install a second parser, provide globals, or
+select a fallback engine.
 SheetOM owns observable-value serialization and shorthand expansion rather
 than delegating CSSOM state to a browser-DOM emulation package.
 
-Node.js 22 and 24 are tested on Linux x64, Windows x64, and macOS arm64. Bun
-1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
+Node.js 22 executes the exact published package on macOS arm64/x64, Windows
+arm64/x64/x86, Linux glibc arm64/ARMv7/x64/ppc64le/s390x, and Linux musl
+arm64/ARMv7/x64. Node.js 24 is additionally tested on Linux x64, Windows x64,
+and macOS arm64. Bun 1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
 `node_modules` directory and grant SheetOM's native binding FFI and
 system-information permissions:
 
