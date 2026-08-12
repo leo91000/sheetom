@@ -2,12 +2,12 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 790,
+  "mismatchCases": 721,
   "summary": {
     "acceptance": 0,
-    "observable": 521,
-    "cssText": 521,
-    "items": 476,
+    "observable": 426,
+    "cssText": 426,
+    "items": 407,
     "atomicity": 0,
     "reparse": 17
   },
@@ -95,29 +95,9 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.017add345a292c37",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.01e76636f9623388",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.03d6712466a36557",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -136,47 +116,23 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.051f71d698af4c6f",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.101e4ec91e73c007",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.1438cb7ec9baf362",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.19b929d87f513d33",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.1c9e17b174422bba",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -202,24 +158,6 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.2ba4e96f6558a75a",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.321fa20a7fce9acd",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.3b84c0fe0e87540a",
       "kinds": [
         "items"
@@ -236,36 +174,7 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.44dd96f105590d8f",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.45a8b546fa22651e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.487a2365f0c6a78f",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.4956d5df0e9de91e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -279,45 +188,21 @@
       "property": "-webkit-mask",
       "sample": "webref-sample.550e096394a1f4b3",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.55212c819a9863c8",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.58a4b916366634c6",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.60689b66513041d8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.63c853c633166d88",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -325,24 +210,6 @@
       "sample": "webref-sample.65ebf2cb4a536b67",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.68b1e03ccd0a3e1d",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.6b4f15d74d290895",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -361,20 +228,9 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.71d238c5cc5f6d55",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.748990946d7291ef",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -386,24 +242,6 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.7fad9bf28a08b815",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.80625c912199ad45",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.877d0fbb72676986",
       "kinds": [
         "items"
@@ -411,29 +249,9 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.897975794989bbaa",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.89e55a4e85b6fc1d",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.8c48c1d2aeacbe38",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -441,33 +259,6 @@
       "sample": "webref-sample.8e5898336310dee3",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.9ec5e72474d0f26e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.9fa93dc79331225a",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.a03c0e297ab22c82",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -486,33 +277,6 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.a34fa26e39d667c3",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.a94a2e828da8dbf7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.af03c7a5cfb958f0",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.b06d4a29452671aa",
       "kinds": [
         "items"
@@ -520,47 +284,16 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.b501f5c1e130dcac",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.b83b2df2da5a3cad",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.c68e48a5610111c7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.c94afa8a45c740e3",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "-webkit-mask",
       "sample": "webref-sample.ca2509cd8ec3d343",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -572,27 +305,9 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.ce2f501360a5ef10",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.ceac814ea45a5d3d",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.d105be9a808989ea",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -611,20 +326,9 @@
     },
     {
       "property": "-webkit-mask",
-      "sample": "webref-sample.d6caad2c0673092c",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
       "sample": "webref-sample.d7189a939e50cd6a",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -674,15 +378,6 @@
       "sample": "webref-sample.e7a0cefe1e0f9167",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "-webkit-mask",
-      "sample": "webref-sample.e7d2043ad1110051",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -4707,38 +4402,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.017add345a292c37",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.01e76636f9623388",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.03acde4ea525aba7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.03d6712466a36557",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -4757,56 +4423,23 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.051f71d698af4c6f",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.0cc179caf1b3ccb7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.101e4ec91e73c007",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "mask",
       "sample": "webref-sample.1438cb7ec9baf362",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.19b929d87f513d33",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "mask",
       "sample": "webref-sample.1c9e17b174422bba",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -4828,24 +4461,6 @@
       "sample": "webref-sample.27f42b15fc576836",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.2ba4e96f6558a75a",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.321fa20a7fce9acd",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -4875,36 +4490,7 @@
       "property": "mask",
       "sample": "webref-sample.44dd96f105590d8f",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.45a8b546fa22651e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.487a2365f0c6a78f",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.4956d5df0e9de91e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -4918,36 +4504,21 @@
       "property": "mask",
       "sample": "webref-sample.550e096394a1f4b3",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "mask",
       "sample": "webref-sample.55212c819a9863c8",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "mask",
       "sample": "webref-sample.58a4b916366634c6",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.60689b66513041d8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -4959,45 +4530,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.612114b8f38a1f8d",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.63c853c633166d88",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.65ebf2cb4a536b67",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.68b1e03ccd0a3e1d",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.6b4f15d74d290895",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -5016,38 +4551,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.71d238c5cc5f6d55",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.72ede434c485fee8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.748990946d7291ef",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.775d582e1d38d258",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -5059,33 +4565,6 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.7fad9bf28a08b815",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.80625c912199ad45",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.85d536361a62bcdd",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.877d0fbb72676986",
       "kinds": [
         "items"
@@ -5093,29 +4572,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.897975794989bbaa",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.89e55a4e85b6fc1d",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.8c48c1d2aeacbe38",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -5123,33 +4582,6 @@
       "sample": "webref-sample.8e5898336310dee3",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.9ec5e72474d0f26e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.9fa93dc79331225a",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.a03c0e297ab22c82",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -5168,72 +4600,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.a34fa26e39d667c3",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.a94a2e828da8dbf7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.af03c7a5cfb958f0",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.b06d4a29452671aa",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.b501f5c1e130dcac",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.b83b2df2da5a3cad",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.c4b8863fbb9fa926",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.c68e48a5610111c7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -5247,18 +4616,14 @@
       "property": "mask",
       "sample": "webref-sample.c94afa8a45c740e3",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
       "property": "mask",
       "sample": "webref-sample.ca2509cd8ec3d343",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -5270,27 +4635,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.ce2f501360a5ef10",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.ceac814ea45a5d3d",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.d105be9a808989ea",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {
@@ -5309,20 +4656,9 @@
     },
     {
       "property": "mask",
-      "sample": "webref-sample.d6caad2c0673092c",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "mask",
       "sample": "webref-sample.d7189a939e50cd6a",
       "kinds": [
-        "cssText",
-        "items",
-        "observable"
+        "items"
       ]
     },
     {
@@ -5372,15 +4708,6 @@
       "sample": "webref-sample.e7a0cefe1e0f9167",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "mask",
-      "sample": "webref-sample.e7d2043ad1110051",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
       ]
     },
     {

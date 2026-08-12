@@ -2896,4 +2896,32 @@ mod tests {
             failures.join("\n")
         );
     }
+
+    #[test]
+    fn mask_shorthand_exposes_every_typed_component() {
+        for shorthand in ["mask", "-webkit-mask"] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(
+                    shorthand,
+                    "url(\"x\") center / 1px repeat-x content-box content-box add alpha",
+                    "",
+                ),
+                MutationOutcome::Applied,
+            );
+            assert_eq!(state.get_property_value("mask-mode"), "alpha");
+            assert_eq!(state.get_property_value("mask-composite"), "add");
+            assert_eq!(
+                state.get_property_value(shorthand),
+                "url(\"x\") center center / 1px repeat-x content-box alpha"
+            );
+        }
+
+        let mut state = DeclarationState::new();
+        state.set_property("mask", "intersect", "");
+        assert_eq!(state.get_property_value("mask-composite"), "intersect");
+
+        state.set_property("mask", "alpha", "");
+        assert_eq!(state.get_property_value("mask-mode"), "alpha");
+    }
 }
