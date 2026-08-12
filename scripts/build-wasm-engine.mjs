@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFile, mkdir, rm, stat } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +7,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const generatedDirectory = path.join(repositoryRoot, "packages/wasm/generated");
 const distributionDirectory = path.join(repositoryRoot, "packages/wasm/dist");
 const wasmBindgenVersion = "0.2.127";
+const { parameterizeWasmBindgenGlue } = await import("./parameterize-wasm-bindgen.mjs");
 
 const installedVersion = execFileSync("wasm-bindgen", ["--version"], {
   encoding: "utf8",
@@ -49,6 +50,12 @@ execFileSync(
     ),
   ],
   { cwd: repositoryRoot, stdio: "inherit" },
+);
+
+const generatedGlue = path.join(generatedDirectory, "sheetom_wasm.js");
+await writeFile(
+  path.join(generatedDirectory, "sheetom_wasm_factory.js"),
+  parameterizeWasmBindgenGlue(await readFile(generatedGlue, "utf8")),
 );
 
 const generatedWasm = path.join(generatedDirectory, "sheetom_wasm_bg.wasm");

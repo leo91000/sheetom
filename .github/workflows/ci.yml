@@ -220,10 +220,15 @@ jobs:
       - run: npm run wasm:check
       - run: npm run wasm:build
       - run: npm run wasm:test
+      - run: npm run wasm:test:memory
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Exercise direct HTTP and worker initialization
         run: npm run wasm:test:browsers
+      - name: Exercise Vite, esbuild, Rollup, and Webpack consumers
+        run: npm run wasm:test:bundlers
+      - name: Gate the browser Publisher workload
+        run: npm run wasm:test:performance
       - name: Pack the tested WebAssembly package
         run: |
           mkdir wasm-package

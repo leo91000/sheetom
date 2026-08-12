@@ -15,7 +15,4 @@ export default defineConfig({
   alias: {
     "./default-engine-binding.js": activeBinding,
   },
-  deps: {
-    neverBundle: [/binding-registry\.js$/],
-  },
 });
