@@ -7,6 +7,7 @@ import path from "node:path";
 import {
   assertPlatformTarballEntries,
   assertRootTarballHasNoNativeAddon,
+  assertRuntimeTarballHasNoCompatibilityEvidence,
 } from "./native-artifact-contract.ts";
 
 const require = createRequire(import.meta.url);
@@ -131,6 +132,7 @@ function assertTarballShape(
   }
 
   assertRootTarballHasNoNativeAddon(entries);
+  assertRuntimeTarballHasNoCompatibilityEvidence(entries);
   if (expected.role === "wasm") {
     const wasmEntries = entries.filter(entry => entry.endsWith(".wasm"));
     const expectedWasm = "package/dist/sheetom_wasm_bg.wasm";

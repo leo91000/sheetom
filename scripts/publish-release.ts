@@ -10,7 +10,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { assertRootTarballHasNoNativeAddon } from "./native-artifact-contract.ts";
+import {
+  assertRootTarballHasNoNativeAddon,
+  assertRuntimeTarballHasNoCompatibilityEvidence,
+} from "./native-artifact-contract.ts";
 import {
   RELEASE_MANIFEST_FILENAME,
   verifyReleaseArtifactSet,
@@ -248,6 +251,7 @@ function runInherited(
 function verifyReleaseTarball(tarball: string, manifest: PackageManifest): void {
   const entries = run("tar", ["-tzf", tarball]).trim().split("\n").filter(Boolean);
   assertRootTarballHasNoNativeAddon(entries);
+  assertRuntimeTarballHasNoCompatibilityEvidence(entries);
   const packedManifest = JSON.parse(
     run("tar", ["-xOzf", tarball, "package/package.json"]),
   ) as PackageManifest;
