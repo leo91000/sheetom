@@ -423,6 +423,49 @@ fn border_image_shorthand_exposes_unprefixed_longhands() {
   }
 }
 
+#[test]
+fn animation_range_shorthand_exposes_parallel_longhand_lists() {
+  let property = Property::parse_string(
+    PropertyId::AnimationRange,
+    "cover 10% normal, normal exit 1px",
+    ParserOptions::default(),
+  )
+  .unwrap();
+  for (id, expected) in [
+    (PropertyId::AnimationRangeStart, "cover 10%, normal"),
+    (PropertyId::AnimationRangeEnd, "normal, exit 1px"),
+  ] {
+    assert_eq!(
+      property
+        .longhand(&id)
+        .unwrap()
+        .value_to_css_string(PrinterOptions::default())
+        .unwrap(),
+      expected,
+      "{id:?}",
+    );
+  }
+}
+
+#[test]
+fn animation_range_parses_explicit_end_with_end_defaults() {
+  let property = Property::parse_string(
+    PropertyId::AnimationRange,
+    "normal cover",
+    ParserOptions::default(),
+  )
+  .unwrap();
+
+  assert_eq!(
+    property
+      .longhand(&PropertyId::AnimationRangeEnd)
+      .unwrap()
+      .value_to_css_string(PrinterOptions::default())
+      .unwrap(),
+    "cover",
+  );
+}
+
 fn set_test(orig: &str, property: &str, value: &str, important: bool, expected: &str) {
   let mut decls = DeclarationBlock::parse_string(orig, ParserOptions::default()).unwrap();
   decls.set(

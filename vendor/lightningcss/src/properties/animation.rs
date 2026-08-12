@@ -630,8 +630,7 @@ impl<'i> Parse<'i> for AnimationRange {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     let start = AnimationRangeStart::parse(input)?;
     let end = input
-      .try_parse(AnimationRangeStart::parse)
-      .map(|r| AnimationRangeEnd(r.0))
+      .try_parse(AnimationRangeEnd::parse)
       .unwrap_or_else(|_| {
         // If <'animation-range-end'> is omitted and <'animation-range-start'> includes a <timeline-range-name> component, then
         // animation-range-end is set to that same <timeline-range-name> and 100%. Otherwise, any omitted longhand is set to its initial value.
