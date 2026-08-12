@@ -17,6 +17,7 @@ import {
   expectedNativeArtifacts,
   assertPlatformTarballEntries,
   assertRootTarballHasNoNativeAddon,
+  assertRuntimeTarballHasNoCompatibilityEvidence,
 } from "../scripts/native-artifact-contract.ts";
 import {
   assertReleaseArtifactManifest,
@@ -193,6 +194,16 @@ describe("release automation", () => {
       "package/index.cjs",
       "package/sheetom-native.linux-x64-gnu.node",
     ], "sheetom-native.linux-x64-gnu.node")).not.toThrow();
+  });
+
+  it("keeps immutable compatibility evidence out of runtime tarballs", () => {
+    expect(() => assertRuntimeTarballHasNoCompatibilityEvidence([
+      "package/dist/index.js",
+      "package/docs/api.md",
+    ])).not.toThrow();
+    expect(() => assertRuntimeTarballHasNoCompatibilityEvidence([
+      "package/compatibility/baselines/0.1.0-rc.8.json",
+    ])).toThrow(/contains release compatibility evidence/);
   });
 
   it("requires a lockstep native, WebAssembly, and root release artifact set", () => {

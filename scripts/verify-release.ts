@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { nativeEngineEvidence } from "./native-engine-evidence.ts";
+import { assertRuntimeTarballHasNoCompatibilityEvidence } from "./native-artifact-contract.ts";
 import {
   replaceCargoLockVersions,
   replaceCargoPackageVersion,
@@ -243,9 +244,7 @@ if (status !== "") {
 const pack = JSON.parse(execFileSync("npm", ["pack", "--dry-run", "--json"], {
   encoding: "utf8",
 }));
-const files = new Set(pack[0]?.files?.map(file => file.path) ?? []);
-if (!files.has(reportPath)) {
-  throw new Error(`The npm tarball does not contain ${reportPath}`);
-}
+const files = pack[0]?.files?.map(file => `package/${file.path}`) ?? [];
+assertRuntimeTarballHasNoCompatibilityEvidence(files);
 
 console.log(`Release inputs for sheetom@${manifest.version} are internally consistent.`);

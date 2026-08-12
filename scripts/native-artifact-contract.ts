@@ -28,6 +28,18 @@ export function assertRootTarballHasNoNativeAddon(entries: string[]): void {
   throw new Error(`Root SheetOM tarball contains native addons: ${addons.join(", ")}`);
 }
 
+export function assertRuntimeTarballHasNoCompatibilityEvidence(
+  entries: readonly string[],
+): void {
+  const evidence = entries.filter(entry =>
+    entry === "package/compatibility" || entry.startsWith("package/compatibility/")
+  );
+  if (evidence.length === 0) return;
+  throw new Error(
+    `Runtime tarball contains release compatibility evidence: ${evidence.join(", ")}`,
+  );
+}
+
 export function assertPlatformTarballEntries(
   entries: string[],
   artifact: string,
