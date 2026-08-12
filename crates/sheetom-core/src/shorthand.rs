@@ -1307,7 +1307,10 @@ fn synthesize_text_decoration(records: &[&DeclarationRecord], safe: bool) -> Opt
     let style = record_value(records, "text-decoration-style", safe)?;
     let color = record_value(records, "text-decoration-color", safe)?;
     let mut components = Vec::new();
-    if line != "initial" {
+    let has_non_default_component = thickness != "initial" && thickness != "auto"
+        || style != "initial" && style != "solid"
+        || color != "initial" && color != "currentcolor";
+    if line != "initial" && (line != "none" || !has_non_default_component) {
         components.push(line);
     }
     if thickness != "initial" && thickness != "auto" {
@@ -3278,7 +3281,15 @@ fn expand_text_decoration(components: &[&str]) -> Option<Vec<(&'static str, Stri
     if components.is_empty() {
         return None;
     }
-    let line_keywords = ["none", "underline", "overline", "line-through", "blink"];
+    let line_keywords = [
+        "none",
+        "underline",
+        "overline",
+        "line-through",
+        "blink",
+        "spelling-error",
+        "grammar-error",
+    ];
     let style_keywords = ["solid", "double", "dotted", "dashed", "wavy"];
     let mut lines = Vec::new();
     let mut thickness = None;
@@ -3303,15 +3314,13 @@ fn expand_text_decoration(components: &[&str]) -> Option<Vec<(&'static str, Stri
             return None;
         }
     }
+    let line = if lines.is_empty() {
+        "initial".to_owned()
+    } else {
+        typed_longhand_value("text-decoration-line", &lines.join(" "))?
+    };
     Some(vec![
-        (
-            "text-decoration-line",
-            if lines.is_empty() {
-                "initial".to_owned()
-            } else {
-                lines.join(" ")
-            },
-        ),
+        ("text-decoration-line", line),
         (
             "text-decoration-thickness",
             thickness.unwrap_or("initial").to_owned(),

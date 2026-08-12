@@ -112,6 +112,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "text decoration error with typed components",
+        source: "text-decoration: spelling-error calc(1px + 1em) wavy contrast-color(red)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

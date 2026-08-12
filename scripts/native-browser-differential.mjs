@@ -250,6 +250,30 @@ const cases = [
         probes: ["text-box", "text-box-trim", "text-box-edge"],
     },
     {
+        id: "text-decoration-error-components",
+        operations: [["set", "text-decoration", "spelling-error wavy blue 2px", "important"]],
+        probes: [
+            "text-decoration",
+            "text-decoration-line",
+            "text-decoration-thickness",
+            "text-decoration-style",
+            "text-decoration-color",
+        ],
+    },
+    {
+        id: "text-decoration-default-component-omission",
+        operations: [["set", "text-decoration", "none red", ""]],
+        probes: ["text-decoration", "text-decoration-line", "text-decoration-color"],
+    },
+    {
+        id: "invalid-text-decoration-error-is-atomic",
+        operations: [
+            ["set", "text-decoration", "grammar-error red", "important"],
+            ["set", "text-decoration", "grammar-error underline", ""],
+        ],
+        probes: ["text-decoration", "text-decoration-line", "text-decoration-color"],
+    },
+    {
         id: "invalid-text-fit-is-atomic",
         operations: [
             ["set", "text-fit", "shrink consistent 10%", "important"],
