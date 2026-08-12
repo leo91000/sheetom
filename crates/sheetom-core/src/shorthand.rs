@@ -4,7 +4,7 @@ use crate::{
     extension_value::{offset_rotate_is_shorthand_default, parse_contextual_dimension_calculation},
     gap_rule::{
         canonical_gap_rule_longhand, expand_border_side_observable, expand_gap_rule,
-        synthesize_gap_rule,
+        expand_text_stroke, gap_rule_component, synthesize_gap_rule, GapRuleComponent,
     },
     observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
@@ -210,6 +210,7 @@ fn synthesize_special_shorthand(
         | "rule-inset-start" => synthesize_rule_inset_component(name, records, safe),
         "scroll-timeline" => synthesize_scroll_timeline(records, safe),
         "text-decoration" => synthesize_text_decoration(records, safe),
+        "-webkit-text-stroke" => synthesize_text_stroke(records, safe),
         "text-box" => synthesize_text_box(records, safe),
         "text-wrap" => synthesize_text_wrap(records, safe),
         "timeline-trigger" => synthesize_timeline_trigger(records, safe),
@@ -261,6 +262,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "rule-inset"
             | "scroll-timeline"
             | "text-decoration"
+            | "-webkit-text-stroke"
             | "text-box"
             | "text-wrap"
             | "timeline-trigger"
@@ -1187,6 +1189,15 @@ fn synthesize_structural_shorthand(
     if name == "background-position" {
         return synthesize_background_position(records, safe);
     }
+    if name == "place-self" {
+        let align = record_value(records, "align-self", safe)?;
+        let justify = record_value(records, "justify-self", safe)?;
+        return Some(if align == justify {
+            align.to_owned()
+        } else {
+            format!("{align} {justify}")
+        });
+    }
     if name == "contain-intrinsic-size" && records.len() == 2 {
         let values = record_values(records, safe)?;
         return Some(if values[0] == values[1] {
@@ -1406,6 +1417,23 @@ fn synthesize_text_decoration(records: &[&DeclarationRecord], safe: bool) -> Opt
     }
     Some(if components.is_empty() {
         "none".to_owned()
+    } else {
+        components.join(" ")
+    })
+}
+
+fn synthesize_text_stroke(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let width = record_value(records, "-webkit-text-stroke-width", safe)?;
+    let color = record_value(records, "-webkit-text-stroke-color", safe)?;
+    let mut components = Vec::with_capacity(2);
+    if width != "initial" {
+        components.push(width);
+    }
+    if color != "initial" {
+        components.push(color);
+    }
+    Some(if components.is_empty() {
+        "initial".to_owned()
     } else {
         components.join(" ")
     })
@@ -1666,7 +1694,7 @@ pub(crate) fn parse_value_for_source_with_limits(
         let projection = project_declaration(&semantic).map_err(map_engine_error)?;
         let (canonical, observable) = if source_name == "-webkit-background-size" {
             (
-                duplicate_single_component(&projection.canonical),
+                projection.canonical,
                 duplicate_single_component(&projection.observable),
             )
         } else {
@@ -1901,7 +1929,11 @@ fn observable_mask_positions(longhand: &str, input: &str) -> Option<String> {
         .iter()
         .map(|layer| {
             let (x, y) = position_axis_components(layer)?;
-            let value = if longhand.ends_with("-x") { x } else { y };
+            let value = match longhand {
+                "-webkit-mask-position-x" => x,
+                "-webkit-mask-position-y" => y,
+                _ => return None,
+            };
             if value == "initial" {
                 return Some("0%".to_owned());
             }
@@ -2092,6 +2124,9 @@ fn expand_special_shorthand(
     if matches!(name, "column-rule" | "row-rule" | "rule") {
         return expand_gap_rule_records(name, value, important, limits);
     }
+    if name == "-webkit-text-stroke" {
+        return expand_text_stroke_records(value, important, limits);
+    }
     if matches!(name, "rule-width" | "rule-style" | "rule-color") {
         return expand_gap_rule_component_records(name, value, important, limits);
     }
@@ -2184,14 +2219,11 @@ fn expand_gap_rule_records(
     observed_shorthand_longhands(shorthand)?
         .iter()
         .map(|longhand| {
-            let (canonical, observable) = if longhand.ends_with("-width") {
-                (&expansion.width, &expansion.width_observable)
-            } else if longhand.ends_with("-style") {
-                (&expansion.style, &expansion.style_observable)
-            } else if longhand.ends_with("-color") {
-                (&expansion.color, &expansion.color_observable)
-            } else {
-                return None;
+            let (canonical, observable) = match gap_rule_component(longhand) {
+                Some(GapRuleComponent::Width) => (&expansion.width, &expansion.width_observable),
+                Some(GapRuleComponent::Style) => (&expansion.style, &expansion.style_observable),
+                Some(GapRuleComponent::Color) => (&expansion.color, &expansion.color_observable),
+                None => return None,
             };
             Some(DeclarationRecord {
                 name: (*longhand).to_owned(),
@@ -2202,6 +2234,37 @@ fn expand_gap_rule_records(
             })
         })
         .collect()
+}
+
+fn expand_text_stroke_records(
+    source: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Option<Vec<DeclarationRecord>> {
+    let expansion = expand_text_stroke(source).ok()?;
+    [
+        (
+            "-webkit-text-stroke-width",
+            expansion.width,
+            expansion.width_observable,
+        ),
+        (
+            "-webkit-text-stroke-color",
+            expansion.color,
+            expansion.color_observable,
+        ),
+    ]
+    .into_iter()
+    .map(|(name, canonical, observable)| {
+        Some(DeclarationRecord {
+            name: name.to_owned(),
+            value: semantic_longhand_value(name, &canonical, &observable, limits)?,
+            important,
+            pending_group: None,
+            alias_value: None,
+        })
+    })
+    .collect()
 }
 
 fn expand_gap_rule_component_records(
@@ -3701,14 +3764,10 @@ fn shorthand_longhand<'i>(
         return None;
     }
 
-    let source_name = if longhand_name.ends_with("-width") {
-        "border-top-width"
-    } else if longhand_name.ends_with("-style") {
-        "border-top-style"
-    } else if longhand_name.ends_with("-color") {
-        "border-top-color"
-    } else {
-        return None;
+    let source_name = match border_component(longhand_name)? {
+        BorderComponent::Width => "border-top-width",
+        BorderComponent::Style => "border-top-style",
+        BorderComponent::Color => "border-top-color",
     };
     property.longhand(&PropertyId::from(source_name))
 }

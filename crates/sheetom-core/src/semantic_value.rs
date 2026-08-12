@@ -163,6 +163,17 @@ pub fn parse_semantic_property_with_limits(
 
     crate::property_constraints::validate_authored_property_capability(name, source)?;
 
+    if grammar.canonical_name() == "perspective" {
+        if let Some(value) = crate::extension_value::parse_reparsable_perspective_zero(source) {
+            return Ok(SemanticDeclaration {
+                property_name: Arc::from(grammar.canonical_name()),
+                value: SemanticPropertyValue::Extension(value),
+                recovered,
+                parse_kind: PropertyParseKind::SheetomTyped,
+            });
+        }
+    }
+
     if grammar
         .extensions()
         .contains(&crate::catalog::PropertyGrammarExtension::BrowserLonghand)
