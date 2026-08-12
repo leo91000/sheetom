@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 1129,
+  "mismatchCases": 1107,
   "summary": {
-    "acceptance": 213,
+    "acceptance": 191,
     "observable": 640,
     "cssText": 640,
     "items": 528,
@@ -1010,83 +1010,6 @@
       "sample": "webref-sample.fd22dfbe9321691d",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.2273e27ee6e6c9a9",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.58e1d4ce97409c20",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.5a1967a56110eba4",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.65a365a8541cbfab",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.6ae6c1ad42e40026",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.6fe1bb0e692af747",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.8789a8f92c016964",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.97045e29773a6aca",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.ab473ba6b5f71986",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.db14d9628b64baab",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-transform-origin",
-      "sample": "webref-sample.dce0643a634406d9",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -8564,83 +8487,6 @@
     {
       "property": "text-transform",
       "sample": "webref-sample.3147794264b09230",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.2273e27ee6e6c9a9",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.58e1d4ce97409c20",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.5a1967a56110eba4",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.65a365a8541cbfab",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.6ae6c1ad42e40026",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.6fe1bb0e692af747",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.8789a8f92c016964",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.97045e29773a6aca",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.ab473ba6b5f71986",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.db14d9628b64baab",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "transform-origin",
-      "sample": "webref-sample.dce0643a634406d9",
       "kinds": [
         "acceptance"
       ]

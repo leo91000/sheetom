@@ -367,6 +367,9 @@ fn serialize_typed_observable(
     if let Some(value) = serialize_dimensionless_zero(name, input) {
         return value;
     }
+    if name == "transform-origin" {
+        return serialize_transform_origin(input, canonical);
+    }
     if is_position_pair_property(name) {
         return serialize_position_pair(input, canonical);
     }
@@ -450,6 +453,29 @@ fn serialize_position_pair(input: &str, canonical: &str) -> String {
         canonicalize_leading_decimal(canonical_first)
     };
     format!("{first} {canonical_second}")
+}
+
+fn serialize_transform_origin(input: &str, canonical: &str) -> String {
+    let authored = crate::syntax::split_top_level_whitespace(input).unwrap_or_default();
+    let canonical =
+        crate::syntax::split_top_level_whitespace(canonical).unwrap_or_else(|| vec![canonical]);
+    let mut output = Vec::with_capacity(canonical.len());
+
+    for (index, component) in canonical.into_iter().enumerate() {
+        let authored_component = authored.get(index).copied().unwrap_or_default();
+        let component = if component == "0" {
+            "0px".to_owned()
+        } else {
+            canonicalize_leading_decimal(component)
+        };
+        if starts_math_function(authored_component) && !starts_math_function(&component) {
+            output.push(format!("calc({component})"));
+        } else {
+            output.push(component);
+        }
+    }
+
+    output.join(" ")
 }
 
 fn serialize_color_pair(input: &str) -> Option<String> {
@@ -1124,6 +1150,25 @@ mod tests {
             observable("stroke-dasharray", "calc(1 + 1) 2"),
             "calc(2), 2"
         );
+    }
+
+    #[test]
+    fn serializes_transform_origin_like_chromium() {
+        for (input, expected) in [
+            ("left", "left center"),
+            ("top", "center top"),
+            ("top left", "left top"),
+            ("0 0", "0px 0px"),
+            ("left top 1px", "left top 1px"),
+            ("center center 0", "center center 0px"),
+            ("center center calc(1px + 2px)", "center center calc(3px)"),
+            (
+                "calc(1px + 2px) center calc(3px + 4px)",
+                "calc(3px) center calc(7px)",
+            ),
+        ] {
+            assert_eq!(observable("transform-origin", input), expected, "{input}");
+        }
     }
 
     #[test]

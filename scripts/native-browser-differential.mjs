@@ -194,6 +194,29 @@ const cases = [
         ],
     },
     {
+        id: "transform-origin-depth",
+        operations: [["set", "transform-origin", "center center calc(1px + 2px)", "important"]],
+        probes: ["transform-origin", "-webkit-transform-origin"],
+    },
+    {
+        id: "transform-origin-axis-order-and-zero-units",
+        operations: [["set", "transform-origin", "top left 0", ""]],
+        probes: ["transform-origin"],
+    },
+    {
+        id: "webkit-transform-origin-alias",
+        operations: [["set", "-webkit-transform-origin", "top center 1px", "important"]],
+        probes: ["transform-origin", "-webkit-transform-origin"],
+    },
+    {
+        id: "invalid-transform-origin-is-atomic",
+        operations: [
+            ["set", "transform-origin", "9px 8px 7px", "important"],
+            ["set", "transform-origin", "left 10px top", ""],
+        ],
+        probes: ["transform-origin"],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",

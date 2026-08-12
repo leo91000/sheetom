@@ -11,13 +11,7 @@ use lightningcss::{
     },
     stylesheet::PrinterOptions,
     traits::Parse,
-    values::{
-        color::CssColor,
-        easing::EasingFunction,
-        length::Length,
-        position::{HorizontalPosition, VerticalPosition},
-        time::Time,
-    },
+    values::{color::CssColor, easing::EasingFunction, length::Length, time::Time},
 };
 
 use crate::{syntax::split_top_level_delimiter, EngineError};
@@ -55,13 +49,6 @@ pub(crate) fn validate_standard_property(
         return invalid(authored_name, authored_value);
     }
     validate_authored_property_capability(authored_name, &canonical)?;
-    if matches!(
-        property,
-        Property::TransformOrigin(position, _)
-            if has_side_offset(&position.x) && has_vertical_side_offset(&position.y)
-    ) {
-        return invalid(authored_name, authored_value);
-    }
     if authored_name
         .strip_prefix("-webkit-")
         .unwrap_or(authored_name)
@@ -462,26 +449,6 @@ fn valid_webkit_text_stroke(source: &str) -> bool {
         .is_ok()
 }
 
-fn has_side_offset(position: &HorizontalPosition) -> bool {
-    matches!(
-        position,
-        HorizontalPosition::Side {
-            offset: Some(_),
-            ..
-        }
-    )
-}
-
-fn has_vertical_side_offset(position: &VerticalPosition) -> bool {
-    matches!(
-        position,
-        VerticalPosition::Side {
-            offset: Some(_),
-            ..
-        }
-    )
-}
-
 fn is_length(source: &str) -> bool {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
@@ -727,7 +694,6 @@ mod tests {
         for (name, value) in [
             ("-webkit-text-stroke", "none"),
             ("-webkit-text-stroke", "2px dashed red"),
-            ("transform-origin", "left 10px top 20px"),
         ] {
             assert!(
                 validate_standard_property(name, value, &parsed(name, value)).is_err(),
@@ -745,14 +711,20 @@ mod tests {
                 "{value}"
             );
         }
-        for value in ["left top 20px", "right 10px bottom"] {
+        for value in ["left top 20px", "right 10px 20px"] {
             assert!(
-                validate_standard_property(
-                    "transform-origin",
-                    value,
-                    &parsed("transform-origin", value)
-                )
-                .is_ok(),
+                crate::parse_semantic_property("transform-origin", value).is_ok(),
+                "{value}"
+            );
+        }
+        for value in [
+            "left 10px top",
+            "left 10px top 20px",
+            "left top 10%",
+            "center center calc(10%)",
+        ] {
+            assert!(
+                crate::parse_semantic_property("transform-origin", value).is_err(),
                 "{value}"
             );
         }
