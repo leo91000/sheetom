@@ -3101,13 +3101,15 @@ pub static PROPERTY_GRAMMAR_EXTENSIONS: &[(&str, &[super::PropertyGrammarExtensi
     ]),
     ("-webkit-mask-box-image-outset", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+        super::PropertyGrammarExtension::WebkitMaskBoxImageComponent,
     ]),
     ("-webkit-mask-box-image-slice", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,
-        super::PropertyGrammarExtension::WebkitMaskBoxImageSlice,
+        super::PropertyGrammarExtension::WebkitMaskBoxImageComponent,
     ]),
     ("-webkit-mask-box-image-width", &[
         super::PropertyGrammarExtension::LengthPercentageOrNumberCalculation,
+        super::PropertyGrammarExtension::WebkitMaskBoxImageComponent,
     ]),
     ("-webkit-opacity", &[
         super::PropertyGrammarExtension::LengthPercentageNumberCalculation,

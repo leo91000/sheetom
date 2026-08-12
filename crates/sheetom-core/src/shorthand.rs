@@ -5,7 +5,10 @@ use crate::{
     gap_rule::{canonical_gap_rule_longhand, expand_gap_rule, synthesize_gap_rule},
     observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
-    syntax::{analyze_substitutions, split_top_level_delimiter, split_top_level_whitespace},
+    syntax::{
+        analyze_substitutions, split_top_level_delimiter, split_top_level_delimiter_allow_empty,
+        split_top_level_whitespace,
+    },
     DeclarationValue, EngineError, PropertyParseKind, ResourceLimits,
 };
 use cssparser::{Parser, ParserInput, Token};
@@ -1840,20 +1843,6 @@ fn is_image_component(component: &str) -> bool {
         .any(|prefix| component.starts_with(prefix))
 }
 
-fn has_explicit_border_image_source(value: &str) -> bool {
-    let Some(sections) = split_top_level_delimiter(value, b'/') else {
-        return false;
-    };
-    let Some(first) = sections.first() else {
-        return false;
-    };
-    split_top_level_whitespace(first).is_some_and(|components| {
-        components
-            .iter()
-            .any(|component| is_image_component(component))
-    })
-}
-
 fn expand_special_shorthand(
     name: &str,
     value: &str,
@@ -1897,33 +1886,7 @@ fn expand_special_shorthand(
             expand_contextual_grid_line(value, "grid-column-start", "grid-column-end")?
         }
         "grid-row" => expand_contextual_grid_line(value, "grid-row-start", "grid-row-end")?,
-        "-webkit-mask-box-image" => expand_border_image(value)?
-            .into_iter()
-            .map(|(longhand, expanded_value)| {
-                let longhand = match longhand {
-                    "border-image-source" => "-webkit-mask-box-image-source",
-                    "border-image-slice" => "-webkit-mask-box-image-slice",
-                    "border-image-width" => "-webkit-mask-box-image-width",
-                    "border-image-outset" => "-webkit-mask-box-image-outset",
-                    "border-image-repeat" => "-webkit-mask-box-image-repeat",
-                    _ => longhand,
-                };
-                let omitted_source = longhand == "-webkit-mask-box-image-source"
-                    && expanded_value == "none"
-                    && !has_explicit_border_image_source(value);
-                let initial_component = expanded_value != "none"
-                    && expanded_value == initial_border_image_value(longhand)
-                    && !border_image_component_is_explicit(value, longhand);
-                let expanded_value = if omitted_source || initial_component {
-                    "initial".to_owned()
-                } else if longhand == "-webkit-mask-box-image-slice" {
-                    format!("{expanded_value} fill")
-                } else {
-                    expanded_value
-                };
-                (longhand, expanded_value)
-            })
-            .collect(),
+        "-webkit-mask-box-image" => expand_webkit_mask_box_image(value)?,
         "font-synthesis" => expand_font_synthesis(&components)?,
         "font-variant" => expand_font_variant(&components)?,
         "offset" => expand_offset(value)?,
@@ -2211,49 +2174,6 @@ fn expand_timeline_trigger_item(value: &str) -> Option<[String; 6]> {
     Some([name, source, activation.0, activation.1, active.0, active.1])
 }
 
-fn border_image_component_is_explicit(value: &str, longhand: &str) -> bool {
-    let Some(sections) = split_top_level_delimiter(value, b'/') else {
-        return false;
-    };
-    let first = sections
-        .first()
-        .and_then(|section| split_top_level_whitespace(section))
-        .unwrap_or_default();
-    match longhand {
-        "-webkit-mask-box-image-source" => has_explicit_border_image_source(value),
-        "-webkit-mask-box-image-slice" => first.iter().any(|component| {
-            !is_image_component(component)
-                && !matches!(
-                    *component,
-                    "fill" | "stretch" | "repeat" | "round" | "space"
-                )
-        }),
-        "-webkit-mask-box-image-width" => sections
-            .get(1)
-            .is_some_and(|value| !value.trim().is_empty()),
-        "-webkit-mask-box-image-outset" => sections.get(2).is_some_and(|section| {
-            split_top_level_whitespace(section).is_some_and(|components| {
-                components.iter().any(|component| {
-                    !matches!(*component, "stretch" | "repeat" | "round" | "space")
-                })
-            })
-        }),
-        "-webkit-mask-box-image-repeat" => {
-            first
-                .iter()
-                .any(|component| matches!(*component, "stretch" | "repeat" | "round" | "space"))
-                || sections.get(2).is_some_and(|section| {
-                    split_top_level_whitespace(section).is_some_and(|components| {
-                        components.iter().any(|component| {
-                            matches!(*component, "stretch" | "repeat" | "round" | "space")
-                        })
-                    })
-                })
-        }
-        _ => false,
-    }
-}
-
 fn contextual_longhand_value(name: &str, value: &str) -> Option<String> {
     let declaration =
         parse_semantic_property_with_limits(name, value, ResourceLimits::default()).ok()?;
@@ -2496,16 +2416,6 @@ fn is_system_font(value: &str) -> bool {
     )
 }
 
-fn initial_border_image_value(longhand: &str) -> &'static str {
-    match longhand {
-        "-webkit-mask-box-image-slice" => "100%",
-        "-webkit-mask-box-image-width" => "1",
-        "-webkit-mask-box-image-outset" => "0",
-        "-webkit-mask-box-image-repeat" => "stretch",
-        _ => "",
-    }
-}
-
 fn records_from_values(
     shorthand: &str,
     shorthand_input: &str,
@@ -2674,6 +2584,252 @@ fn expand_border_image(value: &str) -> Option<Vec<(&'static str, String)>> {
         ("border-image-outset", outset),
         ("border-image-repeat", repeat),
     ])
+}
+
+#[derive(Default)]
+struct WebkitMaskBoxImageGlobals {
+    source: Option<String>,
+    repeat: Option<String>,
+}
+
+fn expand_webkit_mask_box_image(value: &str) -> Option<Vec<(&'static str, String)>> {
+    let sections = split_top_level_delimiter_allow_empty(value, b'/')?;
+    if sections.is_empty() || sections.len() > 3 {
+        return None;
+    }
+
+    let first_components = split_top_level_whitespace(sections[0])?;
+    let require_slice = sections.len() > 1;
+    let (leading_globals, slice) =
+        parse_webkit_mask_box_image_first_section(&first_components, require_slice)?;
+
+    let mut width = "initial".to_owned();
+    let mut outset = "initial".to_owned();
+    let mut trailing_globals = WebkitMaskBoxImageGlobals::default();
+
+    if sections.len() == 2 {
+        let components = split_top_level_whitespace(sections[1])?;
+        let (parsed_width, globals) =
+            parse_webkit_mask_box_image_tail(&components, "-webkit-mask-box-image-width")?;
+        width = parsed_width;
+        trailing_globals = globals;
+    } else if sections.len() == 3 {
+        let width_components = split_top_level_whitespace(sections[1])?;
+        if !width_components.is_empty() {
+            width = canonical_repeated_longhand_components(
+                "-webkit-mask-box-image-width",
+                &width_components,
+            )?;
+        }
+
+        let outset_components = split_top_level_whitespace(sections[2])?;
+        let (parsed_outset, globals) =
+            parse_webkit_mask_box_image_tail(&outset_components, "-webkit-mask-box-image-outset")?;
+        outset = parsed_outset;
+        trailing_globals = globals;
+    }
+
+    let globals = merge_webkit_mask_box_image_globals(leading_globals, trailing_globals)?;
+    Some(vec![
+        (
+            "-webkit-mask-box-image-source",
+            globals.source.unwrap_or_else(|| "initial".to_owned()),
+        ),
+        (
+            "-webkit-mask-box-image-slice",
+            slice.unwrap_or_else(|| "initial".to_owned()),
+        ),
+        ("-webkit-mask-box-image-width", width),
+        ("-webkit-mask-box-image-outset", outset),
+        (
+            "-webkit-mask-box-image-repeat",
+            globals.repeat.unwrap_or_else(|| "initial".to_owned()),
+        ),
+    ])
+}
+
+fn parse_webkit_mask_box_image_first_section(
+    components: &[&str],
+    require_slice: bool,
+) -> Option<(WebkitMaskBoxImageGlobals, Option<String>)> {
+    if components.len() > 8 {
+        return None;
+    }
+    for split in 0..=components.len() {
+        let Some(globals) = parse_webkit_mask_box_image_globals(&components[..split]) else {
+            continue;
+        };
+        let Some(slice) = parse_webkit_mask_box_image_slice(&components[split..]) else {
+            continue;
+        };
+        if require_slice && slice.is_none() {
+            continue;
+        }
+        if components.is_empty()
+            && slice.is_none()
+            && globals.source.is_none()
+            && globals.repeat.is_none()
+        {
+            continue;
+        }
+        return Some((globals, slice));
+    }
+    None
+}
+
+fn parse_webkit_mask_box_image_tail(
+    components: &[&str],
+    longhand: &str,
+) -> Option<(String, WebkitMaskBoxImageGlobals)> {
+    if components.len() > 7 {
+        return None;
+    }
+    for split in 1..=components.len() {
+        let Some(value) = canonical_repeated_longhand_components(longhand, &components[..split])
+        else {
+            continue;
+        };
+        let Some(globals) = parse_webkit_mask_box_image_globals(&components[split..]) else {
+            continue;
+        };
+        return Some((value, globals));
+    }
+    None
+}
+
+fn parse_webkit_mask_box_image_slice(components: &[&str]) -> Option<Option<String>> {
+    if components.is_empty() {
+        return Some(None);
+    }
+    let mut values = Vec::with_capacity(components.len());
+    let mut fill = false;
+    for component in components {
+        if css_identifier_is(component, "fill") {
+            if fill {
+                return None;
+            }
+            fill = true;
+        } else {
+            values.push(*component);
+        }
+    }
+    if values.is_empty() {
+        return None;
+    }
+    let value = canonical_repeated_longhand_components("-webkit-mask-box-image-slice", &values)?;
+    Some(Some(format!("{value} fill")))
+}
+
+fn parse_webkit_mask_box_image_globals(components: &[&str]) -> Option<WebkitMaskBoxImageGlobals> {
+    if components.len() > 3 {
+        return None;
+    }
+    if components.is_empty() {
+        return Some(WebkitMaskBoxImageGlobals::default());
+    }
+
+    if let Some(source) = canonical_webkit_mask_box_image_source(components[0]) {
+        let repeat = if components.len() == 1 {
+            None
+        } else {
+            Some(canonical_webkit_mask_box_image_repeat(&components[1..])?)
+        };
+        return Some(WebkitMaskBoxImageGlobals {
+            source: Some(source),
+            repeat,
+        });
+    }
+
+    for repeat_length in [2, 1] {
+        if components.len() < repeat_length {
+            continue;
+        }
+        let Some(repeat) = canonical_webkit_mask_box_image_repeat(&components[..repeat_length])
+        else {
+            continue;
+        };
+        let source = match components.get(repeat_length..) {
+            Some([]) => None,
+            Some([source]) => Some(canonical_webkit_mask_box_image_source(source)?),
+            _ => continue,
+        };
+        return Some(WebkitMaskBoxImageGlobals {
+            source,
+            repeat: Some(repeat),
+        });
+    }
+    None
+}
+
+fn merge_webkit_mask_box_image_globals(
+    leading: WebkitMaskBoxImageGlobals,
+    trailing: WebkitMaskBoxImageGlobals,
+) -> Option<WebkitMaskBoxImageGlobals> {
+    if leading.source.is_some() && trailing.source.is_some()
+        || leading.repeat.is_some() && trailing.repeat.is_some()
+    {
+        return None;
+    }
+    Some(WebkitMaskBoxImageGlobals {
+        source: leading.source.or(trailing.source),
+        repeat: leading.repeat.or(trailing.repeat),
+    })
+}
+
+fn canonical_webkit_mask_box_image_source(component: &str) -> Option<String> {
+    let value = typed_longhand_value("-webkit-mask-box-image-source", component)?;
+    (!is_css_wide_keyword(&value)).then_some(value)
+}
+
+fn canonical_webkit_mask_box_image_repeat(components: &[&str]) -> Option<String> {
+    if components.is_empty() || components.len() > 2 {
+        return None;
+    }
+    let values = components
+        .iter()
+        .map(|component| {
+            ["stretch", "repeat", "round", "space"]
+                .iter()
+                .find(|keyword| css_identifier_is(component, keyword))
+                .map(|keyword| (*keyword).to_owned())
+        })
+        .collect::<Option<Vec<_>>>()?;
+    Some(if values.len() == 2 && values[0] == values[1] {
+        values[0].clone()
+    } else {
+        values.join(" ")
+    })
+}
+
+fn canonical_repeated_longhand_components(name: &str, components: &[&str]) -> Option<String> {
+    if components.is_empty() || components.len() > 4 {
+        return None;
+    }
+    let canonical = components
+        .iter()
+        .map(|component| typed_longhand_value(name, component))
+        .collect::<Option<Vec<_>>>()?;
+    let expanded = match canonical.as_slice() {
+        [first] => vec![first.clone(), first.clone(), first.clone(), first.clone()],
+        [first, second] => vec![first.clone(), second.clone(), first.clone(), second.clone()],
+        [first, second, third] => {
+            vec![first.clone(), second.clone(), third.clone(), second.clone()]
+        }
+        [first, second, third, fourth] => {
+            vec![first.clone(), second.clone(), third.clone(), fourth.clone()]
+        }
+        _ => return None,
+    };
+    compress_four_values(expanded)
+}
+
+fn css_identifier_is(value: &str, expected: &str) -> bool {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+    matches!(
+        parser.next(),
+        Ok(Token::Ident(identifier)) if identifier.eq_ignore_ascii_case(expected)
+    ) && parser.is_exhausted()
 }
 
 fn validate_repeated_longhand_components(

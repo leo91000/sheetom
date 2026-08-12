@@ -133,6 +133,67 @@ const cases = [
         probes: ["rule-inset", "row-rule-inset-cap-start"],
     },
     {
+        id: "webkit-mask-box-image-complete-grammar",
+        operations: [[
+            "set",
+            "-webkit-mask-box-image",
+            "url(a.png) repeat round 1 2 fill / auto 3px / 4px 5px",
+            "important",
+        ]],
+        probes: [
+            "-webkit-mask-box-image",
+            "-webkit-mask-box-image-source",
+            "-webkit-mask-box-image-slice",
+            "-webkit-mask-box-image-width",
+            "-webkit-mask-box-image-outset",
+            "-webkit-mask-box-image-repeat",
+        ],
+    },
+    {
+        id: "webkit-mask-box-image-longhand-removal",
+        operations: [
+            ["set", "-webkit-mask-box-image", "none 1 fill / auto / 2px repeat", ""],
+            ["set", "-webkit-mask-box-image-width", "3px 4px", ""],
+            ["remove", "-webkit-mask-box-image-width"],
+        ],
+        probes: [
+            "-webkit-mask-box-image",
+            "-webkit-mask-box-image-source",
+            "-webkit-mask-box-image-slice",
+            "-webkit-mask-box-image-width",
+            "-webkit-mask-box-image-outset",
+            "-webkit-mask-box-image-repeat",
+        ],
+    },
+    {
+        id: "webkit-mask-box-image-direct-longhand-lists",
+        operations: [
+            ["set", "-webkit-mask-box-image-slice", "1 2 3 4 fill", ""],
+            ["set", "-webkit-mask-box-image-width", "auto 2px 3 4%", ""],
+            ["set", "-webkit-mask-box-image-outset", "1px 2 3px 4", ""],
+        ],
+        probes: [
+            "-webkit-mask-box-image-slice",
+            "-webkit-mask-box-image-width",
+            "-webkit-mask-box-image-outset",
+        ],
+    },
+    {
+        id: "invalid-webkit-mask-box-image-is-atomic",
+        operations: [
+            ["set", "-webkit-mask-box-image", "none 1 fill / auto / 2px repeat", "important"],
+            ["set", "-webkit-mask-box-image", "repeat none round", ""],
+        ],
+        probes: [
+            "-webkit-mask-box-image",
+            "-webkit-mask-box-image-source",
+            "-webkit-mask-box-image-slice",
+            "-webkit-mask-box-image-width",
+            "-webkit-mask-box-image-outset",
+            "-webkit-mask-box-image-repeat",
+        ],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",

@@ -46,7 +46,7 @@ pub enum SemanticExtensionValue {
     PageSize(PageSizeValue),
     WebkitBorderImage(WebkitBorderImageValue),
     WebkitBoxReflect(WebkitBoxReflectValue),
-    WebkitMaskBoxImageSlice(WebkitBorderImageValue),
+    WebkitMaskBoxImageComponent(WebkitBorderImageValue),
     WebkitPerspective(WebkitPerspectiveValue),
 }
 
@@ -65,7 +65,7 @@ impl SemanticExtensionValue {
             SemanticExtensionValue::PageSize(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitBorderImage(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitBoxReflect(value) => value.canonical_value(),
-            SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => value.canonical_value(),
+            SemanticExtensionValue::WebkitMaskBoxImageComponent(value) => value.canonical_value(),
             SemanticExtensionValue::WebkitPerspective(value) => value.canonical_value(),
         }
     }
@@ -79,7 +79,7 @@ impl SemanticExtensionValue {
             SemanticExtensionValue::WebkitBorderImage(value) => {
                 value.retains_context_dependent_math()
             }
-            SemanticExtensionValue::WebkitMaskBoxImageSlice(value) => {
+            SemanticExtensionValue::WebkitMaskBoxImageComponent(value) => {
                 value.retains_context_dependent_math()
             }
             SemanticExtensionValue::WebkitPerspective(_) => false,
@@ -348,29 +348,21 @@ impl AspectRatioValue {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum WebkitBorderImageValue {
-    Compound(String),
-    Slice(Calc<PreservedLengthPercentage>),
-    SlicePercentage(Calc<Percentage>),
+pub struct WebkitBorderImageValue {
+    canonical: String,
 }
 
 impl WebkitBorderImageValue {
+    fn new(canonical: String) -> Self {
+        Self { canonical }
+    }
+
     fn canonical_value(&self) -> Result<String, EngineError> {
-        match self {
-            WebkitBorderImageValue::Compound(value) => Ok(value.clone()),
-            WebkitBorderImageValue::Slice(slice) => Ok(format!("{} fill", serialize_typed(slice)?)),
-            WebkitBorderImageValue::SlicePercentage(slice) => {
-                Ok(format!("{} fill", serialize_typed(slice)?))
-            }
-        }
+        Ok(self.canonical.clone())
     }
 
     fn retains_context_dependent_math(&self) -> bool {
-        match self {
-            WebkitBorderImageValue::Compound(_) => true,
-            WebkitBorderImageValue::Slice(slice) => slice.contains_unresolved_sign(),
-            WebkitBorderImageValue::SlicePercentage(slice) => slice.contains_unresolved_sign(),
-        }
+        true
     }
 }
 
@@ -418,6 +410,7 @@ pub enum CrossDimensionCalculationValue {
     DirectLengthPercentage(LengthPercentage),
     Auto,
     CommaList(Vec<CrossDimensionCalculationValue>),
+    FourSideList(Vec<CrossDimensionCalculationValue>),
     SpaceList(Vec<CrossDimensionCalculationValue>),
     LengthNumber(Calc<Length>),
     LengthOrNumber(Calc<Length>),
@@ -453,6 +446,13 @@ impl CrossDimensionCalculationValue {
                 }
                 Ok(serialized.join(", "))
             }
+            CrossDimensionCalculationValue::FourSideList(values) => {
+                let mut serialized = Vec::with_capacity(values.len());
+                for value in values {
+                    serialized.push(value.canonical_value()?);
+                }
+                Ok(compress_four_side_components(&serialized))
+            }
             CrossDimensionCalculationValue::SpaceList(values) => {
                 let mut serialized = Vec::with_capacity(values.len());
                 for value in values {
@@ -480,6 +480,7 @@ impl CrossDimensionCalculationValue {
             | CrossDimensionCalculationValue::DirectLengthPercentage(_)
             | CrossDimensionCalculationValue::Auto => false,
             CrossDimensionCalculationValue::CommaList(values)
+            | CrossDimensionCalculationValue::FourSideList(values)
             | CrossDimensionCalculationValue::SpaceList(values) => values
                 .iter()
                 .any(CrossDimensionCalculationValue::retains_context_dependent_math),
@@ -826,8 +827,8 @@ pub(crate) fn parse_extension_value(
             PropertyGrammarExtension::PageSize => Some(parse_page_size(source)),
             PropertyGrammarExtension::WebkitBorderImage => Some(parse_webkit_border_image(source)),
             PropertyGrammarExtension::WebkitBoxReflect => Some(parse_webkit_box_reflect(source)),
-            PropertyGrammarExtension::WebkitMaskBoxImageSlice => {
-                Some(parse_webkit_mask_box_image_slice(source))
+            PropertyGrammarExtension::WebkitMaskBoxImageComponent => {
+                Some(parse_webkit_mask_box_image_component(property_name, source))
             }
             PropertyGrammarExtension::WebkitPerspective => Some(parse_webkit_perspective(source)),
         };
@@ -1103,7 +1104,7 @@ pub(crate) fn parse_preferred_extension_value(
                 | PropertyGrammarExtension::LengthPercentageNumberCalculation
                 | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
                 | PropertyGrammarExtension::WebkitBorderImage
-                | PropertyGrammarExtension::WebkitMaskBoxImageSlice
+                | PropertyGrammarExtension::WebkitMaskBoxImageComponent
         )
     });
     for extension in preferred {
@@ -1168,27 +1169,100 @@ fn parse_webkit_border_image(source: &str) -> Result<SemanticExtensionValue, Eng
     .or_else(|| canonicalize_webkit_border_image(source))
     .ok_or_else(|| EngineError::Parse("invalid -webkit-border-image structure".to_owned()))?;
     Ok(SemanticExtensionValue::WebkitBorderImage(
-        WebkitBorderImageValue::Compound(canonical),
+        WebkitBorderImageValue::new(canonical),
     ))
 }
 
-fn parse_webkit_mask_box_image_slice(source: &str) -> Result<SemanticExtensionValue, EngineError> {
-    let components = split_top_level_whitespace(source)
-        .filter(|components| components.len() == 2 && components[1] == "fill")
-        .ok_or_else(|| {
-            EngineError::Parse("invalid -webkit-mask-box-image-slice structure".to_owned())
-        })?;
-    let slice = if let Ok(slice) = parse_entire(components[0], Percentage::parse) {
-        if slice.0 < 0.0 {
-            return Err(invalid_numeric_value());
+fn parse_webkit_mask_box_image_component(
+    property_name: &str,
+    source: &str,
+) -> Result<SemanticExtensionValue, EngineError> {
+    let components = split_top_level_whitespace(source).ok_or_else(|| {
+        EngineError::Parse("invalid -webkit-mask-box-image component structure".to_owned())
+    })?;
+    let mut values = Vec::with_capacity(components.len());
+    let mut fill = false;
+    for component in components {
+        if property_name == "-webkit-mask-box-image-slice"
+            && extension_identifier_is(component, "fill")
+        {
+            if fill {
+                return Err(EngineError::Parse(
+                    "duplicate -webkit-mask-box-image fill keyword".to_owned(),
+                ));
+            }
+            fill = true;
+            continue;
         }
-        WebkitBorderImageValue::SlicePercentage(slice.into())
-    } else if let Ok(slice) = parse_entire(components[0], Calc::<Percentage>::parse) {
-        WebkitBorderImageValue::SlicePercentage(slice)
-    } else {
-        WebkitBorderImageValue::Slice(parse_contextual_number(components[0])?)
+        values.push(parse_webkit_mask_box_image_scalar(
+            property_name,
+            component,
+        )?);
+    }
+    if values.is_empty() || values.len() > 4 {
+        return Err(EngineError::Parse(
+            "invalid -webkit-mask-box-image component cardinality".to_owned(),
+        ));
+    }
+    let mut canonical = compress_four_side_components(&values);
+    if fill {
+        canonical.push_str(" fill");
+    }
+    Ok(SemanticExtensionValue::WebkitMaskBoxImageComponent(
+        WebkitBorderImageValue::new(canonical),
+    ))
+}
+
+fn parse_webkit_mask_box_image_scalar(
+    property_name: &str,
+    source: &str,
+) -> Result<String, EngineError> {
+    if property_name == "-webkit-mask-box-image-width" && extension_identifier_is(source, "auto") {
+        return Ok("auto".to_owned());
+    }
+    if property_name != "-webkit-mask-box-image-slice" {
+        return parse_length_percentage_or_number_calculation(property_name, source)?
+            .canonical_value();
+    }
+    if crate::property_constraints::has_direct_negative_component(source) {
+        return Err(invalid_numeric_value());
+    }
+    if let Ok(slice) = parse_entire(source, Percentage::parse) {
+        return serialize_typed(&slice);
+    }
+    if let Ok(slice) = parse_entire(source, Calc::<Percentage>::parse) {
+        return serialize_typed(&slice);
+    }
+    serialize_typed(&parse_contextual_number(source)?)
+}
+
+fn compress_four_side_components(values: &[String]) -> String {
+    let expanded = match values {
+        [first] => [first, first, first, first],
+        [first, second] => [first, second, first, second],
+        [first, second, third] => [first, second, third, second],
+        [first, second, third, fourth] => [first, second, third, fourth],
+        _ => unreachable!("component cardinality is validated before compression"),
     };
-    Ok(SemanticExtensionValue::WebkitMaskBoxImageSlice(slice))
+    if expanded[0] == expanded[1] && expanded[0] == expanded[2] && expanded[0] == expanded[3] {
+        return expanded[0].clone();
+    }
+    if expanded[0] == expanded[2] && expanded[1] == expanded[3] {
+        return format!("{} {}", expanded[0], expanded[1]);
+    }
+    if expanded[1] == expanded[3] {
+        return format!("{} {} {}", expanded[0], expanded[1], expanded[2]);
+    }
+    values.join(" ")
+}
+
+fn extension_identifier_is(source: &str, expected: &str) -> bool {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    matches!(
+        parser.next(),
+        Ok(Token::Ident(identifier)) if identifier.eq_ignore_ascii_case(expected)
+    ) && parser.is_exhausted()
 }
 
 fn parse_webkit_perspective(source: &str) -> Result<SemanticExtensionValue, EngineError> {
@@ -1499,7 +1573,7 @@ fn parse_border_image_dimension_list(
         }
         values.push(parse_dimension_number_scalar(property_name, component)?);
     }
-    Ok(CrossDimensionCalculationValue::SpaceList(values))
+    Ok(CrossDimensionCalculationValue::FourSideList(values))
 }
 
 fn parse_length_percentage_or_number_calculation(

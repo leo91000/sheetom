@@ -1911,6 +1911,94 @@ mod tests {
             "10% fill"
         );
 
+        for (input, expected) in [
+            (
+                "1 fill",
+                ["initial", "1 fill", "initial", "initial", "initial"],
+            ),
+            (
+                "1 fill /  / 1px",
+                ["initial", "1 fill", "initial", "1px", "initial"],
+            ),
+            (
+                "url(a.png) repeat 1 fill / auto / 2px",
+                ["url(\"a.png\")", "1 fill", "auto", "2px", "repeat"],
+            ),
+            (
+                "1 2 3 4 fill / 3px 4px 5px 6px / 5px 6px 7px 8px",
+                [
+                    "initial",
+                    "1 2 3 4 fill",
+                    "3px 4px 5px 6px",
+                    "5px 6px 7px 8px",
+                    "initial",
+                ],
+            ),
+            (
+                "1 fill / calc(1px + 5%) / 1px none repeat round",
+                ["none", "1 fill", "calc(5% + 1px)", "1px", "repeat round"],
+            ),
+            (
+                "none r\\65 peat 1 f\\69 ll / 1PX / 2PX",
+                ["none", "1 fill", "1px", "2px", "repeat"],
+            ),
+            (
+                "repeat repeat",
+                ["initial", "initial", "initial", "initial", "repeat"],
+            ),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("-webkit-mask-box-image", input, ""),
+                MutationOutcome::Applied,
+                "{input}"
+            );
+            assert_eq!(state.get_property_value("-webkit-mask-box-image"), "");
+            for (index, longhand) in [
+                "-webkit-mask-box-image-source",
+                "-webkit-mask-box-image-slice",
+                "-webkit-mask-box-image-width",
+                "-webkit-mask-box-image-outset",
+                "-webkit-mask-box-image-repeat",
+            ]
+            .iter()
+            .enumerate()
+            {
+                assert_eq!(state.item(index), *longhand, "{input}");
+                assert_eq!(
+                    state.get_property_value(longhand),
+                    expected[index],
+                    "{input}"
+                );
+            }
+        }
+
+        for invalid in [
+            "fill",
+            "1 fill fill",
+            "repeat none round",
+            "1 fill none / 1px",
+            "1 fill / none / 1px",
+            "1 fill / 1px / repeat 1px",
+            "alpha",
+            "luminance",
+            "none none",
+            "1 2 3 4 5 fill",
+            "-1 fill",
+            "1 fill / -1px",
+            "1 fill / 1px / 10%",
+        ] {
+            let mut state = DeclarationState::new();
+            state.set_property("-webkit-mask-box-image", "none", "");
+            let before = state.css_text();
+            assert_eq!(
+                state.set_property("-webkit-mask-box-image", invalid, ""),
+                MutationOutcome::InvalidValue,
+                "{invalid}"
+            );
+            assert_eq!(state.css_text(), before, "{invalid}");
+        }
+
         for (name, value) in [
             ("animation", "100px 2"),
             ("timeline-trigger", "red"),

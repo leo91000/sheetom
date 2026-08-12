@@ -70,7 +70,12 @@ if (crashCase.mode === "stylesheet-resource") {
     }
     rule.style.setProperty(property, value);
 
-    assert.notEqual(rule.style.getPropertyValue(property), "", `${property} must survive the public API`);
+    if (crashCase.expectedEmptyGetter) {
+        assert.equal(rule.style.getPropertyValue(property), "");
+        assert.ok(rule.style.length > 0, `${property} must expand through the public API`);
+    } else {
+        assert.notEqual(rule.style.getPropertyValue(property), "", `${property} must survive the public API`);
+    }
     const serialized = sheet.serialize();
     const reparsed = new CSSStyleSheet();
     reparsed.replaceSync(serialized);
