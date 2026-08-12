@@ -813,6 +813,8 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "border-left"
             | "border-right"
             | "border-top"
+            | "border-radius"
+            | "-webkit-border-radius"
             | "columns"
             | "contain-intrinsic-size"
             | "container"
@@ -826,6 +828,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "grid"
             | "grid-template"
             | "mask"
+            | "list-style"
             | "offset"
             | "position-try"
             | "row-rule"
@@ -1635,6 +1638,64 @@ mod tests {
     }
 
     #[test]
+    fn outline_tracks_authored_components_without_semantic_defaults() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("outline", "1px auto", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("outline"), "auto 1px");
+        assert_eq!(state.get_property_value("outline-color"), "initial");
+        assert_eq!(state.get_property_value("outline-style"), "auto");
+        assert_eq!(state.get_property_value("outline-width"), "1px");
+
+        state.set_property("outline", "red", "");
+        assert_eq!(state.get_property_value("outline"), "red");
+        assert_eq!(state.get_property_value("outline-color"), "red");
+        assert_eq!(state.get_property_value("outline-style"), "initial");
+        assert_eq!(state.get_property_value("outline-width"), "initial");
+    }
+
+    #[test]
+    fn list_style_tracks_omissions_and_none_ambiguity() {
+        for (input, shorthand, position, image, style_type) in [
+            (
+                "sheetom-ident url(\"x.png\") inside",
+                "inside url(\"x.png\") sheetom-ident",
+                "inside",
+                "url(\"x.png\")",
+                "sheetom-ident",
+            ),
+            ("none", "none", "initial", "initial", "none"),
+            ("none none", "none none", "initial", "none", "none"),
+            ("none square", "none square", "initial", "none", "square"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("list-style", input, ""),
+                MutationOutcome::Applied,
+                "{input} should expand"
+            );
+            assert_eq!(state.get_property_value("list-style"), shorthand, "{input}");
+            assert_eq!(
+                state.get_property_value("list-style-position"),
+                position,
+                "{input}"
+            );
+            assert_eq!(
+                state.get_property_value("list-style-image"),
+                image,
+                "{input}"
+            );
+            assert_eq!(
+                state.get_property_value("list-style-type"),
+                style_type,
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
     fn sheetom_border_grammars_expand_to_semantic_longhands() {
         let mut column_rule = DeclarationState::new();
         assert_eq!(
@@ -2138,6 +2199,14 @@ mod tests {
     fn observable_composite_branches_match_chromium() {
         for (name, input, expected) in [
             ("-webkit-border-radius", "1px 2px", "1px / 2px"),
+            ("-webkit-border-radius", "0px", "0px"),
+            ("border-radius", "0px", "0px"),
+            ("border-radius", "1px / 1px 1px", "1px"),
+            (
+                "border-radius",
+                "1px / calc(1px + 5%)",
+                "1px / calc(5% + 1px)",
+            ),
             ("column-rule-inset", "1px 2px", "1px 2px / 1px 2px"),
             ("font", "italic 16px/1.5 serif", "italic 16px / 1.5 serif"),
             ("font", "2px dashed red", "2px \"dashed red\""),
