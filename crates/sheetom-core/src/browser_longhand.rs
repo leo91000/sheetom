@@ -128,7 +128,13 @@ pub struct ViewTimelineInsetValue {
 #[derive(Clone, Debug, PartialEq)]
 pub enum CornerShapeValue {
     Keyword(&'static str),
-    Superellipse(CSSNumber),
+    Superellipse(CornerShapeExponent),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum CornerShapeExponent {
+    Number(CSSNumber),
+    Infinity { negative: bool },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -728,9 +734,12 @@ impl CornerShapeValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             CornerShapeValue::Keyword(value) => Ok((*value).to_owned()),
-            CornerShapeValue::Superellipse(value) => {
+            CornerShapeValue::Superellipse(CornerShapeExponent::Number(value)) => {
                 Ok(format!("superellipse({})", serialize_typed(value)?))
             }
+            CornerShapeValue::Superellipse(CornerShapeExponent::Infinity { negative }) => Ok(
+                format!("superellipse({}infinity)", if *negative { "-" } else { "" }),
+            ),
         }
     }
 }
@@ -2399,7 +2408,18 @@ fn parse_corner_shape(source: &str) -> Result<BrowserLonghandValue, EngineError>
         if !function.eq_ignore_ascii_case("superellipse") {
             return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
-        let value = input.parse_nested_block(CSSNumber::parse)?;
+        let value = input.parse_nested_block(|input| {
+            if let Ok(identifier) = input.try_parse(|input| input.expect_ident_cloned()) {
+                if identifier.eq_ignore_ascii_case("infinity") {
+                    return Ok(CornerShapeExponent::Infinity { negative: false });
+                }
+                if identifier.eq_ignore_ascii_case("-infinity") {
+                    return Ok(CornerShapeExponent::Infinity { negative: true });
+                }
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            CSSNumber::parse(input).map(CornerShapeExponent::Number)
+        })?;
         Ok(BrowserLonghandValue::CornerShape(
             CornerShapeValue::Superellipse(value),
         ))
@@ -3884,9 +3904,32 @@ mod tests {
             "square",
             "squircle",
             "superellipse(-1)",
+            "superellipse(infinity)",
+            "superellipse(-infinity)",
+            "superellipse(calc(infinity))",
+            "superellipse(calc(-infinity))",
+            "superellipse(calc(NaN))",
         ] {
             assert_eq!(canonical("corner-top-left-shape", source).unwrap(), source);
         }
-        assert!(canonical("corner-top-left-shape", "superellipse()").is_err());
+        assert_eq!(
+            canonical("corner-top-left-shape", "superellipse(InFiNiTy)").unwrap(),
+            "superellipse(infinity)"
+        );
+        assert_eq!(
+            canonical("corner-top-left-shape", "superellipse(calc(1 / 0))").unwrap(),
+            "superellipse(calc(infinity))"
+        );
+        for source in [
+            "superellipse()",
+            "superellipse(NaN)",
+            "superellipse(+infinity)",
+            "superellipse(infinity extra)",
+        ] {
+            assert!(
+                canonical("corner-top-left-shape", source).is_err(),
+                "{source}"
+            );
+        }
     }
 }
