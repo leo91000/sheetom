@@ -15,5 +15,3 @@ RUN apt-get update \
 FROM ubuntu:22.04
 
 COPY --from=node-download /node/ /usr/local/
-
-ENTRYPOINT ["node"]
