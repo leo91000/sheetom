@@ -34,6 +34,10 @@ describe("release automation", () => {
       { version: "0.1.0-rc.5", description: "Updated README" },
       { version: "0.1.0-rc.5" },
     )).toBe(false);
+    expect(hasReleaseVersionChange(
+      { version: "0.1.0-rc.0" },
+      null,
+    )).toBe(true);
   });
 
   it("requires latest and next to identify the active prerelease before stable", () => {
