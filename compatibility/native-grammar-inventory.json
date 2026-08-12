@@ -6,7 +6,7 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "279c5b03d873234653bc1b5d60663f5580b2c651b730457bd0a751c294555b5c",
+    "shorthandGrammarContractsSha256": "fc6bf36b00c4098c6a862d20864550ad72c0a8d42ba1b094d1d896300689d404",
     "derivation": "manifest-profile-property-branches@1",
     "valueCapabilitiesSha256": "344bbc86df6e1be4738baa21690e5544fc0295830312733811434a02115b817f"
   },
@@ -101,7 +101,15 @@
         "grammar.columns.width",
         "grammar.columns.count",
         "grammar.columns.both",
-        "grammar.columns.two-widths-invalid"
+        "grammar.columns.height",
+        "grammar.columns.auto-height",
+        "grammar.columns.calculated-height",
+        "grammar.columns.zero-height",
+        "grammar.columns.two-widths-invalid",
+        "grammar.columns.percentage-height-invalid",
+        "grammar.columns.negative-height-invalid",
+        "grammar.columns.multiple-heights-invalid",
+        "grammar.columns.second-slash-invalid"
       ]
     },
     {

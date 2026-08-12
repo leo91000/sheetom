@@ -689,16 +689,18 @@ fn synthesize_view_timeline(records: &[&DeclarationRecord], safe: bool) -> Optio
 fn synthesize_columns(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
     let width = record_value(records, "column-width", safe)?;
     let count = record_value(records, "column-count", safe)?;
-    if record_value(records, "column-height", safe)? != "auto"
-        || record_value(records, "column-wrap", safe)? != "auto"
-    {
-        return None;
-    }
-    Some(match (width, count) {
+    let height = record_value(records, "column-height", safe)?;
+    record_value(records, "column-wrap", safe)?;
+    let mut shorthand = match (width, count) {
         ("auto", "auto") => "auto".to_owned(),
         ("auto", value) | (value, "auto") => value.to_owned(),
         _ => format!("{width} {count}"),
-    })
+    };
+    if height != "auto" {
+        shorthand.push_str(" / ");
+        shorthand.push_str(height);
+    }
+    Some(shorthand)
 }
 
 fn synthesize_container(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1878,7 +1880,7 @@ fn expand_special_shorthand(
     let components = split_top_level_whitespace(value)?;
     let values = match name {
         "animation" | "-webkit-animation" => expand_contextual_animation(value)?,
-        "columns" | "-webkit-columns" => expand_columns(&components)?,
+        "columns" | "-webkit-columns" => expand_columns(value)?,
         "border-image" => expand_border_image(value)?,
         "flex" | "-webkit-flex" => expand_contextual_flex(&components)?,
         "grid-area" => expand_contextual_grid_area(value)?,
@@ -2455,14 +2457,19 @@ fn records_from_values(
         .collect()
 }
 
-fn expand_columns(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
+fn expand_columns(value: &str) -> Option<Vec<(&'static str, String)>> {
+    let sections = split_top_level_delimiter(value, b'/')?;
+    if sections.is_empty() || sections.len() > 2 {
+        return None;
+    }
+    let components = split_top_level_whitespace(sections[0])?;
     if components.is_empty() || components.len() > 2 {
         return None;
     }
     let mut width = "auto".to_owned();
     let mut count = "auto".to_owned();
     for component in components {
-        if *component == "auto" {
+        if component == "auto" {
             continue;
         }
         if let Some(canonical) = validate_column_width(component).filter(|_| width == "auto") {
@@ -2475,10 +2482,15 @@ fn expand_columns(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
         }
         return None;
     }
+    let height = match sections.as_slice() {
+        [_] => "auto".to_owned(),
+        [_, height] => typed_longhand_value("column-height", height.trim())?,
+        _ => return None,
+    };
     Some(vec![
         ("column-width", width),
         ("column-count", count),
-        ("column-height", "auto".to_owned()),
+        ("column-height", height),
         ("column-wrap", "auto".to_owned()),
     ])
 }
@@ -2875,7 +2887,7 @@ fn validate_column_width(value: &str) -> Option<String> {
     if value.parse::<f64>().is_ok() && value != "0" {
         return None;
     }
-    typed_longhand_value("width", value)
+    typed_longhand_value("column-width", value)
 }
 
 fn validate_column_count(value: &str) -> Option<String> {

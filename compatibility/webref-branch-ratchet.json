@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 1107,
+  "mismatchCases": 1097,
   "summary": {
-    "acceptance": 191,
+    "acceptance": 181,
     "observable": 640,
     "cssText": 640,
     "items": 528,
@@ -4854,76 +4854,6 @@
     {
       "property": "column-rule-visibility-items",
       "sample": "webref-sample.c2bbfb83739b16ac",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.040968d0b46d8adc",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.400a938caef8baae",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.50633726ce6f0822",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.602c4520c24bf448",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.8679d4c221109402",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.a887e3624641de98",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.c31dc144f87cec6d",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.ed756995653aec45",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.f01bd2b413bf66e8",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "columns",
-      "sample": "webref-sample.f90bb81726427a72",
       "kinds": [
         "acceptance"
       ]

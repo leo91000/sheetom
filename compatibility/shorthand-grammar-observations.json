@@ -1351,7 +1351,183 @@
       "cssText": "columns: 100px 2;"
     },
     {
+      "id": "grammar.columns.height",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "100px",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "300px",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "100px 2 / 300px",
+      "priority": "",
+      "cssText": "columns: 100px 2 / 300px;"
+    },
+    {
+      "id": "grammar.columns.auto-height",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "1px",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "1px",
+      "priority": "",
+      "cssText": "columns: 1px;"
+    },
+    {
+      "id": "grammar.columns.calculated-height",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "2",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "calc(30px)",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "2 / calc(30px)",
+      "priority": "",
+      "cssText": "columns: 2 / calc(30px);"
+    },
+    {
+      "id": "grammar.columns.zero-height",
+      "accepted": true,
+      "items": [
+        "column-width",
+        "column-count",
+        "column-height",
+        "column-wrap"
+      ],
+      "longhands": [
+        {
+          "name": "column-width",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-count",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "column-height",
+          "value": "0px",
+          "priority": ""
+        },
+        {
+          "name": "column-wrap",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "auto / 0px",
+      "priority": "",
+      "cssText": "columns: auto / 0px;"
+    },
+    {
       "id": "grammar.columns.two-widths-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.columns.percentage-height-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.columns.negative-height-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.columns.multiple-heights-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.columns.second-slash-invalid",
       "accepted": false,
       "items": [],
       "longhands": [],
