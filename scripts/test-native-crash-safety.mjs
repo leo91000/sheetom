@@ -122,6 +122,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "recursive font palette mixing",
+        source: "font-palette: palette-mix(in oklch longer hue, --brand 10%, palette-mix(in srgb-linear, normal, dark calc(-1%)))",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

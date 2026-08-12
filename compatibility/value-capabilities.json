@@ -2345,6 +2345,194 @@
       "property": "container",
       "input": "card / size inline-size",
       "accepted": false
+    },
+    {
+      "id": "font-palette.light",
+      "property": "font-palette",
+      "input": "LIGHT",
+      "accepted": true,
+      "observable": "light"
+    },
+    {
+      "id": "font-palette.dark",
+      "property": "font-palette",
+      "input": "dark",
+      "accepted": true,
+      "observable": "dark"
+    },
+    {
+      "id": "font-palette.simple-mix",
+      "property": "font-palette",
+      "input": "palette-mix(in lch, normal, normal)",
+      "accepted": true,
+      "observable": "palette-mix(in lch, normal, normal)"
+    },
+    {
+      "id": "font-palette.percentage-normalization",
+      "property": "font-palette",
+      "input": "palette-mix(in srgb, normal, dark 20%)",
+      "accepted": true,
+      "observable": "palette-mix(in srgb, normal 80%, dark)"
+    },
+    {
+      "id": "font-palette.recursive-mix",
+      "property": "font-palette",
+      "input": "palette-mix(in oklch longer hue, --brand 10%, palette-mix(in srgb-linear, normal, dark 40%))",
+      "accepted": true,
+      "observable": "palette-mix(in oklch longer hue, --brand 10%, palette-mix(in srgb-linear, normal 60%, dark))"
+    },
+    {
+      "id": "font-palette.deferred-percentage",
+      "property": "font-palette",
+      "input": "palette-mix(in srgb, normal calc(-1%), dark)",
+      "accepted": true,
+      "observable": "palette-mix(in srgb, normal calc(-1%), dark)"
+    },
+    {
+      "id": "font-palette.display-p3",
+      "property": "font-palette",
+      "input": "palette-mix(in display-p3, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in display-p3, normal, dark)"
+    },
+    {
+      "id": "font-palette.display-p3-linear",
+      "property": "font-palette",
+      "input": "palette-mix(in display-p3-linear, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in display-p3-linear, normal, dark)"
+    },
+    {
+      "id": "font-palette.a98-rgb",
+      "property": "font-palette",
+      "input": "palette-mix(in a98-rgb, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in a98-rgb, normal, dark)"
+    },
+    {
+      "id": "font-palette.prophoto-rgb",
+      "property": "font-palette",
+      "input": "palette-mix(in prophoto-rgb, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in prophoto-rgb, normal, dark)"
+    },
+    {
+      "id": "font-palette.rec2020",
+      "property": "font-palette",
+      "input": "palette-mix(in rec2020, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in rec2020, normal, dark)"
+    },
+    {
+      "id": "font-palette.lab",
+      "property": "font-palette",
+      "input": "palette-mix(in lab, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in lab, normal, dark)"
+    },
+    {
+      "id": "font-palette.oklab",
+      "property": "font-palette",
+      "input": "palette-mix(in oklab, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in oklab, normal, dark)"
+    },
+    {
+      "id": "font-palette.xyz-alias",
+      "property": "font-palette",
+      "input": "palette-mix(in xyz, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in xyz-d65, normal, dark)"
+    },
+    {
+      "id": "font-palette.xyz-d50",
+      "property": "font-palette",
+      "input": "palette-mix(in xyz-d50, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in xyz-d50, normal, dark)"
+    },
+    {
+      "id": "font-palette.xyz-d65",
+      "property": "font-palette",
+      "input": "palette-mix(in xyz-d65, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in xyz-d65, normal, dark)"
+    },
+    {
+      "id": "font-palette.hsl",
+      "property": "font-palette",
+      "input": "palette-mix(in hsl, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in hsl, normal, dark)"
+    },
+    {
+      "id": "font-palette.hwb",
+      "property": "font-palette",
+      "input": "palette-mix(in hwb, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in hwb, normal, dark)"
+    },
+    {
+      "id": "font-palette.increasing-hue",
+      "property": "font-palette",
+      "input": "palette-mix(in lch increasing hue, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in lch increasing hue, normal, dark)"
+    },
+    {
+      "id": "font-palette.decreasing-hue",
+      "property": "font-palette",
+      "input": "palette-mix(in lch decreasing hue, normal, dark)",
+      "accepted": true,
+      "observable": "palette-mix(in lch decreasing hue, normal, dark)"
+    },
+    {
+      "id": "font-palette.missing-method-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(normal, dark)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.missing-palette-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in lch, normal)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.extra-palette-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in lch, normal, dark, light)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.color-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in lch, red, dark)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.direct-range-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in lch, normal -1%, dark)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.zero-sum-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in lch, normal 0%, dark 0%)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.specified-hue-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in lch specified hue, normal, dark)",
+      "accepted": false
+    },
+    {
+      "id": "font-palette.custom-color-space-invalid",
+      "property": "font-palette",
+      "input": "palette-mix(in --custom, normal, dark)",
+      "accepted": false
     }
   ]
 }

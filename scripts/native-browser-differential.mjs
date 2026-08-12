@@ -227,6 +227,25 @@ const cases = [
         probes: ["container", "container-name", "container-type"],
     },
     {
+        id: "recursive-font-palette-mix",
+        operations: [[
+            "set",
+            "font-palette",
+            "palette-mix(in oklch longer hue, --brand 10%, palette-mix(in srgb-linear, normal, dark 40%))",
+            "important",
+        ]],
+        probes: ["font-palette"],
+    },
+    {
+        id: "invalid-font-palette-is-atomic",
+        operations: [
+            ["set", "font-palette", "palette-mix(in lch, normal, dark)", "important"],
+            ["set", "font-palette", "palette-mix(in lch, red, dark)", ""],
+            ["set", "font-palette", "palette-mix(in lch, normal 0%, dark 0%)", ""],
+        ],
+        probes: ["font-palette"],
+    },
+    {
         id: "math-layout-new-keywords",
         operations: [
             ["set", "font-size", "MATH", ""],

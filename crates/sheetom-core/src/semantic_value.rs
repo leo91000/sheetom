@@ -455,7 +455,6 @@ mod tests {
         for (name, source) in [
             ("box-shadow", "none"),
             ("text-shadow", "none"),
-            ("font-palette", "normal"),
             ("hyphenate-limit-chars", "auto"),
             ("initial-letter", "normal"),
             ("resize", "auto"),
@@ -619,6 +618,49 @@ mod tests {
         ] {
             assert!(
                 parse_semantic_property("container-type", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn parses_font_palette_branches_through_the_vendored_standard_ast() {
+        for (source, expected) in [
+            ("light", "light"),
+            ("dark", "dark"),
+            (
+                "palette-mix(in lch, normal, normal)",
+                "palette-mix(in lch, normal, normal)",
+            ),
+            (
+                "palette-mix(in srgb, normal, dark 20%)",
+                "palette-mix(in srgb, normal 80%, dark)",
+            ),
+            (
+                "palette-mix(in srgb, normal calc(-1%), dark)",
+                "palette-mix(in srgb, normal calc(-1%), dark)",
+            ),
+            (
+                "palette-mix(in xyz, normal, dark)",
+                "palette-mix(in xyz-d65, normal, dark)",
+            ),
+        ] {
+            let declaration = parse_standard_semantic_property("font-palette", source).unwrap();
+            assert_eq!(declaration.parse_kind(), PropertyParseKind::Typed);
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
+        }
+
+        for source in [
+            "palette-mix(normal, dark)",
+            "palette-mix(in lch, normal)",
+            "palette-mix(in lch, red, dark)",
+            "palette-mix(in lch, normal -1%, dark)",
+            "palette-mix(in lch, normal 0%, dark 0%)",
+            "palette-mix(in lch specified hue, normal, dark)",
+            "palette-mix(in --custom, normal, dark)",
+        ] {
+            assert!(
+                parse_semantic_property("font-palette", source).is_err(),
                 "{source}"
             );
         }
