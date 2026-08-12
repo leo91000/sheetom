@@ -93,7 +93,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.61";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.62";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -408,6 +408,17 @@ pub fn validate_static_property<'i>(
         return Ok(inspection);
     }
 
+    if catalog::shorthand_longhands(name).is_some() {
+        if let Ok(parsed) = shorthand::parse_value(name, value, false) {
+            if !parsed.pending_substitution() {
+                return Ok(PropertyInspection {
+                    kind: PropertyParseKind::SheetomTyped,
+                    canonical_value: parsed.safe_value().to_owned(),
+                });
+            }
+        }
+    }
+
     Err(EngineError::Parse(format!(
         "invalid static value for {name}: {value}"
     )))
@@ -467,7 +478,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.61");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.62");
     }
 
     #[test]

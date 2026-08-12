@@ -1296,6 +1296,32 @@
       "accepted": false
     },
     {
+      "id": "longhand.column-rule-break-intersection",
+      "property": "column-rule-break",
+      "input": "INTERSECTION",
+      "accepted": true,
+      "observable": "intersection"
+    },
+    {
+      "id": "longhand.column-rule-break-spanning-item-invalid",
+      "property": "column-rule-break",
+      "input": "spanning-item",
+      "accepted": false
+    },
+    {
+      "id": "longhand.column-rule-visibility-around",
+      "property": "column-rule-visibility-items",
+      "input": "AROUND",
+      "accepted": true,
+      "observable": "around"
+    },
+    {
+      "id": "longhand.column-rule-visibility-none-invalid",
+      "property": "column-rule-visibility-items",
+      "input": "none",
+      "accepted": false
+    },
+    {
       "id": "longhand.contain-intrinsic-auto-length",
       "property": "contain-intrinsic-width",
       "input": "auto 10px",

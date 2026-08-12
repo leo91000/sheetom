@@ -127,6 +127,16 @@ const crashCases = [
         public: true,
     },
     {
+        name: "rule partition intersection",
+        source: "rule-break: intersection",
+        public: true,
+    },
+    {
+        name: "rule visibility around",
+        source: "rule-visibility-items: around",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

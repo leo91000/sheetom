@@ -1770,6 +1770,52 @@ mod tests {
     }
 
     #[test]
+    fn rule_partition_shorthands_repeat_one_keyword_and_reject_pairs() {
+        for (shorthand, longhands, value, invalid, obsolete) in [
+            (
+                "rule-break",
+                ["column-rule-break", "row-rule-break"],
+                "intersection",
+                "none intersection",
+                "spanning-item",
+            ),
+            (
+                "rule-visibility-items",
+                ["column-rule-visibility-items", "row-rule-visibility-items"],
+                "around",
+                "between around",
+                "none",
+            ),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(shorthand, value, "important"),
+                MutationOutcome::Applied,
+                "{shorthand}"
+            );
+            assert_eq!(state.get_property_value(shorthand), value, "{shorthand}");
+            for longhand in longhands {
+                assert_eq!(state.get_property_value(longhand), value, "{longhand}");
+                assert_eq!(
+                    state.get_property_priority(longhand),
+                    "important",
+                    "{longhand}"
+                );
+            }
+
+            let before = state.css_text();
+            for rejected in [invalid, obsolete] {
+                assert_eq!(
+                    state.set_property(shorthand, rejected, ""),
+                    MutationOutcome::InvalidValue,
+                    "{shorthand}: {rejected}"
+                );
+                assert_eq!(state.css_text(), before, "{shorthand}: {rejected}");
+            }
+        }
+    }
+
+    #[test]
     fn contain_intrinsic_size_synthesizes_equal_compound_axes() {
         let mut state = DeclarationState::new();
         assert_eq!(

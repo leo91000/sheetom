@@ -1453,11 +1453,11 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::KeywordList(&["normal", "allow-discrete"]) => [
         "transition-behavior",
     ],
-    BrowserLonghandGrammar::Keyword(&["normal", "none"]) => [
+    BrowserLonghandGrammar::Keyword(&["normal", "none", "intersection"]) => [
         "column-rule-break",
         "row-rule-break",
     ],
-    BrowserLonghandGrammar::Keyword(&["normal", "all"]) => [
+    BrowserLonghandGrammar::Keyword(&["normal", "all", "between", "around"]) => [
         "column-rule-visibility-items",
         "row-rule-visibility-items",
     ],
