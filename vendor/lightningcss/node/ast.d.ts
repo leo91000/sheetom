@@ -6502,7 +6502,13 @@ export type ZIndex =
 /**
  * A value for the [container-type](https://drafts.csswg.org/css-contain-3/#container-type) property. Establishes the element as a query container for the purpose of container queries.
  */
-export type ContainerType = "normal" | "inline-size" | "size" | "scroll-state";
+export type ContainerType =
+  | "normal"
+  | "inline-size"
+  | "size"
+  | "scroll-state"
+  | "inline-size scroll-state"
+  | "size scroll-state";
 /**
  * A value for the [container-name](https://drafts.csswg.org/css-contain-3/#container-name) property.
  */
