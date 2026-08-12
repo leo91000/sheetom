@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import { chromiumShorthandLonghands } from "../src/chromium-properties.js";
 import { createStyleRule } from "./support/create-style-rule.js";
 import valueCapabilities from "../compatibility/value-capabilities.json" with { type: "json" };
 
@@ -23,11 +24,14 @@ test("measured modern value families are not dropped by parser fallbacks", () =>
     reparsed.replaceSync(serialized);
     const reparsedRule = reparsed.cssRules[0];
     assert.ok(reparsedRule instanceof CSSStyleRule);
+    const reparsedItems = new Set(Array.from(
+      { length: reparsedRule.style.length },
+      (_, index) => reparsedRule.style.item(index),
+    ));
+    const expectedItems = chromiumShorthandLonghands[candidate.property]
+      ?? [candidate.property];
     assert.ok(
-      Array.from(
-        { length: reparsedRule.style.length },
-        (_, index) => reparsedRule.style.item(index),
-      ).includes(candidate.property),
+      expectedItems.every(property => reparsedItems.has(property)),
       `${candidate.id} survives reparsing`,
     );
     assert.equal(reparsed.serialize(), serialized, `${candidate.id} is idempotent`);

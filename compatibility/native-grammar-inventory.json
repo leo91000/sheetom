@@ -6,9 +6,9 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "ab5d75e051e1b1adb9eaf75be0eb33d109ee75fcde89cef99e50176e6b25c3d3",
+    "shorthandGrammarContractsSha256": "522dd359430320ff14bf828d75c70382341c8fd4d2a66b20605dce334aebd6c1",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "2a7cd71a24b7296daa6be7c026c5d9494aa2cea72a5c93c68018ea2f858dc998"
+    "valueCapabilitiesSha256": "64961487304c0d729801f2efa51f7bd9fb026658ad6291f0ae93c74bc591cb1b"
   },
   "profiles": [
     {
@@ -420,7 +420,11 @@
       "contractCaseIds": [
         "grammar.white-space.alias",
         "grammar.white-space.collapse-mode",
+        "grammar.white-space.omitted-mode",
+        "grammar.white-space.omitted-collapse",
+        "grammar.white-space.unordered",
         "grammar.white-space.break-spaces",
+        "grammar.white-space.duplicate-domain-invalid",
         "grammar.white-space.extra-invalid"
       ]
     }
