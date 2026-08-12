@@ -40,6 +40,7 @@ pub enum BrowserLonghandValue {
     ColumnCount(ColumnCountValue),
     ContainIntrinsic(ContainIntrinsicValue),
     DashedIdentList(DashedIdentListValue),
+    TimelineNameList(Vec<KeywordOrDashedIdentValue>),
     TimeOrNormal(Option<Time>),
     ViewTimelineInset(Vec<ViewTimelineInsetValue>),
     CornerShape(CornerShapeValue),
@@ -418,6 +419,14 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::DashedIdentList(DashedIdentListValue::Names(values)) => {
                 serialize_comma_separated(values)
             }
+            BrowserLonghandValue::TimelineNameList(values) => Ok(values
+                .iter()
+                .map(|value| match value {
+                    KeywordOrDashedIdentValue::Keyword(keyword) => Ok((*keyword).to_owned()),
+                    KeywordOrDashedIdentValue::Name(name) => serialize_typed(name),
+                })
+                .collect::<Result<Vec<_>, EngineError>>()?
+                .join(", ")),
             BrowserLonghandValue::TimeOrNormal(None) => Ok("normal".to_owned()),
             BrowserLonghandValue::TimeOrNormal(Some(value)) => serialize_typed(value),
             BrowserLonghandValue::ViewTimelineInset(values) => {
@@ -1020,6 +1029,7 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::DashedIdentList { allow_all }) => {
             parse_dashed_ident_list(source, allow_all)
         }
+        Some(BrowserLonghandGrammar::TimelineNameList) => parse_timeline_name_list(source),
         Some(BrowserLonghandGrammar::TimeOrNormal) => parse_time_or_normal(source),
         Some(BrowserLonghandGrammar::ViewTimelineInset) => parse_view_timeline_inset(source),
         Some(BrowserLonghandGrammar::CornerShape) => parse_corner_shape(source),
@@ -1249,6 +1259,7 @@ enum BrowserLonghandGrammar {
     ColumnCount,
     ContainIntrinsic,
     DashedIdentList { allow_all: bool },
+    TimelineNameList,
     TimeOrNormal,
     ViewTimelineInset,
     CornerShape,
@@ -1341,10 +1352,9 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::TimeOrNormal => ["interest-delay-end", "interest-delay-start"],
     BrowserLonghandGrammar::DashedIdentList { allow_all: false } => [
         "anchor-name",
-        "scroll-timeline-name",
         "timeline-scope",
-        "view-timeline-name",
     ],
+    BrowserLonghandGrammar::TimelineNameList => ["scroll-timeline-name", "view-timeline-name"],
     BrowserLonghandGrammar::DashedIdentList { allow_all: true } => [
         "anchor-scope",
         "trigger-scope",
@@ -2586,6 +2596,23 @@ fn parse_dashed_ident_list(
     })
 }
 
+fn parse_timeline_name_list(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let values = input.parse_comma_separated(|input| {
+            if input
+                .try_parse(|input| input.expect_ident_matching("none"))
+                .is_ok()
+            {
+                return Ok(KeywordOrDashedIdentValue::Keyword("none"));
+            }
+            Ok(KeywordOrDashedIdentValue::Name(
+                DashedIdent::parse(input)?.into_owned(),
+            ))
+        })?;
+        Ok(BrowserLonghandValue::TimelineNameList(values))
+    })
+}
+
 fn parse_time_or_normal(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
         if input
@@ -3774,12 +3801,22 @@ mod tests {
             );
             branch_count += entry["branches"].as_array().unwrap().len();
         }
-        assert_eq!(properties.len(), 43);
-        assert_eq!(branch_count, 204);
+        assert_eq!(properties.len(), 45);
+        assert_eq!(branch_count, 212);
     }
 
     #[test]
     fn parses_numeric_and_list_branches() {
+        assert_eq!(
+            canonical("scroll-timeline-name", "none,--x,none").unwrap(),
+            "none, --x, none"
+        );
+        assert_eq!(
+            canonical("view-timeline-name", "--x,none").unwrap(),
+            "--x, none"
+        );
+        assert!(canonical("scroll-timeline-name", "none none").is_err());
+        assert!(canonical("view-timeline-name", "all").is_err());
         assert_eq!(
             canonical("animation-iteration-count", "sign(1em), 1").unwrap(),
             "sign(1em), 1"

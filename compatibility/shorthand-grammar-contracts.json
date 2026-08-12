@@ -139,7 +139,18 @@
       { "id": "grammar.scroll-timeline.name", "branch": "name", "property": "scroll-timeline", "input": "--x", "accepted": true },
       { "id": "grammar.scroll-timeline.axis", "branch": "name and axis", "property": "scroll-timeline", "input": "--x inline", "accepted": true },
       { "id": "grammar.scroll-timeline.list", "branch": "comma list", "property": "scroll-timeline", "input": "--x block, --y inline", "accepted": true },
+      { "id": "grammar.scroll-timeline.none-list", "branch": "none entries", "property": "scroll-timeline", "input": "none block, none block", "accepted": true },
+      { "id": "grammar.scroll-timeline.mixed-list", "branch": "mixed none and named entries", "property": "scroll-timeline", "input": "none inline, --x x", "accepted": true },
+      { "id": "grammar.scroll-timeline.duplicate-name-invalid", "branch": "two names in one entry", "property": "scroll-timeline", "input": "none none", "accepted": false, "preserves": "grammar.scroll-timeline.none-list" },
       { "id": "grammar.scroll-timeline.missing-name-invalid", "branch": "axis without name", "property": "scroll-timeline", "input": "inline", "accepted": false, "preserves": "grammar.scroll-timeline.axis" }
+    ] },
+    { "codec": "view-timeline", "cases": [
+      { "id": "grammar.view-timeline.name", "branch": "name", "property": "view-timeline", "input": "--x", "accepted": true },
+      { "id": "grammar.view-timeline.axis-inset", "branch": "axis and inset", "property": "view-timeline", "input": "--x inline 10% 20%", "accepted": true },
+      { "id": "grammar.view-timeline.none-list", "branch": "none entries", "property": "view-timeline", "input": "none block, none block", "accepted": true },
+      { "id": "grammar.view-timeline.mixed-list", "branch": "mixed none and named entries", "property": "view-timeline", "input": "none 10% 20%, --x inline auto", "accepted": true },
+      { "id": "grammar.view-timeline.duplicate-name-invalid", "branch": "two names in one entry", "property": "view-timeline", "input": "none none", "accepted": false, "preserves": "grammar.view-timeline.none-list" },
+      { "id": "grammar.view-timeline.missing-name-invalid", "branch": "axis without name", "property": "view-timeline", "input": "block", "accepted": false, "preserves": "grammar.view-timeline.axis-inset" }
     ] },
     { "codec": "text-wrap", "cases": [
       { "id": "grammar.text-wrap.mode", "branch": "mode", "property": "text-wrap", "input": "nowrap", "accepted": true },

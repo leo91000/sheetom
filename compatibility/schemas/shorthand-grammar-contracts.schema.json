@@ -10,8 +10,8 @@
     "schemaVersion": { "const": 1 },
     "profiles": {
       "type": "array",
-      "minItems": 26,
-      "maxItems": 26,
+      "minItems": 27,
+      "maxItems": 27,
       "items": {
         "type": "object",
         "additionalProperties": false,

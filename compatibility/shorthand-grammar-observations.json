@@ -3360,7 +3360,196 @@
       "cssText": "scroll-timeline: --x, --y inline;"
     },
     {
+      "id": "grammar.scroll-timeline.none-list",
+      "accepted": true,
+      "items": [
+        "scroll-timeline-name",
+        "scroll-timeline-axis"
+      ],
+      "longhands": [
+        {
+          "name": "scroll-timeline-name",
+          "value": "none, none",
+          "priority": ""
+        },
+        {
+          "name": "scroll-timeline-axis",
+          "value": "block, block",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none, none",
+      "priority": "",
+      "cssText": "scroll-timeline: none, none;"
+    },
+    {
+      "id": "grammar.scroll-timeline.mixed-list",
+      "accepted": true,
+      "items": [
+        "scroll-timeline-name",
+        "scroll-timeline-axis"
+      ],
+      "longhands": [
+        {
+          "name": "scroll-timeline-name",
+          "value": "none, --x",
+          "priority": ""
+        },
+        {
+          "name": "scroll-timeline-axis",
+          "value": "inline, x",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none inline, --x x",
+      "priority": "",
+      "cssText": "scroll-timeline: none inline, --x x;"
+    },
+    {
+      "id": "grammar.scroll-timeline.duplicate-name-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
       "id": "grammar.scroll-timeline.missing-name-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.view-timeline.name",
+      "accepted": true,
+      "items": [
+        "view-timeline-name",
+        "view-timeline-axis",
+        "view-timeline-inset"
+      ],
+      "longhands": [
+        {
+          "name": "view-timeline-name",
+          "value": "--x",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-axis",
+          "value": "block",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-inset",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "--x",
+      "priority": "",
+      "cssText": "view-timeline: --x;"
+    },
+    {
+      "id": "grammar.view-timeline.axis-inset",
+      "accepted": true,
+      "items": [
+        "view-timeline-name",
+        "view-timeline-axis",
+        "view-timeline-inset"
+      ],
+      "longhands": [
+        {
+          "name": "view-timeline-name",
+          "value": "--x",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-axis",
+          "value": "inline",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-inset",
+          "value": "10% 20%",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "--x inline 10% 20%",
+      "priority": "",
+      "cssText": "view-timeline: --x inline 10% 20%;"
+    },
+    {
+      "id": "grammar.view-timeline.none-list",
+      "accepted": true,
+      "items": [
+        "view-timeline-name",
+        "view-timeline-axis",
+        "view-timeline-inset"
+      ],
+      "longhands": [
+        {
+          "name": "view-timeline-name",
+          "value": "none, none",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-axis",
+          "value": "block, block",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-inset",
+          "value": "auto, auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none, none",
+      "priority": "",
+      "cssText": "view-timeline: none, none;"
+    },
+    {
+      "id": "grammar.view-timeline.mixed-list",
+      "accepted": true,
+      "items": [
+        "view-timeline-name",
+        "view-timeline-axis",
+        "view-timeline-inset"
+      ],
+      "longhands": [
+        {
+          "name": "view-timeline-name",
+          "value": "none, --x",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-axis",
+          "value": "block, inline",
+          "priority": ""
+        },
+        {
+          "name": "view-timeline-inset",
+          "value": "10% 20%, auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "none 10% 20%, --x inline",
+      "priority": "",
+      "cssText": "view-timeline: none 10% 20%, --x inline;"
+    },
+    {
+      "id": "grammar.view-timeline.duplicate-name-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.view-timeline.missing-name-invalid",
       "accepted": false,
       "items": [],
       "longhands": [],

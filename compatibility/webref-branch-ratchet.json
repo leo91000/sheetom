@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 829,
+  "mismatchCases": 823,
   "summary": {
-    "acceptance": 37,
+    "acceptance": 31,
     "observable": 523,
     "cssText": 523,
     "items": 478,
@@ -6068,27 +6068,6 @@
       ]
     },
     {
-      "property": "scroll-timeline",
-      "sample": "webref-sample.2355d5cc64832b45",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "scroll-timeline",
-      "sample": "webref-sample.5e63a1edceaf8bed",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "scroll-timeline-name",
-      "sample": "webref-sample.e5c14ec2a0e9bd58",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "scrollbar-gutter",
       "sample": "webref-sample.4f1a8e8ec0596959",
       "kinds": [
@@ -6520,20 +6499,6 @@
     },
     {
       "property": "view-timeline",
-      "sample": "webref-sample.a041e3f3aaed31ad",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "view-timeline",
-      "sample": "webref-sample.bf761f311ad976c1",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "view-timeline",
       "sample": "webref-sample.c28e148b0ea4d946",
       "kinds": [
         "cssText",
@@ -6548,13 +6513,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "view-timeline-name",
-      "sample": "webref-sample.e5c14ec2a0e9bd58",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
