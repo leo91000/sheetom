@@ -68,7 +68,7 @@ const relativeColorCapabilities = JSON.parse(
 const propertyValueObservations = JSON.parse(propertyValueObservationsBytes.toString("utf8"));
 if (
   shorthandGrammarContracts.profiles.length !== 25 ||
-  shorthandGrammarCases.length !== 126 ||
+  shorthandGrammarCases.length !== 132 ||
   shorthandGrammarObservations.cases.length !== shorthandGrammarCases.length
 ) {
   throw new Error("Shorthand Grammar Branch evidence is incomplete");

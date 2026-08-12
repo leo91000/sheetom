@@ -3236,7 +3236,7 @@ fn expand_scroll_timeline(value: &str) -> Option<Vec<(&'static str, String)>> {
 }
 
 fn expand_text_box(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
-    if matches!(components, ["normal"] | ["none"]) {
+    if matches!(components, ["normal"]) {
         return Some(vec![
             ("text-box-trim", "none".to_owned()),
             ("text-box-edge", "auto".to_owned()),
@@ -3245,19 +3245,33 @@ fn expand_text_box(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
     if components.is_empty() || components.len() > 3 {
         return None;
     }
-    let trim_keywords = ["none", "trim-start", "trim-end", "trim-both"];
-    let (trim, edges) = if trim_keywords.contains(&components[0]) {
-        (components[0], &components[1..])
-    } else {
-        ("trim-both", components)
-    };
-    if edges.is_empty() || edges.len() > 2 {
-        return None;
+
+    let source = components.join(" ");
+    if let Some(trim) = typed_longhand_value("text-box-trim", &source) {
+        return Some(vec![
+            ("text-box-trim", trim),
+            ("text-box-edge", "auto".to_owned()),
+        ]);
     }
-    Some(vec![
-        ("text-box-trim", trim.to_owned()),
-        ("text-box-edge", edges.join(" ")),
-    ])
+    if let Some(edge) = typed_longhand_value("text-box-edge", &source) {
+        return Some(vec![
+            ("text-box-trim", "trim-both".to_owned()),
+            ("text-box-edge", edge),
+        ]);
+    }
+
+    for trim_index in [0, components.len() - 1] {
+        let trim = typed_longhand_value("text-box-trim", components[trim_index]);
+        let edge = if trim_index == 0 {
+            components[1..].join(" ")
+        } else {
+            components[..trim_index].join(" ")
+        };
+        if let (Some(trim), Some(edge)) = (trim, typed_longhand_value("text-box-edge", &edge)) {
+            return Some(vec![("text-box-trim", trim), ("text-box-edge", edge)]);
+        }
+    }
+    None
 }
 
 fn expand_text_decoration(components: &[&str]) -> Option<Vec<(&'static str, String)>> {
