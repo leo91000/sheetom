@@ -364,6 +364,38 @@ fn test_get() {
   );
 }
 
+#[test]
+fn mask_shorthand_longhands_retain_composite_and_mode() {
+  let property = Property::parse_string(
+    PropertyId::Mask(VendorPrefix::None),
+    r#"url("x") center / 1px repeat-x content-box content-box add alpha"#,
+    ParserOptions::default(),
+  )
+  .unwrap();
+  let Property::Mask(values, prefix) = &property else {
+    panic!("{property:?}");
+  };
+  assert_eq!(*prefix, VendorPrefix::None);
+  assert!(PropertyId::MaskMode.prefix().is_empty());
+  assert_eq!(format!("{:?}", values[0].mode), "Alpha");
+  assert_eq!(
+    property
+      .longhand(&PropertyId::MaskMode)
+      .unwrap()
+      .value_to_css_string(PrinterOptions::default())
+      .unwrap(),
+    "alpha"
+  );
+  assert_eq!(
+    property
+      .longhand(&PropertyId::MaskComposite)
+      .unwrap()
+      .value_to_css_string(PrinterOptions::default())
+      .unwrap(),
+    "add"
+  );
+}
+
 fn set_test(orig: &str, property: &str, value: &str, important: bool, expected: &str) {
   let mut decls = DeclarationBlock::parse_string(orig, ParserOptions::default()).unwrap();
   decls.set(
