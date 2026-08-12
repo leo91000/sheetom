@@ -2,12 +2,12 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 74,
+  "mismatchCases": 55,
   "summary": {
     "acceptance": 0,
-    "observable": 66,
-    "cssText": 66,
-    "items": 34,
+    "observable": 47,
+    "cssText": 47,
+    "items": 15,
     "atomicity": 0,
     "reparse": 0
   },
@@ -54,24 +54,6 @@
     {
       "property": "-webkit-mask-position",
       "sample": "webref-sample.db5d7f3bb485d353",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-opacity",
-      "sample": "webref-sample.679f46bf5c6cb4ed",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-shape-image-threshold",
-      "sample": "webref-sample.679f46bf5c6cb4ed",
       "kinds": [
         "cssText",
         "items",
@@ -162,51 +144,6 @@
     {
       "property": "cursor",
       "sample": "webref-sample.edf50703f6bec7e9",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "fill-opacity",
-      "sample": "webref-sample.34dd25b141e323a8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "flood-opacity",
-      "sample": "webref-sample.34dd25b141e323a8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "font",
-      "sample": "webref-sample.96afce0b3b3ca954",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "font",
-      "sample": "webref-sample.e8c0e9eb4afe8f4e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "font-style",
-      "sample": "webref-sample.f1831d474c657d10",
       "kinds": [
         "cssText",
         "items",
@@ -363,28 +300,10 @@
       ]
     },
     {
-      "property": "opacity",
-      "sample": "webref-sample.679f46bf5c6cb4ed",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
       "property": "overflow",
       "sample": "webref-sample.bc90d2ef6908ad06",
       "kinds": [
         "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "overflow-clip-margin",
-      "sample": "webref-sample.4e3a20e63ae1fea7",
-      "kinds": [
-        "cssText",
-        "items",
         "observable"
       ]
     },
@@ -469,15 +388,6 @@
       ]
     },
     {
-      "property": "scale",
-      "sample": "webref-sample.8ccd73baed8d48a7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
       "property": "scroll-margin",
       "sample": "webref-sample.3480a0c684e09d08",
       "kinds": [
@@ -538,87 +448,6 @@
       "sample": "webref-sample.9a0d6196c610bd03",
       "kinds": [
         "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "scroll-snap-align",
-      "sample": "webref-sample.c5177a9ad36ece8e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "shape-image-threshold",
-      "sample": "webref-sample.679f46bf5c6cb4ed",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "stop-opacity",
-      "sample": "webref-sample.34dd25b141e323a8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "stroke-opacity",
-      "sample": "webref-sample.34dd25b141e323a8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "text-shadow",
-      "sample": "webref-sample.2e80d240b95aeb33",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "text-shadow",
-      "sample": "webref-sample.8fff8546e783f5c7",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "view-timeline",
-      "sample": "webref-sample.7862e3d8c5d6108e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "view-timeline",
-      "sample": "webref-sample.c28e148b0ea4d946",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "view-timeline-inset",
-      "sample": "webref-sample.521fd7944f312da7",
-      "kinds": [
-        "cssText",
-        "items",
         "observable"
       ]
     }

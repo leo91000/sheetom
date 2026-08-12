@@ -365,10 +365,27 @@ fn serialize_typed_observable(
     if name == "text-emphasis-position" {
         return serialize_text_emphasis_position(input, canonical);
     }
+    if matches!(name, "view-timeline-inset" | "scroll-snap-align") {
+        if let Some(value) = serialize_compressible_pair(name, input, recovered) {
+            return value;
+        }
+    }
+    if name == "overflow-clip-margin" {
+        return serialize_overflow_clip_margin(canonical);
+    }
+    if name == "font-style" {
+        return serialize_font_style(input, canonical);
+    }
+    if name == "text-shadow" {
+        return serialize_text_shadow(input, canonical);
+    }
     if is_single_color_property(name) {
         return serialize_color(closed, canonical);
     }
     if let Some(value) = serialize_plain_time_list(input) {
+        return value;
+    }
+    if let Some(value) = serialize_zero_percentage_as_number(name, input, canonical) {
         return value;
     }
     if let Some(value) = serialize_explicit_zero_dimension(name, input, canonical) {
@@ -427,6 +444,98 @@ fn serialize_typed_observable(
         return closed.to_owned();
     }
     serialize_default_observable(input, closed, canonical, recovered)
+}
+
+fn serialize_compressible_pair(
+    name: &str,
+    input: &str,
+    recovered: &RecoveredObservableText,
+) -> Option<String> {
+    let components = crate::syntax::split_top_level_whitespace(input)?;
+    let [first, second] = components.as_slice() else {
+        return None;
+    };
+    let project = |component: &str| {
+        let declaration = parse_semantic_property(name, component).ok()?;
+        let canonical = declaration.canonical_value().ok()?;
+        Some(serialize_typed_observable(
+            name, component, component, &canonical, recovered,
+        ))
+    };
+    let first = project(first)?;
+    let second = project(second)?;
+    Some(if first == second {
+        first
+    } else {
+        format!("{first} {second}")
+    })
+}
+
+fn serialize_overflow_clip_margin(canonical: &str) -> String {
+    let Some(components) = crate::syntax::split_top_level_whitespace(canonical) else {
+        return canonical.to_owned();
+    };
+    match components.as_slice() {
+        [visual_box, zero] if is_zero_dimension(zero) => (*visual_box).to_owned(),
+        _ => canonical.to_owned(),
+    }
+}
+
+fn serialize_font_style(input: &str, canonical: &str) -> String {
+    let Some(components) = crate::syntax::split_top_level_whitespace(input) else {
+        return canonical.to_owned();
+    };
+    if matches!(components.as_slice(), [keyword, angle] if keyword.eq_ignore_ascii_case("oblique") && is_zero_angle(angle))
+    {
+        return "normal".to_owned();
+    }
+    canonical.to_owned()
+}
+
+fn is_zero_angle(value: &str) -> bool {
+    let unit_start = value
+        .find(|character: char| character.is_ascii_alphabetic())
+        .unwrap_or(value.len());
+    let (number, unit) = value.split_at(unit_start);
+    number.parse::<f64>().is_ok_and(|number| number == 0.0)
+        && matches!(
+            unit.to_ascii_lowercase().as_str(),
+            "deg" | "grad" | "rad" | "turn"
+        )
+}
+
+fn serialize_text_shadow(input: &str, canonical: &str) -> String {
+    let Some(layers) = split_top_level_delimiter(input, b',') else {
+        return canonical.to_owned();
+    };
+    layers
+        .into_iter()
+        .map(|layer| {
+            let components = crate::syntax::split_top_level_whitespace(layer)?;
+            let color_index = components
+                .iter()
+                .position(|component| semantic_accepts("color", component));
+            let mut output = Vec::with_capacity(components.len());
+            if let Some(index) = color_index {
+                output.push(
+                    project_observable_value("color", components[index])
+                        .unwrap_or_else(|| components[index].to_owned()),
+                );
+            }
+            for (index, component) in components.into_iter().enumerate() {
+                if Some(index) == color_index {
+                    continue;
+                }
+                output.push(
+                    project_observable_value("margin-left", component)
+                        .unwrap_or_else(|| component.to_owned()),
+                );
+            }
+            Some(output.join(" "))
+        })
+        .collect::<Option<Vec<_>>>()
+        .map(|layers| layers.join(", "))
+        .unwrap_or_else(|| canonical.to_owned())
 }
 
 fn serialize_text_emphasis_style(input: &str, canonical: &str) -> String {
@@ -959,6 +1068,25 @@ fn serialize_explicit_zero_dimension(name: &str, input: &str, canonical: &str) -
     Some(value)
 }
 
+fn is_zero_dimension(input: &str) -> bool {
+    let input = input.trim();
+    let Some(unit_start) =
+        input.find(|character: char| character.is_ascii_alphabetic() || character == '%')
+    else {
+        return false;
+    };
+    let (number, unit) = input.split_at(unit_start);
+    !unit.is_empty() && number.parse::<f64>().is_ok_and(|number| number == 0.0)
+}
+
+fn serialize_zero_percentage_as_number(name: &str, input: &str, canonical: &str) -> Option<String> {
+    if canonical != "0" || !semantic_accepts(name, "1") || !semantic_accepts(name, "100%") {
+        return None;
+    }
+    let percentage = input.trim().strip_suffix('%')?.parse::<f64>().ok()?;
+    (percentage == 0.0).then(|| "0".to_owned())
+}
+
 fn replace_one_pixel_with_zero(input: &str) -> Option<String> {
     let mut tokenizer = TokenizerWithSpans::new(input);
     let mut replacements = Vec::new();
@@ -1278,6 +1406,18 @@ mod tests {
             observable("stroke-dasharray", "calc(1 + 1) 2"),
             "calc(2), 2"
         );
+        for name in [
+            "opacity",
+            "fill-opacity",
+            "flood-opacity",
+            "shape-image-threshold",
+            "scale",
+            "stop-opacity",
+            "stroke-opacity",
+        ] {
+            assert_eq!(observable(name, "0%"), "0", "{name}");
+        }
+        assert_eq!(observable("width", "0%"), "0%");
     }
 
     #[test]
@@ -1308,6 +1448,28 @@ mod tests {
             ("text-emphasis-position", "right over", "over right"),
             ("text-emphasis-position", "over right", "over right"),
             ("text-emphasis-position", "over", "over"),
+        ] {
+            assert_eq!(observable(name, input), expected, "{name}: {input}");
+        }
+    }
+
+    #[test]
+    fn canonicalizes_composite_observable_defaults() {
+        for (name, input, expected) in [
+            ("view-timeline-inset", "auto auto", "auto"),
+            ("view-timeline-inset", "0", "0px"),
+            ("view-timeline-inset", "min(1px, 2px)", "calc(1px)"),
+            ("view-timeline-inset", "0 0", "0px"),
+            ("view-timeline-inset", "min(1px, 2px) 2px", "calc(1px) 2px"),
+            ("scroll-snap-align", "none none", "none"),
+            ("overflow-clip-margin", "content-box 0px", "content-box"),
+            ("font-style", "oblique 0deg", "normal"),
+            ("text-shadow", "1px 2px red", "red 1px 2px"),
+            (
+                "text-shadow",
+                "1px 2px red, 1px 2px blue",
+                "red 1px 2px, blue 1px 2px",
+            ),
         ] {
             assert_eq!(observable(name, input), expected, "{name}: {input}");
         }
