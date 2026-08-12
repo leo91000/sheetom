@@ -131,6 +131,31 @@ pub(crate) fn property_alias_defers_pending_value(name: &str) -> bool {
         )
 }
 
+pub(crate) fn property_alias_observable_value<'a>(
+    name: &str,
+    canonical_value: &'a str,
+) -> Option<Option<&'a str>> {
+    let lower = name.to_ascii_lowercase();
+    let supported_css_wide = matches!(
+        canonical_value,
+        "initial" | "inherit" | "unset" | "revert" | "revert-layer" | "revert-rule"
+    );
+    match lower.as_str() {
+        "page-break-before" | "page-break-after" => Some(match canonical_value {
+            "page" => Some("always"),
+            "auto" | "avoid" | "left" | "right" => Some(canonical_value),
+            _ if supported_css_wide => Some(canonical_value),
+            _ => None,
+        }),
+        "page-break-inside" => Some(match canonical_value {
+            "auto" | "avoid" => Some(canonical_value),
+            _ if supported_css_wide => Some(canonical_value),
+            _ => None,
+        }),
+        _ => None,
+    }
+}
+
 pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
     let canonical_name = canonical_property_name(name)?;
     if canonical_name.starts_with("--") {

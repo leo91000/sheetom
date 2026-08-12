@@ -148,6 +148,16 @@
       ]
     },
     {
+      "property": "scroll-marker-group",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none tabs" },
+        { "id": "before", "input": "before", "invalidNeighbor": "before after" },
+        { "id": "after", "input": "after", "invalidNeighbor": "after before" },
+        { "id": "links", "input": "before links", "invalidNeighbor": "links before" },
+        { "id": "tabs", "input": "after tabs", "invalidNeighbor": "tabs after" }
+      ]
+    },
+    {
       "property": "scroll-snap-align",
       "branches": [
         { "id": "none", "input": "none", "invalidNeighbor": "none start end" },
@@ -169,7 +179,8 @@
       "branches": [
         { "id": "auto", "input": "auto", "invalidNeighbor": "auto both-edges" },
         { "id": "stable", "input": "stable", "invalidNeighbor": "stable stable" },
-        { "id": "both-edges", "input": "stable both-edges", "invalidNeighbor": "both-edges" }
+        { "id": "both-edges", "input": "stable both-edges", "invalidNeighbor": "both-edges" },
+        { "id": "reordered-both-edges", "input": "both-edges stable", "invalidNeighbor": "both-edges both-edges stable" }
       ]
     },
     {

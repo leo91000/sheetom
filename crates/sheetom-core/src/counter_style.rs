@@ -247,7 +247,7 @@ fn valid_custom_ident(value: &str) -> bool {
 fn is_css_wide_keyword(value: &str) -> bool {
     matches!(
         value.trim().to_ascii_lowercase().as_str(),
-        "initial" | "inherit" | "unset" | "revert" | "revert-layer"
+        "initial" | "inherit" | "unset" | "revert" | "revert-layer" | "revert-rule"
     )
 }
 

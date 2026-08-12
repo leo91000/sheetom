@@ -128,7 +128,7 @@ impl<'i> ToCss for AnimationName<'i> {
 
         // CSS-wide keywords and `none` cannot remove quotes.
         match_ignore_ascii_case! { &*s,
-          "none" | "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" => {
+          "none" | "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" | "revert-rule" => {
             serialize_string(&s, dest)?;
             Ok(())
           },

@@ -190,6 +190,14 @@ fn valid_chromium_property_capability(name: &str, value: &str) -> bool {
     if name.eq_ignore_ascii_case("-webkit-column-break-inside") {
         return matches_ascii_case(value, &["auto", "avoid"]);
     }
+    if name.eq_ignore_ascii_case("page-break-before")
+        || name.eq_ignore_ascii_case("page-break-after")
+    {
+        return matches_ascii_case(value, &["auto", "always", "avoid", "left", "right"]);
+    }
+    if name.eq_ignore_ascii_case("page-break-inside") {
+        return matches_ascii_case(value, &["auto", "avoid"]);
+    }
     if name.eq_ignore_ascii_case("-webkit-mask")
         && has_any_top_level_ident(
             value,
@@ -239,7 +247,14 @@ fn valid_transition_list(source: &str) -> bool {
 fn is_css_wide_keyword(value: &str) -> bool {
     matches_ascii_case(
         value,
-        &["inherit", "initial", "revert", "revert-layer", "unset"],
+        &[
+            "inherit",
+            "initial",
+            "revert",
+            "revert-layer",
+            "revert-rule",
+            "unset",
+        ],
     )
 }
 
@@ -655,6 +670,8 @@ mod tests {
             ("transition", "none, none"),
             ("-webkit-column-break-before", "page"),
             ("-webkit-column-break-inside", "avoid-page"),
+            ("page-break-before", "page"),
+            ("page-break-inside", "avoid-page"),
             ("mask", "margin-box"),
             ("-webkit-mask", "view-box"),
             ("-webkit-mask-clip", "no-clip"),
@@ -677,6 +694,8 @@ mod tests {
             ("transition", "opacity 1s, transform 2s"),
             ("-webkit-column-break-before", "always"),
             ("-webkit-column-break-inside", "avoid"),
+            ("page-break-before", "always"),
+            ("page-break-inside", "avoid"),
             ("-webkit-mask", "content-box"),
             ("-webkit-mask-clip", "content-box"),
             ("-webkit-mask-origin", "padding-box"),

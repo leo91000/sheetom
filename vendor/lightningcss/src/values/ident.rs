@@ -32,7 +32,7 @@ impl<'i> Parse<'i> for CustomIdent<'i> {
     let location = input.current_source_location();
     let ident = input.expect_ident()?;
     let valid = match_ignore_ascii_case! { &ident,
-      "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" => false,
+      "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" | "revert-rule" => false,
       _ => true
     };
 

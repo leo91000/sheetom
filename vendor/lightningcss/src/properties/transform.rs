@@ -1538,8 +1538,8 @@ enum_property! {
   /// A value for the [transform-style](https://drafts.csswg.org/css-transforms-2/#transform-style-property) property.
   #[allow(missing_docs)]
   pub enum TransformStyle {
-    Flat,
-    Preserve3d,
+    "flat": Flat,
+    "preserve-3d": Preserve3d,
   }
 }
 

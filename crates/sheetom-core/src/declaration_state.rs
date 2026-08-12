@@ -3,7 +3,8 @@ use crate::{
     catalog::{
         canonical_property_name as canonical_style_property_name,
         property_alias_defers_pending_value, property_alias_hides_value,
-        shorthand_longhands as style_shorthand_longhands, shorthand_names,
+        property_alias_observable_value, shorthand_longhands as style_shorthand_longhands,
+        shorthand_names,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
     shorthand::{
@@ -149,7 +150,12 @@ impl DeclarationState {
                 {
                     return String::new();
                 }
-                record.observable_value().to_owned()
+                let observable = record.observable_value();
+                if let Some(projected) = property_alias_observable_value(&queried_name, observable)
+                {
+                    return projected.unwrap_or_default().to_owned();
+                }
+                observable.to_owned()
             })
     }
 
@@ -1133,6 +1139,100 @@ mod tests {
             assert_eq!(state.get_property_value(canonical), "");
             assert_eq!(state.css_text(), format!("{canonical}: ;"));
         }
+    }
+
+    #[test]
+    fn current_keyword_and_ordered_set_branches_match_chromium_state() {
+        for (name, input, canonical_name, expected) in [
+            ("all", "revert-rule", "all", "revert-rule"),
+            ("word-break", "auto-phrase", "word-break", "auto-phrase"),
+            (
+                "transform-style",
+                "preserve-3d",
+                "transform-style",
+                "preserve-3d",
+            ),
+            (
+                "-webkit-transform-style",
+                "preserve-3d",
+                "transform-style",
+                "preserve-3d",
+            ),
+            (
+                "image-rendering",
+                "pixelated",
+                "image-rendering",
+                "pixelated",
+            ),
+            (
+                "image-rendering",
+                "crisp-edges",
+                "image-rendering",
+                "crisp-edges",
+            ),
+            ("display", "math", "display", "math"),
+            ("display", "block math", "display", "block math"),
+            ("grid-auto-flow", "dense", "grid-auto-flow", "dense"),
+            (
+                "scroll-marker-group",
+                "before links",
+                "scroll-marker-group",
+                "before links",
+            ),
+            (
+                "scrollbar-gutter",
+                "both-edges stable",
+                "scrollbar-gutter",
+                "stable both-edges",
+            ),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(name, input, ""),
+                MutationOutcome::Applied,
+                "{name}: {input}"
+            );
+            assert_eq!(state.item(0), canonical_name, "{name}: {input} item");
+            assert_eq!(
+                state.get_property_value(canonical_name),
+                expected,
+                "{name}: {input} value"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_break_aliases_translate_values_without_losing_observability() {
+        for (alias, canonical, canonical_value, alias_value) in [
+            ("page-break-before", "break-before", "page", "always"),
+            ("page-break-after", "break-after", "page", "always"),
+            ("-webkit-column-break-before", "break-before", "column", ""),
+            ("-webkit-column-break-after", "break-after", "column", ""),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(alias, "always", ""),
+                MutationOutcome::Applied,
+                "{alias}"
+            );
+            assert_eq!(state.item(0), canonical, "{alias} item");
+            assert_eq!(
+                state.get_property_value(canonical),
+                canonical_value,
+                "{alias} canonical"
+            );
+            assert_eq!(
+                state.get_property_value(alias),
+                alias_value,
+                "{alias} alias"
+            );
+        }
+
+        let mut canonical = DeclarationState::new();
+        canonical.set_property("break-before", "page", "");
+        assert_eq!(canonical.get_property_value("page-break-before"), "always");
+        canonical.set_property("break-before", "column", "");
+        assert_eq!(canonical.get_property_value("page-break-before"), "");
     }
 
     #[test]

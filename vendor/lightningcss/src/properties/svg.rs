@@ -347,4 +347,8 @@ pub enum ImageRendering {
   OptimizeSpeed,
   /// The UA shall optimize quality over speed.
   OptimizeQuality,
+  /// The image is scaled using a nearest-neighbor or similar pixel-preserving algorithm.
+  Pixelated,
+  /// The image is scaled using an algorithm that preserves sharp edges and contrast.
+  CrispEdges,
 }

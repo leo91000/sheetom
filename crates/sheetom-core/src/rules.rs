@@ -308,6 +308,7 @@ fn valid_unquoted_font_family(value: &str) -> bool {
                 | "default"
                 | "revert"
                 | "revert-layer"
+                | "revert-rule"
                 | "serif"
                 | "sans-serif"
                 | "cursive"

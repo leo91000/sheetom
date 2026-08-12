@@ -76,6 +76,10 @@ pub enum BrowserLonghandValue {
         axis: &'static str,
         strictness: Option<&'static str>,
     },
+    ScrollMarkerGroup {
+        location: &'static str,
+        purpose: Option<&'static str>,
+    },
     ScrollbarGutter {
         both_edges: bool,
     },
@@ -555,6 +559,11 @@ impl BrowserLonghandValue {
                 .map_or_else(
                     || (*axis).to_owned(),
                     |strictness| format!("{axis} {strictness}"),
+                )),
+            BrowserLonghandValue::ScrollMarkerGroup { location, purpose } => Ok(purpose
+                .map_or_else(
+                    || (*location).to_owned(),
+                    |purpose| format!("{location} {purpose}"),
                 )),
             BrowserLonghandValue::ScrollbarGutter { both_edges } => Ok(if *both_edges {
                 "stable both-edges".to_owned()
@@ -1074,6 +1083,7 @@ pub(crate) fn parse_browser_longhand(
         Some(BrowserLonghandGrammar::TextDecorationLine) => parse_text_decoration_line(source),
         Some(BrowserLonghandGrammar::ScrollSnapAlign) => parse_scroll_snap_align(source),
         Some(BrowserLonghandGrammar::ScrollSnapType) => parse_scroll_snap_type(source),
+        Some(BrowserLonghandGrammar::ScrollMarkerGroup) => parse_scroll_marker_group(source),
         Some(BrowserLonghandGrammar::ScrollbarGutter) => parse_scrollbar_gutter(source),
         Some(BrowserLonghandGrammar::OverflowClipMargin) => parse_overflow_clip_margin(source),
         Some(BrowserLonghandGrammar::TextUnderlinePosition) => {
@@ -1288,6 +1298,7 @@ enum BrowserLonghandGrammar {
     TextDecorationLine,
     ScrollSnapAlign,
     ScrollSnapType,
+    ScrollMarkerGroup,
     ScrollbarGutter,
     OverflowClipMargin,
     TextUnderlinePosition,
@@ -1426,6 +1437,7 @@ define_browser_longhand_registry! {
     ],
     BrowserLonghandGrammar::ScrollSnapAlign => ["scroll-snap-align"],
     BrowserLonghandGrammar::ScrollSnapType => ["scroll-snap-type"],
+    BrowserLonghandGrammar::ScrollMarkerGroup => ["scroll-marker-group"],
     BrowserLonghandGrammar::ScrollbarGutter => ["scrollbar-gutter"],
     BrowserLonghandGrammar::OverflowClipMargin => ["overflow-clip-margin"],
     BrowserLonghandGrammar::TextUnderlinePosition => ["text-underline-position"],
@@ -1683,7 +1695,6 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::Keyword(&["row-over-column", "column-over-row"]) => ["rule-overlap"],
     BrowserLonghandGrammar::Keyword(&["auto", "smooth"]) => ["scroll-behavior"],
     BrowserLonghandGrammar::Keyword(&["none", "nearest"]) => ["scroll-initial-target"],
-    BrowserLonghandGrammar::Keyword(&["none", "after", "before"]) => ["scroll-marker-group"],
     BrowserLonghandGrammar::Keyword(&["normal", "always"]) => ["scroll-snap-stop"],
     BrowserLonghandGrammar::Keyword(&["none", "auto"]) => ["scroll-target-group"],
     BrowserLonghandGrammar::Keyword(&["auto", "thin", "none"]) => ["scrollbar-width"],
@@ -1958,6 +1969,22 @@ fn parse_scroll_snap_type(source: &str) -> Result<BrowserLonghandValue, EngineEr
     })
 }
 
+fn parse_scroll_marker_group(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let location = parse_one_keyword(input, &["none", "before", "after"])?;
+        if location == "none" {
+            return Ok(BrowserLonghandValue::ScrollMarkerGroup {
+                location,
+                purpose: None,
+            });
+        }
+        let purpose = input
+            .try_parse(|input| parse_one_keyword(input, &["links", "tabs"]))
+            .ok();
+        Ok(BrowserLonghandValue::ScrollMarkerGroup { location, purpose })
+    })
+}
+
 fn parse_scrollbar_gutter(source: &str) -> Result<BrowserLonghandValue, EngineError> {
     parse_entire(source, |input| {
         if input
@@ -1966,10 +1993,23 @@ fn parse_scrollbar_gutter(source: &str) -> Result<BrowserLonghandValue, EngineEr
         {
             return Ok(BrowserLonghandValue::Keyword("auto"));
         }
-        input.expect_ident_matching("stable")?;
-        let both_edges = input
-            .try_parse(|input| input.expect_ident_matching("both-edges"))
-            .is_ok();
+        let mut stable = false;
+        let mut both_edges = false;
+        while !input.is_exhausted() {
+            let keyword = parse_one_keyword(input, &["stable", "both-edges"])?;
+            match keyword {
+                "stable" if !stable => stable = true,
+                "both-edges" if !both_edges => both_edges = true,
+                _ => {
+                    return Err(
+                        input.new_custom_error(lightningcss::error::ParserError::InvalidValue)
+                    )
+                }
+            }
+        }
+        if !stable {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
         Ok(BrowserLonghandValue::ScrollbarGutter { both_edges })
     })
 }
@@ -3801,8 +3841,8 @@ mod tests {
             );
             branch_count += entry["branches"].as_array().unwrap().len();
         }
-        assert_eq!(properties.len(), 45);
-        assert_eq!(branch_count, 212);
+        assert_eq!(properties.len(), 46);
+        assert_eq!(branch_count, 218);
     }
 
     #[test]
@@ -3925,6 +3965,9 @@ mod tests {
             ("scroll-snap-type", "block proximity", "block"),
             ("scroll-snap-type", "inline mandatory", "inline mandatory"),
             ("scrollbar-gutter", "stable both-edges", "stable both-edges"),
+            ("scrollbar-gutter", "both-edges stable", "stable both-edges"),
+            ("scroll-marker-group", "before links", "before links"),
+            ("scroll-marker-group", "after tabs", "after tabs"),
             ("shape-margin", "0", "0px"),
             ("text-fit", "grow", "grow"),
             ("text-underline-offset", "auto", "auto"),
@@ -3964,6 +4007,10 @@ mod tests {
             ("scroll-snap-align", "start end center"),
             ("scroll-snap-type", "mandatory"),
             ("scrollbar-gutter", "both-edges"),
+            ("scrollbar-gutter", "stable stable"),
+            ("scroll-marker-group", "links before"),
+            ("scroll-marker-group", "before after"),
+            ("scroll-marker-group", "none tabs"),
             ("shape-margin", "-1px"),
             ("text-underline-offset", "from-font"),
             ("text-underline-position", "under left right"),

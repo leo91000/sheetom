@@ -1321,8 +1321,8 @@ impl<'i> Parse<'i> for GridAutoFlow {
         match_dense!();
       },
       "dense" => {
-        let location = input.current_source_location();
-        input.try_parse(|input| {
+        if !input.is_exhausted() {
+          let location = input.current_source_location();
           let ident = input.expect_ident()?;
           match_ignore_ascii_case! { &ident,
             "row" => {},
@@ -1333,8 +1333,7 @@ impl<'i> Parse<'i> for GridAutoFlow {
               cssparser::Token::Ident(ident.clone())
             ))
           }
-          Ok(())
-        })?;
+        }
         flow |= GridAutoFlow::Dense;
       },
       _ => return Err(location.new_unexpected_token_error(
@@ -1356,11 +1355,7 @@ impl ToCss for GridAutoFlow {
     } else if *self == GridAutoFlow::Column {
       "column"
     } else if *self == GridAutoFlow::Row | GridAutoFlow::Dense {
-      if dest.minify {
-        "dense"
-      } else {
-        "row dense"
-      }
+      "dense"
     } else if *self == GridAutoFlow::Column | GridAutoFlow::Dense {
       "column dense"
     } else {
