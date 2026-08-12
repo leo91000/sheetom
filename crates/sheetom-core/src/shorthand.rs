@@ -534,6 +534,25 @@ fn synthesize_transition(records: &[&DeclarationRecord], safe: bool) -> Option<S
         if property != "all" {
             components.push(property);
         }
+        if !safe {
+            if duration != "0s" {
+                components.push(duration);
+            }
+            if timing != "ease" {
+                components.push(timing);
+            }
+            if delay != "0s" {
+                components.push(delay);
+            }
+            if behavior != "normal" {
+                components.push(behavior);
+            }
+            if components.is_empty() {
+                components.push("all");
+            }
+            transitions.push(components.join(" "));
+            continue;
+        }
         if duration == "0s"
             && timing == "ease"
             && behavior == "normal"

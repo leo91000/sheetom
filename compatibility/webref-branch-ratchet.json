@@ -2,11 +2,11 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 190,
+  "mismatchCases": 170,
   "summary": {
     "acceptance": 0,
-    "observable": 127,
-    "cssText": 127,
+    "observable": 107,
+    "cssText": 107,
     "items": 113,
     "atomicity": 0,
     "reparse": 0
@@ -212,86 +212,6 @@
       "kinds": [
         "cssText",
         "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.10e6d1597331feff",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.26708e96fd4a6727",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.28f340101078db3e",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.56b87d339c0b0ad0",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.6148f487be20ce1f",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.a3d350ed471ccc4d",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.bd236713231afa59",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.c0aa64bf61bdb171",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.cdfaf830834ec460",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-transition",
-      "sample": "webref-sample.e6095673e3a8e149",
-      "kinds": [
-        "cssText",
         "observable"
       ]
     },
@@ -1409,86 +1329,6 @@
       "kinds": [
         "cssText",
         "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.10e6d1597331feff",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.26708e96fd4a6727",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.28f340101078db3e",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.56b87d339c0b0ad0",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.6148f487be20ce1f",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.a3d350ed471ccc4d",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.bd236713231afa59",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.c0aa64bf61bdb171",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.cdfaf830834ec460",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "transition",
-      "sample": "webref-sample.e6095673e3a8e149",
-      "kinds": [
-        "cssText",
         "observable"
       ]
     },
