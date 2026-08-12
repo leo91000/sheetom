@@ -12,6 +12,8 @@ const require = createRequire(import.meta.url);
 const typeScriptCli = require.resolve("typescript/bin/tsc");
 const { resolveTarget, TARGET_BY_NAME } = require("../native/resolve-target.cjs");
 const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
+const maximumRootTarballBytes = 200_000;
+const maximumRootUnpackedBytes = 750_000;
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-package-"));
 const packageDirectory = path.join(temporaryRoot, "package");
 
@@ -150,6 +152,17 @@ try {
   execFileSync(process.execPath, ["probe.cjs"], { cwd: packageDirectory, stdio: "inherit" });
 
   const packedPackage = packResult[0];
+  if (packedPackage.size > maximumRootTarballBytes) {
+    throw new Error(
+      `root tarball is ${packedPackage.size} bytes; limit is ${maximumRootTarballBytes}`,
+    );
+  }
+  if (packedPackage.unpackedSize > maximumRootUnpackedBytes) {
+    throw new Error(
+      `root package is ${packedPackage.unpackedSize} unpacked bytes; ` +
+      `limit is ${maximumRootUnpackedBytes}`,
+    );
+  }
   const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
   console.log(JSON.stringify({
     name: packageManifest.name,
