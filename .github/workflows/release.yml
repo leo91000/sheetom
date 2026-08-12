@@ -326,7 +326,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: sheetom-package
-          path: release-artifact
+          path: ${{ runner.temp }}/sheetom-package
           github-token: ${{ github.token }}
           run-id: ${{ needs.changesets.outputs.ci-run-id }}
 
@@ -338,5 +338,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHEETOM_RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           SHEETOM_RELEASE_RUNTIMES: node,bun,deno
-          SHEETOM_RELEASE_TARBALL: release-artifact
+          SHEETOM_RELEASE_TARBALL: ${{ runner.temp }}/sheetom-package
         run: node scripts/publish-release.mjs
