@@ -89,10 +89,10 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     await writeFile(geometricReportPath, JSON.stringify({
       schemaVersion: 1,
       userAgent: "HeadlessChrome/151.0.7922.34",
-      passed: 199,
-      total: 199,
-      reviewed: 55,
-      generated: 144,
+      passed: 317,
+      total: 317,
+      reviewed: 61,
+      generated: 256,
       contractsSha256: createHash("sha256")
         .update(await readFile("compatibility/browser-geometric-contracts.json"))
         .digest("hex"),
@@ -144,7 +144,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.66",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.67",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -241,7 +241,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         reviewed: report.evidence.nativeGrammar.geometricBranches.reviewed,
         generated: report.evidence.nativeGrammar.geometricBranches.generated,
       },
-      { passed: 199, total: 199, reviewed: 55, generated: 144 },
+      { passed: 317, total: 317, reviewed: 61, generated: 256 },
     );
     assert.match(
       report.evidence.nativeGrammar.grammarBranches.contractsSha256,

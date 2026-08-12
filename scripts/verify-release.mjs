@@ -109,10 +109,10 @@ if (
   nativeGrammar?.relativeColors?.total !== 1_306 ||
   nativeGrammar?.relativeColors?.positive !== 1_146 ||
   nativeGrammar?.relativeColors?.negative !== 160 ||
-  geometricGrammar?.passed !== 199 ||
-  geometricGrammar?.total !== 199 ||
-  geometricGrammar?.reviewed !== 55 ||
-  geometricGrammar?.generated !== 144 ||
+  geometricGrammar?.passed !== 317 ||
+  geometricGrammar?.total !== 317 ||
+  geometricGrammar?.reviewed !== 61 ||
+  geometricGrammar?.generated !== 256 ||
   typeof geometricGrammar?.userAgent !== "string" ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.inventorySha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.executionSha256 ?? "") ||

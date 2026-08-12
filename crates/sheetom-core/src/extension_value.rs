@@ -1100,15 +1100,16 @@ pub(crate) fn parse_preferred_extension_value(
     source: &str,
 ) -> Option<SemanticExtensionValue> {
     let preferred = extensions.iter().copied().filter(|extension| {
-        matches!(
-            extension,
-            PropertyGrammarExtension::AspectRatio
-                | PropertyGrammarExtension::LengthNumberCalculation
-                | PropertyGrammarExtension::LengthPercentageNumberCalculation
-                | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
-                | PropertyGrammarExtension::WebkitBorderImage
-                | PropertyGrammarExtension::WebkitMaskBoxImageComponent
-        )
+        (*extension == PropertyGrammarExtension::Geometric && property_name == "clip-path")
+            || matches!(
+                extension,
+                PropertyGrammarExtension::AspectRatio
+                    | PropertyGrammarExtension::LengthNumberCalculation
+                    | PropertyGrammarExtension::LengthPercentageNumberCalculation
+                    | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
+                    | PropertyGrammarExtension::WebkitBorderImage
+                    | PropertyGrammarExtension::WebkitMaskBoxImageComponent
+            )
     });
     for extension in preferred {
         let Ok(Some(value)) = parse_extension_value(&[extension], property_name, source) else {
@@ -1116,7 +1117,8 @@ pub(crate) fn parse_preferred_extension_value(
         };
         if matches!(
             extension,
-            PropertyGrammarExtension::LengthPercentageNumberCalculation
+            PropertyGrammarExtension::Geometric
+                | PropertyGrammarExtension::LengthPercentageNumberCalculation
                 | PropertyGrammarExtension::LengthPercentageOrNumberCalculation
         ) || value.retains_context_dependent_math()
         {

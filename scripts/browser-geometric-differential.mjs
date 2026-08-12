@@ -118,6 +118,38 @@ const geometryBoxCases = [
   },
 ]));
 
+const clipPathGeometryBoxCases = [
+  "margin-box",
+  "border-box",
+  "padding-box",
+  "content-box",
+  "fill-box",
+  "stroke-box",
+  "view-box",
+].flatMap(box => [
+  ["inset", "inset(1px)"],
+  ["circle", "circle()"],
+  ["ellipse", "ellipse()"],
+  ["polygon", "polygon(0 0, 1px 2px)"],
+  ["path", 'path("M0 0")'],
+  ["rect", "rect(auto 1px 2px 3px)"],
+  ["xywh", "xywh(0 0 1px 2px)"],
+  ["shape", "shape(from 0 0, line to 1px 2px)"],
+].flatMap(([shapeId, shape]) => [
+  {
+    id: `clip-path.generated-${box}-${shapeId}-after`,
+    property: "clip-path",
+    input: `${shape} ${box}`,
+    invalidNeighbor: `${shape} ${box} content-box`,
+  },
+  {
+    id: `clip-path.generated-${box}-${shapeId}-before`,
+    property: "clip-path",
+    input: `${box} ${shape}`,
+    invalidNeighbor: `${box} ${shape} content-box`,
+  },
+]));
+
 const rectangularShapeCases = [
   "inset(0)",
   "inset(1px 2px)",
@@ -200,6 +232,7 @@ const cases = [
   ...axisCases,
   ...svgCommandCases,
   ...geometryBoxCases,
+  ...clipPathGeometryBoxCases,
   ...rectangularShapeCases,
   ...basicShapeCases,
   ...gradientAndImageCases,

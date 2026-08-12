@@ -386,6 +386,9 @@ fn serialize_typed_observable(
     if name == "aspect-ratio" {
         return serialize_aspect_ratio(input, canonical);
     }
+    if name == "cursor" {
+        return canonical.to_owned();
+    }
     if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
         && !recovered.recovered
     {
