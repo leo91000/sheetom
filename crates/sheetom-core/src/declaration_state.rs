@@ -798,6 +798,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
     matches!(
         name,
         "animation"
+            | "animation-range"
             | "background"
             | "border"
             | "border-block"
@@ -849,7 +850,8 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
 fn prefers_synthesized_safe_provenance(name: &str) -> bool {
     matches!(
         name,
-        "border"
+        "animation-range"
+            | "border"
             | "border-block"
             | "border-block-end"
             | "border-block-start"
@@ -1541,6 +1543,34 @@ mod tests {
         let mut font = DeclarationState::new();
         font.set_property("font", "italic 700 16px / 1.5 serif", "");
         assert_eq!(font.get_property_value("font-kerning"), "auto");
+    }
+
+    #[test]
+    fn animation_range_synthesizes_parallel_lists_like_chromium() {
+        for (input, expected) in [
+            ("normal normal, normal", "normal, normal"),
+            ("cover calc(1px + 5%) normal", "cover calc(5% + 1px) normal"),
+            ("calc(1px + 5%) normal", "calc(5% + 1px)"),
+            ("normal cover", "normal cover"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("animation-range", input, ""),
+                MutationOutcome::Applied,
+                "{input} should expand"
+            );
+            assert_eq!(
+                state.get_property_value("animation-range"),
+                expected,
+                "{input}"
+            );
+            assert_eq!(state.css_text(), format!("animation-range: {expected};"));
+        }
+
+        let mut state = DeclarationState::new();
+        state.set_property("animation-range", "normal cover", "");
+        assert_eq!(state.get_property_value("animation-range-start"), "normal");
+        assert_eq!(state.get_property_value("animation-range-end"), "cover");
     }
 
     #[test]

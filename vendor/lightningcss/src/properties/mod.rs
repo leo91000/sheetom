@@ -895,6 +895,24 @@ macro_rules! define_properties {
           return value.longhand(property_id)
         }
 
+        // AnimationRange is a list shorthand declared outside the shorthand
+        // macro, so expose its two parallel longhand lists explicitly.
+        if let Property::AnimationRange(values) = self {
+          match property_id {
+            PropertyId::AnimationRangeStart => {
+              return Some(Property::AnimationRangeStart(
+                values.iter().map(|value| value.start.clone()).collect(),
+              ))
+            }
+            PropertyId::AnimationRangeEnd => {
+              return Some(Property::AnimationRangeEnd(
+                values.iter().map(|value| value.end.clone()).collect(),
+              ))
+            }
+            _ => {}
+          }
+        }
+
         // The border-image shorthand carries a vendor-prefix bitset, while
         // its standard longhands do not. Expose the semantic longhands before
         // the generic prefix guard for both unprefixed and legacy-prefixed

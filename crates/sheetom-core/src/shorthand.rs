@@ -176,6 +176,13 @@ fn synthesize_special_shorthand(
     safe: bool,
 ) -> Option<String> {
     match name {
+        "animation-range" => synthesize_timeline_trigger_range(
+            records,
+            safe,
+            "animation-range-start",
+            "animation-range-end",
+            "normal",
+        ),
         "animation" | "-webkit-animation" => synthesize_animation(records, safe),
         "transition" | "-webkit-transition" => synthesize_transition(records, safe),
         "background" => synthesize_background(records, safe),
@@ -238,6 +245,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
     matches!(
         name,
         "animation"
+            | "animation-range"
             | "-webkit-animation"
             | "transition"
             | "-webkit-transition"
