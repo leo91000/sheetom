@@ -487,17 +487,43 @@ pub(crate) fn serialize_identifier(value: &str) -> String {
 }
 
 pub(crate) fn split_top_level_whitespace(value: &str) -> Option<Vec<&str>> {
-    split_top_level(value, |byte| byte.is_ascii_whitespace(), false)
+    split_top_level(
+        value,
+        |byte| byte.is_ascii_whitespace(),
+        SeparatorMode::Collapse,
+    )
 }
 
 pub(crate) fn split_top_level_delimiter(value: &str, delimiter: u8) -> Option<Vec<&str>> {
-    split_top_level(value, |byte| byte == delimiter, true)
+    split_top_level(
+        value,
+        |byte| byte == delimiter,
+        SeparatorMode::RequireValues,
+    )
+}
+
+pub(crate) fn split_top_level_delimiter_allow_empty(
+    value: &str,
+    delimiter: u8,
+) -> Option<Vec<&str>> {
+    split_top_level(
+        value,
+        |byte| byte == delimiter,
+        SeparatorMode::PreserveValues,
+    )
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum SeparatorMode {
+    Collapse,
+    RequireValues,
+    PreserveValues,
 }
 
 fn split_top_level(
     value: &str,
     is_separator: impl Fn(u8) -> bool,
-    require_nonempty_parts: bool,
+    separator_mode: SeparatorMode,
 ) -> Option<Vec<&str>> {
     let bytes = value.as_bytes();
     let mut components = Vec::new();
@@ -527,6 +553,32 @@ fn split_top_level(
                 quote = None;
             }
             index += 1;
+            continue;
+        }
+        if byte == b'\\' {
+            start.get_or_insert(index);
+            index += 1;
+            let mut hex_digits = 0;
+            while hex_digits < 6
+                && bytes
+                    .get(index)
+                    .is_some_and(|escaped| escaped.is_ascii_hexdigit())
+            {
+                index += 1;
+                hex_digits += 1;
+            }
+            if hex_digits > 0 {
+                if bytes.get(index) == Some(&b'\r') && bytes.get(index + 1) == Some(&b'\n') {
+                    index += 2;
+                } else if bytes
+                    .get(index)
+                    .is_some_and(|escaped| escaped.is_ascii_whitespace())
+                {
+                    index += 1;
+                }
+            } else if index < bytes.len() {
+                index += 1;
+            }
             continue;
         }
         if byte == b'/' && bytes.get(index + 1) == Some(&b'*') {
@@ -567,9 +619,19 @@ fn split_top_level(
                 let component = trim_css_whitespace(&value[component_start..index]);
                 if !component.is_empty() {
                     components.push(component);
+                } else {
+                    match separator_mode {
+                        SeparatorMode::Collapse => {}
+                        SeparatorMode::RequireValues => return None,
+                        SeparatorMode::PreserveValues => components.push(""),
+                    }
                 }
-            } else if require_nonempty_parts {
-                return None;
+            } else {
+                match separator_mode {
+                    SeparatorMode::Collapse => {}
+                    SeparatorMode::RequireValues => return None,
+                    SeparatorMode::PreserveValues => components.push(""),
+                }
             }
             index += 1;
             continue;
@@ -584,9 +646,19 @@ fn split_top_level(
         let component = trim_css_whitespace(&value[component_start..]);
         if !component.is_empty() {
             components.push(component);
+        } else {
+            match separator_mode {
+                SeparatorMode::Collapse => {}
+                SeparatorMode::RequireValues => return None,
+                SeparatorMode::PreserveValues => components.push(""),
+            }
         }
-    } else if require_nonempty_parts {
-        return None;
+    } else {
+        match separator_mode {
+            SeparatorMode::Collapse => {}
+            SeparatorMode::RequireValues => return None,
+            SeparatorMode::PreserveValues => components.push(""),
+        }
     }
     Some(components)
 }
@@ -597,7 +669,38 @@ fn trim_css_whitespace(value: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::{analyze_substitutions, parse_declaration_list, serialize_identifier};
+    use super::{
+        analyze_substitutions, parse_declaration_list, serialize_identifier,
+        split_top_level_delimiter_allow_empty,
+    };
+
+    #[test]
+    fn preserves_optional_empty_delimiter_sections_without_splitting_functions() {
+        assert_eq!(
+            split_top_level_delimiter_allow_empty("1 fill / / calc(1px / 2)", b'/'),
+            Some(vec!["1 fill", "", "calc(1px / 2)"])
+        );
+        assert_eq!(
+            split_top_level_delimiter_allow_empty("/ 1px /", b'/'),
+            Some(vec!["", "1px", ""])
+        );
+        assert_eq!(
+            split_top_level_delimiter_allow_empty("url(\"a/b\") / 1px", b'/'),
+            Some(vec!["url(\"a/b\")", "1px"])
+        );
+        assert_eq!(
+            split_top_level_delimiter_allow_empty("1 / calc(1px", b'/'),
+            None
+        );
+        assert_eq!(
+            super::split_top_level_whitespace("r\\65 peat none"),
+            Some(vec!["r\\65 peat", "none"])
+        );
+        assert_eq!(
+            split_top_level_delimiter_allow_empty("ident\\/part / 1px", b'/'),
+            Some(vec!["ident\\/part", "1px"])
+        );
+    }
 
     #[test]
     fn detects_recovered_substitutions_without_accepting_declaration_boundaries() {

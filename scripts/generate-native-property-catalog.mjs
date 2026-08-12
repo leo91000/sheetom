@@ -97,7 +97,7 @@ const extensionVariants = new Map([
   ["page-size", "PageSize"],
   ["webkit-box-reflect", "WebkitBoxReflect"],
   ["webkit-border-image", "WebkitBorderImage"],
-  ["webkit-mask-box-image-slice", "WebkitMaskBoxImageSlice"],
+  ["webkit-mask-box-image-component", "WebkitMaskBoxImageComponent"],
 ]);
 const extensionsByProperty = new Map();
 for (const family of grammarExtensions.families) {

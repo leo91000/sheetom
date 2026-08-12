@@ -116,8 +116,12 @@
       "properties": ["-webkit-border-image"]
     },
     {
-      "id": "webkit-mask-box-image-slice",
-      "properties": ["-webkit-mask-box-image-slice"]
+      "id": "webkit-mask-box-image-component",
+      "properties": [
+        "-webkit-mask-box-image-outset",
+        "-webkit-mask-box-image-slice",
+        "-webkit-mask-box-image-width"
+      ]
     }
   ]
 }

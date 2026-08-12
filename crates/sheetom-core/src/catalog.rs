@@ -20,7 +20,7 @@ pub(crate) enum PropertyGrammarExtension {
     PageSize,
     WebkitBoxReflect,
     WebkitBorderImage,
-    WebkitMaskBoxImageSlice,
+    WebkitMaskBoxImageComponent,
     WebkitPerspective,
 }
 

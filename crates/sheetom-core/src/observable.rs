@@ -90,9 +90,13 @@ pub(crate) fn project_declaration(
         }
     } else if matches!(
         declaration.value(),
-        SemanticPropertyValue::Extension(SemanticExtensionValue::WebkitMaskBoxImageSlice(_))
+        SemanticPropertyValue::Extension(SemanticExtensionValue::WebkitMaskBoxImageComponent(_))
     ) {
-        serialize_webkit_mask_box_image_slice_observable(input, &canonical)
+        if name == "-webkit-mask-box-image-slice" {
+            serialize_webkit_mask_box_image_slice_observable(input, &canonical)
+        } else {
+            canonical.clone()
+        }
     } else if let SemanticPropertyValue::Extension(SemanticExtensionValue::Geometric(value)) =
         declaration.value()
     {

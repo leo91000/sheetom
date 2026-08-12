@@ -30,7 +30,7 @@
               "page-size",
               "webkit-box-reflect",
               "webkit-border-image",
-              "webkit-mask-box-image-slice"
+              "webkit-mask-box-image-component"
             ]
           },
           "properties": {

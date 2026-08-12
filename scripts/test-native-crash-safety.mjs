@@ -41,6 +41,17 @@ const crashCases = [
         public: true,
     },
     {
+        name: "webkit mask box image-set shorthand",
+        source: "-webkit-mask-box-image: image-set(url(a.png) 1x, url(b.png) 2x) repeat 1 fill / auto / 2px",
+        expectedEmptyGetter: true,
+        public: true,
+    },
+    {
+        name: "webkit mask box image-set source longhand",
+        source: "-webkit-mask-box-image-source: image-set(url(a.png) 1x, url(b.png) 2x)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
