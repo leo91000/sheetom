@@ -325,7 +325,7 @@ enum_property! {
 }
 
 /// A value for the [align-self](https://www.w3.org/TR/css-align-3/#align-self-property) property.
-#[derive(Debug, Clone, PartialEq, Parse, ToCss)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
 #[cfg_attr(
   feature = "serde",
@@ -344,6 +344,11 @@ pub enum AlignSelf {
   /// A baseline position keyword.
   #[cfg_attr(feature = "serde", serde(with = "ValueWrapper::<BaselinePosition>"))]
   BaselinePosition(BaselinePosition),
+  /// Item is centered over its default anchor.
+  AnchorCenter {
+    /// An overflow alignment mode.
+    overflow: Option<OverflowPosition>,
+  },
   /// A self position keyword.
   SelfPosition {
     /// An overflow alignment mode.
@@ -351,6 +356,63 @@ pub enum AlignSelf {
     /// A self position keyword.
     value: SelfPosition,
   },
+}
+
+impl<'i> Parse<'i> for AlignSelf {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("auto")).is_ok() {
+      return Ok(AlignSelf::Auto);
+    }
+    if input.try_parse(|input| input.expect_ident_matching("normal")).is_ok() {
+      return Ok(AlignSelf::Normal);
+    }
+    if input.try_parse(|input| input.expect_ident_matching("stretch")).is_ok() {
+      return Ok(AlignSelf::Stretch);
+    }
+    if let Ok(value) = input.try_parse(BaselinePosition::parse) {
+      return Ok(AlignSelf::BaselinePosition(value));
+    }
+
+    let overflow = input.try_parse(OverflowPosition::parse).ok();
+    if input
+      .try_parse(|input| input.expect_ident_matching("anchor-center"))
+      .is_ok()
+    {
+      return Ok(AlignSelf::AnchorCenter { overflow });
+    }
+    Ok(AlignSelf::SelfPosition {
+      overflow,
+      value: SelfPosition::parse(input)?,
+    })
+  }
+}
+
+impl ToCss for AlignSelf {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      AlignSelf::Auto => dest.write_str("auto"),
+      AlignSelf::Normal => dest.write_str("normal"),
+      AlignSelf::Stretch => dest.write_str("stretch"),
+      AlignSelf::BaselinePosition(value) => value.to_css(dest),
+      AlignSelf::AnchorCenter { overflow } => {
+        if let Some(overflow) = overflow {
+          overflow.to_css(dest)?;
+          dest.write_str(" ")?;
+        }
+        dest.write_str("anchor-center")
+      }
+      AlignSelf::SelfPosition { overflow, value } => {
+        if let Some(overflow) = overflow {
+          overflow.to_css(dest)?;
+          dest.write_str(" ")?;
+        }
+        value.to_css(dest)
+      }
+    }
+  }
 }
 
 /// A value for the [justify-self](https://www.w3.org/TR/css-align-3/#justify-self-property) property.
@@ -373,6 +435,11 @@ pub enum JustifySelf {
   /// A baseline position keyword.
   #[cfg_attr(feature = "serde", serde(with = "ValueWrapper::<BaselinePosition>"))]
   BaselinePosition(BaselinePosition),
+  /// Item is centered over its default anchor.
+  AnchorCenter {
+    /// An overflow alignment mode.
+    overflow: Option<OverflowPosition>,
+  },
   /// A self position keyword.
   SelfPosition {
     /// A self position keyword.
@@ -411,6 +478,12 @@ impl<'i> Parse<'i> for JustifySelf {
     }
 
     let overflow = input.try_parse(OverflowPosition::parse).ok();
+    if input
+      .try_parse(|input| input.expect_ident_matching("anchor-center"))
+      .is_ok()
+    {
+      return Ok(JustifySelf::AnchorCenter { overflow });
+    }
     if let Ok(value) = input.try_parse(SelfPosition::parse) {
       return Ok(JustifySelf::SelfPosition { overflow, value });
     }
@@ -437,6 +510,13 @@ impl ToCss for JustifySelf {
       JustifySelf::Normal => dest.write_str("normal"),
       JustifySelf::Stretch => dest.write_str("stretch"),
       JustifySelf::BaselinePosition(val) => val.to_css(dest),
+      JustifySelf::AnchorCenter { overflow } => {
+        if let Some(overflow) = overflow {
+          overflow.to_css(dest)?;
+          dest.write_str(" ")?;
+        }
+        dest.write_str("anchor-center")
+      }
       JustifySelf::SelfPosition { overflow, value } => {
         if let Some(overflow) = overflow {
           overflow.to_css(dest)?;
@@ -487,6 +567,9 @@ impl<'i> Parse<'i> for PlaceSelf {
           AlignSelf::Normal => JustifySelf::Normal,
           AlignSelf::Stretch => JustifySelf::Stretch,
           AlignSelf::BaselinePosition(p) => JustifySelf::BaselinePosition(p.clone()),
+          AlignSelf::AnchorCenter { overflow } => JustifySelf::AnchorCenter {
+            overflow: overflow.clone(),
+          },
           AlignSelf::SelfPosition { overflow, value } => JustifySelf::SelfPosition {
             overflow: overflow.clone(),
             value: value.clone(),
@@ -512,6 +595,7 @@ impl ToCss for PlaceSelf {
       JustifySelf::BaselinePosition(p) if matches!(&self.align, AlignSelf::BaselinePosition(p2) if p == p2) => {
         true
       }
+      JustifySelf::AnchorCenter { overflow: o } if matches!(&self.align, AlignSelf::AnchorCenter { overflow: o2 } if o == o2) => true,
       JustifySelf::SelfPosition { overflow: o, value: c } if matches!(&self.align, AlignSelf::SelfPosition  { overflow: o2, value: c2 } if o == o2 && c == c2) => {
         true
       }
@@ -657,6 +741,8 @@ pub enum JustifyItems {
     /// An overflow alignment mode.
     overflow: Option<OverflowPosition>,
   },
+  /// The legacy behavior with its UA-dependent default alignment.
+  LegacyDefault,
   /// A legacy justification keyword.
   #[cfg_attr(feature = "serde", serde(with = "ValueWrapper::<LegacyJustify>"))]
   Legacy(LegacyJustify),
@@ -674,6 +760,16 @@ impl<'i> Parse<'i> for JustifyItems {
 
     if let Ok(val) = input.try_parse(BaselinePosition::parse) {
       return Ok(JustifyItems::BaselinePosition(val));
+    }
+
+    if input
+      .try_parse(|input| {
+        input.expect_ident_matching("legacy")?;
+        input.expect_exhausted()
+      })
+      .is_ok()
+    {
+      return Ok(JustifyItems::LegacyDefault);
     }
 
     if let Ok(val) = input.try_parse(LegacyJustify::parse) {
@@ -706,6 +802,7 @@ impl ToCss for JustifyItems {
       JustifyItems::Normal => dest.write_str("normal"),
       JustifyItems::Stretch => dest.write_str("stretch"),
       JustifyItems::BaselinePosition(val) => val.to_css(dest),
+      JustifyItems::LegacyDefault => dest.write_str("legacy"),
       JustifyItems::Legacy(val) => val.to_css(dest),
       JustifyItems::SelfPosition { overflow, value } => {
         if let Some(overflow) = overflow {
