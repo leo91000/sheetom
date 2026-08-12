@@ -320,7 +320,6 @@ dependencies = [
  "cssparser",
  "cssparser-color",
  "data-encoding",
- "getrandom",
  "indexmap",
  "itertools",
  "lazy_static",
