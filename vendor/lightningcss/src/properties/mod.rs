@@ -895,6 +895,22 @@ macro_rules! define_properties {
           return value.longhand(property_id)
         }
 
+        // The border-image shorthand carries a vendor-prefix bitset, while
+        // its standard longhands do not. Expose the semantic longhands before
+        // the generic prefix guard for both unprefixed and legacy-prefixed
+        // shorthand spellings.
+        if let (
+          Property::BorderImage(value, _),
+          PropertyId::BorderImageSource
+            | PropertyId::BorderImageSlice
+            | PropertyId::BorderImageWidth
+            | PropertyId::BorderImageOutset
+            | PropertyId::BorderImageRepeat,
+        ) = (self, property_id)
+        {
+          return value.longhand(property_id)
+        }
+
         $(
           macro_rules! shorthand {
             ($s: literal) => {
