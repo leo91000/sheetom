@@ -49,6 +49,12 @@ const geometricContractsBytes = await readFile(
 const geometricGeneratorBytes = await readFile(
   path.join(repositoryRoot, "scripts/browser-geometric-differential.mjs"),
 );
+const webrefPropertyBranchesBytes = await readFile(
+  path.join(compatibilityRoot, "webref-property-branches.json"),
+);
+const webrefBranchRatchetBytes = await readFile(
+  path.join(compatibilityRoot, "webref-branch-ratchet.json"),
+);
 const shorthandGrammarContracts = JSON.parse(shorthandGrammarContractsBytes.toString("utf8"));
 const shorthandGrammarObservations = JSON.parse(
   shorthandGrammarObservationsBytes.toString("utf8"),
@@ -66,6 +72,8 @@ const relativeColorCapabilities = JSON.parse(
   relativeColorCapabilitiesBytes.toString("utf8"),
 );
 const propertyValueObservations = JSON.parse(propertyValueObservationsBytes.toString("utf8"));
+const webrefPropertyBranches = JSON.parse(webrefPropertyBranchesBytes.toString("utf8"));
+const webrefBranchRatchet = JSON.parse(webrefBranchRatchetBytes.toString("utf8"));
 if (
   shorthandGrammarContracts.profiles.length === 0 ||
   shorthandGrammarCases.length === 0 ||
@@ -270,6 +278,39 @@ if (
   throw new Error("Property Value Matrix execution evidence is incomplete");
 }
 
+const webrefPropertyEvidence = await requiredEvidenceReport("webref-property-report");
+const webrefPropertyReport = webrefPropertyEvidence.report;
+const webrefChecks = [
+  "acceptance",
+  "observable",
+  "cssText",
+  "items",
+  "atomicity",
+  "reparse",
+];
+const webrefMismatchCount = Object.values(webrefPropertyReport.mismatches ?? {})
+  .reduce((count, mismatches) => count + (Array.isArray(mismatches) ? mismatches.length : 1), 0);
+const webrefCorpusSha256 = createHash("sha256")
+  .update(webrefPropertyBranchesBytes)
+  .digest("hex");
+if (
+  webrefPropertyReport.schemaVersion !== 1
+  || JSON.stringify(webrefPropertyReport.checks) !== JSON.stringify(webrefChecks)
+  || JSON.stringify(Object.keys(webrefPropertyReport.mismatches ?? {}).sort())
+    !== JSON.stringify([...webrefChecks].sort())
+  || !webrefChecks.every(check => Array.isArray(webrefPropertyReport.mismatches[check]))
+  || webrefPropertyReport.properties !== webrefPropertyBranches.coverage.webrefProperties
+  || webrefPropertyReport.profiles !== webrefPropertyBranches.coverage.profiles
+  || webrefPropertyReport.branches !== webrefPropertyBranches.coverage.branches
+  || webrefPropertyReport.checksRun !== webrefPropertyBranches.coverage.checks
+  || webrefPropertyReport.expectedAccepted !== webrefPropertyBranches.coverage.accepted
+  || webrefBranchRatchet.mismatchCases !== 0
+  || webrefBranchRatchet.corpusSha256 !== webrefCorpusSha256
+  || webrefMismatchCount !== 0
+) {
+  throw new Error("Webref Property Branch execution evidence is incomplete");
+}
+
 const geometricEvidence = await requiredEvidenceReport("geometric-report");
 const geometricReport = geometricEvidence.report;
 if (
@@ -421,6 +462,22 @@ const report = {
         probesSha256: createHash("sha256").update(propertyValueProbesBytes).digest("hex"),
         executionSha256: createHash("sha256")
           .update(propertyValueEvidence.bytes)
+          .digest("hex"),
+      },
+      webrefBranches: {
+        passed: webrefPropertyReport.checksRun,
+        total: webrefPropertyReport.checksRun,
+        properties: webrefPropertyReport.properties,
+        profiles: webrefPropertyReport.profiles,
+        branches: webrefPropertyReport.branches,
+        accepted: webrefPropertyReport.expectedAccepted,
+        rejected: webrefPropertyReport.checksRun - webrefPropertyReport.expectedAccepted,
+        corpusSha256: webrefCorpusSha256,
+        ratchetSha256: createHash("sha256")
+          .update(webrefBranchRatchetBytes)
+          .digest("hex"),
+        executionSha256: createHash("sha256")
+          .update(webrefPropertyEvidence.bytes)
           .digest("hex"),
       },
       relativeColors: {
