@@ -4046,6 +4046,208 @@
       "shorthandValue": "",
       "priority": "",
       "cssText": ""
+    },
+    {
+      "id": "grammar.text-decoration.spelling-error",
+      "accepted": true,
+      "items": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ],
+      "longhands": [
+        {
+          "name": "text-decoration-line",
+          "value": "spelling-error",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-thickness",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-style",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "spelling-error",
+      "priority": "",
+      "cssText": "text-decoration: spelling-error;"
+    },
+    {
+      "id": "grammar.text-decoration.grammar-error",
+      "accepted": true,
+      "items": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ],
+      "longhands": [
+        {
+          "name": "text-decoration-line",
+          "value": "grammar-error",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-thickness",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-style",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "grammar-error",
+      "priority": "",
+      "cssText": "text-decoration: grammar-error;"
+    },
+    {
+      "id": "grammar.text-decoration.error-components",
+      "accepted": true,
+      "items": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ],
+      "longhands": [
+        {
+          "name": "text-decoration-line",
+          "value": "spelling-error",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-thickness",
+          "value": "2px",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-style",
+          "value": "wavy",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-color",
+          "value": "blue",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "spelling-error 2px wavy blue",
+      "priority": "",
+      "cssText": "text-decoration: spelling-error 2px wavy blue;"
+    },
+    {
+      "id": "grammar.text-decoration.none-color",
+      "accepted": true,
+      "items": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ],
+      "longhands": [
+        {
+          "name": "text-decoration-line",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-thickness",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-style",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-color",
+          "value": "red",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "red",
+      "priority": "",
+      "cssText": "text-decoration: red;"
+    },
+    {
+      "id": "grammar.text-decoration.default-style-color",
+      "accepted": true,
+      "items": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ],
+      "longhands": [
+        {
+          "name": "text-decoration-line",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-thickness",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-style",
+          "value": "solid",
+          "priority": ""
+        },
+        {
+          "name": "text-decoration-color",
+          "value": "red",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "red",
+      "priority": "",
+      "cssText": "text-decoration: red;"
+    },
+    {
+      "id": "grammar.text-decoration.mixed-lines-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.text-decoration.error-pair-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.text-decoration.duplicate-style-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
     }
   ]
 }

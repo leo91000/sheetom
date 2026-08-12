@@ -1410,7 +1410,10 @@ define_browser_longhand_registry! {
         "contain-intrinsic-width",
     ],
     BrowserLonghandGrammar::Containment => ["contain"],
-    BrowserLonghandGrammar::TextDecorationLine => ["-webkit-text-decorations-in-effect"],
+    BrowserLonghandGrammar::TextDecorationLine => [
+        "-webkit-text-decorations-in-effect",
+        "text-decoration-line",
+    ],
     BrowserLonghandGrammar::ScrollSnapAlign => ["scroll-snap-align"],
     BrowserLonghandGrammar::ScrollSnapType => ["scroll-snap-type"],
     BrowserLonghandGrammar::ScrollbarGutter => ["scrollbar-gutter"],

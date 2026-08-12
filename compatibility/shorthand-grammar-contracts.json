@@ -183,6 +183,16 @@
       { "id": "grammar.white-space.break-spaces", "branch": "break spaces", "property": "white-space", "input": "break-spaces", "accepted": true },
       { "id": "grammar.white-space.duplicate-domain-invalid", "branch": "duplicate component domain", "property": "white-space", "input": "wrap nowrap", "accepted": false, "preserves": "grammar.white-space.collapse-mode" },
       { "id": "grammar.white-space.extra-invalid", "branch": "extra keyword", "property": "white-space", "input": "preserve wrap nowrap", "accepted": false, "preserves": "grammar.white-space.collapse-mode" }
+    ] },
+    { "codec": "text-decoration", "cases": [
+      { "id": "grammar.text-decoration.spelling-error", "branch": "spelling error line", "property": "text-decoration", "input": "spelling-error", "accepted": true },
+      { "id": "grammar.text-decoration.grammar-error", "branch": "grammar error line", "property": "text-decoration", "input": "grammar-error", "accepted": true },
+      { "id": "grammar.text-decoration.error-components", "branch": "error line with thickness style and color", "property": "text-decoration", "input": "spelling-error wavy blue 2px", "accepted": true },
+      { "id": "grammar.text-decoration.none-color", "branch": "none line omitted beside color", "property": "text-decoration", "input": "none red", "accepted": true },
+      { "id": "grammar.text-decoration.default-style-color", "branch": "default style omitted beside color", "property": "text-decoration", "input": "solid red", "accepted": true },
+      { "id": "grammar.text-decoration.mixed-lines-invalid", "branch": "error and ordinary lines", "property": "text-decoration", "input": "grammar-error underline", "accepted": false, "preserves": "grammar.text-decoration.grammar-error" },
+      { "id": "grammar.text-decoration.error-pair-invalid", "branch": "two error lines", "property": "text-decoration", "input": "spelling-error grammar-error", "accepted": false, "preserves": "grammar.text-decoration.spelling-error" },
+      { "id": "grammar.text-decoration.duplicate-style-invalid", "branch": "duplicate style", "property": "text-decoration", "input": "spelling-error double wavy", "accepted": false, "preserves": "grammar.text-decoration.error-components" }
     ] }
   ]
 }

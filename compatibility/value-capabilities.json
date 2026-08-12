@@ -2220,6 +2220,65 @@
       "property": "text-box",
       "input": "auto text",
       "accepted": false
+    },
+    {
+      "id": "text-decoration.spelling-error",
+      "property": "text-decoration",
+      "input": "spelling-error",
+      "accepted": true,
+      "observable": "spelling-error"
+    },
+    {
+      "id": "text-decoration.grammar-error",
+      "property": "text-decoration",
+      "input": "grammar-error",
+      "accepted": true,
+      "observable": "grammar-error"
+    },
+    {
+      "id": "text-decoration.error-components",
+      "property": "text-decoration",
+      "input": "spelling-error wavy blue 2px",
+      "accepted": true,
+      "observable": "spelling-error 2px wavy blue"
+    },
+    {
+      "id": "text-decoration.none-color",
+      "property": "text-decoration",
+      "input": "none red",
+      "accepted": true,
+      "observable": "red"
+    },
+    {
+      "id": "text-decoration.default-style-color",
+      "property": "text-decoration",
+      "input": "solid red",
+      "accepted": true,
+      "observable": "red"
+    },
+    {
+      "id": "text-decoration.mixed-lines-invalid",
+      "property": "text-decoration",
+      "input": "grammar-error underline",
+      "accepted": false
+    },
+    {
+      "id": "text-decoration.error-pair-invalid",
+      "property": "text-decoration",
+      "input": "spelling-error grammar-error",
+      "accepted": false
+    },
+    {
+      "id": "text-decoration.duplicate-style-invalid",
+      "property": "text-decoration",
+      "input": "spelling-error double wavy",
+      "accepted": false
+    },
+    {
+      "id": "text-decoration.duplicate-thickness-invalid",
+      "property": "text-decoration",
+      "input": "spelling-error 1px 2px",
+      "accepted": false
     }
   ]
 }

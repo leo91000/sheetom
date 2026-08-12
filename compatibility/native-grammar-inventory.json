@@ -6,9 +6,9 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "00f8ddf9c861e64a0ad9563519dd126a483eacb7a425e71526d6ce017e6926a6",
+    "shorthandGrammarContractsSha256": "e3cc43c50a8b6bff07873ff689597f25f4537a162339adbb34b56d8d5fb46379",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "ae8d3ddc38f11ee77af2917ef80aca14c55d9b6d58b0ab6974da0070212b2997"
+    "valueCapabilitiesSha256": "ff179f2b027a6c931b43e89404a93fb4662f36dd0f25578dfbd1c0b1709b9192"
   },
   "profiles": [
     {
@@ -364,7 +364,6 @@
         "outline",
         "position-try",
         "text-box",
-        "text-decoration",
         "text-emphasis",
         "timeline-trigger",
         "view-timeline"
@@ -380,6 +379,22 @@
         "grammar.typed-object.text-box-interleaved-invalid",
         "grammar.typed-object.text-box-duplicate-trim-invalid",
         "grammar.typed-object.outline-duplicate-invalid"
+      ]
+    },
+    {
+      "codec": "text-decoration",
+      "properties": [
+        "text-decoration"
+      ],
+      "contractCaseIds": [
+        "grammar.text-decoration.spelling-error",
+        "grammar.text-decoration.grammar-error",
+        "grammar.text-decoration.error-components",
+        "grammar.text-decoration.none-color",
+        "grammar.text-decoration.default-style-color",
+        "grammar.text-decoration.mixed-lines-invalid",
+        "grammar.text-decoration.error-pair-invalid",
+        "grammar.text-decoration.duplicate-style-invalid"
       ]
     },
     {
@@ -1186,7 +1201,7 @@
     },
     {
       "property": "text-decoration",
-      "codec": "typed-object",
+      "codec": "text-decoration",
       "breadthCaseId": "shorthand.text-decoration.concrete-default",
       "propertyBranchIds": []
     },
