@@ -187,6 +187,29 @@
       "cssText": "overscroll-behavior: contain none;"
     },
     {
+      "id": "grammar.two-value.overscroll-chain",
+      "accepted": true,
+      "items": [
+        "overscroll-behavior-x",
+        "overscroll-behavior-y"
+      ],
+      "longhands": [
+        {
+          "name": "overscroll-behavior-x",
+          "value": "chain",
+          "priority": ""
+        },
+        {
+          "name": "overscroll-behavior-y",
+          "value": "contain",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "chain contain",
+      "priority": "",
+      "cssText": "overscroll-behavior: chain contain;"
+    },
+    {
       "id": "grammar.two-value.three-invalid",
       "accepted": false,
       "items": [],

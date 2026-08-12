@@ -6,9 +6,9 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "0bd7cc507f3c451d36b3f4318eb791ae27d4f7540803e13686f063af051e2495",
+    "shorthandGrammarContractsSha256": "9350dcc9e44f45326b1baf6f8e8523e9ee1b96af0d9da1e5a9fdbfa43d018b5f",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "de64e4683d6ee161200c0c48fd822dab2815ccb83d2cf902ae983c623c7f293e"
+    "valueCapabilitiesSha256": "411f394c19ea39c1b67a9a4e55f477ad4b535f04e577e511a67685754cebe66e"
   },
   "profiles": [
     {
@@ -355,6 +355,7 @@
         "grammar.two-value.one",
         "grammar.two-value.two",
         "grammar.two-value.keyword-pair",
+        "grammar.two-value.overscroll-chain",
         "grammar.two-value.three-invalid"
       ]
     },

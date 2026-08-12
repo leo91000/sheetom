@@ -1740,6 +1740,13 @@ mod tests {
         assert_eq!(state.get_property_value("overscroll-behavior-y"), "none");
 
         assert_eq!(
+            state.set_property("overscroll-behavior", "chain contain", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(state.get_property_value("overscroll-behavior-x"), "chain");
+        assert_eq!(state.get_property_value("overscroll-behavior-y"), "contain");
+
+        assert_eq!(
             state.set_property("corner-shape", "round bevel scoop notch", ""),
             MutationOutcome::Applied
         );

@@ -137,6 +137,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "overscroll chaining pair",
+        source: "overscroll-behavior: chain contain",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

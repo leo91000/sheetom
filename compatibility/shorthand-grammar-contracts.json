@@ -12,6 +12,7 @@
       { "id": "grammar.two-value.one", "branch": "one value", "property": "gap", "input": "1px", "accepted": true },
       { "id": "grammar.two-value.two", "branch": "two values", "property": "gap", "input": "1px 2px", "accepted": true },
       { "id": "grammar.two-value.keyword-pair", "branch": "keyword pair", "property": "overscroll-behavior", "input": "contain none", "accepted": true },
+      { "id": "grammar.two-value.overscroll-chain", "branch": "chaining keyword pair", "property": "overscroll-behavior", "input": "chain contain", "accepted": true },
       { "id": "grammar.two-value.three-invalid", "branch": "too many values", "property": "gap", "input": "1px 2px 3px", "accepted": false, "preserves": "grammar.two-value.two" }
     ] },
     { "codec": "slash-pair", "cases": [
