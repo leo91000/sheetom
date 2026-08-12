@@ -177,8 +177,9 @@ async function startServer(root) {
     try {
       const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
       const filename = path.join(root, pathname === "/" ? "index.html" : pathname.slice(1));
+      const content = await readFile(filename);
       response.writeHead(200, { "content-type": mimeType(filename) });
-      response.end(await readFile(filename));
+      response.end(content);
     } catch {
       response.writeHead(404);
       response.end();
