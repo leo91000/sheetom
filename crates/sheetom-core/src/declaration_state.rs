@@ -2924,4 +2924,54 @@ mod tests {
         state.set_property("mask", "alpha", "");
         assert_eq!(state.get_property_value("mask-mode"), "alpha");
     }
+
+    #[test]
+    fn background_shorthand_retains_box_and_size_grammar() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("background", "none, content-box", ""),
+            MutationOutcome::Applied,
+        );
+        assert_eq!(
+            state.get_property_value("background"),
+            "none, content-box content-box"
+        );
+
+        state.set_property("background", "center / 1px 2px, none", "");
+        assert_eq!(
+            state.get_property_value("background-size"),
+            "1px 2px, initial"
+        );
+        assert_eq!(
+            state.get_property_value("background"),
+            "center center / 1px 2px, none"
+        );
+
+        state.set_property("background", "center / calc(1px + 5%), none", "");
+        assert_eq!(
+            state.get_property_value("background-size"),
+            "calc(5% + 1px), initial"
+        );
+        assert_eq!(
+            state.get_property_value("background"),
+            "center center / calc(5% + 1px), none"
+        );
+
+        state.set_property("background", "none, image-set(url(a.png) 1x)", "");
+        assert_eq!(
+            crate::observable::project_observable_value(
+                "background-image",
+                "image-set(url(a.png) 1x)"
+            ),
+            Some("image-set(url(\"a.png\") 1x)".to_owned())
+        );
+        assert_eq!(
+            state.get_property_value("background-image"),
+            "none, image-set(url(\"a.png\") 1x)"
+        );
+        assert_eq!(
+            state.get_property_value("background"),
+            "none, image-set(url(\"a.png\") 1x)"
+        );
+    }
 }
