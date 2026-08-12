@@ -359,6 +359,12 @@ fn serialize_typed_observable(
             recovered.recovered,
         );
     }
+    if name == "text-emphasis-style" {
+        return serialize_text_emphasis_style(input, canonical);
+    }
+    if name == "text-emphasis-position" {
+        return serialize_text_emphasis_position(input, canonical);
+    }
     if is_single_color_property(name) {
         return serialize_color(closed, canonical);
     }
@@ -421,6 +427,51 @@ fn serialize_typed_observable(
         return closed.to_owned();
     }
     serialize_default_observable(input, closed, canonical, recovered)
+}
+
+fn serialize_text_emphasis_style(input: &str, canonical: &str) -> String {
+    let Some(components) = crate::syntax::split_top_level_whitespace(input) else {
+        return canonical.to_owned();
+    };
+    let fill = components.iter().find_map(|component| {
+        if component.eq_ignore_ascii_case("filled") {
+            Some("filled")
+        } else if component.eq_ignore_ascii_case("open") {
+            Some("open")
+        } else {
+            None
+        }
+    });
+    let shape = components.iter().find_map(|component| {
+        ["dot", "circle", "double-circle", "triangle", "sesame"]
+            .into_iter()
+            .find(|shape| component.eq_ignore_ascii_case(shape))
+    });
+    match (fill, shape) {
+        (Some(fill), Some(shape)) => format!("{fill} {shape}"),
+        (Some(fill), None) => fill.to_owned(),
+        _ => canonical.to_owned(),
+    }
+}
+
+fn serialize_text_emphasis_position(input: &str, canonical: &str) -> String {
+    let Some(components) = crate::syntax::split_top_level_whitespace(input) else {
+        return canonical.to_owned();
+    };
+    let vertical = components.iter().find_map(|component| {
+        ["over", "under"]
+            .into_iter()
+            .find(|value| component.eq_ignore_ascii_case(value))
+    });
+    let horizontal = components.iter().find_map(|component| {
+        ["left", "right"]
+            .into_iter()
+            .find(|value| component.eq_ignore_ascii_case(value))
+    });
+    match (vertical, horizontal) {
+        (Some(vertical), Some(horizontal)) => format!("{vertical} {horizontal}"),
+        _ => canonical.to_owned(),
+    }
 }
 
 fn is_position_pair_property(name: &str) -> bool {
@@ -1245,6 +1296,20 @@ mod tests {
             ),
         ] {
             assert_eq!(observable("transform-origin", input), expected, "{input}");
+        }
+    }
+
+    #[test]
+    fn preserves_explicit_text_emphasis_defaults() {
+        for (name, input, expected) in [
+            ("text-emphasis-style", "filled dot", "filled dot"),
+            ("text-emphasis-style", "dot filled", "filled dot"),
+            ("text-emphasis-style", "dot", "dot"),
+            ("text-emphasis-position", "right over", "over right"),
+            ("text-emphasis-position", "over right", "over right"),
+            ("text-emphasis-position", "over", "over"),
+        ] {
+            assert_eq!(observable(name, input), expected, "{name}: {input}");
         }
     }
 

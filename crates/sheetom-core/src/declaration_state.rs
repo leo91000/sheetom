@@ -834,6 +834,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "rule-style"
             | "rule-width"
             | "scroll-timeline"
+            | "text-emphasis"
             | "text-box"
             | "text-decoration"
             | "-webkit-text-stroke"
@@ -1598,6 +1599,38 @@ mod tests {
             let mut reparsed = DeclarationState::new();
             reparsed.replace_css_text(&serialized);
             assert_eq!(reparsed.serialize_safe(), serialized, "{input}");
+        }
+    }
+
+    #[test]
+    fn text_emphasis_retains_authored_defaults_and_omitted_longhands() {
+        for (input, shorthand, style, color) in [
+            ("dot filled red", "filled dot red", "filled dot", "red"),
+            ("red none", "none red", "none", "red"),
+            ("filled sesame", "filled sesame", "filled sesame", "initial"),
+            ("red", "red", "initial", "red"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("text-emphasis", input, ""),
+                MutationOutcome::Applied,
+                "{input} should expand"
+            );
+            assert_eq!(
+                state.get_property_value("text-emphasis"),
+                shorthand,
+                "{input}"
+            );
+            assert_eq!(
+                state.get_property_value("text-emphasis-style"),
+                style,
+                "{input}"
+            );
+            assert_eq!(
+                state.get_property_value("text-emphasis-color"),
+                color,
+                "{input}"
+            );
         }
     }
 
