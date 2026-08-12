@@ -5,5 +5,7 @@ interface PackageManifestLike {
 
 export function hasReleaseVersionChange(
   currentManifest: PackageManifestLike,
-  previousManifest: PackageManifestLike,
+  previousManifest: PackageManifestLike | null,
 ): boolean;
+
+export function latestVersionTag(revision: string): string | null;

@@ -19,23 +19,47 @@ function packageVersion(manifest, label) {
   return version;
 }
 
+/**
+ * @param {{ version?: unknown }} currentManifest
+ * @param {{ version?: unknown } | null} previousManifest
+ */
 export function hasReleaseVersionChange(currentManifest, previousManifest) {
+  if (previousManifest === null) return true;
   return packageVersion(currentManifest, "Current") !==
     packageVersion(previousManifest, "Previous");
 }
 
+export function latestVersionTag(revision) {
+  try {
+    return execFileSync(
+      "git",
+      ["describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", revision],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    ).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   const currentRevision = process.env.SHEETOM_RELEASE_CURRENT_REF ?? "HEAD";
-  const previousRevision = process.env.SHEETOM_RELEASE_PREVIOUS_REF ?? `${currentRevision}^`;
+  const previousRevision = process.env.SHEETOM_RELEASE_PREVIOUS_REF ??
+    latestVersionTag(currentRevision);
   const currentManifest = manifestAtRevision(currentRevision);
-  const previousManifest = manifestAtRevision(previousRevision);
+  const previousManifest = previousRevision === null
+    ? null
+    : manifestAtRevision(previousRevision);
   const changed = hasReleaseVersionChange(currentManifest, previousManifest);
   const currentVersion = packageVersion(currentManifest, "Current");
-  const previousVersion = packageVersion(previousManifest, "Previous");
+  const previousVersion = previousManifest === null
+    ? null
+    : packageVersion(previousManifest, "Previous");
 
   console.log(
     changed
-      ? `Release version changed from ${previousVersion} to ${currentVersion}.`
+      ? previousVersion === null
+        ? `No prior version tag exists; ${currentVersion} is eligible for its first publication.`
+        : `Release version changed from tagged ${previousVersion} to ${currentVersion}.`
       : `Package version remains ${currentVersion}; publication is not eligible.`,
   );
   if (process.env.GITHUB_OUTPUT) {

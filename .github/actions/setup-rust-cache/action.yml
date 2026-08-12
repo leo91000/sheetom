@@ -16,13 +16,21 @@ runs:
         key: sheetom-sccache-v1-${{ inputs.cache-key }}-${{ hashFiles('Cargo.lock') }}
 
     - name: Install sccache
+      id: sccache
       uses: mozilla-actions/sccache-action@v0.0.11
+      continue-on-error: true
       with:
         version: v0.16.0
 
     - name: Use the exact cached compiler wrapper
+      if: steps.sccache.outcome == 'success'
       shell: bash
       run: |
         echo "RUSTC_WRAPPER=$SCCACHE_PATH" >> "$GITHUB_ENV"
         echo "SCCACHE_DIR=$RUNNER_TEMP/sheetom-sccache" >> "$GITHUB_ENV"
         echo "SCCACHE_CACHE_SIZE=2G" >> "$GITHUB_ENV"
+
+    - name: Continue without the optional compiler cache
+      if: steps.sccache.outcome != 'success'
+      shell: bash
+      run: echo "::warning::sccache is unavailable; compiling directly"
