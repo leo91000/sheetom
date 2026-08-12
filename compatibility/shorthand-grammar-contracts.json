@@ -74,8 +74,12 @@
     { "codec": "container", "cases": [
       { "id": "grammar.container.name", "branch": "name", "property": "container", "input": "card", "accepted": true },
       { "id": "grammar.container.slash-type", "branch": "name and type", "property": "container", "input": "card / inline-size", "accepted": true },
+      { "id": "grammar.container.size-scroll-state", "branch": "size and scroll state type", "property": "container", "input": "card / size scroll-state", "accepted": true },
+      { "id": "grammar.container.reordered-scroll-state", "branch": "unordered type components", "property": "container", "input": "card / scroll-state inline-size", "accepted": true },
       { "id": "grammar.container.normal", "branch": "none name", "property": "container", "input": "none / normal", "accepted": true },
-      { "id": "grammar.container.extra-slash-invalid", "branch": "too many slash sections", "property": "container", "input": "card / size / inline-size", "accepted": false, "preserves": "grammar.container.slash-type" }
+      { "id": "grammar.container.extra-slash-invalid", "branch": "too many slash sections", "property": "container", "input": "card / size / inline-size", "accepted": false, "preserves": "grammar.container.slash-type" },
+      { "id": "grammar.container.normal-scroll-state-invalid", "branch": "normal cannot combine", "property": "container", "input": "card / normal scroll-state", "accepted": false, "preserves": "grammar.container.size-scroll-state" },
+      { "id": "grammar.container.conflicting-size-invalid", "branch": "size modes cannot combine", "property": "container", "input": "card / size inline-size", "accepted": false, "preserves": "grammar.container.reordered-scroll-state" }
     ] },
     { "codec": "flex", "cases": [
       { "id": "grammar.flex.grow", "branch": "grow factor", "property": "flex", "input": "2", "accepted": true },

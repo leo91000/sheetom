@@ -117,6 +117,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "compound container type in shorthand",
+        source: "container: card / scroll-state inline-size",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
