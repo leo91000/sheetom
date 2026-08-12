@@ -24,6 +24,14 @@ export function assessReleaseChannels(
   version: string,
 ): { ready: boolean; reasons: string[] };
 
+export function assessImplementationPackageChannels(
+  packageMetadata: {
+    "dist-tags"?: Record<string, string>;
+    versions?: Record<string, { deprecated?: string }>;
+  },
+  version: string,
+): { ready: boolean; reasons: string[] };
+
 export function waitForDistTag(
   name: string,
   tag: string,

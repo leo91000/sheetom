@@ -95,6 +95,8 @@ const isBrowserPath = filePath =>
 const isPackagePath = filePath =>
     filePath.startsWith("src/") ||
     filePath === "scripts/verify-release.mjs" ||
+    filePath.startsWith("scripts/release-artifact-") ||
+    filePath.startsWith("scripts/write-release-artifact-") ||
     filePath.startsWith("scripts/test-package") ||
     filePath.startsWith("scripts/test-tarball") ||
     filePath.startsWith("packages/native-") ||

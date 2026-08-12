@@ -6,6 +6,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { assertRootTarballHasNoNativeAddon } from "./native-artifact-contract.mjs";
+import {
+  RELEASE_MANIFEST_FILENAME,
+  verifyReleaseArtifactSet,
+} from "./release-artifact-set.mjs";
 
 const registryOrigin = "https://registry.npmjs.org";
 
@@ -97,6 +101,29 @@ export function assessReleaseChannels(packageMetadata, version) {
   return { ready: reasons.length === 0, reasons };
 }
 
+export function assessImplementationPackageChannels(packageMetadata, version) {
+  const distTags = packageMetadata["dist-tags"] ?? {};
+  const versions = packageMetadata.versions ?? {};
+  const prerelease = version.includes("-");
+  const reasons = [];
+
+  if (prerelease) {
+    if (distTags.next !== version) reasons.push(`next must point to active prerelease ${version}`);
+  } else {
+    if (distTags.latest !== version) reasons.push(`latest must point to active stable release ${version}`);
+    if (distTags.next !== undefined) reasons.push("next must be removed when publishing a stable release");
+  }
+
+  for (const [candidate, metadata] of Object.entries(versions)) {
+    if (!candidate.includes("-") || candidate === version) continue;
+    if (!metadata?.deprecated) {
+      reasons.push(`superseded prerelease ${candidate} must be deprecated`);
+    }
+  }
+
+  return { ready: reasons.length === 0, reasons };
+}
+
 function run(command, arguments_, options = {}) {
   return execFileSync(command, arguments_, {
     encoding: "utf8",
@@ -167,6 +194,13 @@ async function readDistTags(name) {
   return document["dist-tags"] ?? {};
 }
 
+async function reportPendingReleaseAction(heading, message) {
+  console.log(message);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `## ${heading}\n\n${message}\n`);
+  }
+}
+
 async function reportPendingChannelReconciliation(name, version, reasons) {
   const lines = [
     `Release ${name}@${version} is published, but npm channel reconciliation is pending:`,
@@ -174,13 +208,7 @@ async function reportPendingChannelReconciliation(name, version, reasons) {
     "Authenticate with npm on the web, reconcile the channels and deprecations, then rerun the Release workflow.",
   ];
   const message = lines.join("\n");
-  console.log(message);
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    await appendFile(
-      process.env.GITHUB_STEP_SUMMARY,
-      `## npm channel reconciliation required\n\n${message}\n`,
-    );
-  }
+  await reportPendingReleaseAction("npm channel reconciliation required", message);
 }
 
 export async function waitForDistTag(
@@ -225,16 +253,18 @@ async function assertSameFile(expected, actual, label) {
   throw new Error(`${label} downloaded from GitHub does not match the local release input`);
 }
 
-async function verifyReleaseAssets(tag, tarball, report, temporaryRoot) {
+async function verifyReleaseAssets(tag, artifacts, report, temporaryRoot) {
   const downloadDirectory = path.join(temporaryRoot, "github-release");
   await rm(downloadDirectory, { recursive: true, force: true });
   await mkdir(downloadDirectory);
   runInherited("gh", ["release", "download", tag, "--dir", downloadDirectory]);
-  await assertSameFile(
-    tarball,
-    path.join(downloadDirectory, path.basename(tarball)),
-    "Package tarball",
-  );
+  for (const artifact of artifacts) {
+    await assertSameFile(
+      artifact,
+      path.join(downloadDirectory, path.basename(artifact)),
+      `Release asset ${path.basename(artifact)}`,
+    );
+  }
   await assertSameFile(
     report,
     path.join(downloadDirectory, path.basename(report)),
@@ -242,12 +272,12 @@ async function verifyReleaseAssets(tag, tarball, report, temporaryRoot) {
   );
 }
 
-function createDraftRelease({ tag, version, sha, notes, tarball, report, prerelease }) {
+function createDraftRelease({ tag, version, sha, notes, artifacts, report, prerelease }) {
   const arguments_ = [
     "release",
     "create",
     tag,
-    `${tarball}#npm package tarball`,
+    ...artifacts,
     `${report}#Compatibility Report`,
     "--target",
     sha,
@@ -262,8 +292,94 @@ function createDraftRelease({ tag, version, sha, notes, tarball, report, prerele
   runInherited("gh", arguments_);
 }
 
+async function releaseArtifactInput(input, rootManifest, temporaryRoot) {
+  if (!input) {
+    const generatedPack = parsePackResult(run("npm", [
+      "pack",
+      "--json",
+      "--pack-destination",
+      temporaryRoot,
+    ]));
+    const tarball = path.join(temporaryRoot, generatedPack.filename);
+    return {
+      legacy: true,
+      packages: [{
+        name: rootManifest.name,
+        version: rootManifest.version,
+        role: "root",
+        filename: generatedPack.filename,
+        integrity: generatedPack.integrity,
+        size: generatedPack.size,
+        tarball,
+      }],
+      assets: [tarball],
+    };
+  }
+
+  const resolved = path.resolve(input);
+  if ((await stat(resolved)).isFile()) {
+    const pack = await packMetadataForTarball(resolved);
+    return {
+      legacy: true,
+      packages: [{
+        name: rootManifest.name,
+        version: rootManifest.version,
+        role: "root",
+        ...pack,
+        tarball: resolved,
+      }],
+      assets: [resolved],
+    };
+  }
+
+  const manifest = await verifyReleaseArtifactSet(resolved, rootManifest);
+  const packages = manifest.packages.map(artifact => ({
+    ...artifact,
+    tarball: path.join(resolved, artifact.filename),
+  }));
+  return {
+    legacy: false,
+    packages,
+    assets: [
+      ...packages.map(artifact => artifact.tarball),
+      path.join(resolved, RELEASE_MANIFEST_FILENAME),
+    ],
+  };
+}
+
+async function publishPackageArtifact(artifact, npmTag, dryRun) {
+  let published = await readPublishedVersion(artifact.name, artifact.version);
+  if (published && published.dist?.integrity !== artifact.integrity) {
+    throw new Error(
+      `npm already serves ${artifact.name}@${artifact.version} with a different integrity`,
+    );
+  }
+  if (!published && dryRun) return null;
+  if (!published) {
+    runInherited("npm", [
+      "publish",
+      artifact.tarball,
+      "--tag",
+      npmTag,
+      "--access",
+      "public",
+    ]);
+    published = await waitForPublishedVersion(
+      artifact.name,
+      artifact.version,
+      artifact.integrity,
+    );
+  }
+  if (published.dist?.integrity !== artifact.integrity) {
+    throw new Error(`Published integrity mismatch for ${artifact.name}@${artifact.version}`);
+  }
+  await waitForDistTag(artifact.name, npmTag, artifact.version);
+  return published;
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
+  const bootstrapImplementations = process.env.SHEETOM_BOOTSTRAP_IMPLEMENTATIONS === "1";
   const manifest = JSON.parse(await readFile("package.json", "utf8"));
   const version = manifest.version;
   const tag = `v${version}`;
@@ -276,32 +392,20 @@ async function main() {
   const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-release-"));
 
   try {
-    const suppliedTarball = process.env.SHEETOM_RELEASE_TARBALL;
-    const generatedPack = suppliedTarball
-      ? null
-      : parsePackResult(run("npm", [
-        "pack",
-        "--json",
-        "--pack-destination",
-        temporaryRoot,
-      ]));
-    const tarball = suppliedTarball
-      ? await resolveSingleTarball(suppliedTarball)
-      : path.join(temporaryRoot, generatedPack.filename);
-    const pack = generatedPack ?? await packMetadataForTarball(tarball);
-    verifyReleaseTarball(tarball, manifest);
+    const suppliedArtifact = process.env.SHEETOM_RELEASE_TARBALL;
+    const artifactSet = await releaseArtifactInput(suppliedArtifact, manifest, temporaryRoot);
+    const rootArtifact = artifactSet.packages.find(artifact => artifact.role === "root");
+    if (!rootArtifact) throw new Error("Release artifact set has no root package");
+    verifyReleaseTarball(rootArtifact.tarball, manifest);
+
     const runtimes = (process.env.SHEETOM_RELEASE_RUNTIMES ?? "node")
       .split(",")
       .filter(Boolean);
     for (const runtime of runtimes) {
-      runInherited(process.execPath, ["scripts/test-tarball.mjs", tarball, runtime]);
-    }
-
-    let published = await readPublishedVersion(manifest.name, version);
-    if (published && published.dist?.integrity !== pack.integrity) {
-      throw new Error(
-        `npm already serves ${manifest.name}@${version} with a different integrity`,
-      );
+      const consumerInput = artifactSet.legacy
+        ? rootArtifact.tarball
+        : path.resolve(suppliedArtifact);
+      runInherited(process.execPath, ["scripts/test-tarball.mjs", consumerInput, runtime]);
     }
 
     let release = readRelease(tag);
@@ -312,7 +416,7 @@ async function main() {
         version,
         sha,
         notes,
-        tarball,
+        artifacts: artifactSet.assets,
         report,
         prerelease,
       });
@@ -323,48 +427,96 @@ async function main() {
       throw new Error(`GitHub Release ${tag} does not target ${sha}`);
     }
     if (release) {
-      await verifyReleaseAssets(tag, tarball, report, temporaryRoot);
+      await verifyReleaseAssets(tag, artifactSet.assets, report, temporaryRoot);
     }
 
-    if (!published && dryRun) {
-      console.log(`Dry run verified ${manifest.name}@${version}; publishing was skipped.`);
-      return;
-    }
-    if (!published) {
-      if (!release?.isDraft) {
-        throw new Error("A verified draft GitHub Release is required before npm publication");
-      }
-      runInherited("npm", [
-        "publish",
-        tarball,
-        "--tag",
-        npmTag,
-        "--access",
-        "public",
-      ]);
-      published = await waitForPublishedVersion(manifest.name, version, pack.integrity);
-    }
-
-    if (published.dist?.integrity !== pack.integrity) {
-      throw new Error(`Published integrity mismatch for ${manifest.name}@${version}`);
-    }
-    await waitForDistTag(manifest.name, npmTag, version);
-    const packageMetadata = await readPackageMetadata(manifest.name);
-    const channelAssessment = assessReleaseChannels(packageMetadata, version);
-    if (!channelAssessment.ready) {
-      if (!release?.isDraft) {
-        throw new Error(
-          `Published GitHub Release ${tag} has invalid npm channels: ` +
-            channelAssessment.reasons.join("; "),
-        );
-      }
-      await reportPendingChannelReconciliation(
-        manifest.name,
-        version,
-        channelAssessment.reasons,
+    if (dryRun) {
+      console.log(
+        `Dry run verified ${artifactSet.packages.length} package artifacts for ${version}; ` +
+          "publishing was skipped.",
       );
       return;
     }
+
+    if (!release?.isDraft) {
+      for (const artifact of artifactSet.packages) {
+        const published = await readPublishedVersion(artifact.name, artifact.version);
+        if (published?.dist?.integrity !== artifact.integrity) {
+          throw new Error(
+            `Published GitHub Release ${tag} does not match ${artifact.name}@${artifact.version}`,
+          );
+        }
+      }
+    }
+
+    const implementationArtifacts = artifactSet.packages.filter(
+      artifact => artifact.role !== "root",
+    );
+    const unpublishedImplementations = [];
+    for (const artifact of implementationArtifacts) {
+      const published = await readPublishedVersion(artifact.name, artifact.version);
+      if (!published) unpublishedImplementations.push(artifact);
+      if (published && published.dist?.integrity !== artifact.integrity) {
+        throw new Error(
+          `npm already serves ${artifact.name}@${artifact.version} with a different integrity`,
+        );
+      }
+    }
+
+    if (unpublishedImplementations.length > 0 && !bootstrapImplementations) {
+      if (!release?.isDraft) {
+        throw new Error(
+          `Published GitHub Release ${tag} is missing implementation packages`,
+        );
+      }
+      await reportPendingReleaseAction(
+        "npm implementation-package bootstrap required",
+        `Release ${version} requires the first authenticated publication of:\n` +
+          unpublishedImplementations.map(artifact => `- ${artifact.name}`).join("\n") +
+          "\nRun the release script with SHEETOM_BOOTSTRAP_IMPLEMENTATIONS=1 against " +
+          "this exact artifact set, configure Trusted Publishing, then rerun the workflow.",
+      );
+      return;
+    }
+
+    const artifactsToPublish = bootstrapImplementations
+      ? implementationArtifacts
+      : artifactSet.packages;
+    for (const artifact of artifactsToPublish) {
+      await publishPackageArtifact(artifact, npmTag, false);
+    }
+
+    if (bootstrapImplementations) {
+      await reportPendingReleaseAction(
+        "npm implementation-package bootstrap complete",
+        `Published ${implementationArtifacts.length} implementation packages for ${version}. ` +
+          "Configure their GitHub Actions Trusted Publishers, reconcile npm channels, " +
+          "and rerun the Release workflow to publish the root package.",
+      );
+      return;
+    }
+
+    const channelFailures = [];
+    for (const artifact of artifactSet.packages) {
+      const packageMetadata = await readPackageMetadata(artifact.name);
+      const channelAssessment = artifact.role === "native"
+        ? assessImplementationPackageChannels(packageMetadata, version)
+        : assessReleaseChannels(packageMetadata, version);
+      for (const reason of channelAssessment.reasons) {
+        channelFailures.push(`${artifact.name}: ${reason}`);
+      }
+    }
+    if (channelFailures.length > 0) {
+      if (!release?.isDraft) {
+        throw new Error(
+          `Published GitHub Release ${tag} has invalid npm channels: ` +
+            channelFailures.join("; "),
+        );
+      }
+      await reportPendingChannelReconciliation("SheetOM artifact set", version, channelFailures);
+      return;
+    }
+
     if (release?.isDraft && !dryRun) {
       runInherited("gh", [
         "release",
@@ -382,9 +534,10 @@ async function main() {
     if (release.isDraft || release.isPrerelease !== prerelease) {
       throw new Error(`GitHub Release ${tag} has an unexpected publication state`);
     }
-    await verifyReleaseAssets(tag, tarball, report, temporaryRoot);
+    await verifyReleaseAssets(tag, artifactSet.assets, report, temporaryRoot);
     console.log(
-      `Release automation verified ${manifest.name}@${version} (${npmTag}) and ${tag}.`,
+      `Release automation verified ${artifactSet.packages.length} packages ` +
+        `for ${version} (${npmTag}) and ${tag}.`,
     );
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });

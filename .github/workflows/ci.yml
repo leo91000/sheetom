@@ -186,7 +186,7 @@ jobs:
 
   wasm-quality:
     needs: changes
-    if: needs.changes.outputs.wasm == 'true'
+    if: needs.changes.outputs.wasm == 'true' || needs.changes.outputs.package == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -473,7 +473,7 @@ jobs:
         run: npm run native:build && npm run test:differential
 
   package-artifact:
-    needs: [changes, native-bindings, native-musl-bindings, native-foreign-bindings]
+    needs: [changes, native-bindings, native-musl-bindings, native-foreign-bindings, wasm-quality]
     if: needs.changes.outputs.package == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -506,11 +506,19 @@ jobs:
       - name: Collect the complete native binding set
         run: npm run native:collect -- native-artifacts
 
+      - name: Download the tested WebAssembly package
+        uses: actions/download-artifact@v8
+        with:
+          name: sheetom-wasm-package
+          path: wasm-package
+
       - name: Build package artifact
         run: |
           mkdir package-artifact
           node scripts/pack-native-packages.mjs package-artifact > package-artifact/native-packages.json
+          cp wasm-package/*.tgz package-artifact/
           npm pack --pack-destination package-artifact
+          npm run release:manifest -- package-artifact
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v7

@@ -15,6 +15,7 @@ if (manifest.version === "0.0.0") {
 for (const filename of [
   "crates/sheetom-core/Cargo.toml",
   "crates/sheetom-native/Cargo.toml",
+  "crates/sheetom-wasm/Cargo.toml",
 ]) {
   const source = await readFile(filename, "utf8");
   if (replaceCargoPackageVersion(source, manifest.version) !== source) {

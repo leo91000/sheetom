@@ -125,6 +125,7 @@
     "record:shorthand-grammar": "node scripts/generate-shorthand-grammar-observations.mjs --record",
     "record:webref-property-branches": "node scripts/generate-webref-property-branches.mjs --record",
     "release:verify": "node scripts/verify-release.mjs",
+    "release:manifest": "node scripts/write-release-artifact-manifest.mjs",
     "runtime:check": "node scripts/check-runtime-artifacts.mjs",
     "report:property-values": "node scripts/check-property-value-matrix.mjs --allow-mismatches",
     "report:webref-property-branches": "node scripts/check-webref-property-branches.mjs --allow-mismatches",
