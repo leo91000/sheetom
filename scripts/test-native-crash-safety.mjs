@@ -102,6 +102,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "math depth nested integer calculation",
+        source: "math-depth: add(calc(round(down, pow(2, 8) / 3, 1)))",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

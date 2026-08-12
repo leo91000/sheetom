@@ -50,6 +50,7 @@ pub enum BrowserLonghandValue {
     FontVariantAlternates(FontVariantAlternatesValue),
     FontVariantKeywords(Vec<&'static str>),
     FontVariationSettings(Option<Vec<FontVariationSetting>>),
+    MathDepth(MathDepthValue),
     InitialLetter(InitialLetterValue),
     PositionTryFallbacks(Option<Vec<PositionTryFallback>>),
     TextBoxEdge(TextBoxEdgeValue),
@@ -223,6 +224,15 @@ pub struct TextFitValue {
 pub struct InitialLetterValue {
     size: InitialLetterNumber,
     sink: Option<InitialLetterSink>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum MathDepthValue {
+    AutoAdd,
+    Add {
+        value: CSSNumber,
+        authored_calculation: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -469,6 +479,7 @@ impl BrowserLonghandValue {
                 }
                 Ok(output.join(", "))
             }
+            BrowserLonghandValue::MathDepth(value) => value.canonical_value(),
             BrowserLonghandValue::InitialLetter(value) => value.canonical_value(),
             BrowserLonghandValue::PositionTryFallbacks(None) => Ok("none".to_owned()),
             BrowserLonghandValue::PositionTryFallbacks(Some(values)) => {
@@ -889,6 +900,24 @@ impl InitialLetterNumber {
     }
 }
 
+impl MathDepthValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            MathDepthValue::AutoAdd => Ok("auto-add".to_owned()),
+            MathDepthValue::Add {
+                value,
+                authored_calculation,
+            } => {
+                let serialized = serialize_typed(value)?;
+                if *authored_calculation && value.is_finite() {
+                    return Ok(format!("add(calc({serialized}))"));
+                }
+                Ok(format!("add({serialized})"))
+            }
+        }
+    }
+}
+
 impl InitialLetterValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         let mut output = self.size.canonical_value()?;
@@ -1072,19 +1101,59 @@ pub(crate) fn parse_browser_fallback(
     property_name: &str,
     source: &str,
 ) -> Result<Option<BrowserLonghandValue>, EngineError> {
+    if property_name == "math-depth" {
+        return parse_math_depth(source).map(Some);
+    }
     if property_name == "initial-letter" {
         return parse_initial_letter(source).map(Some);
     }
     let accepted: &'static [&'static str] = match property_name {
+        "baseline-shift" => &["sub", "super"],
         "box-shadow" | "text-shadow" => &["none"],
+        "font-size" => &["math"],
         "font-palette" | "zoom" => &["normal"],
         "hyphenate-limit-chars" | "resize" | "rx" | "ry" => &["auto"],
+        "text-transform" => &["math-auto"],
         "-webkit-line-clamp" => &["none"],
         _ => return Ok(None),
     };
     parse_keyword(source, accepted)
         .map(BrowserLonghandValue::Keyword)
         .map(Some)
+}
+
+fn parse_math_depth(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("auto-add"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::MathDepth(MathDepthValue::AutoAdd));
+        }
+
+        input.expect_function_matching("add")?;
+        input.parse_nested_block(|input| {
+            let state = input.state();
+            let first_token = input.next()?.clone();
+            let authored_calculation = matches!(first_token, Token::Function(_));
+            let authored_integer = matches!(
+                first_token,
+                Token::Number {
+                    int_value: Some(_),
+                    ..
+                }
+            );
+            input.reset(&state);
+            let value = CSSNumber::parse(input)?;
+            if !authored_calculation && !authored_integer {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            Ok(BrowserLonghandValue::MathDepth(MathDepthValue::Add {
+                value,
+                authored_calculation,
+            }))
+        })
+    })
 }
 
 fn parse_initial_letter(source: &str) -> Result<BrowserLonghandValue, EngineError> {
@@ -3596,6 +3665,48 @@ mod tests {
         }
         assert!(canonical("column-wrap", "balance").is_err());
         assert!(canonical("overscroll-behavior-x", "normal").is_err());
+    }
+
+    #[test]
+    fn parses_complete_math_layout_fallbacks() {
+        for (property, source, expected) in [
+            ("font-size", "MATH", "math"),
+            ("baseline-shift", "SUB", "sub"),
+            ("baseline-shift", "super", "super"),
+            ("text-transform", "MATH-AUTO", "math-auto"),
+            ("math-depth", "AUTO-ADD", "auto-add"),
+            ("math-depth", "add(+1)", "add(1)"),
+            ("math-depth", "add(calc(1 + 1))", "add(calc(2))"),
+            ("math-depth", "add(min(1, 2))", "add(calc(1))"),
+            ("math-depth", "add(calc(1.5))", "add(calc(1.5))"),
+            ("math-depth", "add(calc(infinity))", "add(calc(infinity))"),
+            ("math-depth", "add(calc(NaN))", "add(calc(NaN))"),
+        ] {
+            let actual = parse_browser_fallback(property, source)
+                .and_then(|value| {
+                    value.ok_or_else(|| EngineError::Parse("missing fallback".to_owned()))
+                })
+                .and_then(|value| value.canonical_value());
+            assert_eq!(
+                actual.as_deref(),
+                Ok(expected),
+                "{property}: {source}: {actual:?}"
+            );
+        }
+
+        for (property, source) in [
+            ("font-size", "math extra"),
+            ("baseline-shift", "sub super"),
+            ("text-transform", "math-auto uppercase"),
+            ("math-depth", "add(1.0)"),
+            ("math-depth", "add(1) extra"),
+            ("math-depth", "add()"),
+        ] {
+            assert!(
+                parse_browser_fallback(property, source).is_err(),
+                "{property}: {source}"
+            );
+        }
     }
 
     #[test]

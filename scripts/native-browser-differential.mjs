@@ -208,6 +208,30 @@ const cases = [
         probes: ["contain-intrinsic-size", "contain-intrinsic-width", "contain-intrinsic-height"],
     },
     {
+        id: "math-layout-new-keywords",
+        operations: [
+            ["set", "font-size", "MATH", ""],
+            ["set", "baseline-shift", "SUPER", "important"],
+            ["set", "text-transform", "MATH-AUTO", ""],
+        ],
+        probes: ["font-size", "baseline-shift", "text-transform"],
+    },
+    {
+        id: "math-depth-calculation-canonicalization",
+        operations: [["set", "math-depth", "add(min(1, 2))", "important"]],
+        probes: ["math-depth"],
+    },
+    {
+        id: "invalid-math-layout-is-atomic",
+        operations: [
+            ["set", "math-depth", "add(calc(1 + 1))", "important"],
+            ["set", "math-depth", "add(1.0)", ""],
+            ["set", "text-transform", "uppercase", "important"],
+            ["set", "text-transform", "math-auto uppercase", ""],
+        ],
+        probes: ["math-depth", "text-transform"],
+    },
+    {
         id: "invalid-text-fit-is-atomic",
         operations: [
             ["set", "text-fit", "shrink consistent 10%", "important"],
