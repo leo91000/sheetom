@@ -17,8 +17,9 @@ use crate::{compat, macros::*};
 use crate::{
   traits::FallbackValues,
   values::{
+    calc::Calc,
     length::*,
-    percentage::{NumberOrPercentage, Percentage},
+    percentage::Percentage,
   },
 };
 use cssparser::*;
@@ -143,7 +144,7 @@ impl IsCompatible for BorderImageSideWidth {
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub struct BorderImageSlice {
   /// The offsets from the edges of the image.
-  pub offsets: Rect<NumberOrPercentage>,
+  pub offsets: Rect<BorderImageSliceValue>,
   /// Whether the middle of the border image should be preserved.
   pub fill: bool,
 }
@@ -151,7 +152,7 @@ pub struct BorderImageSlice {
 impl Default for BorderImageSlice {
   fn default() -> BorderImageSlice {
     BorderImageSlice {
-      offsets: Rect::all(NumberOrPercentage::Percentage(Percentage(1.0))),
+      offsets: Rect::all(BorderImageSliceValue::Percentage(Percentage(1.0))),
       fill: false,
     }
   }
@@ -160,11 +161,80 @@ impl Default for BorderImageSlice {
 impl<'i> Parse<'i> for BorderImageSlice {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     let mut fill = input.try_parse(|i| i.expect_ident_matching("fill")).is_ok();
-    let offsets = Rect::parse(input)?;
+    let offsets = Rect::parse_with(input, parse_non_negative_slice)?;
     if !fill {
       fill = input.try_parse(|i| i.expect_ident_matching("fill")).is_ok();
     }
     Ok(BorderImageSlice { offsets, fill })
+  }
+}
+
+/// A non-negative number or percentage in a border image slice.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum BorderImageSliceValue {
+  /// A direct number.
+  Number(CSSNumber),
+  /// A direct percentage.
+  Percentage(Percentage),
+  /// A calculation parsed in a percentage context.
+  PercentageCalculation(Box<Calc<Percentage>>),
+  /// A context-dependent calculation that resolves to a number.
+  #[cfg_attr(feature = "visitor", skip_type)]
+  NumberCalculation(Box<Calc<PreservedLengthPercentage>>),
+}
+
+fn parse_non_negative_slice<'i, 't>(
+  input: &mut Parser<'i, 't>,
+) -> Result<BorderImageSliceValue, ParseError<'i, ParserError<'i>>> {
+  let location = input.current_source_location();
+  let state = input.state();
+  let direct_negative = match input.next() {
+    Ok(Token::Number { value, .. }) => *value < 0.0,
+    Ok(Token::Percentage { unit_value, .. }) => *unit_value < 0.0,
+    _ => false,
+  };
+  input.reset(&state);
+  if direct_negative {
+    return Err(location.new_custom_error(ParserError::InvalidValue));
+  }
+  if let Ok(number) = input.try_parse(|input| input.expect_number()) {
+    return Ok(BorderImageSliceValue::Number(number));
+  }
+  if let Ok(percentage) = input.try_parse(Percentage::parse) {
+    return Ok(BorderImageSliceValue::Percentage(percentage));
+  }
+  if let Ok(calculation) = input.try_parse(Calc::<Percentage>::parse) {
+    if calculation.resolves_to_dimension() || calculation.resolves_to_number() {
+      return Ok(BorderImageSliceValue::PercentageCalculation(Box::new(calculation)));
+    }
+    return Err(location.new_custom_error(ParserError::InvalidValue));
+  }
+  let calculation = Calc::<PreservedLengthPercentage>::parse(input)?;
+  if !calculation.resolves_to_number() {
+    return Err(location.new_custom_error(ParserError::InvalidValue));
+  }
+  Ok(BorderImageSliceValue::NumberCalculation(Box::new(calculation)))
+}
+
+impl ToCss for BorderImageSliceValue {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      BorderImageSliceValue::Number(value) => value.to_css(dest),
+      BorderImageSliceValue::Percentage(value) => value.to_css(dest),
+      BorderImageSliceValue::PercentageCalculation(value) => value.to_css(dest),
+      BorderImageSliceValue::NumberCalculation(value) => value.to_css(dest),
+    }
   }
 }
 
@@ -585,5 +655,60 @@ fn is_border_image_property(property_id: &PropertyId) -> bool {
     | PropertyId::BorderImageRepeat
     | PropertyId::BorderImage(_) => true,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::{
+    printer::PrinterOptions,
+    properties::{Property, PropertyId},
+    stylesheet::ParserOptions,
+  };
+
+  fn parse(name: &str, source: &str) -> Option<String> {
+    let property = Property::parse_string(
+      PropertyId::from(name),
+      source,
+      ParserOptions::default(),
+    )
+    .ok()?;
+    if matches!(property, Property::Unparsed(_)) {
+      return None;
+    }
+    property.value_to_css_string(PrinterOptions::default()).ok()
+  }
+
+  #[test]
+  fn parses_fill_before_or_after_every_slice_cardinality() {
+    for (source, expected) in [
+      ("fill 1", "1 fill"),
+      ("1 fill", "1 fill"),
+      ("1 1 fill", "1 fill"),
+      ("1 2 1 fill", "1 2 fill"),
+      ("1 2 1 2 fill", "1 2 fill"),
+      ("10% fill", "10% fill"),
+      ("calc(-1) fill", "-1 fill"),
+      ("sign(1em) fill", "sign(1em) fill"),
+      ("calc(2 * sign(1em)) fill", "calc(2 * sign(1em)) fill"),
+      ("min(1%, 2%) fill", "1% fill"),
+    ] {
+      assert_eq!(
+        parse("border-image-slice", source).as_deref(),
+        Some(expected),
+        "{source}"
+      );
+    }
+
+    for source in [
+      "fill",
+      "1 fill fill",
+      "-1 fill",
+      "1 2 3 4 5 fill",
+      "1px fill",
+      "calc(1 + 1%) fill",
+    ] {
+      assert_eq!(parse("border-image-slice", source), None, "{source}");
+    }
   }
 }
