@@ -1059,12 +1059,7 @@ impl ToCss for GridTemplate<'_> {
 }
 
 impl GridTemplate<'_> {
-  fn to_css_with_indent<W>(
-    &self,
-    dest: &mut Printer<W>,
-    indent: u8,
-    multiline: bool,
-  ) -> Result<(), PrinterError>
+  fn to_css_with_indent<W>(&self, dest: &mut Printer<W>, indent: u8, multiline: bool) -> Result<(), PrinterError>
   where
     W: std::fmt::Write,
   {
@@ -1666,18 +1661,17 @@ impl<'i> Parse<'i> for GridLine<'i> {
     }
 
     if input.try_parse(|input| input.expect_ident_matching("span")).is_ok() {
-      // TODO: is calc() supported here??
       let (index, name) = if let Ok(line_number) = input.try_parse(CSSInteger::parse) {
-        let ident = input.try_parse(CustomIdent::parse).ok();
+        let ident = input.try_parse(parse_grid_line_name).ok();
         (line_number, ident)
-      } else if let Ok(ident) = input.try_parse(CustomIdent::parse) {
+      } else if let Ok(ident) = input.try_parse(parse_grid_line_name) {
         let line_number = input.try_parse(CSSInteger::parse).unwrap_or(1);
         (line_number, Some(ident))
       } else {
         return Err(input.new_custom_error(ParserError::InvalidDeclaration));
       };
 
-      if index == 0 {
+      if index < 1 {
         return Err(input.new_custom_error(ParserError::InvalidDeclaration));
       }
 
@@ -1688,17 +1682,39 @@ impl<'i> Parse<'i> for GridLine<'i> {
       if index == 0 {
         return Err(input.new_custom_error(ParserError::InvalidDeclaration));
       }
-      let name = input.try_parse(CustomIdent::parse).ok();
+      let name = input.try_parse(parse_grid_line_name).ok();
+      if input.try_parse(|input| input.expect_ident_matching("span")).is_ok() {
+        if index < 1 {
+          return Err(input.new_custom_error(ParserError::InvalidDeclaration));
+        }
+        return Ok(GridLine::Span { index, name });
+      }
       return Ok(GridLine::Line { index, name });
     }
 
-    let name = CustomIdent::parse(input)?;
+    let name = parse_grid_line_name(input)?;
     if let Ok(index) = input.try_parse(CSSInteger::parse) {
       if index == 0 {
         return Err(input.new_custom_error(ParserError::InvalidDeclaration));
       }
+      if input.try_parse(|input| input.expect_ident_matching("span")).is_ok() {
+        if index < 1 {
+          return Err(input.new_custom_error(ParserError::InvalidDeclaration));
+        }
+        return Ok(GridLine::Span {
+          index,
+          name: Some(name),
+        });
+      }
       return Ok(GridLine::Line {
         index,
+        name: Some(name),
+      });
+    }
+
+    if input.try_parse(|input| input.expect_ident_matching("span")).is_ok() {
+      return Ok(GridLine::Span {
+        index: 1,
         name: Some(name),
       });
     }
@@ -2198,6 +2214,40 @@ mod tests {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     parser.parse_entirely(GridTemplate::parse).unwrap()
+  }
+
+  fn serialize_grid_line(source: &str) -> Option<String> {
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let value = parser.parse_entirely(GridLine::parse).ok()?;
+    value.to_css_string(PrinterOptions::default()).ok()
+  }
+
+  #[test]
+  fn grid_line_span_group_matches_browser_ordering() {
+    for (source, expected) in [
+      ("span 1", "span 1"),
+      ("1 span", "span 1"),
+      ("span foo", "span foo"),
+      ("foo span", "span foo"),
+      ("span 1 foo", "span foo"),
+      ("span foo 1", "span foo"),
+      ("1 foo span", "span foo"),
+      ("foo 1 span", "span foo"),
+    ] {
+      assert_eq!(serialize_grid_line(source).as_deref(), Some(expected), "{source}");
+    }
+    for source in [
+      "span",
+      "1 span foo",
+      "foo span 1",
+      "-1 span",
+      "span -1",
+      "auto 1",
+      "1 auto",
+    ] {
+      assert_eq!(serialize_grid_line(source), None, "{source}");
+    }
   }
 
   #[test]
