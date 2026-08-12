@@ -12,8 +12,8 @@ use sheetom_core::{
     parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree_with_limits,
     parse_rule_tree_with_limits, parse_scope_prelude_with_limits,
     parse_stylesheet_tree_with_limits, scan_top_level_rules_with_limits, serialize_css_identifier,
-    serialize_font_family_setter, DeclarationContext, DeclarationState, MutationOutcome,
-    ResourceLimits, ENGINE_REVISION,
+    serialize_font_family_setter, serialize_parsed_rule_json, serialize_parsed_rules_json,
+    DeclarationContext, DeclarationState, MutationOutcome, ResourceLimits, ENGINE_REVISION,
 };
 
 #[napi]
@@ -231,7 +231,7 @@ pub fn parse_rule_tree_json(
     );
     let parsed = parse_rule_tree_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
-    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+    serialize_parsed_rule_json(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Parses one exact outer rule with browser-style recovery inside its block.
@@ -253,7 +253,7 @@ pub fn parse_recovered_single_rule_tree_json(
     );
     let parsed = parse_recovered_single_rule_tree_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
-    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+    serialize_parsed_rule_json(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Parses exactly one rule with browser-style declaration recovery.
@@ -275,7 +275,7 @@ pub fn parse_recovered_rule_tree_json(
     );
     let parsed = parse_recovered_rule_tree_with_limits(&source, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
-    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+    serialize_parsed_rule_json(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 #[napi]
@@ -477,7 +477,8 @@ pub fn parse_stylesheet_tree_json(
     );
     let parsed = parse_stylesheet_tree_with_limits(&source, error_recovery, limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))?;
-    serde_json::to_string(&parsed).map_err(|error| napi::Error::from_reason(error.to_string()))
+    serialize_parsed_rules_json(&parsed)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
 /// Scans exact top-level CSS rule source without exposing native parser nodes.

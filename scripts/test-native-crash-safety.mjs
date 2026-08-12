@@ -337,6 +337,17 @@ const crashCases = [
         expectError: "SHEETOM_PARSE_ERROR",
     },
     {
+        name: "custom property recovery at the resource boundary",
+        mode: "declaration-state",
+        source: `${"fn(".repeat(4096)}value`,
+    },
+    {
+        name: "public custom property recovery at the resource boundary",
+        source: `--x: ${"fn(".repeat(4095)}value`,
+        public: true,
+        publicOnly: true,
+    },
+    {
         name: "dynamic range mix at the resource limit remains process-safe",
         mode: "dynamic-range-depth",
         nestingDepth: 4096,
@@ -395,6 +406,11 @@ const crashCases = [
         source: `@function --nested() { ${"@supports (display:grid) {".repeat(64)}result: 1;${"}".repeat(64)} }`,
     },
     {
+        name: "custom function conditional nesting at the resource boundary",
+        mode: "recovered-rule",
+        source: `@function --nested() { ${"@media all{".repeat(4094)}result: 1;${"}".repeat(4094)} }`,
+    },
+    {
         name: "single recovered function group keeps native values process-safe",
         mode: "recovered-single-rule",
         source: "@media(width:1px){result:image-set(url(a.png) 1x, url(b.png) 2x);}",
@@ -416,9 +432,24 @@ const crashCases = [
         source: `${"@media all{".repeat(4095)}.x{color:red}${"}".repeat(4095)}`,
     },
     {
+        name: "nested style rule parser at the resource boundary",
+        mode: "recovered-rule",
+        source: `${".x{".repeat(4095)}color:red${"}".repeat(4095)}`,
+    },
+    {
+        name: "stylesheet rule parser at the resource boundary",
+        mode: "rule",
+        source: `${"@media all{".repeat(4095)}.x{color:red}${"}".repeat(4095)}`,
+    },
+    {
         name: "selector normalization",
         mode: "selector",
         source: ':is(.a, [data-value="a;b"], :not(.c)) > .child',
+    },
+    {
+        name: "selector normalization at the resource boundary",
+        mode: "selector",
+        source: `${":is(".repeat(4096)}.x${")".repeat(4096)}`,
     },
     {
         name: "media normalization",
@@ -487,6 +518,11 @@ for (const crashCase of nativeCrashCases) {
         timeout: 15_000,
     });
 
+    assert.equal(
+        child.error,
+        undefined,
+        `${crashCase.name} could not start or complete: ${child.error?.message ?? "unknown spawn error"}`,
+    );
     assert.equal(child.signal, null, `${crashCase.name} terminated with ${child.signal ?? "no signal"}`);
     assert.equal(
         child.status,
@@ -503,6 +539,11 @@ for (const crashCase of publicCrashCases) {
         timeout: 15_000,
     });
 
+    assert.equal(
+        child.error,
+        undefined,
+        `public ${crashCase.name} could not start or complete: ${child.error?.message ?? "unknown spawn error"}`,
+    );
     assert.equal(child.signal, null, `public ${crashCase.name} terminated with ${child.signal ?? "no signal"}`);
     assert.equal(
         child.status,
