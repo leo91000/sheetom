@@ -611,9 +611,7 @@ fn synthesize_background(records: &[&DeclarationRecord], safe: bool) -> Option<S
                 return None;
             }
             components.push(origin.to_owned());
-            if clip != origin {
-                components.push(clip.to_owned());
-            }
+            components.push(clip.to_owned());
         }
         if index + 1 == lists[0].len() && color != "initial" {
             components.push(color.to_owned());
@@ -1739,10 +1737,7 @@ fn observable_shorthand_override(
         return Some(("dense".to_owned(), None));
     }
     if shorthand == "background" {
-        return observable_background_longhand(longhand, input).map(|value| {
-            let value = project_observable_value(longhand, &value).unwrap_or(value);
-            (value, None)
-        });
+        return observable_background_longhand(longhand, input).map(|value| (value, None));
     }
     if matches!(shorthand, "mask" | "-webkit-mask")
         && matches!(
@@ -1783,12 +1778,16 @@ fn grid_uses_auto_flow(input: &str) -> bool {
 fn observable_background_longhand(longhand: &str, input: &str) -> Option<String> {
     let layers = split_top_level_delimiter(input, b',')?;
     if longhand == "background-color" {
-        return observable_background_layer_value(longhand, layers.last()?);
+        let value = observable_background_layer_value(longhand, layers.last()?)?;
+        return Some(project_observable_value(longhand, &value).unwrap_or(value));
     }
     Some(
         layers
             .iter()
-            .map(|layer| observable_background_layer_value(longhand, layer))
+            .map(|layer| {
+                let value = observable_background_layer_value(longhand, layer)?;
+                Some(project_observable_value(longhand, &value).unwrap_or(value))
+            })
             .collect::<Option<Vec<_>>>()?
             .join(", "),
     )
@@ -1834,10 +1833,9 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
         "background-image" => image.unwrap_or("initial").to_owned(),
         "background-position-x" => position_x,
         "background-position-y" => position_y,
-        "background-size" => slash
-            .and_then(|index| components.get(index + 1).copied())
-            .unwrap_or("initial")
-            .to_owned(),
+        "background-size" => {
+            background_layer_size(&components, slash).unwrap_or("initial".to_owned())
+        }
         "background-repeat" => components
             .iter()
             .find(|component| repeats.contains(component))
@@ -1864,6 +1862,18 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
         _ => return None,
     };
     Some(value)
+}
+
+fn background_layer_size(components: &[&str], slash: Option<usize>) -> Option<String> {
+    let start = slash?.checked_add(1)?;
+    let available = components.len().saturating_sub(start).min(2);
+    for count in (1..=available).rev() {
+        let candidate = components.get(start..start + count)?.join(" ");
+        if typed_longhand_value("background-size", &candidate).is_some() {
+            return Some(candidate);
+        }
+    }
+    None
 }
 
 fn position_axis_components(input: &str) -> Option<(String, String)> {
