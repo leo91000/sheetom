@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 941,
+  "mismatchCases": 937,
   "summary": {
-    "acceptance": 80,
+    "acceptance": 76,
     "observable": 592,
     "cssText": 592,
     "items": 478,
@@ -4176,34 +4176,6 @@
     {
       "property": "column-rule-visibility-items",
       "sample": "webref-sample.c2bbfb83739b16ac",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "contain-intrinsic-size",
-      "sample": "webref-sample.2abc5ed14bdd7911",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "contain-intrinsic-size",
-      "sample": "webref-sample.34dfd81c8922bce9",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "contain-intrinsic-size",
-      "sample": "webref-sample.460478aedd95443c",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "contain-intrinsic-size",
-      "sample": "webref-sample.54d1d581d81ae686",
       "kinds": [
         "acceptance"
       ]

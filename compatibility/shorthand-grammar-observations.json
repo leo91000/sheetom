@@ -3672,6 +3672,116 @@
       "cssText": ""
     },
     {
+      "id": "grammar.contain-intrinsic-size.compound-single",
+      "accepted": true,
+      "items": [
+        "contain-intrinsic-width",
+        "contain-intrinsic-height"
+      ],
+      "longhands": [
+        {
+          "name": "contain-intrinsic-width",
+          "value": "auto none",
+          "priority": ""
+        },
+        {
+          "name": "contain-intrinsic-height",
+          "value": "auto none",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "auto none",
+      "priority": "",
+      "cssText": "contain-intrinsic-size: auto none;"
+    },
+    {
+      "id": "grammar.contain-intrinsic-size.compound-pair",
+      "accepted": true,
+      "items": [
+        "contain-intrinsic-width",
+        "contain-intrinsic-height"
+      ],
+      "longhands": [
+        {
+          "name": "contain-intrinsic-width",
+          "value": "auto none",
+          "priority": ""
+        },
+        {
+          "name": "contain-intrinsic-height",
+          "value": "auto 1px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "auto none auto 1px",
+      "priority": "",
+      "cssText": "contain-intrinsic-size: auto none auto 1px;"
+    },
+    {
+      "id": "grammar.contain-intrinsic-size.mixed-pair",
+      "accepted": true,
+      "items": [
+        "contain-intrinsic-width",
+        "contain-intrinsic-height"
+      ],
+      "longhands": [
+        {
+          "name": "contain-intrinsic-width",
+          "value": "10px",
+          "priority": ""
+        },
+        {
+          "name": "contain-intrinsic-height",
+          "value": "auto none",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "10px auto none",
+      "priority": "",
+      "cssText": "contain-intrinsic-size: 10px auto none;"
+    },
+    {
+      "id": "grammar.contain-intrinsic-size.calculated",
+      "accepted": true,
+      "items": [
+        "contain-intrinsic-width",
+        "contain-intrinsic-height"
+      ],
+      "longhands": [
+        {
+          "name": "contain-intrinsic-width",
+          "value": "auto calc(-1px)",
+          "priority": ""
+        },
+        {
+          "name": "contain-intrinsic-height",
+          "value": "20px",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "auto calc(-1px) 20px",
+      "priority": "",
+      "cssText": "contain-intrinsic-size: auto calc(-1px) 20px;"
+    },
+    {
+      "id": "grammar.contain-intrinsic-size.incomplete-auto-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.contain-intrinsic-size.three-axis-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
       "id": "grammar.white-space.alias",
       "accepted": true,
       "items": [

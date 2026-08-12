@@ -16,7 +16,7 @@ function createRule(): CSSStyleRule {
 
 test("every native coverage profile has distinct positive and negative grammar branches", () => {
   const coverageProfiles = new Set(inventory.properties.map(property => property.codec));
-  assert.equal(coverageProfiles.size, 24);
+  assert.equal(coverageProfiles.size, 25);
   assert.deepEqual(
     new Set(contracts.profiles.map(profile => profile.codec)),
     coverageProfiles,

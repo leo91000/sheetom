@@ -190,6 +190,24 @@ const cases = [
         probes: ["white-space", "white-space-collapse", "text-wrap-mode"],
     },
     {
+        id: "contain-intrinsic-size-compound-pair",
+        operations: [["set", "contain-intrinsic-size", "auto none auto 1px", "important"]],
+        probes: ["contain-intrinsic-size", "contain-intrinsic-width", "contain-intrinsic-height"],
+    },
+    {
+        id: "contain-intrinsic-size-mixed-pair",
+        operations: [["set", "contain-intrinsic-size", "10px auto none", ""]],
+        probes: ["contain-intrinsic-size", "contain-intrinsic-width", "contain-intrinsic-height"],
+    },
+    {
+        id: "invalid-contain-intrinsic-size-is-atomic",
+        operations: [
+            ["set", "contain-intrinsic-size", "auto none 10px", "important"],
+            ["set", "contain-intrinsic-size", "10px 20px 30px", ""],
+        ],
+        probes: ["contain-intrinsic-size", "contain-intrinsic-width", "contain-intrinsic-height"],
+    },
+    {
         id: "invalid-text-fit-is-atomic",
         operations: [
             ["set", "text-fit", "shrink consistent 10%", "important"],

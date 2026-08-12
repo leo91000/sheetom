@@ -97,6 +97,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "contain intrinsic compound calculated axes",
+        source: "contain-intrinsic-size: auto calc(sign(1em) * 1px) auto calc(-1px)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

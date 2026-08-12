@@ -796,6 +796,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "column-rule"
             | "border-image"
             | "columns"
+            | "contain-intrinsic-size"
             | "container"
             | "flex"
             | "flex-flow"
@@ -829,6 +830,7 @@ fn prefers_synthesized_safe_provenance(name: &str) -> bool {
     matches!(
         name,
         "border-image"
+            | "contain-intrinsic-size"
             | "font-variant"
             | "flex-flow"
             | "grid-area"
@@ -1763,6 +1765,29 @@ mod tests {
         );
         assert_eq!(state.get_property_value("contain-intrinsic-width"), "none");
         assert_eq!(state.get_property_value("contain-intrinsic-height"), "none");
+    }
+
+    #[test]
+    fn contain_intrinsic_size_synthesizes_equal_compound_axes() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("contain-intrinsic-size", "auto none auto none", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.get_property_value("contain-intrinsic-width"),
+            "auto none"
+        );
+        assert_eq!(
+            state.get_property_value("contain-intrinsic-height"),
+            "auto none"
+        );
+        assert_eq!(
+            state.get_property_value("contain-intrinsic-size"),
+            "auto none",
+            "records: {:?}",
+            state.records
+        );
     }
 
     #[test]

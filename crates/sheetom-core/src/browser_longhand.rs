@@ -113,7 +113,11 @@ pub struct ColumnCountValue {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ContainIntrinsicValue {
     None,
-    Length { auto: bool, value: Option<Length> },
+    Length {
+        auto: bool,
+        value: Option<Length>,
+        authored_calculation: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -918,7 +922,11 @@ impl ContainIntrinsicValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
             ContainIntrinsicValue::None => Ok("none".to_owned()),
-            ContainIntrinsicValue::Length { auto, value } => {
+            ContainIntrinsicValue::Length {
+                auto,
+                value,
+                authored_calculation,
+            } => {
                 let mut output = if *auto {
                     "auto".to_owned()
                 } else {
@@ -928,7 +936,14 @@ impl ContainIntrinsicValue {
                     if !output.is_empty() {
                         output.push(' ');
                     }
-                    output.push_str(&serialize_zero_length(value)?);
+                    let serialized = serialize_zero_length(value)?;
+                    if *authored_calculation && !leading_math_function(&serialized) {
+                        output.push_str("calc(");
+                        output.push_str(&serialized);
+                        output.push(')');
+                    } else {
+                        output.push_str(&serialized);
+                    }
                 } else if !output.is_empty() {
                     output.push_str(" none");
                 }
@@ -2442,17 +2457,25 @@ fn parse_contain_intrinsic(source: &str) -> Result<BrowserLonghandValue, EngineE
                 .is_ok()
         {
             return Ok(BrowserLonghandValue::ContainIntrinsic(
-                ContainIntrinsicValue::Length { auto, value: None },
+                ContainIntrinsicValue::Length {
+                    auto,
+                    value: None,
+                    authored_calculation: false,
+                },
             ));
         }
+        let state = input.state();
+        let authored_calculation = matches!(input.next(), Ok(Token::Function(_)));
+        input.reset(&state);
         let value = parse_strict_length(input)?;
-        if value.try_sign().is_some_and(|sign| sign < 0.0) {
+        if !authored_calculation && value.try_sign().is_some_and(|sign| sign < 0.0) {
             return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
         }
         Ok(BrowserLonghandValue::ContainIntrinsic(
             ContainIntrinsicValue::Length {
                 auto,
                 value: Some(value),
+                authored_calculation,
             },
         ))
     })
@@ -3655,6 +3678,11 @@ mod tests {
             canonical("contain-intrinsic-width", "auto 10px").unwrap(),
             "auto 10px"
         );
+        assert_eq!(
+            canonical("contain-intrinsic-width", "auto calc(-1px)").unwrap(),
+            "auto calc(-1px)"
+        );
+        assert!(canonical("contain-intrinsic-width", "auto -1px").is_err());
         assert_eq!(
             canonical("scroll-timeline-name", "--x,--y").unwrap(),
             "--x, --y"

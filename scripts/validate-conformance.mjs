@@ -719,7 +719,7 @@ validateOrThrow(
   shorthandGrammarObservationsFile,
 );
 const grammarCases = shorthandGrammarContracts.profiles.flatMap(profile => profile.cases);
-assert.equal(new Set(shorthandGrammarContracts.profiles.map(profile => profile.codec)).size, 24);
+assert.equal(new Set(shorthandGrammarContracts.profiles.map(profile => profile.codec)).size, 25);
 assert.equal(new Set(grammarCases.map(grammarCase => grammarCase.id)).size, grammarCases.length);
 assert.deepEqual(
   shorthandGrammarObservations.cases.map(observation => observation.id),
@@ -784,7 +784,7 @@ assert.equal(new Set(inventoryProperties).size, 129);
 const inventoryProfileByCodec = new Map(
   nativeGrammarInventory.profiles.map(profile => [profile.codec, profile]),
 );
-assert.equal(inventoryProfileByCodec.size, 24);
+assert.equal(inventoryProfileByCodec.size, 25);
 for (const profile of shorthandGrammarContracts.profiles) {
   const inventoryProfile = inventoryProfileByCodec.get(profile.codec);
   assert.ok(inventoryProfile, `Missing native grammar profile ${profile.codec}`);
