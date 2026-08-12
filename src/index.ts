@@ -1,4 +1,5 @@
 import type { SheetOMDiagnosticCode } from "./diagnostics.js";
+import type { CSSStyleDeclarationNamedProperties } from "./generated/css-style-declaration-properties.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
 import {
@@ -128,6 +129,10 @@ function constructWithResourceBudget<T>(
   } finally {
     activeConstructionResourceBudget = previous;
   }
+}
+
+function constructWebIDL<T>(constructor: Function, args: readonly unknown[] = []): T {
+  return Reflect.construct(constructor, args) as T;
 }
 
 function currentConstructionResourceBudget(): NativeResourceBudget {
@@ -282,8 +287,7 @@ export class CSSRuleList {
 
   readonly #rules: CSSRule[];
 
-  /** @internal */
-  constructor(rules: CSSRule[]) {
+  private constructor(rules: CSSRule[]) {
     assertInternalConstructor("CSSRuleList");
     this.#rules = rules;
 
@@ -356,7 +360,7 @@ export class MediaList {
   #mediaText: string;
   readonly #resourceBudget: NativeResourceBudget;
 
-  constructor(mediaText = "") {
+  private constructor(mediaText = "") {
     assertInternalConstructor("MediaList");
     this.#resourceBudget = currentConstructionResourceBudget();
     const input = `${mediaText}`.trim();
@@ -592,7 +596,7 @@ export class CSSGroupingRule extends CSSRule {
   protected constructor(type: number) {
     super(type);
     const rules = ruleTree.createChildren(this);
-    this.cssRules = new CSSRuleList(rules);
+    this.cssRules = constructWebIDL<CSSRuleList>(CSSRuleList, [rules]);
     lockOwnProperties(this, "cssRules");
   }
 
@@ -683,7 +687,7 @@ export class CSSFunctionRule extends CSSGroupingRule {
   readonly returnType: string;
   readonly #parameters: readonly FunctionParameter[];
 
-  constructor(
+  private constructor(
     name: string,
     parameters: readonly FunctionParameter[],
     returnType: string,
@@ -740,8 +744,8 @@ function serializeFunctionType(type: string): string {
 export class CSSMediaRule extends CSSConditionRule {
   readonly media: MediaList;
 
-  constructor(conditionText: string) {
-    const media = new MediaList(conditionText);
+  private constructor(conditionText: string) {
+    const media = constructWebIDL<MediaList>(MediaList, [conditionText]);
     super(CSSRule.MEDIA_RULE, media.mediaText);
     this.media = media;
     lockOwnProperties(this, "media");
@@ -760,7 +764,7 @@ export class CSSMediaRule extends CSSConditionRule {
 
 /** A live `@supports` rule. */
 export class CSSSupportsRule extends CSSConditionRule {
-  constructor(conditionText: string) {
+  private constructor(conditionText: string) {
     super(CSSRule.SUPPORTS_RULE, conditionText.trim());
   }
 
@@ -776,7 +780,7 @@ export class CSSContainerRule extends CSSConditionRule {
   readonly containerName: string;
   readonly containerQuery: string;
 
-  constructor(conditionText: string) {
+  private constructor(conditionText: string) {
     const parsed = parseContainerPrelude(
       conditionText,
       currentConstructionResourceBudget(),
@@ -799,7 +803,7 @@ export class CSSContainerRule extends CSSConditionRule {
 export class CSSLayerStatementRule extends CSSRule {
   readonly #names: readonly string[];
 
-  constructor(names: readonly string[]) {
+  private constructor(names: readonly string[]) {
     super(0);
     this.#names = [...names];
   }
@@ -819,7 +823,7 @@ export class CSSLayerStatementRule extends CSSRule {
 export class CSSLayerBlockRule extends CSSGroupingRule {
   readonly name: string;
 
-  constructor(name: string) {
+  private constructor(name: string) {
     super(0);
     this.name = name;
     lockOwnProperties(this, "name");
@@ -837,7 +841,7 @@ export class CSSScopeRule extends CSSGroupingRule {
   readonly start: string | null;
   readonly end: string | null;
 
-  constructor(
+  private constructor(
     start: string | null,
     end: string | null,
   ) {
@@ -858,7 +862,7 @@ export class CSSScopeRule extends CSSGroupingRule {
 
 /** A live `@starting-style` rule. */
 export class CSSStartingStyleRule extends CSSGroupingRule {
-  constructor() {
+  private constructor() {
     super(0);
   }
 
@@ -877,7 +881,7 @@ export class CSSImportRule extends CSSRule {
   readonly supportsText: string | null;
   readonly #rawHref: string;
 
-  constructor(
+  private constructor(
     href: string,
     mediaText = "",
     layerName: string | null = null,
@@ -885,7 +889,7 @@ export class CSSImportRule extends CSSRule {
   ) {
     super(CSSRule.IMPORT_RULE);
     this.#rawHref = href;
-    this.media = new MediaList(mediaText);
+    this.media = constructWebIDL<MediaList>(MediaList, [mediaText]);
     this.layerName = layerName;
     this.supportsText = supportsText;
     lockOwnProperties(this, "media", "styleSheet", "layerName", "supportsText");
@@ -924,7 +928,7 @@ export class CSSNamespaceRule extends CSSRule {
   readonly prefix: string;
   readonly #cssText: string;
 
-  constructor(
+  private constructor(
     namespaceURI: string,
     prefix: string,
     cssText: string,
@@ -971,7 +975,7 @@ export class CSSPropertyRule extends CSSRule {
   readonly initialValue: string;
   readonly #cssText: string;
 
-  constructor(
+  private constructor(
     name: string,
     syntax: string,
     inherits: boolean,
@@ -999,7 +1003,7 @@ export class CSSFontPaletteValuesRule extends CSSRule {
   readonly overrideColors: string;
   readonly #cssText: string;
 
-  constructor(
+  private constructor(
     name: string,
     fontFamily: string,
     basePalette: string,
@@ -1028,7 +1032,7 @@ export class CSSViewTransitionRule extends CSSRule {
   readonly types: readonly string[];
   readonly #cssText: string;
 
-  constructor(
+  private constructor(
     navigation: string,
     types: readonly string[],
     cssText: string,
@@ -1048,13 +1052,14 @@ export class CSSViewTransitionRule extends CSSRule {
 }
 
 /** A live declaration block with indexed, named, and method-based access. */
+export interface CSSStyleDeclaration extends CSSStyleDeclarationNamedProperties {}
 export class CSSStyleDeclaration {
   readonly [index: number]: string | undefined;
 
   readonly parentRule: CSSRule;
   readonly #block: NativeDeclarationBlock;
 
-  constructor(parentRule: CSSRule) {
+  protected constructor(parentRule: CSSRule) {
     assertInternalConstructor("CSSStyleDeclaration");
     this.parentRule = parentRule;
     lockOwnProperties(this, "parentRule");
@@ -1165,9 +1170,9 @@ export class CSSStyleDeclaration {
 export class CSSFontFaceRule extends CSSRule {
   readonly style: CSSStyleDeclaration;
 
-  constructor() {
+  private constructor() {
     super(CSSRule.FONT_FACE_RULE);
-    this.style = new CSSStyleDeclaration(this);
+    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "style");
   }
 
@@ -1182,9 +1187,9 @@ export class CSSFontFaceRule extends CSSRule {
 export class CSSNestedDeclarations extends CSSRule {
   readonly #style: CSSStyleDeclaration;
 
-  constructor() {
+  private constructor() {
     super(0);
-    this.#style = new CSSStyleDeclaration(this);
+    this.#style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
   }
 
   get style(): CSSStyleDeclaration {
@@ -1206,9 +1211,9 @@ export class CSSNestedDeclarations extends CSSRule {
 export class CSSFunctionDeclarations extends CSSRule {
   readonly #style: CSSFunctionDescriptors;
 
-  constructor() {
+  private constructor() {
     super(0);
-    this.#style = new CSSFunctionDescriptors(this);
+    this.#style = constructWebIDL<CSSFunctionDescriptors>(CSSFunctionDescriptors, [this]);
   }
 
   get style(): CSSFunctionDescriptors {
@@ -1240,10 +1245,10 @@ export class CSSMarginRule extends CSSRule {
   readonly name: string;
   readonly style: CSSStyleDeclaration;
 
-  constructor(name: string) {
+  private constructor(name: string) {
     super(CSSRule.MARGIN_RULE);
     this.name = name;
-    this.style = new CSSStyleDeclaration(this);
+    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "name", "style");
   }
 
@@ -1259,10 +1264,10 @@ export class CSSPageRule extends CSSGroupingRule {
   readonly style: CSSStyleDeclaration;
   #selectorText: string;
 
-  constructor(selectorText: string) {
+  private constructor(selectorText: string) {
     super(CSSRule.PAGE_RULE);
     this.#selectorText = selectorText;
-    this.style = new CSSStyleDeclaration(this);
+    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "style");
   }
 
@@ -1290,10 +1295,10 @@ export class CSSPositionTryRule extends CSSRule {
   readonly name: string;
   readonly style: CSSStyleDeclaration;
 
-  constructor(name: string) {
+  private constructor(name: string) {
     super(0);
     this.name = name;
-    this.style = new CSSStyleDeclaration(this);
+    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "name", "style");
   }
 
@@ -1332,10 +1337,10 @@ export class CSSKeyframeRule extends CSSRule {
   readonly style: CSSStyleDeclaration;
   #keyText: string;
 
-  constructor(keyText: string) {
+  private constructor(keyText: string) {
     super(CSSRule.KEYFRAME_RULE);
     this.#keyText = normalizeKeyText(keyText) ?? keyText;
-    this.style = new CSSStyleDeclaration(this);
+    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "style");
   }
 
@@ -1360,11 +1365,11 @@ export class CSSKeyframesRule extends CSSRule {
   readonly cssRules: CSSRuleList;
   #name: string;
 
-  constructor(name: string) {
+  private constructor(name: string) {
     super(CSSRule.KEYFRAMES_RULE);
     this.#name = name;
     const rules = ruleTree.createChildren(this);
-    this.cssRules = new CSSRuleList(rules);
+    this.cssRules = constructWebIDL<CSSRuleList>(CSSRuleList, [rules]);
     lockOwnProperties(this, "cssRules");
   }
 
@@ -1456,7 +1461,7 @@ export class CSSCounterStyleRule extends CSSRule {
   #name: string;
   #serializedName: string;
 
-  constructor(name: string) {
+  private constructor(name: string) {
     super(CSSRule.COUNTER_STYLE_RULE);
     const parsed = parseNativeCounterStyleName(
       name,
@@ -1536,7 +1541,7 @@ export class CSSFontFeatureValuesMap implements Iterable<[string, number[]]> {
   readonly #values = new Map<string, number[]>();
   readonly #serializedNames = new Map<string, string>();
 
-  constructor() {
+  private constructor() {
     assertInternalConstructor("CSSFontFeatureValuesMap");
   }
 
@@ -1614,15 +1619,15 @@ const fontFeatureMapNames = [
 
 /** A mutable `@font-feature-values` rule. */
 export class CSSFontFeatureValuesRule extends CSSRule {
-  readonly annotation = new CSSFontFeatureValuesMap();
-  readonly ornaments = new CSSFontFeatureValuesMap();
-  readonly stylistic = new CSSFontFeatureValuesMap();
-  readonly swash = new CSSFontFeatureValuesMap();
-  readonly characterVariant = new CSSFontFeatureValuesMap();
-  readonly styleset = new CSSFontFeatureValuesMap();
+  readonly annotation = constructWebIDL<CSSFontFeatureValuesMap>(CSSFontFeatureValuesMap);
+  readonly ornaments = constructWebIDL<CSSFontFeatureValuesMap>(CSSFontFeatureValuesMap);
+  readonly stylistic = constructWebIDL<CSSFontFeatureValuesMap>(CSSFontFeatureValuesMap);
+  readonly swash = constructWebIDL<CSSFontFeatureValuesMap>(CSSFontFeatureValuesMap);
+  readonly characterVariant = constructWebIDL<CSSFontFeatureValuesMap>(CSSFontFeatureValuesMap);
+  readonly styleset = constructWebIDL<CSSFontFeatureValuesMap>(CSSFontFeatureValuesMap);
   #fontFamily: string;
 
-  constructor(fontFamily: string) {
+  private constructor(fontFamily: string) {
     super(CSSRule.FONT_FEATURE_VALUES_RULE);
     this.#fontFamily = fontFamily;
     lockOwnProperties(
@@ -1675,14 +1680,14 @@ export class CSSStyleRule extends CSSGroupingRule {
   readonly style: CSSStyleDeclaration;
   #selectorText: string;
 
-  constructor(selectorText: string) {
+  private constructor(selectorText: string) {
     super(CSSRule.STYLE_RULE);
     this.#selectorText = normalizeSelectorText(
       `${selectorText}`,
       currentConstructionResourceBudget(),
     )
       ?? `${selectorText}`;
-    this.style = new CSSStyleDeclaration(this);
+    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "style");
   }
 
@@ -1968,19 +1973,19 @@ function createRuleShellFromNative(
   let rule: CSSRule;
   switch (description.kind) {
     case "style": {
-      const style = new CSSStyleRule(description.prelude);
+      const style = constructWebIDL<CSSStyleRule>(CSSStyleRule, [description.prelude]);
       style.style.cssText = description.declarations;
       rule = style;
       break;
     }
     case "nested-declarations": {
-      const nested = new CSSNestedDeclarations();
+      const nested = constructWebIDL<CSSNestedDeclarations>(CSSNestedDeclarations);
       nested.style.cssText = description.declarations;
       rule = nested;
       break;
     }
     case "function-declarations": {
-      const declarations = new CSSFunctionDeclarations();
+      const declarations = constructWebIDL<CSSFunctionDeclarations>(CSSFunctionDeclarations);
       declarations.style.cssText = description.declarations;
       rule = declarations;
       break;
@@ -1992,50 +1997,50 @@ function createRuleShellFromNative(
         .replace(/;\s*$/u, "");
       const parsed = parseImportPrelude(prelude);
       if (!parsed) return null;
-      rule = new CSSImportRule(
+      rule = constructWebIDL<CSSImportRule>(CSSImportRule, [
         parsed.href,
         parsed.media,
         parsed.layer,
         parsed.supports,
-      );
+      ]);
       break;
     }
     case "font-face": {
-      const fontFace = new CSSFontFaceRule();
+      const fontFace = constructWebIDL<CSSFontFaceRule>(CSSFontFaceRule);
       fontFace.style.cssText = description.declarations;
       rule = fontFace;
       break;
     }
     case "page": {
-      const page = new CSSPageRule(description.prelude);
+      const page = constructWebIDL<CSSPageRule>(CSSPageRule, [description.prelude]);
       page.style.cssText = description.declarations;
       rule = page;
       break;
     }
     case "margin": {
-      const margin = new CSSMarginRule(description.prelude);
+      const margin = constructWebIDL<CSSMarginRule>(CSSMarginRule, [description.prelude]);
       margin.style.cssText = description.declarations;
       rule = margin;
       break;
     }
     case "position-try": {
-      const positionTry = new CSSPositionTryRule(description.prelude);
+      const positionTry = constructWebIDL<CSSPositionTryRule>(CSSPositionTryRule, [description.prelude]);
       positionTry.style.cssText = description.declarations;
       rule = positionTry;
       break;
     }
     case "keyframes": {
-      rule = new CSSKeyframesRule(description.prelude);
+      rule = constructWebIDL<CSSKeyframesRule>(CSSKeyframesRule, [description.prelude]);
       break;
     }
     case "keyframe": {
-      const keyframe = new CSSKeyframeRule(description.prelude);
+      const keyframe = constructWebIDL<CSSKeyframeRule>(CSSKeyframeRule, [description.prelude]);
       keyframe.style.cssText = description.declarations;
       rule = keyframe;
       break;
     }
     case "counter-style": {
-      const counterStyle = new CSSCounterStyleRule(description.prelude);
+      const counterStyle = constructWebIDL<CSSCounterStyleRule>(CSSCounterStyleRule, [description.prelude]);
       hydrateCounterStyleDescriptors(
         counterStyle,
         description.declarations,
@@ -2045,8 +2050,9 @@ function createRuleShellFromNative(
       break;
     }
     case "font-feature-values": {
-      const featureValues = new CSSFontFeatureValuesRule(
-        description.prelude,
+      const featureValues = constructWebIDL<CSSFontFeatureValuesRule>(
+        CSSFontFeatureValuesRule,
+        [description.prelude],
       );
       for (const mapDescription of description.children) {
         if (mapDescription.kind !== "font-feature-map") continue;
@@ -2064,30 +2070,30 @@ function createRuleShellFromNative(
       break;
     }
     case "property": {
-      return new CSSPropertyRule(
+      return constructWebIDL<CSSPropertyRule>(CSSPropertyRule, [
         description.prelude,
         nativeRuleDescriptor(description, "syntax"),
         nativeRuleDescriptor(description, "inherits") === "true",
         nativeRuleDescriptor(description, "initial-value"),
         description.cssText,
-      );
+      ]);
     }
     case "font-palette-values":
-      return new CSSFontPaletteValuesRule(
+      return constructWebIDL<CSSFontPaletteValuesRule>(CSSFontPaletteValuesRule, [
         description.prelude,
         nativeRuleDescriptor(description, "font-family"),
         nativeRuleDescriptor(description, "base-palette"),
         nativeRuleDescriptor(description, "override-colors"),
         description.cssText,
-      );
+      ]);
     case "view-transition":
-      return new CSSViewTransitionRule(
+      return constructWebIDL<CSSViewTransitionRule>(CSSViewTransitionRule, [
         nativeRuleDescriptor(description, "navigation"),
         description.children
           .filter(candidate => candidate.kind === "view-transition-type")
           .map(candidate => candidate.prelude),
         description.cssText,
-      );
+      ]);
     case "function": {
       const parameters = description.children
         .filter(candidate => candidate.kind === "function-parameter")
@@ -2106,44 +2112,44 @@ function createRuleShellFromNative(
                 type: candidate.declarations,
               };
         });
-      rule = new CSSFunctionRule(
+      rule = constructWebIDL<CSSFunctionRule>(CSSFunctionRule, [
         description.prelude,
         parameters,
         description.declarations,
-      );
+      ]);
       break;
     }
     case "namespace":
-      return new CSSNamespaceRule(
+      return constructWebIDL<CSSNamespaceRule>(CSSNamespaceRule, [
         nativeRuleDescriptor(description, "namespace-uri"),
         nativeRuleDescriptor(description, "prefix"),
         description.cssText,
-      );
+      ]);
     case "media":
-      rule = new CSSMediaRule(description.prelude);
+      rule = constructWebIDL<CSSMediaRule>(CSSMediaRule, [description.prelude]);
       break;
     case "supports":
-      rule = new CSSSupportsRule(description.prelude);
+      rule = constructWebIDL<CSSSupportsRule>(CSSSupportsRule, [description.prelude]);
       break;
     case "container":
-      rule = new CSSContainerRule(description.prelude);
+      rule = constructWebIDL<CSSContainerRule>(CSSContainerRule, [description.prelude]);
       break;
     case "layer-block":
-      rule = new CSSLayerBlockRule(description.prelude);
+      rule = constructWebIDL<CSSLayerBlockRule>(CSSLayerBlockRule, [description.prelude]);
       break;
     case "scope": {
       const [start, end] = parseScopePrelude(description.prelude, resourceBudget);
-      rule = new CSSScopeRule(start, end);
+      rule = constructWebIDL<CSSScopeRule>(CSSScopeRule, [start, end]);
       break;
     }
     case "starting-style":
-      rule = new CSSStartingStyleRule();
+      rule = constructWebIDL<CSSStartingStyleRule>(CSSStartingStyleRule);
       break;
     case "layer-statement": {
       const names = description.children
         .filter(candidate => candidate.kind === "layer-name")
         .map(candidate => candidate.prelude);
-      return new CSSLayerStatementRule(names);
+      return constructWebIDL<CSSLayerStatementRule>(CSSLayerStatementRule, [names]);
     }
     default:
       return new CSSGenericRule(
@@ -2302,11 +2308,13 @@ export class CSSStyleSheet {
       ? ""
       : `${normalizedOptions.media}`;
     this.media = constructWithResourceBudget(
-      () => new MediaList(media),
+      () => constructWebIDL<MediaList>(MediaList, [media]),
       resourceBudget,
     );
     this.disabled = Boolean(normalizedOptions.disabled);
-    this.cssRules = constructInternally(() => new CSSRuleList(this.#rules));
+    this.cssRules = constructInternally(
+      () => constructWebIDL<CSSRuleList>(CSSRuleList, [this.#rules]),
+    );
     lockOwnProperties(
       this,
       "cssRules",

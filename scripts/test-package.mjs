@@ -9,6 +9,7 @@ import { readNativeEngineRevision } from "./native-engine-revision.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
+const typeScriptCli = require.resolve("typescript/bin/tsc");
 const { resolveTarget, TARGET_BY_NAME } = require("../native/resolve-target.cjs");
 const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-package-"));
@@ -74,6 +75,37 @@ try {
   if (installedNativeManifest.name !== localTarget.packageName) {
     throw new Error("installed native package does not match the current platform");
   }
+
+  const typeProbe = `
+    import { CSSStyleRule, CSSStyleSheet, parseStyleSheet } from "sheetom";
+    const constructed = new CSSStyleSheet();
+    const parsed = parseStyleSheet(".x { color: red; }");
+    const rule = parsed.cssRules[0];
+    if (rule instanceof CSSStyleRule) {
+      rule.style.backgroundColor = "blue";
+      rule.style.webkitLineClamp = "2";
+      rule.style.cssFloat = "inline-start";
+      // @ts-expect-error Unknown names are not part of the pinned browser contract.
+      rule.style.notACssProperty = "invalid";
+    }
+    // @ts-expect-error CSSOM creates style rules; consumers cannot construct one.
+    new CSSStyleRule(".x");
+    void constructed;
+  `;
+  await writeFile(path.join(packageDirectory, "probe-types.mts"), typeProbe);
+  execFileSync(process.execPath, [
+    typeScriptCli,
+    "--noEmit",
+    "--strict",
+    "--skipLibCheck",
+    "--target",
+    "ES2022",
+    "--module",
+    "NodeNext",
+    "--moduleResolution",
+    "NodeNext",
+    "probe-types.mts",
+  ], { cwd: packageDirectory, stdio: "inherit" });
 
   const esmProbe = `
     import { createRequire } from "node:module";
