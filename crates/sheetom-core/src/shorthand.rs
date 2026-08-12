@@ -946,7 +946,14 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
     let lists = parallel_lists(records, &properties, safe)?;
     let mut layers = Vec::with_capacity(lists[0].len());
     for index in 0..lists[0].len() {
-        let image = *lists[0].get(index)?;
+        // CSSOM exposes an omitted mask image as `initial` on the expanded
+        // longhand. The shorthand grammar still has to treat that observable
+        // spelling as its semantic initial value (`none`) when deciding which
+        // components to omit from the synthesized shorthand.
+        let image = match *lists[0].get(index)? {
+            "initial" => "none",
+            image => image,
+        };
         let x = *lists[1].get(index)?;
         let y = *lists[2].get(index)?;
         let size = *lists[3].get(index)?;
@@ -968,7 +975,12 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
         if repeat != "repeat" {
             components.push(repeat.to_owned());
         }
-        if origin != "border-box" || clip != "border-box" {
+        if clip == "no-clip" {
+            if origin != "border-box" {
+                components.push(origin.to_owned());
+            }
+            components.push(clip.to_owned());
+        } else if origin != "border-box" || clip != "border-box" {
             components.push(origin.to_owned());
             if clip != origin {
                 components.push(clip.to_owned());
@@ -1739,19 +1751,16 @@ fn observable_shorthand_override(
     if shorthand == "background" {
         return observable_background_longhand(longhand, input).map(|value| (value, None));
     }
-    if matches!(shorthand, "mask" | "-webkit-mask")
-        && matches!(
+    if matches!(shorthand, "mask" | "-webkit-mask") {
+        if longhand == "mask-image" {
+            return observable_mask_images(input).map(|value| (value, None));
+        }
+        if matches!(
             longhand,
             "-webkit-mask-position-x" | "-webkit-mask-position-y"
-        )
-    {
-        let (x, y) = position_axis_components(input)?;
-        if x == "initial" && y == "initial" {
-            return None;
+        ) {
+            return observable_mask_positions(longhand, input).map(|value| (value, None));
         }
-        let value = if longhand.ends_with("-x") { x } else { y };
-        let observable = project_observable_value(longhand, &value).unwrap_or(value);
-        return Some((observable, None));
     }
     if shorthand == "list-style" && longhand == "list-style-image" && safe_value == "none" {
         let components = split_top_level_whitespace(input)?;
@@ -1763,6 +1772,38 @@ fn observable_shorthand_override(
         }
     }
     None
+}
+
+fn observable_mask_images(input: &str) -> Option<String> {
+    split_top_level_delimiter(input, b',')?
+        .iter()
+        .map(|layer| {
+            let image = split_top_level_whitespace(layer)?
+                .into_iter()
+                .find(|component| is_image_component(component));
+            Some(match image {
+                Some(image) => project_observable_value("mask-image", image)
+                    .unwrap_or_else(|| image.to_owned()),
+                None => "initial".to_owned(),
+            })
+        })
+        .collect::<Option<Vec<_>>>()
+        .map(|layers| layers.join(", "))
+}
+
+fn observable_mask_positions(longhand: &str, input: &str) -> Option<String> {
+    split_top_level_delimiter(input, b',')?
+        .iter()
+        .map(|layer| {
+            let (x, y) = position_axis_components(layer)?;
+            let value = if longhand.ends_with("-x") { x } else { y };
+            if value == "initial" {
+                return Some("0%".to_owned());
+            }
+            Some(project_observable_value(longhand, &value).unwrap_or(value))
+        })
+        .collect::<Option<Vec<_>>>()
+        .map(|layers| layers.join(", "))
 }
 
 fn grid_uses_auto_flow(input: &str) -> bool {

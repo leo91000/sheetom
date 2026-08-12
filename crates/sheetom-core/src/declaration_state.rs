@@ -2923,6 +2923,22 @@ mod tests {
 
         state.set_property("mask", "alpha", "");
         assert_eq!(state.get_property_value("mask-mode"), "alpha");
+        assert_eq!(state.get_property_value("mask-image"), "initial");
+        assert_eq!(state.get_property_value("mask"), "alpha");
+
+        state.set_property("mask", "none, none", "");
+        assert_eq!(
+            state.get_property_value("-webkit-mask-position-x"),
+            "0%, 0%"
+        );
+        assert_eq!(
+            state.get_property_value("-webkit-mask-position-y"),
+            "0%, 0%"
+        );
+        assert_eq!(state.get_property_value("mask"), "none, none");
+
+        state.set_property("mask", "no-clip", "");
+        assert_eq!(state.get_property_value("mask"), "no-clip");
     }
 
     #[test]
