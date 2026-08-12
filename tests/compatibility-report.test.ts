@@ -39,9 +39,9 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     await writeFile(nativeCorpusReportPath, JSON.stringify({
       schemaVersion: 1,
       shorthandProperties: { passed: 129, total: 129 },
-      grammarBranches: { passed: 154, total: 154, positive: 110, negative: 44 },
+      grammarBranches: { passed: 160, total: 160, positive: 114, negative: 46 },
       propertyBranches: { passed: 14, total: 14, positive: 7, negative: 7 },
-      valueCapabilities: { passed: 389, total: 389, positive: 253, negative: 136 },
+      valueCapabilities: { passed: 397, total: 397, positive: 257, negative: 140 },
       numberResultMath: { passed: 860, total: 860, positive: 616, negative: 244 },
       relativeColors: { passed: 1306, total: 1306, positive: 1146, negative: 160 },
     }));
@@ -144,7 +144,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     });
     assert.equal(
       report.baseline.nativeEngine.revision,
-      "lightningcss-1.33.0-c6a0c3ce-sheetom.64",
+      "lightningcss-1.33.0-c6a0c3ce-sheetom.65",
     );
     assert.match(report.baseline.nativeEngine.sourceManifestSha256, /^[0-9a-f]{64}$/);
     assert.ok(report.baseline.nativeEngine.sourceFileCount > 200);
@@ -206,7 +206,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         passed: report.evidence.nativeGrammar.grammarBranches.passed,
         total: report.evidence.nativeGrammar.grammarBranches.total,
       },
-      { profiles: 27, passed: 154, total: 154 },
+      { profiles: 27, passed: 160, total: 160 },
     );
     assert.deepEqual(
       report.evidence.nativeGrammar.shorthandProperties,
@@ -223,7 +223,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         positive: report.evidence.nativeGrammar.valueCapabilities.positive,
         negative: report.evidence.nativeGrammar.valueCapabilities.negative,
       },
-      { passed: 389, total: 389, positive: 253, negative: 136 },
+      { passed: 397, total: 397, positive: 257, negative: 140 },
     );
     assert.deepEqual(
       {

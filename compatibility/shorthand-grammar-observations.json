@@ -3282,6 +3282,116 @@
       "cssText": "place-content: safe center space-evenly;"
     },
     {
+      "id": "grammar.repeated-pair.anchor-center",
+      "accepted": true,
+      "items": [
+        "align-self",
+        "justify-self"
+      ],
+      "longhands": [
+        {
+          "name": "align-self",
+          "value": "safe anchor-center",
+          "priority": ""
+        },
+        {
+          "name": "justify-self",
+          "value": "safe anchor-center",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "safe anchor-center",
+      "priority": "",
+      "cssText": "place-self: safe anchor-center;"
+    },
+    {
+      "id": "grammar.repeated-pair.anchor-second",
+      "accepted": true,
+      "items": [
+        "align-self",
+        "justify-self"
+      ],
+      "longhands": [
+        {
+          "name": "align-self",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "justify-self",
+          "value": "anchor-center",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "auto anchor-center",
+      "priority": "",
+      "cssText": "place-self: auto anchor-center;"
+    },
+    {
+      "id": "grammar.repeated-pair.legacy-items",
+      "accepted": true,
+      "items": [
+        "align-items",
+        "justify-items"
+      ],
+      "longhands": [
+        {
+          "name": "align-items",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "justify-items",
+          "value": "legacy",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "normal legacy",
+      "priority": "",
+      "cssText": "place-items: normal legacy;"
+    },
+    {
+      "id": "grammar.repeated-pair.legacy-items-reordered",
+      "accepted": true,
+      "items": [
+        "align-items",
+        "justify-items"
+      ],
+      "longhands": [
+        {
+          "name": "align-items",
+          "value": "center",
+          "priority": ""
+        },
+        {
+          "name": "justify-items",
+          "value": "legacy",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "center legacy",
+      "priority": "",
+      "cssText": "place-items: center legacy;"
+    },
+    {
+      "id": "grammar.repeated-pair.legacy-self-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.repeated-pair.anchor-items-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
       "id": "grammar.repeated-pair.extra-invalid",
       "accepted": false,
       "items": [],

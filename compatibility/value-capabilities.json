@@ -2592,6 +2592,58 @@
       "property": "font-palette",
       "input": "palette-mix(in --custom, normal, dark)",
       "accepted": false
+    },
+    {
+      "id": "alignment.align-self-anchor-center",
+      "property": "align-self",
+      "input": "safe anchor-center",
+      "accepted": true,
+      "observable": "safe anchor-center"
+    },
+    {
+      "id": "alignment.align-self-duplicate-anchor-invalid",
+      "property": "align-self",
+      "input": "anchor-center anchor-center",
+      "accepted": false
+    },
+    {
+      "id": "alignment.justify-self-anchor-center",
+      "property": "justify-self",
+      "input": "unsafe anchor-center",
+      "accepted": true,
+      "observable": "unsafe anchor-center"
+    },
+    {
+      "id": "alignment.justify-self-legacy-invalid",
+      "property": "justify-self",
+      "input": "legacy",
+      "accepted": false
+    },
+    {
+      "id": "alignment.justify-items-bare-legacy",
+      "property": "justify-items",
+      "input": "legacy",
+      "accepted": true,
+      "observable": "legacy"
+    },
+    {
+      "id": "alignment.justify-items-reordered-legacy",
+      "property": "justify-items",
+      "input": "center legacy",
+      "accepted": true,
+      "observable": "legacy center"
+    },
+    {
+      "id": "alignment.justify-items-legacy-auto-invalid",
+      "property": "justify-items",
+      "input": "legacy auto",
+      "accepted": false
+    },
+    {
+      "id": "alignment.align-items-anchor-invalid",
+      "property": "align-items",
+      "input": "anchor-center",
+      "accepted": false
     }
   ]
 }

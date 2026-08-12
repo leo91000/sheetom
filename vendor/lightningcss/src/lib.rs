@@ -5289,6 +5289,23 @@ mod tests {
     test(
       r#"
       .foo {
+        place-self: safe anchor-center unsafe anchor-center;
+        place-items: normal legacy;
+        justify-items: legacy;
+      }
+    "#,
+      indoc! {r#"
+      .foo {
+        place-self: safe anchor-center unsafe anchor-center;
+        place-items: normal legacy;
+      }
+    "#
+      },
+    );
+
+    test(
+      r#"
+      .foo {
         align-self: center;
         justify-self: unsafe left;
       }

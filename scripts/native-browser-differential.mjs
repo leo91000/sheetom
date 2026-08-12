@@ -345,6 +345,41 @@ const cases = [
         ],
     },
     {
+        id: "anchored-place-self-mutate-remove",
+        operations: [
+            ["set", "place-self", "safe anchor-center unsafe anchor-center", "important"],
+            ["set", "justify-self", "anchor-center", "important"],
+            ["remove", "justify-self"],
+        ],
+        probes: ["place-self", "align-self", "justify-self"],
+    },
+    {
+        id: "legacy-place-items-mutate-remove",
+        operations: [
+            ["set", "place-items", "normal legacy", "important"],
+            ["set", "justify-items", "center legacy", "important"],
+            ["remove", "justify-items"],
+        ],
+        probes: ["place-items", "align-items", "justify-items"],
+    },
+    {
+        id: "invalid-new-alignment-branches-are-atomic",
+        operations: [
+            ["set", "place-self", "anchor-center", "important"],
+            ["set", "place-self", "auto legacy", ""],
+            ["set", "place-items", "normal legacy", "important"],
+            ["set", "place-items", "normal anchor-center", ""],
+        ],
+        probes: [
+            "place-self",
+            "align-self",
+            "justify-self",
+            "place-items",
+            "align-items",
+            "justify-items",
+        ],
+    },
+    {
         id: "math-layout-new-keywords",
         operations: [
             ["set", "font-size", "MATH", ""],

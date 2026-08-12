@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 823,
+  "mismatchCases": 817,
   "summary": {
-    "acceptance": 31,
+    "acceptance": 25,
     "observable": 523,
     "cssText": 523,
     "items": 478,
@@ -1069,13 +1069,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "align-self",
-      "sample": "webref-sample.2646f9aba9f1962e",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4707,20 +4700,6 @@
       ]
     },
     {
-      "property": "justify-items",
-      "sample": "webref-sample.ac3bb5b0defc70c2",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "justify-self",
-      "sample": "webref-sample.ceb54ac206afd17b",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "list-style",
       "sample": "webref-sample.08b2fd430b277ef8",
       "kinds": [
@@ -5913,13 +5892,6 @@
       ]
     },
     {
-      "property": "place-items",
-      "sample": "webref-sample.a8c3d219bb828760",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "place-self",
       "sample": "webref-sample.18d7675ba6cbaa58",
       "kinds": [
@@ -5936,24 +5908,10 @@
     },
     {
       "property": "place-self",
-      "sample": "webref-sample.72a2a9ae7c3f46ce",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "place-self",
       "sample": "webref-sample.8c312660cd1239ec",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "place-self",
-      "sample": "webref-sample.caa67c32cb703586",
-      "kinds": [
-        "acceptance"
       ]
     },
     {

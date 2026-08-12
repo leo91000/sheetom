@@ -133,6 +133,12 @@
       { "id": "grammar.repeated-pair.one", "branch": "one value", "property": "place-content", "input": "center", "accepted": true },
       { "id": "grammar.repeated-pair.two", "branch": "two values", "property": "place-content", "input": "center space-evenly", "accepted": true },
       { "id": "grammar.repeated-pair.compound", "branch": "compound first value", "property": "place-content", "input": "safe center space-evenly", "accepted": true },
+      { "id": "grammar.repeated-pair.anchor-center", "branch": "anchored self alignment", "property": "place-self", "input": "safe anchor-center", "accepted": true },
+      { "id": "grammar.repeated-pair.anchor-second", "branch": "anchored second self alignment", "property": "place-self", "input": "auto anchor-center", "accepted": true },
+      { "id": "grammar.repeated-pair.legacy-items", "branch": "bare legacy item justification", "property": "place-items", "input": "normal legacy", "accepted": true },
+      { "id": "grammar.repeated-pair.legacy-items-reordered", "branch": "canonical legacy item justification", "property": "place-items", "input": "center legacy", "accepted": true },
+      { "id": "grammar.repeated-pair.legacy-self-invalid", "branch": "legacy self justification", "property": "place-self", "input": "auto legacy", "accepted": false, "preserves": "grammar.repeated-pair.anchor-center" },
+      { "id": "grammar.repeated-pair.anchor-items-invalid", "branch": "anchor keyword outside self alignment", "property": "place-items", "input": "normal anchor-center", "accepted": false, "preserves": "grammar.repeated-pair.legacy-items" },
       { "id": "grammar.repeated-pair.extra-invalid", "branch": "unmatched extra value", "property": "place-content", "input": "safe center space-evenly stretch", "accepted": false, "preserves": "grammar.repeated-pair.compound" }
     ] },
     { "codec": "scroll-timeline", "cases": [
