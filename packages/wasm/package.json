@@ -1,0 +1,29 @@
+{
+  "name": "@sheetom/wasm",
+  "version": "0.1.0-rc.6",
+  "description": "First-class WebAssembly backend for SheetOM",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leo91000/sheetom.git",
+    "directory": "packages/wasm"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

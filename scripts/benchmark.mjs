@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -10,7 +10,22 @@ if (moduleIndex !== -1 && !process.argv[moduleIndex + 1]) {
 const modulePath = moduleIndex === -1
   ? new URL("../dist/index.js", import.meta.url)
   : pathToFileURL(path.resolve(process.argv[moduleIndex + 1]));
-const { CSSStyleRule, parseStyleSheet } = await import(modulePath.href);
+const importedModule = await import(modulePath.href);
+const wasmBinaryIndex = process.argv.indexOf("--wasm-binary");
+let publicApi = importedModule;
+if (wasmBinaryIndex !== -1) {
+  const wasmBinaryPath = process.argv[wasmBinaryIndex + 1];
+  if (!wasmBinaryPath) throw new Error("--wasm-binary requires a path");
+  if (typeof importedModule.createSheetOM !== "function") {
+    throw new Error("--wasm-binary requires a module exporting createSheetOM");
+  }
+  const bytes = await readFile(path.resolve(wasmBinaryPath));
+  publicApi = await importedModule.createSheetOM(bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ));
+}
+const { CSSStyleRule, parseStyleSheet } = publicApi;
 
 function median(values) {
   const sorted = [...values].sort((left, right) => left - right);

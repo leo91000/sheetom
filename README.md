@@ -44,6 +44,29 @@ deno run --node-modules-dir=manual --allow-ffi --allow-sys app.ts
 
 SheetOM exports browser-named classes but never modifies `globalThis`.
 
+Browser applications can install the separate, ESM-only WebAssembly backend:
+
+```sh
+npm install @sheetom/wasm
+```
+
+```ts
+import { createSheetOM } from "@sheetom/wasm";
+
+const { CSSStyleSheet } = await createSheetOM();
+const sheet = new CSSStyleSheet();
+sheet.replaceSync(".card { color: red; }");
+```
+
+`createSheetOM()` resolves the `.wasm` file relative to its own module and
+shares concurrent default initialization within one JavaScript realm. Passing
+an explicit `URL`, `Response`, `ArrayBuffer`, or `WebAssembly.Module` creates
+an independent facade with distinct class identity. The WASM backend uses the
+same Rust parser, Engine ABI Identity, Resource Budget, and CSSOM facade as the
+native package; it is never an automatic fallback for a missing native addon.
+See [`@sheetom/wasm` usage](./packages/wasm/README.md) for server and worker
+requirements.
+
 ## Use
 
 ```ts

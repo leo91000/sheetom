@@ -19,7 +19,9 @@
   "homepage": "https://github.com/leo91000/sheetom#readme",
   "packageManager": "npm@11.16.0",
   "workspaces": [
-    "packages/native-*"
+    ".",
+    "packages/native-*",
+    "packages/wasm"
   ],
   "type": "module",
   "sideEffects": false,
@@ -102,6 +104,11 @@
     "native:numeric-contracts": "node scripts/check-property-value-matrix.mjs --contract=compatibility/numeric-property-contracts.json",
     "native:property-contracts": "node scripts/check-property-value-matrix.mjs",
     "native:webref-property-branches": "node scripts/check-webref-property-branches.mjs",
+    "wasm:build": "node scripts/build-wasm-engine.mjs && tsdown --config packages/wasm/tsdown.registry.config.ts && tsdown --config packages/wasm/tsdown.facade.config.ts && tsdown --config packages/wasm/tsdown.index.config.ts && node scripts/finalize-wasm-package.mjs",
+    "wasm:check": "cargo fmt --all --check && cargo clippy -p sheetom-wasm --target wasm32-unknown-unknown -- -D warnings && cargo test -p sheetom-wasm && node scripts/sync-wasm-package.mjs --check",
+    "wasm:test": "node scripts/test-wasm-backend.mjs",
+    "wasm:test:browsers": "node scripts/test-wasm-browsers.mjs",
+    "wasm:benchmark": "node scripts/benchmark.mjs --module packages/wasm/dist/index.js --wasm-binary packages/wasm/dist/sheetom_wasm_bg.wasm",
     "native:browser-differential": "npm run native:build && npm run build && npm run native:browser-differential:run",
     "native:browser-differential:run": "node scripts/native-browser-differential.mjs && node scripts/browser-longhand-differential.mjs && node scripts/browser-longhand-composite-differential.mjs && node scripts/browser-geometric-differential.mjs && node scripts/font-face-browser-differential.mjs && node scripts/rule-browser-differential.mjs",
     "wpt:paths": "node scripts/list-wpt-paths.mjs",
@@ -137,6 +144,7 @@
     "@vitest/browser-playwright": "^4.1.10",
     "@webref/css": "8.7.1",
     "ajv": "^8.20.0",
+    "binaryen": "131.0.0",
     "css-tree": "3.2.1",
     "fast-check": "^4.9.0",
     "lightningcss": "1.33.0",

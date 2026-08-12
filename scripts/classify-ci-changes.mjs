@@ -1,7 +1,16 @@
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-const OUTPUT_NAMES = ["browser", "docs", "native", "package", "performance", "quality", "vendor"];
+const OUTPUT_NAMES = [
+    "browser",
+    "docs",
+    "native",
+    "package",
+    "performance",
+    "quality",
+    "vendor",
+    "wasm",
+];
 
 const isDocumentationPath = filePath =>
     filePath.endsWith(".md") ||
@@ -44,6 +53,24 @@ const isVendorPath = filePath =>
     filePath.startsWith("vendor/cssparser/") ||
     filePath.startsWith("vendor/lightningcss/");
 
+const isWasmPath = filePath =>
+    filePath === "engine-abi.json" ||
+    filePath === "Cargo.lock" ||
+    filePath === "Cargo.toml" ||
+    filePath === "package.json" ||
+    filePath === "package-lock.json" ||
+    filePath === "rust-toolchain.toml" ||
+    filePath.startsWith("crates/sheetom-core/") ||
+    filePath.startsWith("crates/sheetom-wasm/") ||
+    filePath.startsWith("packages/wasm/") ||
+    filePath.startsWith("src/") ||
+    filePath.startsWith("vendor/cssparser/") ||
+    filePath.startsWith("vendor/lightningcss/") ||
+    filePath.startsWith("scripts/build-wasm-") ||
+    filePath.startsWith("scripts/finalize-wasm-") ||
+    filePath.startsWith("scripts/sync-wasm-") ||
+    filePath.startsWith("scripts/test-wasm-");
+
 const isAutomationPath = filePath =>
     filePath.startsWith(".github/") ||
     filePath === "scripts/classify-ci-changes.mjs" ||
@@ -71,6 +98,11 @@ const isPackagePath = filePath =>
     filePath.startsWith("scripts/test-package") ||
     filePath.startsWith("scripts/test-tarball") ||
     filePath.startsWith("packages/native-") ||
+    filePath.startsWith("packages/wasm/") ||
+    filePath.startsWith("scripts/build-wasm-") ||
+    filePath.startsWith("scripts/finalize-wasm-") ||
+    filePath.startsWith("scripts/sync-wasm-") ||
+    filePath.startsWith("scripts/test-wasm-") ||
     ["package.json", "package-lock.json", "tsdown.config.ts", "tsconfig.json"].includes(filePath);
 
 const isPerformancePath = filePath =>
@@ -91,7 +123,9 @@ export function classifyPaths(filePaths, { forceFull = false } = {}) {
     }
 
     const knownPaths = filePaths.filter(
-        filePath => isDocumentationPath(filePath) || isReleaseMetadataPath(filePath) || isNativePath(filePath),
+        filePath => isDocumentationPath(filePath) ||
+            isReleaseMetadataPath(filePath) ||
+            isNativePath(filePath),
     );
     const hasUnknownPath = knownPaths.length !== filePaths.length;
     const native = filePaths.some(isNativePath);
@@ -105,6 +139,7 @@ export function classifyPaths(filePaths, { forceFull = false } = {}) {
         performance: filePaths.some(isPerformancePath),
         quality,
         vendor: filePaths.some(isVendorPath),
+        wasm: filePaths.some(isWasmPath),
     };
 }
 

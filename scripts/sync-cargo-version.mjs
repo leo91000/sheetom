@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const cargoManifests = [
   "crates/sheetom-core/Cargo.toml",
   "crates/sheetom-native/Cargo.toml",
+  "crates/sheetom-wasm/Cargo.toml",
 ];
 
 export function replaceCargoPackageVersion(source, version) {
@@ -24,7 +25,7 @@ export function replaceCargoPackageVersion(source, version) {
 }
 
 export function replaceCargoLockVersions(source, version) {
-  const packageNames = new Set(["sheetom-core", "sheetom-native"]);
+  const packageNames = new Set(["sheetom-core", "sheetom-native", "sheetom-wasm"]);
   const replaced = new Set();
   const updated = source.replace(
     /\[\[package\]\]\n[\s\S]*?(?=\n\[\[package\]\]|$)/gu,
