@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -66,4 +67,19 @@ test("WASM backend evidence fails closed on missing consumers and resource regre
   const leaking = completeEvidence();
   leaking.memory.secondCycleExternalGrowth = 64 * 1024 * 1024;
   assert.throws(() => validateWasmBackendEvidence(leaking), /memory-soak/u);
+});
+
+test("CI keeps the WASM tarball and evidence in separate artifacts", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const packageUpload = workflow.match(
+    /name: sheetom-wasm-package\n\s+path: ([^\n]+)\n\s+if-no-files-found: error/u,
+  );
+  const evidenceUpload = workflow.match(
+    /name: wasm-backend-evidence\n\s+path: ([^\n]+)\n\s+if-no-files-found: error/u,
+  );
+  assert.equal(packageUpload?.[1]?.trim(), "wasm-package/*.tgz");
+  assert.equal(
+    evidenceUpload?.[1]?.trim(),
+    "${{ runner.temp }}/wasm-backend-evidence.json",
+  );
 });

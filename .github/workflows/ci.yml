@@ -244,9 +244,13 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: sheetom-wasm-package
-          path: |
-            wasm-package/*.tgz
-            ${{ runner.temp }}/wasm-backend-evidence.json
+          path: wasm-package/*.tgz
+          if-no-files-found: error
+      - name: Upload WebAssembly backend evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: wasm-backend-evidence
+          path: ${{ runner.temp }}/wasm-backend-evidence.json
           if-no-files-found: error
 
   native-bindings:
