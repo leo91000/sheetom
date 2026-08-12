@@ -101,6 +101,49 @@ const cases = [
         probes: ["flex-basis"],
     },
     {
+        id: "preferred-size-calc-size",
+        operations: [[
+            "set",
+            "width",
+            "calc-size(anchor-size(width), size / 2 + 1px)",
+            "important",
+        ]],
+        probes: ["width"],
+    },
+    {
+        id: "nested-size-calc-size",
+        operations: [[
+            "set",
+            "min-inline-size",
+            "calc-size(calc-size(auto, size), size)",
+            "",
+        ]],
+        probes: ["min-inline-size"],
+    },
+    {
+        id: "maximum-size-calc-size-basis",
+        operations: [[
+            "set",
+            "max-width",
+            "calc-size(min-content, size)",
+            "important",
+        ]],
+        probes: ["max-width"],
+    },
+    {
+        id: "invalid-maximum-size-calc-size-is-atomic",
+        operations: [
+            ["set", "max-width", "calc-size(min-content, size)", "important"],
+            ["set", "max-width", "calc-size(auto, size)", ""],
+        ],
+        probes: ["max-width"],
+    },
+    {
+        id: "calc-size-recovers-function-tail",
+        operations: [["set", "width", "calc-size(auto, size; color: red)", ""]],
+        probes: ["width", "color"],
+    },
+    {
         id: "rule-inset-canonicalization",
         operations: [[
             "set",
