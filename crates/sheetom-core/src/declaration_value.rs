@@ -13,6 +13,7 @@ pub struct DeclarationValue {
     storage: DeclarationValueStorage,
     canonical: Arc<str>,
     observable_override: Option<Arc<str>>,
+    observable_survives_group_break: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -70,6 +71,7 @@ impl DeclarationValue {
             },
             canonical: Arc::from(""),
             observable_override: None,
+            observable_survives_group_break: false,
         }
     }
 
@@ -85,6 +87,7 @@ impl DeclarationValue {
             storage,
             canonical,
             observable_override,
+            observable_survives_group_break: false,
         }
     }
 
@@ -129,6 +132,14 @@ impl DeclarationValue {
     pub(crate) fn replace_observable(&mut self, observable: String) {
         self.observable_override =
             (observable.as_str() != self.canonical.as_ref()).then(|| Arc::<str>::from(observable));
+    }
+
+    pub(crate) fn preserve_observable_after_group_break(&mut self) {
+        self.observable_survives_group_break = true;
+    }
+
+    pub(crate) fn observable_survives_group_break(&self) -> bool {
+        self.observable_survives_group_break
     }
 }
 

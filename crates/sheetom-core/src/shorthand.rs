@@ -6,6 +6,7 @@ use crate::{
         canonical_gap_rule_longhand, expand_border_side_observable, expand_gap_rule,
         expand_text_stroke, gap_rule_component, synthesize_gap_rule, GapRuleComponent,
     },
+    layered_shorthand::LayeredShorthandProjection,
     observable::{project_declaration, project_observable_value},
     parse_semantic_property_with_limits, sheetom_parser_property_name,
     syntax::{
@@ -1848,6 +1849,12 @@ pub(crate) fn parse_value_for_source_with_limits(
         return Err(MutationOutcome::InvalidValue);
     }
     let semantic = semantic.map_err(map_engine_error)?;
+    let layered_projection = match semantic.value() {
+        crate::SemanticPropertyValue::Standard(property) => {
+            LayeredShorthandProjection::new(name, property, semantic.recovered())
+        }
+        _ => None,
+    };
     let Some(longhand_names) = observed_shorthand_longhands(name) else {
         let projection = project_declaration(&semantic).map_err(map_engine_error)?;
         let (canonical, observable) = if source_name == "-webkit-background-size" {
@@ -1868,49 +1875,66 @@ pub(crate) fn parse_value_for_source_with_limits(
     let property = parse_typed_property(name, value).map_err(|_| MutationOutcome::InvalidValue)?;
     let mut longhands = Vec::with_capacity(longhand_names.len());
     for longhand_name in longhand_names {
-        let declaration_value =
-            if let Some(longhand) = shorthand_longhand(&property, name, longhand_name) {
-                let mut safe_value = longhand
-                    .value_to_css_string(PrinterOptions::default())
-                    .map_err(|_| MutationOutcome::InvalidValue)?;
-                let source = authored_longhand_source(longhand_name, &safe_value, value);
-                let owned_longhand = longhand.into_owned();
-                let semantic = crate::SemanticDeclaration::from_standard_property(
-                    longhand_name,
-                    owned_longhand,
-                    source,
-                );
-                let mut observable_value = project_declaration(&semantic)
-                    .map_err(map_engine_error)?
-                    .observable;
-                if let Some((observable, safe)) =
-                    observable_shorthand_override(name, longhand_name, value, &safe_value)
-                {
-                    observable_value = observable;
-                    if let Some(safe) = safe {
-                        safe_value = safe;
-                    }
+        let mut declaration_value = if let Some(longhand) = layered_projection
+            .as_ref()
+            .and_then(|projection| projection.longhand(longhand_name))
+            .or_else(|| shorthand_longhand(&property, name, longhand_name))
+        {
+            let mut safe_value = longhand
+                .value_to_css_string(PrinterOptions::default())
+                .map_err(|_| MutationOutcome::InvalidValue)?;
+            let source = authored_longhand_source(longhand_name, &safe_value, value);
+            let owned_longhand = longhand.into_owned();
+            let semantic = crate::SemanticDeclaration::from_standard_property(
+                longhand_name,
+                owned_longhand,
+                source,
+            );
+            let mut observable_value = project_declaration(&semantic)
+                .map_err(map_engine_error)?
+                .observable;
+            if let Some(observable) = layered_projection.as_ref().and_then(|projection| {
+                projection.observable_position_or_size(longhand_name, &observable_value)
+            }) {
+                observable_value = observable.map_err(map_engine_error)?;
+            } else if let Some((observable, safe)) =
+                observable_shorthand_override(name, longhand_name, value, &safe_value)
+            {
+                observable_value = observable;
+                if let Some(safe) = safe {
+                    safe_value = safe;
                 }
-                DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
-            } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
-                let semantic =
-                    parse_semantic_property_with_limits(longhand_name, initial_value, limits)
-                        .map_err(map_engine_error)?;
-                let projection = project_declaration(&semantic).map_err(map_engine_error)?;
-                let mut observable_value = projection.observable;
-                let mut safe_value = initial_value.to_owned();
-                if let Some((observable, safe)) =
-                    observable_shorthand_override(name, longhand_name, value, &safe_value)
-                {
-                    observable_value = observable;
-                    if let Some(safe) = safe {
-                        safe_value = safe;
-                    }
+            }
+            DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
+        } else if let Some(initial_value) = initial_longhand_value(longhand_name) {
+            let semantic =
+                parse_semantic_property_with_limits(longhand_name, initial_value, limits)
+                    .map_err(map_engine_error)?;
+            let projection = project_declaration(&semantic).map_err(map_engine_error)?;
+            let mut observable_value = projection.observable;
+            let mut safe_value = initial_value.to_owned();
+            if let Some(observable) = layered_projection.as_ref().and_then(|projection| {
+                projection.observable_position_or_size(longhand_name, &observable_value)
+            }) {
+                observable_value = observable.map_err(map_engine_error)?;
+            } else if let Some((observable, safe)) =
+                observable_shorthand_override(name, longhand_name, value, &safe_value)
+            {
+                observable_value = observable;
+                if let Some(safe) = safe {
+                    safe_value = safe;
                 }
-                DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
-            } else {
-                return Err(MutationOutcome::UnsupportedShorthand);
-            };
+            }
+            DeclarationValue::semantic_with_canonical(semantic, safe_value, observable_value)
+        } else {
+            return Err(MutationOutcome::UnsupportedShorthand);
+        };
+        if layered_projection
+            .as_ref()
+            .is_some_and(|projection| projection.observable_survives_group_break(longhand_name))
+        {
+            declaration_value.preserve_observable_after_group_break();
+        }
         longhands.push(DeclarationRecord {
             name: (*longhand_name).to_owned(),
             value: declaration_value,
@@ -1936,6 +1960,8 @@ pub(crate) fn parse_value_for_source_with_limits(
         });
     }
 
+    drop(layered_projection);
+    drop(property);
     Ok(ParsedValue {
         value: DeclarationValue::semantic(semantic).map_err(map_engine_error)?,
         longhands: Some(longhands),
@@ -2049,7 +2075,12 @@ fn observable_shorthand_override(
     {
         return project_observable_value(longhand, safe_value).map(|value| (value, None));
     }
-    if shorthand == "background" {
+    if shorthand == "background"
+        && !matches!(
+            longhand,
+            "background-position-x" | "background-position-y" | "background-size"
+        )
+    {
         return observable_background_longhand(longhand, input).map(|value| (value, None));
     }
     if matches!(
@@ -2064,16 +2095,8 @@ fn observable_shorthand_override(
         };
         return Some((observable, None));
     }
-    if matches!(shorthand, "mask" | "-webkit-mask") {
-        if longhand == "mask-image" {
-            return observable_mask_images(input).map(|value| (value, None));
-        }
-        if matches!(
-            longhand,
-            "-webkit-mask-position-x" | "-webkit-mask-position-y"
-        ) {
-            return observable_mask_positions(longhand, input).map(|value| (value, None));
-        }
+    if matches!(shorthand, "mask" | "-webkit-mask") && longhand == "mask-image" {
+        return observable_mask_images(input).map(|value| (value, None));
     }
     if shorthand == "text-emphasis" {
         return observable_text_emphasis_longhand(longhand, input).map(|value| (value, None));
@@ -2184,25 +2207,6 @@ fn observable_mask_images(input: &str) -> Option<String> {
         .map(|layers| layers.join(", "))
 }
 
-fn observable_mask_positions(longhand: &str, input: &str) -> Option<String> {
-    split_top_level_delimiter(input, b',')?
-        .iter()
-        .map(|layer| {
-            let (x, y) = position_axis_components(layer)?;
-            let value = match longhand {
-                "-webkit-mask-position-x" => x,
-                "-webkit-mask-position-y" => y,
-                _ => return None,
-            };
-            if value == "initial" {
-                return Some("0%".to_owned());
-            }
-            Some(project_observable_value(longhand, &value).unwrap_or(value))
-        })
-        .collect::<Option<Vec<_>>>()
-        .map(|layers| layers.join(", "))
-}
-
 fn grid_uses_auto_flow(input: &str) -> bool {
     split_top_level_delimiter(input, b'/').is_some_and(|sections| {
         sections.len() == 2
@@ -2264,16 +2268,9 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
         (false, true) => Some("text"),
         (false, false) => None,
     };
-    let slash = components.iter().position(|component| *component == "/");
-    let (position_x, position_y) = position_axis_components(input)?;
     let value = match longhand {
         "background-color" => color.unwrap_or("initial").to_owned(),
         "background-image" => image.unwrap_or("initial").to_owned(),
-        "background-position-x" => position_x,
-        "background-position-y" => position_y,
-        "background-size" => {
-            background_layer_size(&components, slash).unwrap_or("initial".to_owned())
-        }
         "background-repeat" => components
             .iter()
             .find(|component| repeats.contains(component))
@@ -2300,46 +2297,6 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
         _ => return None,
     };
     Some(value)
-}
-
-fn background_layer_size(components: &[&str], slash: Option<usize>) -> Option<String> {
-    let start = slash?.checked_add(1)?;
-    let available = components.len().saturating_sub(start).min(2);
-    for count in (1..=available).rev() {
-        let candidate = components.get(start..start + count)?.join(" ");
-        if typed_longhand_value("background-size", &candidate).is_some() {
-            return Some(candidate);
-        }
-    }
-    None
-}
-
-fn position_axis_components(input: &str) -> Option<(String, String)> {
-    let components = split_top_level_whitespace(input).unwrap_or_default();
-    let slash = components
-        .iter()
-        .position(|component| *component == "/")
-        .unwrap_or(components.len());
-    let positions = components[..slash]
-        .iter()
-        .filter(|component| {
-            matches!(**component, "left" | "right" | "top" | "bottom" | "center")
-                || typed_longhand_value("background-position-x", component).is_some()
-                || typed_longhand_value("background-position-y", component).is_some()
-        })
-        .copied()
-        .collect::<Vec<_>>();
-    match positions.as_slice() {
-        [] => Some(("initial".to_owned(), "initial".to_owned())),
-        [value] if matches!(*value, "top" | "bottom") => {
-            Some(("center".to_owned(), (*value).to_owned()))
-        }
-        [value] => Some(((*value).to_owned(), "center".to_owned())),
-        [horizontal @ ("left" | "right"), x, vertical @ ("top" | "bottom"), y] => {
-            Some((format!("{horizontal} {x}"), format!("{vertical} {y}")))
-        }
-        [first, second, ..] => Some(((*first).to_owned(), (*second).to_owned())),
-    }
 }
 
 fn is_image_component(component: &str) -> bool {

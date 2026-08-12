@@ -13,6 +13,7 @@ mod font_face;
 mod function_rule;
 mod gap_rule;
 mod geometric_value;
+mod layered_shorthand;
 mod observable;
 mod property_constraints;
 mod recovered_value;
@@ -490,6 +491,26 @@ mod tests {
 
         assert!(css.contains("image-set("));
         assert!(css.contains("background:"));
+    }
+
+    #[test]
+    fn layered_shorthand_projection_has_no_textual_parser_path() {
+        let source = include_str!("layered_shorthand.rs");
+        let production_source = source
+            .split_once("#[cfg(test)]")
+            .map_or(source, |(production, _)| production);
+        for forbidden in [
+            "split_",
+            "parse_semantic",
+            "ParserInput",
+            ".source()",
+            ".slice(",
+        ] {
+            assert!(
+                !production_source.contains(forbidden),
+                "layered shorthand projection must not depend on {forbidden}",
+            );
+        }
     }
 
     #[test]
