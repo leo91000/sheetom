@@ -448,6 +448,51 @@ fn animation_range_shorthand_exposes_parallel_longhand_lists() {
 }
 
 #[test]
+fn marker_shorthand_exposes_all_three_longhands() {
+  let property = Property::parse_string(
+    PropertyId::Marker,
+    r#"url("x")"#,
+    ParserOptions::default(),
+  )
+  .unwrap();
+  for id in [PropertyId::MarkerStart, PropertyId::MarkerMid, PropertyId::MarkerEnd] {
+    assert_eq!(
+      property
+        .longhand(&id)
+        .unwrap()
+        .value_to_css_string(PrinterOptions::default())
+        .unwrap(),
+      r#"url("x")"#,
+      "{id:?}",
+    );
+  }
+}
+
+#[test]
+fn mask_position_shorthand_exposes_parallel_axis_lists() {
+  let property = Property::parse_string(
+    PropertyId::MaskPosition(VendorPrefix::None),
+    "left 10px top 20px, center",
+    ParserOptions::default(),
+  )
+  .unwrap();
+  for (id, expected) in [
+    (PropertyId::MaskPositionX, "left 10px, center"),
+    (PropertyId::MaskPositionY, "top 20px, center"),
+  ] {
+    assert_eq!(
+      property
+        .longhand(&id)
+        .unwrap()
+        .value_to_css_string(PrinterOptions::default())
+        .unwrap(),
+      expected,
+      "{id:?}",
+    );
+  }
+}
+
+#[test]
 fn animation_range_parses_explicit_end_with_end_defaults() {
   let property = Property::parse_string(
     PropertyId::AnimationRange,
