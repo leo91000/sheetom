@@ -87,6 +87,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "initial letter context dependent sink math",
+        source: "initial-letter: calc(sign(1em) + 2) sign(1rem)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

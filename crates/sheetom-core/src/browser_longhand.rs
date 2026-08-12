@@ -50,6 +50,7 @@ pub enum BrowserLonghandValue {
     FontVariantAlternates(FontVariantAlternatesValue),
     FontVariantKeywords(Vec<&'static str>),
     FontVariationSettings(Option<Vec<FontVariationSetting>>),
+    InitialLetter(InitialLetterValue),
     PositionTryFallbacks(Option<Vec<PositionTryFallback>>),
     TextBoxEdge(TextBoxEdgeValue),
     TextFit(TextFitValue),
@@ -212,6 +213,24 @@ pub struct TextFitValue {
     line_strategy: Option<&'static str>,
     limit: Option<Calc<Percentage>>,
     authored_calculation: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct InitialLetterValue {
+    size: InitialLetterNumber,
+    sink: Option<InitialLetterSink>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct InitialLetterNumber {
+    value: Calc<PreservedLengthPercentage>,
+    authored_math: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum InitialLetterSink {
+    Integer(InitialLetterNumber),
+    Keyword(&'static str),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -446,6 +465,7 @@ impl BrowserLonghandValue {
                 }
                 Ok(output.join(", "))
             }
+            BrowserLonghandValue::InitialLetter(value) => value.canonical_value(),
             BrowserLonghandValue::PositionTryFallbacks(None) => Ok("none".to_owned()),
             BrowserLonghandValue::PositionTryFallbacks(Some(values)) => {
                 let mut output = Vec::with_capacity(values.len());
@@ -855,6 +875,32 @@ impl TextFitValue {
     }
 }
 
+impl InitialLetterNumber {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let serialized = serialize_typed(&self.value)?;
+        if self.authored_math && matches!(self.value, Calc::Value(_) | Calc::Number(_)) {
+            return Ok(format!("calc({serialized})"));
+        }
+        Ok(serialized)
+    }
+}
+
+impl InitialLetterValue {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        let mut output = self.size.canonical_value()?;
+        if let Some(sink) = &self.sink {
+            output.push(' ');
+            match sink {
+                InitialLetterSink::Integer(value) => {
+                    output.push_str(&value.canonical_value()?);
+                }
+                InitialLetterSink::Keyword(value) => output.push_str(value),
+            }
+        }
+        Ok(output)
+    }
+}
+
 impl ColumnCountValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         let Some(count) = &self.count else {
@@ -1011,9 +1057,12 @@ pub(crate) fn parse_browser_fallback(
     property_name: &str,
     source: &str,
 ) -> Result<Option<BrowserLonghandValue>, EngineError> {
+    if property_name == "initial-letter" {
+        return parse_initial_letter(source).map(Some);
+    }
     let accepted: &'static [&'static str] = match property_name {
         "box-shadow" | "text-shadow" => &["none"],
-        "font-palette" | "initial-letter" | "zoom" => &["normal"],
+        "font-palette" | "zoom" => &["normal"],
         "hyphenate-limit-chars" | "resize" | "rx" | "ry" => &["auto"],
         "-webkit-line-clamp" => &["none"],
         _ => return Ok(None),
@@ -1021,6 +1070,64 @@ pub(crate) fn parse_browser_fallback(
     parse_keyword(source, accepted)
         .map(BrowserLonghandValue::Keyword)
         .map(Some)
+}
+
+fn parse_initial_letter(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        if input
+            .try_parse(|input| input.expect_ident_matching("normal"))
+            .is_ok()
+        {
+            return Ok(BrowserLonghandValue::Keyword("normal"));
+        }
+
+        let leading_keyword = input
+            .try_parse(|input| parse_one_keyword(input, &["drop", "raise"]))
+            .ok();
+        let size = parse_initial_letter_number(input, false)?;
+        let sink = if let Some(keyword) = leading_keyword {
+            Some(InitialLetterSink::Keyword(keyword))
+        } else if input.is_exhausted() {
+            None
+        } else if let Ok(keyword) =
+            input.try_parse(|input| parse_one_keyword(input, &["drop", "raise"]))
+        {
+            Some(InitialLetterSink::Keyword(keyword))
+        } else {
+            Some(InitialLetterSink::Integer(parse_initial_letter_number(
+                input, true,
+            )?))
+        };
+        Ok(BrowserLonghandValue::InitialLetter(InitialLetterValue {
+            size,
+            sink,
+        }))
+    })
+}
+
+fn parse_initial_letter_number<'i, 't>(
+    input: &mut Parser<'i, 't>,
+    integer: bool,
+) -> Result<InitialLetterNumber, ParseError<'i>> {
+    let state = input.state();
+    let authored_math = matches!(input.next(), Ok(Token::Function(_)));
+    input.reset(&state);
+    let value = match input.try_parse(Calc::<PreservedLengthPercentage>::parse) {
+        Ok(value) => value,
+        Err(_) => Calc::Number(CSSNumber::parse(input)?),
+    };
+    if !value.resolves_to_number() {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    if !authored_math
+        && matches!(value, Calc::Number(value) if value <= 0.0 || integer && value.fract() != 0.0)
+    {
+        return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+    }
+    Ok(InitialLetterNumber {
+        value,
+        authored_math,
+    })
 }
 
 pub(crate) fn parse_timeline_range_pair(
@@ -4024,6 +4131,39 @@ mod tests {
             "none 10% 20%",
         ] {
             assert!(canonical("text-fit", source).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn parses_complete_initial_letter_grammar() {
+        for (source, expected) in [
+            ("normal", "normal"),
+            ("1", "1"),
+            ("1.5 1", "1.5 1"),
+            ("drop 1", "1 drop"),
+            ("raise calc(1 + 1)", "calc(2) raise"),
+            ("calc(1 + 1) 2", "calc(2) 2"),
+            ("1 calc(1.5)", "1 calc(1.5)"),
+            ("calc(-1) drop", "calc(-1) drop"),
+            ("1 sign(1em)", "1 sign(1em)"),
+        ] {
+            assert_eq!(
+                parse_browser_fallback("initial-letter", source)
+                    .unwrap()
+                    .unwrap()
+                    .canonical_value()
+                    .unwrap(),
+                expected,
+                "{source}"
+            );
+        }
+        for source in [
+            "0", "-1", "drop", "1 0", "1 -1", "1 1.5", "drop 1 2", "1 drop 2", "normal 1",
+        ] {
+            assert!(
+                parse_browser_fallback("initial-letter", source).is_err(),
+                "{source}"
+            );
         }
     }
 }
