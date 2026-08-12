@@ -124,6 +124,14 @@ export function assessImplementationPackageChannels(packageMetadata, version) {
   return { ready: reasons.length === 0, reasons };
 }
 
+export function assessNpmPublication(name, published, distTags, tag, version, integrity) {
+  if (published?.dist?.integrity === integrity) return "published";
+  if (published) {
+    throw new Error(`npm serves unexpected integrity for ${name}@${version}`);
+  }
+  return distTags[tag] === version ? "scanning" : "unpublished";
+}
+
 function run(command, arguments_, options = {}) {
   return execFileSync(command, arguments_, {
     encoding: "utf8",
@@ -190,8 +198,13 @@ async function readPackageMetadata(name) {
 }
 
 async function readDistTags(name) {
-  const document = await readPackageMetadata(name);
-  return document["dist-tags"] ?? {};
+  const encodedName = encodeURIComponent(name);
+  const response = await fetch(`${registryOrigin}/-/package/${encodedName}/dist-tags`);
+  if (response.status === 404) return {};
+  if (!response.ok) {
+    throw new Error(`npm registry returned ${response.status} while reading dist-tags`);
+  }
+  return response.json();
 }
 
 async function reportPendingReleaseAction(heading, message) {
@@ -235,13 +248,28 @@ export async function waitForDistTag(
   );
 }
 
-async function waitForPublishedVersion(name, version, integrity) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const published = await readPublishedVersion(name, version);
+export async function waitForPublishedVersion(
+  name,
+  version,
+  integrity,
+  {
+    attempts = 121,
+    intervalMs = 10_000,
+    readVersion = readPublishedVersion,
+    wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)),
+  } = {},
+) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const published = await readVersion(name, version);
     if (published?.dist?.integrity === integrity) return published;
-    await new Promise(resolve => setTimeout(resolve, 2_000));
+    if (published) {
+      throw new Error(`npm serves unexpected integrity for ${name}@${version}`);
+    }
+    if (attempt < attempts - 1) await wait(intervalMs);
   }
-  throw new Error(`npm did not serve the expected integrity for ${name}@${version}`);
+  throw new Error(
+    `npm did not serve the expected integrity for ${name}@${version} after ${attempts} attempts`,
+  );
 }
 
 async function assertSameFile(expected, actual, label) {
@@ -349,13 +377,24 @@ async function releaseArtifactInput(input, rootManifest, temporaryRoot) {
 
 async function publishPackageArtifact(artifact, npmTag, dryRun) {
   let published = await readPublishedVersion(artifact.name, artifact.version);
-  if (published && published.dist?.integrity !== artifact.integrity) {
-    throw new Error(
-      `npm already serves ${artifact.name}@${artifact.version} with a different integrity`,
+  const distTags = published ? {} : await readDistTags(artifact.name);
+  const publicationState = assessNpmPublication(
+    artifact.name,
+    published,
+    distTags,
+    npmTag,
+    artifact.version,
+    artifact.integrity,
+  );
+  if (dryRun) return published;
+  if (publicationState === "scanning") {
+    published = await waitForPublishedVersion(
+      artifact.name,
+      artifact.version,
+      artifact.integrity,
     );
   }
-  if (!published && dryRun) return null;
-  if (!published) {
+  if (publicationState === "unpublished") {
     runInherited("npm", [
       "publish",
       artifact.tarball,

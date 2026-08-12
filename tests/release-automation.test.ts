@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assessImplementationPackageChannels,
+  assessNpmPublication,
   assessReleaseChannels,
   extractReleaseNotes,
   npmTagForVersion,
@@ -8,6 +9,7 @@ import {
   parsePackResult,
   resolveSingleTarball,
   waitForDistTag,
+  waitForPublishedVersion,
 } from "../scripts/publish-release.mjs";
 import { hasReleaseVersionChange } from "../scripts/detect-release-version-change.mjs";
 import {
@@ -113,6 +115,41 @@ describe("release automation", () => {
   it("routes prereleases to next and stable releases to latest", () => {
     expect(npmTagForVersion("0.1.0-rc.1")).toBe("next");
     expect(npmTagForVersion("0.1.0")).toBe("latest");
+  });
+
+  it("does not republish a version whose dist-tag is visible during registry scanning", () => {
+    expect(assessNpmPublication(
+      "sheetom",
+      null,
+      { next: "0.1.0-rc.7" },
+      "next",
+      "0.1.0-rc.7",
+      "sha512-expected",
+    )).toBe("scanning");
+    expect(assessNpmPublication(
+      "sheetom",
+      null,
+      { next: "0.1.0-rc.6" },
+      "next",
+      "0.1.0-rc.7",
+      "sha512-expected",
+    )).toBe("unpublished");
+    expect(assessNpmPublication(
+      "sheetom",
+      { name: "sheetom", dist: { integrity: "sha512-expected" } },
+      { next: "0.1.0-rc.7" },
+      "next",
+      "0.1.0-rc.7",
+      "sha512-expected",
+    )).toBe("published");
+    expect(() => assessNpmPublication(
+      "sheetom",
+      { name: "sheetom", dist: { integrity: "sha512-other" } },
+      { next: "0.1.0-rc.7" },
+      "next",
+      "0.1.0-rc.7",
+      "sha512-expected",
+    )).toThrow("npm serves unexpected integrity for sheetom@0.1.0-rc.7");
   });
 
   it("extracts only the requested changelog section", () => {
@@ -243,5 +280,48 @@ describe("release automation", () => {
         "last observed 0.1.0-rc.0",
     );
     expect(waits).toBe(2);
+  });
+
+  it("waits through npm publish-time scanning until the exact artifact is public", async () => {
+    let reads = 0;
+    let waits = 0;
+    const published = await waitForPublishedVersion(
+      "@sheetom/wasm",
+      "0.1.0-rc.7",
+      "sha512-expected",
+      {
+        attempts: 4,
+        intervalMs: 0,
+        readVersion: async () => {
+          reads += 1;
+          return reads < 3 ? null : { dist: { integrity: "sha512-expected" } };
+        },
+        wait: async () => {
+          waits += 1;
+        },
+      },
+    );
+
+    expect(published.dist?.integrity).toBe("sha512-expected");
+    expect(reads).toBe(3);
+    expect(waits).toBe(2);
+  });
+
+  it("fails closed when npm exposes a different artifact integrity", async () => {
+    const result = waitForPublishedVersion(
+      "sheetom",
+      "0.1.0-rc.7",
+      "sha512-expected",
+      {
+        attempts: 3,
+        intervalMs: 0,
+        readVersion: async () => ({ dist: { integrity: "sha512-other" } }),
+        wait: async () => {},
+      },
+    );
+
+    await expect(result).rejects.toThrow(
+      "npm serves unexpected integrity for sheetom@0.1.0-rc.7",
+    );
   });
 });
