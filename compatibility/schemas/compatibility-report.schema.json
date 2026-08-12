@@ -252,6 +252,34 @@
                 "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
               }
             },
+            "webrefBranches": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "passed",
+                "total",
+                "properties",
+                "profiles",
+                "branches",
+                "accepted",
+                "rejected",
+                "corpusSha256",
+                "ratchetSha256",
+                "executionSha256"
+              ],
+              "properties": {
+                "passed": { "type": "integer", "minimum": 1 },
+                "total": { "type": "integer", "minimum": 1 },
+                "properties": { "type": "integer", "minimum": 1 },
+                "profiles": { "type": "integer", "minimum": 1 },
+                "branches": { "type": "integer", "minimum": 1 },
+                "accepted": { "type": "integer", "minimum": 1 },
+                "rejected": { "type": "integer", "minimum": 1 },
+                "corpusSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "ratchetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
             "relativeColors": {
               "type": "object",
               "additionalProperties": false,
@@ -395,10 +423,11 @@
             "properties": {
               "nativeGrammar": {
                 "type": "object",
-                "required": ["numericProperties", "propertyValues"],
+                "required": ["numericProperties", "propertyValues", "webrefBranches"],
                 "properties": {
                   "numericProperties": { "type": "object" },
-                  "propertyValues": { "type": "object" }
+                  "propertyValues": { "type": "object" },
+                  "webrefBranches": { "type": "object" }
                 }
               }
             }

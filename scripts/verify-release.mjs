@@ -37,6 +37,17 @@ const nativeGrammarInventory = JSON.parse(
 const valueCapabilities = JSON.parse(
   await readFile("compatibility/value-capabilities.json", "utf8"),
 );
+const webrefPropertyBranchesBytes = await readFile(
+  "compatibility/webref-property-branches.json",
+);
+const webrefBranchRatchetBytes = await readFile(
+  "compatibility/webref-branch-ratchet.json",
+);
+const webrefPropertyBranches = JSON.parse(webrefPropertyBranchesBytes.toString("utf8"));
+const webrefBranchRatchet = JSON.parse(webrefBranchRatchetBytes.toString("utf8"));
+const webrefCorpusSha256 = createHash("sha256")
+  .update(webrefPropertyBranchesBytes)
+  .digest("hex");
 const grammarCases = shorthandGrammarContracts.profiles.flatMap(profile => profile.cases);
 const grammarPositive = grammarCases.filter(grammarCase => grammarCase.accepted).length;
 const valuePositive = valueCapabilities.cases.filter(capability => capability.accepted).length;
@@ -75,6 +86,7 @@ const shorthandGrammar = nativeGrammar?.grammarBranches;
 const geometricGrammar = nativeGrammar?.geometricBranches;
 const numericProperties = nativeGrammar?.numericProperties;
 const propertyValues = nativeGrammar?.propertyValues;
+const webrefBranches = nativeGrammar?.webrefBranches;
 if (
   nativeGrammar?.codecProfiles !== shorthandGrammarContracts.profiles.length ||
   nativeGrammar?.shorthandProperties?.passed !== nativeGrammarInventory.properties.length ||
@@ -105,6 +117,15 @@ if (
   propertyValues?.probes !== 93 ||
   propertyValues?.accepted !== 11_107 ||
   propertyValues?.rejected !== 55_016 ||
+  webrefBranches?.passed !== webrefPropertyBranches.coverage.checks ||
+  webrefBranches?.total !== webrefPropertyBranches.coverage.checks ||
+  webrefBranches?.properties !== webrefPropertyBranches.coverage.webrefProperties ||
+  webrefBranches?.profiles !== webrefPropertyBranches.coverage.profiles ||
+  webrefBranches?.branches !== webrefPropertyBranches.coverage.branches ||
+  webrefBranches?.accepted !== webrefPropertyBranches.coverage.accepted ||
+  webrefBranches?.rejected !== webrefPropertyBranches.coverage.rejected ||
+  webrefBranchRatchet.mismatchCases !== 0 ||
+  webrefBranchRatchet.corpusSha256 !== webrefCorpusSha256 ||
   nativeGrammar?.relativeColors?.passed !== 1_306 ||
   nativeGrammar?.relativeColors?.total !== 1_306 ||
   nativeGrammar?.relativeColors?.positive !== 1_146 ||
@@ -126,6 +147,9 @@ if (
   !/^[0-9a-f]{64}$/.test(propertyValues?.observationsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(propertyValues?.probesSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(propertyValues?.executionSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(webrefBranches?.corpusSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(webrefBranches?.ratchetSha256 ?? "") ||
+  !/^[0-9a-f]{64}$/.test(webrefBranches?.executionSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(nativeGrammar?.relativeColors?.sha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(geometricGrammar?.contractsSha256 ?? "") ||
   !/^[0-9a-f]{64}$/.test(geometricGrammar?.generatorSha256 ?? "") ||
@@ -146,6 +170,8 @@ for (const [filename, recordedHash] of [
   ["compatibility/property-value-observations.json", numericProperties.observationsSha256],
   ["compatibility/property-value-observations.json", propertyValues.observationsSha256],
   ["compatibility/property-value-probes.json", propertyValues.probesSha256],
+  ["compatibility/webref-property-branches.json", webrefBranches.corpusSha256],
+  ["compatibility/webref-branch-ratchet.json", webrefBranches.ratchetSha256],
   ["compatibility/relative-color-capabilities.json", nativeGrammar.relativeColors.sha256],
   ["compatibility/browser-geometric-contracts.json", geometricGrammar.contractsSha256],
   ["scripts/browser-geometric-differential.mjs", geometricGrammar.generatorSha256],

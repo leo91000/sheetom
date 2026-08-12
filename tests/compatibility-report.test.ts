@@ -100,6 +100,28 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         .update(await readFile("scripts/browser-geometric-differential.mjs"))
         .digest("hex"),
     }));
+    const webrefPropertyBranches = JSON.parse(await readFile(
+      "compatibility/webref-property-branches.json",
+      "utf8",
+    ));
+    const webrefPropertyReportPath = path.join(directory, "webref-properties.json");
+    await writeFile(webrefPropertyReportPath, JSON.stringify({
+      schemaVersion: 1,
+      checks: ["acceptance", "observable", "cssText", "items", "atomicity", "reparse"],
+      properties: webrefPropertyBranches.coverage.webrefProperties,
+      profiles: webrefPropertyBranches.coverage.profiles,
+      branches: webrefPropertyBranches.coverage.branches,
+      checksRun: webrefPropertyBranches.coverage.checks,
+      expectedAccepted: webrefPropertyBranches.coverage.accepted,
+      mismatches: {
+        acceptance: [],
+        observable: [],
+        cssText: [],
+        items: [],
+        atomicity: [],
+        reparse: [],
+      },
+    }));
     const argumentsList: string[] = [];
     for (const engine of ["chrome", "firefox", "safari"]) {
       const reportPath = path.join(directory, `${engine}.json`);
@@ -125,6 +147,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         `--process-safety-report=${processSafetyReportPath}`,
         `--numeric-property-report=${numericPropertyReportPath}`,
         `--property-value-report=${propertyValueReportPath}`,
+        `--webref-property-report=${webrefPropertyReportPath}`,
         `--geometric-report=${geometricReportPath}`,
         ...argumentsList,
       ],
@@ -182,6 +205,26 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         probes: 93,
         accepted: 11_107,
         rejected: 55_016,
+      },
+    );
+    assert.deepEqual(
+      {
+        passed: report.evidence.nativeGrammar.webrefBranches.passed,
+        total: report.evidence.nativeGrammar.webrefBranches.total,
+        properties: report.evidence.nativeGrammar.webrefBranches.properties,
+        profiles: report.evidence.nativeGrammar.webrefBranches.profiles,
+        branches: report.evidence.nativeGrammar.webrefBranches.branches,
+        accepted: report.evidence.nativeGrammar.webrefBranches.accepted,
+        rejected: report.evidence.nativeGrammar.webrefBranches.rejected,
+      },
+      {
+        passed: 11_590,
+        total: 11_590,
+        properties: 666,
+        profiles: 371,
+        branches: 8_369,
+        accepted: 10_158,
+        rejected: 1_432,
       },
     );
     assert.deepEqual(

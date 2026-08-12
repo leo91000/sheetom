@@ -184,6 +184,8 @@ jobs:
             --report="$RUNNER_TEMP/numeric-properties.json"
           npm run native:property-contracts -- \
             --report="$RUNNER_TEMP/property-values.json"
+          npm run native:webref-property-branches -- \
+            --report="$RUNNER_TEMP/webref-properties.json"
           node scripts/browser-geometric-differential.mjs \
             --report="$RUNNER_TEMP/geometric.json"
           SHEETOM_RECORD_BASELINE=1 node scripts/record-operation-fixtures.mjs \
@@ -194,6 +196,7 @@ jobs:
             --native-corpus-report="$RUNNER_TEMP/native-corpus.json" \
             --numeric-property-report="$RUNNER_TEMP/numeric-properties.json" \
             --property-value-report="$RUNNER_TEMP/property-values.json" \
+            --webref-property-report="$RUNNER_TEMP/webref-properties.json" \
             --process-safety-report="$RUNNER_TEMP/process-safety.json" \
             --geometric-report="$RUNNER_TEMP/geometric.json" \
             --wpt-report=chrome=reports/chrome/wpt-chrome.json \
