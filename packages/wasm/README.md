@@ -38,7 +38,9 @@ validation and Resource Budget errors keep the same transactional behavior as
 the native package.
 
 The package never acts as an automatic fallback for `sheetom`, never installs
-native binaries, and does not modify `globalThis`. Bundlers must copy the
-external `.wasm` asset instead of embedding it into JavaScript. See the root
-project documentation for the full API, resource-budget, and compatibility
-contracts.
+native binaries, and does not modify `globalThis`. Its JavaScript imports are
+fully static, so Vite, esbuild, Rollup, and Webpack can analyze the complete
+runtime. The external `.wasm` asset must remain beside the emitted SheetOM
+module (or be relocated by the bundler while rewriting `new URL(...)`); it is
+not embedded into JavaScript. See the root project documentation for the full
+API, resource-budget, and compatibility contracts.

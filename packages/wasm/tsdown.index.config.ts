@@ -1,4 +1,7 @@
 import { defineConfig } from "tsdown";
+import { fileURLToPath } from "node:url";
+
+const activeBinding = fileURLToPath(new URL("./src/active-binding.ts", import.meta.url));
 
 export default defineConfig({
   entry: { index: "src/index.ts" },
@@ -9,7 +12,10 @@ export default defineConfig({
   outDir: "dist",
   platform: "neutral",
   target: "es2022",
+  alias: {
+    "./default-engine-binding.js": activeBinding,
+  },
   deps: {
-    neverBundle: [/binding-registry\.js$/, /facade\.js$/],
+    neverBundle: [/facade_factory\.js$/, /sheetom_wasm_factory\.js$/],
   },
 });

@@ -4,6 +4,7 @@ import type {
   EngineMutationOutcome,
 } from "../../../src/internal/engine-binding.js";
 import { validateEngineBindingIdentity } from "../../../src/internal/engine-binding.js";
+import { createWasmBindings } from "./sheetom_wasm_factory.js";
 
 type BudgetArguments = [number, number, number, number, number];
 
@@ -26,7 +27,6 @@ interface GeneratedDeclarationState {
 }
 
 interface WasmGlueModule {
-  default(input: { module_or_path: SheetOMWasmSource }): Promise<unknown>;
   engineAbiIdentity(): string;
   normalizeMedia(source: string, ...budget: BudgetArguments): string;
   normalizeSelector(source: string, ...budget: BudgetArguments): string;
@@ -77,21 +77,13 @@ export class SheetOMWasmBindingError extends Error {
 
 export async function initializeWasmEngineBinding(
   source: SheetOMWasmSource,
-  instanceToken: string,
   onTrap: (error: SheetOMWasmBindingError) => void,
 ): Promise<EngineBinding> {
   assertWasmSource(source);
-  const glueUrl = new URL("./sheetom_wasm.js", import.meta.url);
-  glueUrl.searchParams.set("sheetom-instance", instanceToken);
 
   let glue: WasmGlueModule;
   try {
-    glue = await import(
-      /* @vite-ignore */
-      /* webpackIgnore: true */
-      glueUrl.href
-    ) as WasmGlueModule;
-    await glue.default({ module_or_path: source });
+    glue = await createWasmBindings(source) as WasmGlueModule;
   } catch (cause) {
     throw new SheetOMWasmBindingError(
       "SHEETOM_WASM_INITIALIZATION_FAILED",
