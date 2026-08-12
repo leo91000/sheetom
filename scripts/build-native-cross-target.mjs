@@ -21,6 +21,14 @@ if (!supportedCrossTargets.has(target)) {
 const metadata = TARGET_BY_TRIPLE.get(target);
 if (!metadata) throw new Error(`Native package registry is missing ${target}`);
 
+const environment = { ...process.env };
+if (target === "armv7-unknown-linux-musleabihf") {
+  environment.RUSTFLAGS = [
+    process.env.RUSTFLAGS,
+    "-C target-feature=-crt-static",
+  ].filter(Boolean).join(" ");
+}
+
 execFileSync(
   "cross",
   [
@@ -33,7 +41,7 @@ execFileSync(
     "--manifest-path",
     "crates/sheetom-native/Cargo.toml",
   ],
-  { cwd: repositoryRoot, stdio: "inherit" },
+  { cwd: repositoryRoot, env: environment, stdio: "inherit" },
 );
 
 const compiled = path.join(

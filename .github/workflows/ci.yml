@@ -696,6 +696,7 @@ jobs:
           path: |
             dist
             native
+            packages/native-linux-x64-gnu
           if-no-files-found: error
 
   performance-baseline:
@@ -725,6 +726,7 @@ jobs:
           path: |
             dist
             native
+            packages/native-linux-x64-gnu
           if-no-files-found: error
 
   performance:
@@ -745,6 +747,18 @@ jobs:
         with:
           name: sheetom-performance-baseline
           path: performance-baseline
+      - name: Link split native packages into each benchmark runtime
+        shell: bash
+        run: |
+          for runtime in performance-candidate performance-baseline; do
+            package="$GITHUB_WORKSPACE/$runtime/packages/native-linux-x64-gnu"
+            if [[ ! -d "$package" ]]; then
+              continue
+            fi
+            modules="$GITHUB_WORKSPACE/$runtime/native/node_modules/@sheetom"
+            mkdir -p "$modules"
+            ln -s "$package" "$modules/native-linux-x64-gnu"
+          done
       - name: Benchmark candidate with the candidate harness
         run: node scripts/benchmark.mjs --module "$GITHUB_WORKSPACE/performance-candidate/dist/index.js" --output candidate-benchmark.json
       - name: Benchmark baseline with the candidate harness
