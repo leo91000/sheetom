@@ -2,7 +2,25 @@
   "$schema": "https://unpkg.com/@changesets/config/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "sheetom",
+      "@sheetom/wasm",
+      "@sheetom/native-darwin-arm64",
+      "@sheetom/native-darwin-x64",
+      "@sheetom/native-linux-arm-gnueabihf",
+      "@sheetom/native-linux-arm-musleabihf",
+      "@sheetom/native-linux-arm64-gnu",
+      "@sheetom/native-linux-arm64-musl",
+      "@sheetom/native-linux-ppc64-gnu",
+      "@sheetom/native-linux-s390x-gnu",
+      "@sheetom/native-linux-x64-gnu",
+      "@sheetom/native-linux-x64-musl",
+      "@sheetom/native-win32-arm64-msvc",
+      "@sheetom/native-win32-ia32-msvc",
+      "@sheetom/native-win32-x64-msvc"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
