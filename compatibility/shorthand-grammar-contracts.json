@@ -103,7 +103,10 @@
       { "id": "grammar.font.required", "branch": "size and family", "property": "font", "input": "16px serif", "accepted": true },
       { "id": "grammar.font.line-height", "branch": "line height", "property": "font", "input": "16px / 1.5 serif", "accepted": true },
       { "id": "grammar.font.optional", "branch": "optional prefix", "property": "font", "input": "italic 700 16px / 1.5 serif", "accepted": true },
-      { "id": "grammar.font.missing-family-invalid", "branch": "missing family", "property": "font", "input": "italic 16px", "accepted": false, "preserves": "grammar.font.optional" }
+      { "id": "grammar.font.math-size", "branch": "math size", "property": "font", "input": "normal math / normal \"sheetom\"", "accepted": true },
+      { "id": "grammar.font.math-size-line-height", "branch": "math size and numeric line height", "property": "font", "input": "italic math / 1.2 serif", "accepted": true },
+      { "id": "grammar.font.missing-family-invalid", "branch": "missing family", "property": "font", "input": "italic 16px", "accepted": false, "preserves": "grammar.font.optional" },
+      { "id": "grammar.font.duplicate-math-invalid", "branch": "duplicate size", "property": "font", "input": "math math serif", "accepted": false, "preserves": "grammar.font.math-size" }
     ] },
     { "codec": "grid", "cases": [
       { "id": "grammar.grid.area", "branch": "four grid lines", "property": "grid-area", "input": "1 / 2 / 3 / 4", "accepted": true },
