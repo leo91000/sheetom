@@ -410,7 +410,7 @@ fn serialize_typed_observable(
         return serialize_aspect_ratio(input, canonical);
     }
     if name == "cursor" {
-        return canonical.to_owned();
+        return serialize_cursor_observable(canonical);
     }
     if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
         && !recovered.recovered
@@ -444,6 +444,40 @@ fn serialize_typed_observable(
         return closed.to_owned();
     }
     serialize_default_observable(input, closed, canonical, recovered)
+}
+
+fn serialize_cursor_observable(canonical: &str) -> String {
+    let Some(layers) = split_top_level_delimiter(canonical, b',') else {
+        return canonical.to_owned();
+    };
+    layers
+        .into_iter()
+        .map(|layer| {
+            let Some(mut components) = crate::syntax::split_top_level_whitespace(layer) else {
+                return layer.to_owned();
+            };
+            if components.len() < 3 {
+                return layer.to_owned();
+            }
+            let x_index = components.len() - 2;
+            let y_index = components.len() - 1;
+            let (Ok(x), Ok(y)) = (
+                components[x_index].parse::<f64>(),
+                components[y_index].parse::<f64>(),
+            ) else {
+                return layer.to_owned();
+            };
+            if !x.is_finite() || !y.is_finite() {
+                return layer.to_owned();
+            }
+            let x = serialize_finite_number(x.trunc());
+            let y = serialize_finite_number(y.trunc());
+            components[x_index] = &x;
+            components[y_index] = &y;
+            components.join(" ")
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn serialize_compressible_pair(
