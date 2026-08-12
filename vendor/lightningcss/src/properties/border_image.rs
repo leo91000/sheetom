@@ -208,14 +208,18 @@ fn parse_non_negative_slice<'i, 't>(
   if let Ok(number) = input.try_parse(|input| input.expect_number()) {
     return Ok(BorderImageSliceValue::Number(number));
   }
-  if let Ok(percentage) = input.try_parse(Percentage::parse) {
-    return Ok(BorderImageSliceValue::Percentage(percentage));
+  if let Ok(percentage) = input.try_parse(|input| input.expect_percentage()) {
+    return Ok(BorderImageSliceValue::Percentage(Percentage(percentage)));
   }
-  if let Ok(calculation) = input.try_parse(Calc::<Percentage>::parse) {
-    if calculation.resolves_to_dimension() || calculation.resolves_to_number() {
+  let calculation_start = input.state();
+  if let Ok(calculation) = input.try_parse(Calc::<Percentage>::parse_preserving_math_functions) {
+    if calculation.resolves_to_dimension() {
       return Ok(BorderImageSliceValue::PercentageCalculation(Box::new(calculation)));
     }
-    return Err(location.new_custom_error(ParserError::InvalidValue));
+    if !calculation.resolves_to_number() {
+      return Err(location.new_custom_error(ParserError::InvalidValue));
+    }
+    input.reset(&calculation_start);
   }
   let calculation = Calc::<PreservedLengthPercentage>::parse(input)?;
   if !calculation.resolves_to_number() {
@@ -232,10 +236,28 @@ impl ToCss for BorderImageSliceValue {
     match self {
       BorderImageSliceValue::Number(value) => value.to_css(dest),
       BorderImageSliceValue::Percentage(value) => value.to_css(dest),
-      BorderImageSliceValue::PercentageCalculation(value) => value.to_css(dest),
-      BorderImageSliceValue::NumberCalculation(value) => value.to_css(dest),
+      BorderImageSliceValue::PercentageCalculation(value) => {
+        serialize_slice_calculation(value, dest)
+      }
+      BorderImageSliceValue::NumberCalculation(value) => serialize_slice_calculation(value, dest),
     }
   }
+}
+
+fn serialize_slice_calculation<V, W>(
+  value: &Calc<V>,
+  dest: &mut Printer<W>,
+) -> Result<(), PrinterError>
+where
+  V: ToCss + std::ops::Mul<f32, Output = V> + crate::traits::TrySign + Clone + std::fmt::Debug,
+  W: std::fmt::Write,
+{
+  if matches!(value, Calc::Function(_)) {
+    return value.to_css(dest);
+  }
+  dest.write_str("calc(")?;
+  value.to_css(dest)?;
+  dest.write_char(')')
 }
 
 impl ToCss for BorderImageSlice {
@@ -688,10 +710,10 @@ mod tests {
       ("1 2 1 fill", "1 2 fill"),
       ("1 2 1 2 fill", "1 2 fill"),
       ("10% fill", "10% fill"),
-      ("calc(-1) fill", "-1 fill"),
+      ("calc(-1) fill", "calc(-1) fill"),
       ("sign(1em) fill", "sign(1em) fill"),
       ("calc(2 * sign(1em)) fill", "calc(2 * sign(1em)) fill"),
-      ("min(1%, 2%) fill", "1% fill"),
+      ("min(1%, 2%) fill", "min(1%, 2%) fill"),
     ] {
       assert_eq!(
         parse("border-image-slice", source).as_deref(),
