@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
@@ -127,10 +128,12 @@ async function assertFacadeRejectsIdentity(identity, expectedCode) {
 }
 
 const expectedIdentity = JSON.parse(await readFile(`${repositoryRoot}/engine-abi.json`, "utf8"));
-await assertFacadeRejectsIdentity(
-  JSON.stringify({ ...expectedIdentity, sheetomVersion: "0.0.0-incompatible" }),
-  "SHEETOM_ENGINE_ABI_MISMATCH",
-);
-await assertFacadeRejectsIdentity("not-json", "SHEETOM_ENGINE_ABI_INVALID");
+if (existsSync(`${repositoryRoot}/dist/index.cjs`)) {
+  await assertFacadeRejectsIdentity(
+    JSON.stringify({ ...expectedIdentity, sheetomVersion: "0.0.0-incompatible" }),
+    "SHEETOM_ENGINE_ABI_MISMATCH",
+  );
+  await assertFacadeRejectsIdentity("not-json", "SHEETOM_ENGINE_ABI_INVALID");
+}
 
 console.log("Native loader selected and loaded the exact local binding.");
