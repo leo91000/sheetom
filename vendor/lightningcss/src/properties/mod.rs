@@ -887,6 +887,14 @@ macro_rules! define_properties {
 
       /// Returns the given longhand property for a shorthand.
       pub fn longhand(&self, property_id: &PropertyId) -> Option<Property<'i>> {
+        // `mask` mixes prefixable image/position fields with the unprefixed
+        // `mask-composite` and `mask-mode` longhands. Their property ids do
+        // not carry a vendor-prefix bitset, so handle them before the generic
+        // shorthand prefix guard.
+        if let (Property::Mask(value, _), PropertyId::MaskComposite | PropertyId::MaskMode) = (self, property_id) {
+          return value.longhand(property_id)
+        }
+
         $(
           macro_rules! shorthand {
             ($s: literal) => {
