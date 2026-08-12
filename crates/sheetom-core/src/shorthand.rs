@@ -186,6 +186,7 @@ fn synthesize_special_shorthand(
         "animation" | "-webkit-animation" => synthesize_animation(records, safe),
         "transition" | "-webkit-transition" => synthesize_transition(records, safe),
         "background" => synthesize_background(records, safe),
+        "border-radius" | "-webkit-border-radius" => synthesize_border_radius(records, safe),
         "border-image" => synthesize_border_image(records, safe),
         "columns" => synthesize_columns(records, safe),
         "container" => synthesize_container(records, safe),
@@ -197,6 +198,7 @@ fn synthesize_special_shorthand(
         "grid-column" | "grid-row" => synthesize_grid_line(name, records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
         "mask" => synthesize_mask(records, safe),
+        "list-style" => synthesize_list_style(records, safe),
         "offset" => synthesize_offset(records, safe),
         "outline" => synthesize_outline(records, safe),
         "position-try" => synthesize_position_try(records, safe),
@@ -263,6 +265,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "grid-column"
             | "grid-row"
             | "mask"
+            | "list-style"
             | "offset"
             | "outline"
             | "position-try"
@@ -1074,7 +1077,67 @@ fn synthesize_outline(records: &[&DeclarationRecord], safe: bool) -> Option<Stri
     let color = record_value(records, "outline-color", safe)?;
     let style = record_value(records, "outline-style", safe)?;
     let width = record_value(records, "outline-width", safe)?;
+    if !safe {
+        let components = [color, style, width]
+            .into_iter()
+            .filter(|value| *value != "initial")
+            .collect::<Vec<_>>();
+        return Some(if components.is_empty() {
+            "initial".to_owned()
+        } else {
+            components.join(" ")
+        });
+    }
     Some(format!("{color} {style} {width}"))
+}
+
+fn synthesize_border_radius(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let mut horizontal = Vec::with_capacity(4);
+    let mut vertical = Vec::with_capacity(4);
+    for name in [
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius",
+    ] {
+        let value = record_value(records, name, safe)?;
+        let components = split_top_level_whitespace(value)?;
+        let [x, y] = match components.as_slice() {
+            [value] => [*value, *value],
+            [x, y] => [*x, *y],
+            _ => return None,
+        };
+        horizontal.push(x.to_owned());
+        vertical.push(y.to_owned());
+    }
+    let horizontal = compress_four_values(horizontal)?;
+    let vertical = compress_four_values(vertical)?;
+    Some(if horizontal == vertical {
+        horizontal
+    } else {
+        format!("{horizontal} / {vertical}")
+    })
+}
+
+fn synthesize_list_style(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let position = record_value(records, "list-style-position", safe)?;
+    let image = record_value(records, "list-style-image", safe)?;
+    let style_type = record_value(records, "list-style-type", safe)?;
+    let defaults = if safe {
+        ["outside", "none", "disc"]
+    } else {
+        ["initial", "initial", "initial"]
+    };
+    let components = [position, image, style_type]
+        .into_iter()
+        .zip(defaults)
+        .filter_map(|(value, default)| (value != default).then_some(value))
+        .collect::<Vec<_>>();
+    Some(if components.is_empty() {
+        defaults[0].to_owned()
+    } else {
+        components.join(" ")
+    })
 }
 
 fn synthesize_text_emphasis(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1948,16 +2011,64 @@ fn observable_shorthand_override(
     if shorthand == "text-emphasis" {
         return observable_text_emphasis_longhand(longhand, input).map(|value| (value, None));
     }
-    if shorthand == "list-style" && longhand == "list-style-image" && safe_value == "none" {
-        let components = split_top_level_whitespace(input)?;
-        if !components
-            .iter()
-            .any(|component| *component == "none" || component.starts_with("url("))
-        {
-            return Some(("initial".to_owned(), None));
-        }
+    if shorthand == "outline" {
+        return observable_outline_longhand(longhand, input).map(|value| (value, None));
+    }
+    if shorthand == "list-style" {
+        return observable_list_style_longhand(longhand, input).map(|value| (value, None));
     }
     None
+}
+
+fn observable_list_style_longhand(longhand: &str, input: &str) -> Option<String> {
+    let components = split_top_level_whitespace(input)?;
+    let position = components
+        .iter()
+        .find(|component| typed_longhand_value("list-style-position", component).is_some())
+        .copied();
+    let image = components
+        .iter()
+        .find(|component| {
+            **component != "none" && typed_longhand_value("list-style-image", component).is_some()
+        })
+        .copied();
+    let style_type = components
+        .iter()
+        .find(|component| {
+            **component != "none"
+                && Some(**component) != position
+                && Some(**component) != image
+                && typed_longhand_value("list-style-type", component).is_some()
+        })
+        .copied();
+    let none_count = components
+        .iter()
+        .filter(|component| **component == "none")
+        .count();
+    let source = match longhand {
+        "list-style-position" => position,
+        "list-style-image" => image.or_else(|| {
+            (none_count >= 2 || none_count == 1 && style_type.is_some()).then_some("none")
+        }),
+        "list-style-type" => style_type.or_else(|| (none_count >= 1).then_some("none")),
+        _ => return None,
+    };
+    source.map_or_else(
+        || Some("initial".to_owned()),
+        |source| project_observable_value(longhand, source).or_else(|| Some(source.to_owned())),
+    )
+}
+
+fn observable_outline_longhand(longhand: &str, input: &str) -> Option<String> {
+    split_top_level_whitespace(input)?
+        .into_iter()
+        .find(|component| typed_longhand_value(longhand, component).is_some())
+        .map_or_else(
+            || Some("initial".to_owned()),
+            |component| {
+                project_observable_value(longhand, component).or_else(|| Some(component.to_owned()))
+            },
+        )
 }
 
 fn observable_text_emphasis_longhand(longhand: &str, input: &str) -> Option<String> {
