@@ -10,7 +10,11 @@ use crate::error::{ParserError, PrinterError};
 use crate::macros::*;
 use crate::printer::{Printer, PrinterOptions};
 use crate::targets::should_compile;
+use crate::traits::ParseWithOptions;
 use crate::traits::{IsCompatible, Parse, PropertyHandler, Shorthand, ToCss};
+use crate::values::calc::Calc;
+use crate::values::color::{ColorSpaceName, HueInterpolationMethod};
+use crate::values::ident::DashedIdentReference;
 use crate::values::length::LengthValue;
 use crate::values::number::CSSNumber;
 use crate::values::string::CowArcStr;
@@ -18,6 +22,259 @@ use crate::values::{angle::Angle, length::LengthPercentage, percentage::Percenta
 #[cfg(feature = "visitor")]
 use crate::visitor::Visit;
 use cssparser::*;
+
+/// A value for the [font-palette](https://drafts.csswg.org/css-fonts-4/#font-palette-prop)
+/// property.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum FontPalette<'i> {
+  /// Selects the user agent's default palette.
+  Normal,
+  /// Selects a palette designed for a light background.
+  Light,
+  /// Selects a palette designed for a dark background.
+  Dark,
+  /// Selects an author-defined palette.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  Custom(DashedIdentReference<'i>),
+  /// Interpolates two recursively defined palettes.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  Mix(Box<FontPaletteMix<'i>>),
+}
+
+/// A `palette-mix()` value.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct FontPaletteMix<'i> {
+  color_space: ColorSpaceName,
+  hue_interpolation_method: HueInterpolationMethod,
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  first: FontPaletteMixItem<'i>,
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  second: FontPaletteMixItem<'i>,
+}
+
+/// One palette and its optional interpolation weight.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct FontPaletteMixItem<'i> {
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  palette: FontPalette<'i>,
+  percentage: Option<FontPalettePercentage>,
+}
+
+/// A direct or calculated interpolation weight.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum FontPalettePercentage {
+  /// A direct percentage in the inclusive zero-to-one range.
+  Percentage(Percentage),
+  /// A calculation whose range is resolved at computed-value time.
+  Calculation(Box<Calc<Percentage>>),
+}
+
+impl<'i> ParseWithOptions<'i> for FontPalette<'i> {
+  fn parse_with_options<'t>(
+    input: &mut Parser<'i, 't>,
+    options: &crate::stylesheet::ParserOptions<'i>,
+  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("normal")).is_ok() {
+      return Ok(Self::Normal);
+    }
+    if input.try_parse(|input| input.expect_ident_matching("light")).is_ok() {
+      return Ok(Self::Light);
+    }
+    if input.try_parse(|input| input.expect_ident_matching("dark")).is_ok() {
+      return Ok(Self::Dark);
+    }
+    if input.try_parse(|input| input.expect_function_matching("palette-mix")).is_ok() {
+      return input
+        .parse_nested_block(|input| FontPaletteMix::parse_with_options(input, options))
+        .map(|mix| Self::Mix(Box::new(mix)));
+    }
+    DashedIdentReference::parse_with_options(input, options).map(Self::Custom)
+  }
+}
+
+impl<'i> FontPaletteMix<'i> {
+  fn parse_with_options<'t>(
+    input: &mut Parser<'i, 't>,
+    options: &crate::stylesheet::ParserOptions<'i>,
+  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.expect_ident_matching("in")?;
+    let color_space = match ColorSpaceName::parse(input)? {
+      // CSSOM canonicalizes the `xyz` alias to its explicit D65 spelling.
+      ColorSpaceName::XYZ => ColorSpaceName::XYZd65,
+      color_space => color_space,
+    };
+    let hue_interpolation_method = if matches!(
+      color_space,
+      ColorSpaceName::Hsl | ColorSpaceName::Hwb | ColorSpaceName::LCH | ColorSpaceName::OKLCH
+    ) {
+      input
+        .try_parse(|input| -> Result<_, ParseError<'i, ParserError<'i>>> {
+          let method = HueInterpolationMethod::parse(input)?;
+          input.expect_ident_matching("hue")?;
+          if method == HueInterpolationMethod::Specified {
+            return Err(input.new_custom_error(ParserError::InvalidValue));
+          }
+          Ok(method)
+        })
+        .unwrap_or(HueInterpolationMethod::Shorter)
+    } else {
+      HueInterpolationMethod::Shorter
+    };
+    input.expect_comma()?;
+    let mut first = FontPaletteMixItem::parse_with_options(input, options)?;
+    input.expect_comma()?;
+    let mut second = FontPaletteMixItem::parse_with_options(input, options)?;
+    match (first.direct_percentage(), second.direct_percentage()) {
+      (None, Some(second_percentage)) => {
+        first.percentage = Some(FontPalettePercentage::Percentage(Percentage(1.0 - second_percentage)));
+        second.percentage = None;
+      }
+      (Some(first_percentage), Some(second_percentage)) => {
+        let sum = first_percentage + second_percentage;
+        if sum == 0.0 {
+          return Err(input.new_custom_error(ParserError::InvalidValue));
+        }
+        if (sum - 1.0).abs() <= f32::EPSILON {
+          second.percentage = None;
+        }
+      }
+      _ => {}
+    }
+    Ok(Self {
+      color_space,
+      hue_interpolation_method,
+      first,
+      second,
+    })
+  }
+}
+
+impl<'i> FontPaletteMixItem<'i> {
+  fn parse_with_options<'t>(
+    input: &mut Parser<'i, 't>,
+    options: &crate::stylesheet::ParserOptions<'i>,
+  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let leading_percentage = input.try_parse(FontPalettePercentage::parse).ok();
+    let palette = FontPalette::parse_with_options(input, options)?;
+    let percentage = if leading_percentage.is_some() {
+      leading_percentage
+    } else {
+      input.try_parse(FontPalettePercentage::parse).ok()
+    };
+    Ok(Self { palette, percentage })
+  }
+
+  fn direct_percentage(&self) -> Option<f32> {
+    match self.percentage {
+      Some(FontPalettePercentage::Percentage(Percentage(value))) => Some(value),
+      _ => None,
+    }
+  }
+}
+
+impl FontPalettePercentage {
+  fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let location = input.current_source_location();
+    if let Ok(value) = input.try_parse(|input| input.expect_percentage()) {
+      if !(0.0..=1.0).contains(&value) {
+        return Err(location.new_custom_error(ParserError::InvalidValue));
+      }
+      return Ok(Self::Percentage(Percentage(value)));
+    }
+    let value = Calc::<Percentage>::parse_preserving_math_functions(input)?;
+    Ok(Self::Calculation(Box::new(value)))
+  }
+}
+
+impl ToCss for FontPalette<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      Self::Normal => dest.write_str("normal"),
+      Self::Light => dest.write_str("light"),
+      Self::Dark => dest.write_str("dark"),
+      Self::Custom(value) => value.to_css(dest),
+      Self::Mix(value) => value.to_css(dest),
+    }
+  }
+}
+
+impl ToCss for FontPaletteMix<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    dest.write_str("palette-mix(in ")?;
+    self.color_space.to_css(dest)?;
+    if self.hue_interpolation_method != HueInterpolationMethod::Shorter {
+      dest.write_char(' ')?;
+      self.hue_interpolation_method.to_css(dest)?;
+      dest.write_str(" hue")?;
+    }
+    dest.delim(',', false)?;
+    self.first.to_css(dest)?;
+    dest.delim(',', false)?;
+    self.second.to_css(dest)?;
+    dest.write_char(')')
+  }
+}
+
+impl ToCss for FontPaletteMixItem<'_> {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    self.palette.to_css(dest)?;
+    if let Some(percentage) = &self.percentage {
+      dest.write_char(' ')?;
+      percentage.to_css(dest)?;
+    }
+    Ok(())
+  }
+}
+
+impl ToCss for FontPalettePercentage {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    match self {
+      Self::Percentage(value) => value.to_css(dest),
+      Self::Calculation(value) if matches!(&**value, Calc::Function(_)) => value.to_css(dest),
+      Self::Calculation(value) => {
+        dest.write_str("calc(")?;
+        value.to_css(dest)?;
+        dest.write_char(')')
+      }
+    }
+  }
+}
 
 /// A value for the [font-weight](https://www.w3.org/TR/css-fonts-4/#font-weight-prop) property.
 #[derive(Debug, Clone, PartialEq, Parse, ToCss)]
@@ -677,7 +934,11 @@ pub enum VerticalAlign {
 /// shorthand property.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "camelCase"))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(rename_all = "camelCase")
+)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub struct Font<'i> {
@@ -1225,7 +1486,7 @@ fn is_font_property(property_id: &PropertyId) -> bool {
 
 #[cfg(test)]
 mod tests {
-  use super::{FontShorthand, SystemFont};
+  use super::{FontPalette, FontShorthand, SystemFont};
   use crate::printer::PrinterOptions;
   use crate::properties::{Property, PropertyId};
   use crate::stylesheet::ParserOptions;
@@ -1254,6 +1515,114 @@ mod tests {
         input
       );
       assert!(property.longhand(&PropertyId::from("font-size")).is_none());
+    }
+  }
+
+  #[test]
+  fn parses_recursive_font_palette_values() {
+    for (input, expected) in [
+      ("light", "light"),
+      ("dark", "dark"),
+      (
+        "palette-mix(in lch, normal, normal)",
+        "palette-mix(in lch, normal, normal)",
+      ),
+      (
+        "palette-mix(in oklch longer hue, --brand 10%, palette-mix(in srgb-linear, normal, dark 40%))",
+        "palette-mix(in oklch longer hue, --brand 10%, palette-mix(in srgb-linear, normal 60%, dark))",
+      ),
+      (
+        "palette-mix(in srgb, 20% light, dark)",
+        "palette-mix(in srgb, light 20%, dark)",
+      ),
+      (
+        "palette-mix(in srgb, normal calc(-1%), dark)",
+        "palette-mix(in srgb, normal calc(-1%), dark)",
+      ),
+    ] {
+      let property = Property::parse_string(PropertyId::from("font-palette"), input, ParserOptions::default())
+        .expect("font palette should parse");
+      assert!(matches!(
+        property,
+        Property::FontPalette(FontPalette::Light | FontPalette::Dark | FontPalette::Mix(_))
+      ));
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("font palette should serialize"),
+        expected,
+        "{input}",
+      );
+    }
+  }
+
+  #[test]
+  fn parses_every_chromium_font_palette_interpolation_method() {
+    for (space, expected_space) in [
+      ("srgb", "srgb"),
+      ("srgb-linear", "srgb-linear"),
+      ("display-p3", "display-p3"),
+      ("display-p3-linear", "display-p3-linear"),
+      ("a98-rgb", "a98-rgb"),
+      ("prophoto-rgb", "prophoto-rgb"),
+      ("rec2020", "rec2020"),
+      ("lab", "lab"),
+      ("oklab", "oklab"),
+      ("xyz", "xyz-d65"),
+      ("xyz-d50", "xyz-d50"),
+      ("xyz-d65", "xyz-d65"),
+      ("hsl", "hsl"),
+      ("hwb", "hwb"),
+      ("lch", "lch"),
+      ("oklch", "oklch"),
+    ] {
+      let input = format!("palette-mix(in {space}, normal, dark)");
+      let property = Property::parse_string(PropertyId::from("font-palette"), &input, ParserOptions::default())
+        .expect("font palette color space should parse");
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("font palette should serialize"),
+        format!("palette-mix(in {expected_space}, normal, dark)"),
+        "{input}",
+      );
+    }
+
+    for method in ["shorter", "longer", "increasing", "decreasing"] {
+      let input = format!("palette-mix(in lch {method} hue, normal, dark)");
+      let property = Property::parse_string(PropertyId::from("font-palette"), &input, ParserOptions::default())
+        .expect("font palette hue interpolation should parse");
+      let expected = if method == "shorter" {
+        "palette-mix(in lch, normal, dark)".to_owned()
+      } else {
+        input.clone()
+      };
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("font palette should serialize"),
+        expected,
+      );
+    }
+  }
+
+  #[test]
+  fn rejects_invalid_font_palette_mixes() {
+    for input in [
+      "palette-mix(normal, dark)",
+      "palette-mix(in lch, normal)",
+      "palette-mix(in lch, normal, dark, light)",
+      "palette-mix(in lch, normal 10% 20%, dark)",
+      "palette-mix(in lch, red, dark)",
+      "palette-mix(in lch, normal -1%, dark)",
+      "palette-mix(in lch, normal 101%, dark)",
+      "palette-mix(in lch, normal 0%, dark 0%)",
+      "palette-mix(in lch specified hue, normal, dark)",
+      "palette-mix(in --custom, normal, dark)",
+    ] {
+      let property = Property::parse_string(PropertyId::from("font-palette"), input, ParserOptions::default())
+        .expect("known declarations retain an unparsed fallback");
+      assert!(matches!(property, Property::Unparsed(_)), "{input}");
     }
   }
 }

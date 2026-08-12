@@ -369,7 +369,7 @@ bitflags! {
 enum_property! {
   /// A [color space](https://www.w3.org/TR/css-color-4/#interpolation-space) keyword
   /// used in interpolation functions such as `color-mix()`.
-  enum ColorSpaceName {
+  pub(crate) enum ColorSpaceName {
     "srgb": SRGB,
     "srgb-linear": SRGBLinear,
     "display-p3": DisplayP3,
