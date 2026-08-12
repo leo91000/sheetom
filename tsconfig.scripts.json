@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "declaration": false,
+    "erasableSyntaxOnly": true,
+    "lib": ["ES2024", "DOM"],
+    "noCheck": true,
+    "noEmit": true
+  },
+  "include": ["scripts/**/*.ts"]
+}

@@ -10,18 +10,18 @@ import {
   resolveSingleTarball,
   waitForDistTag,
   waitForPublishedVersion,
-} from "../scripts/publish-release.mjs";
-import { hasReleaseVersionChange } from "../scripts/detect-release-version-change.mjs";
+} from "../scripts/publish-release.ts";
+import { hasReleaseVersionChange } from "../scripts/detect-release-version-change.ts";
 import {
   assertCompleteNativeArtifactNames,
   expectedNativeArtifacts,
   assertPlatformTarballEntries,
   assertRootTarballHasNoNativeAddon,
-} from "../scripts/native-artifact-contract.mjs";
+} from "../scripts/native-artifact-contract.ts";
 import {
   assertReleaseArtifactManifest,
   expectedReleasePackages,
-} from "../scripts/release-artifact-set.mjs";
+} from "../scripts/release-artifact-set.ts";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

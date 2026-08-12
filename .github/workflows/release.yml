@@ -61,7 +61,7 @@ jobs:
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
-          version: node scripts/version-release.mjs
+          version: node scripts/version-release.ts
           commit: "chore: version packages"
           title: "chore: release packages"
           commitMode: github-api
@@ -82,7 +82,7 @@ jobs:
 
       - name: Detect a versioned release commit
         id: release-version
-        run: node scripts/detect-release-version-change.mjs
+        run: node scripts/detect-release-version-change.ts
 
       - name: Resolve the successful CI artifact run
         id: ci-run
@@ -182,9 +182,9 @@ jobs:
         shell: bash
         run: |
           version=$(node -p "require('./package.json').version")
-          node scripts/test-native-crash-safety.mjs \
+          node scripts/test-native-crash-safety.ts \
             --report="$RUNNER_TEMP/process-safety.json"
-          node scripts/check-native-public-corpus.mjs \
+          node scripts/check-native-public-corpus.ts \
             --report="$RUNNER_TEMP/native-corpus.json"
           npm run native:numeric-contracts -- \
             --report="$RUNNER_TEMP/numeric-properties.json"
@@ -192,9 +192,9 @@ jobs:
             --report="$RUNNER_TEMP/property-values.json"
           npm run native:webref-property-branches -- \
             --report="$RUNNER_TEMP/webref-properties.json"
-          node scripts/browser-geometric-differential.mjs \
+          node scripts/browser-geometric-differential.ts \
             --report="$RUNNER_TEMP/geometric.json"
-          SHEETOM_RECORD_BASELINE=1 node scripts/record-operation-fixtures.mjs \
+          SHEETOM_RECORD_BASELINE=1 node scripts/record-operation-fixtures.ts \
             --output "$RUNNER_TEMP/operation-fixtures.json"
           SHEETOM_RECORD_BASELINE=1 npm run conformance:record -- \
             --output "$RUNNER_TEMP/$version.json" \
@@ -277,7 +277,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "repos/$GITHUB_REPOSITORY/commits/$soak_sha/statuses?per_page=100" \
             > "$RUNNER_TEMP/soak-statuses.json"
-          node scripts/verify-release-soak.mjs \
+          node scripts/verify-release-soak.ts \
             --statuses="$RUNNER_TEMP/soak-statuses.json"
 
   publish:
@@ -339,4 +339,4 @@ jobs:
           SHEETOM_RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           SHEETOM_RELEASE_RUNTIMES: node,bun,deno
           SHEETOM_RELEASE_TARBALL: ${{ runner.temp }}/sheetom-package
-        run: node scripts/publish-release.mjs
+        run: node scripts/publish-release.ts

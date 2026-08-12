@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { generateWebrefSyntaxSamples } from "../scripts/lib/webref-syntax-samples.mjs";
+import { generateWebrefSyntaxSamples } from "../scripts/lib/webref-syntax-samples.ts";
 
 const definitions = {
   properties: {
