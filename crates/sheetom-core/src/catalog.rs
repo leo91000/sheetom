@@ -238,14 +238,21 @@ pub(crate) fn sheetom_parser_property_name(name: &str) -> Option<&'static str> {
     if name == "grid-gap" {
         return Some("gap");
     }
-    if name.ends_with("rule-width") || name == "-webkit-text-stroke-width" {
-        return Some("border-top-width");
-    }
-    if name.ends_with("rule-style") {
-        return Some("border-top-style");
-    }
-    if name.ends_with("rule-color") || name == "-webkit-text-stroke-color" {
-        return Some("border-top-color");
+    match name {
+        "-webkit-column-rule-width"
+        | "-webkit-text-stroke-width"
+        | "column-rule-width"
+        | "row-rule-width"
+        | "rule-width" => return Some("border-top-width"),
+        "-webkit-column-rule-style" | "column-rule-style" | "row-rule-style" | "rule-style" => {
+            return Some("border-top-style");
+        }
+        "-webkit-column-rule-color"
+        | "-webkit-text-stroke-color"
+        | "column-rule-color"
+        | "row-rule-color"
+        | "rule-color" => return Some("border-top-color"),
+        _ => {}
     }
     None
 }
@@ -285,9 +292,9 @@ pub(crate) fn initial_longhand_values() -> impl Iterator<Item = (&'static str, &
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_property_name, initial_longhand_value, property_grammar, shorthand_longhands,
-        PropertyGrammarExtension, PropertyGrammarOwner, CHROMIUM_BASELINE,
-        INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
+        canonical_property_name, initial_longhand_value, property_grammar,
+        sheetom_parser_property_name, shorthand_longhands, PropertyGrammarExtension,
+        PropertyGrammarOwner, CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
     };
 
     #[test]
@@ -334,6 +341,20 @@ mod tests {
         );
         assert_eq!(shorthand_longhands("width"), None);
         assert_eq!(initial_longhand_value("animation-timeline"), Some("auto"));
+    }
+
+    #[test]
+    fn parser_aliases_are_a_closed_property_mapping() {
+        assert_eq!(
+            sheetom_parser_property_name("column-rule-width"),
+            Some("border-top-width")
+        );
+        assert_eq!(
+            sheetom_parser_property_name("-webkit-text-stroke-color"),
+            Some("border-top-color")
+        );
+        assert_eq!(sheetom_parser_property_name("imaginary-rule-width"), None);
+        assert_eq!(sheetom_parser_property_name("not-a-rule-color"), None);
     }
 
     #[test]

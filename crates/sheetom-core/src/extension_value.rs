@@ -1300,6 +1300,16 @@ fn parse_webkit_perspective(source: &str) -> Result<SemanticExtensionValue, Engi
     Ok(SemanticExtensionValue::WebkitPerspective(value))
 }
 
+pub(crate) fn parse_reparsable_perspective_zero(source: &str) -> Option<SemanticExtensionValue> {
+    let value = parse_webkit_perspective(source).ok()?;
+    let SemanticExtensionValue::WebkitPerspective(WebkitPerspectiveValue::DirectLength(length)) =
+        &value
+    else {
+        return None;
+    };
+    matches!(length, Length::Value(value) if value.to_unit_value().0 == 0.0).then_some(value)
+}
+
 pub(crate) fn parse_contextual_dimension_calculation(source: &str) -> Option<String> {
     let value = parse_entire(source, Calc::<PreservedLengthPercentage>::parse).ok()?;
     if value.resolves_to_number() || !value.contains_unresolved_sign() {
@@ -1569,7 +1579,10 @@ fn parse_border_image_dimension_list(
     if !(1..=4).contains(&components.len()) {
         return Err(invalid_numeric_value());
     }
-    let allows_auto = property_name.ends_with("image-width");
+    let allows_auto = matches!(
+        property_name,
+        "-webkit-mask-box-image-width" | "border-image-width"
+    );
     let mut values = Vec::with_capacity(components.len());
     for component in components {
         if allows_auto && component.eq_ignore_ascii_case("auto") {

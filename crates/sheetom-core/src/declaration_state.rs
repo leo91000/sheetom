@@ -821,6 +821,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "grid-area"
             | "grid-column"
             | "grid-row"
+            | "place-self"
             | "grid"
             | "grid-template"
             | "mask"
@@ -834,6 +835,7 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "scroll-timeline"
             | "text-box"
             | "text-decoration"
+            | "-webkit-text-stroke"
             | "text-wrap"
             | "timeline-trigger"
             | "timeline-trigger-activation-range"
@@ -865,11 +867,16 @@ fn prefers_synthesized_safe_provenance(name: &str) -> bool {
             | "grid-area"
             | "grid-column"
             | "grid-row"
+            | "place-self"
             | "text-decoration"
+            | "-webkit-text-stroke"
             | "timeline-trigger"
             | "timeline-trigger-activation-range"
             | "timeline-trigger-active-range"
-    ) || name.ends_with("-color")
+    ) || matches!(
+        name,
+        "border-block-color" | "border-color" | "border-inline-color" | "rule-color"
+    )
 }
 
 fn materialize_static_observable(observable: &str, safe: &str) -> String {
@@ -1581,6 +1588,50 @@ mod tests {
             text_stroke.get_property_value("-webkit-text-stroke-color"),
             "green"
         );
+
+        for (source, shorthand, width, color) in [
+            ("red", "red", "initial", "red"),
+            ("medium", "medium", "medium", "initial"),
+            ("red 1px", "1px red", "1px", "red"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property("-webkit-text-stroke", source, ""),
+                MutationOutcome::Applied,
+                "{source}"
+            );
+            assert_eq!(
+                state.get_property_value("-webkit-text-stroke"),
+                shorthand,
+                "{source} shorthand"
+            );
+            assert_eq!(
+                state.get_property_value("-webkit-text-stroke-width"),
+                width,
+                "{source} width"
+            );
+            assert_eq!(
+                state.get_property_value("-webkit-text-stroke-color"),
+                color,
+                "{source} color"
+            );
+            let serialized = state.serialize_safe();
+            let mut reparsed = DeclarationState::new();
+            reparsed.replace_css_text(&serialized);
+            assert_eq!(reparsed.serialize_safe(), serialized, "{source} reparse");
+        }
+
+        let mut atomic = DeclarationState::new();
+        assert_eq!(
+            atomic.set_property("-webkit-text-stroke", "1px red", ""),
+            MutationOutcome::Applied
+        );
+        let before = atomic.css_text();
+        assert_eq!(
+            atomic.set_property("-webkit-text-stroke", "solid", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(atomic.css_text(), before);
     }
 
     #[test]
@@ -2999,6 +3050,29 @@ mod tests {
 
         state.set_property("border", "none", "");
         assert_eq!(state.serialize_safe(), "border: none;");
+    }
+
+    #[test]
+    fn safe_projections_reparse_idempotently_for_single_value_edge_cases() {
+        for (property, input, expected) in [
+            ("perspective", "0px", "perspective: 0px;"),
+            ("-webkit-perspective", "0px", "perspective: 0px;"),
+            ("place-self", "stretch auto", "place-self: stretch auto;"),
+            ("place-self", "auto auto", "place-self: auto;"),
+            ("-webkit-background-size", "auto", "background-size: auto;"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(property, input, ""),
+                MutationOutcome::Applied,
+                "{property}"
+            );
+            assert_eq!(state.serialize_safe(), expected, "{property}");
+
+            let mut reparsed = DeclarationState::new();
+            reparsed.replace_css_text(&state.serialize_safe());
+            assert_eq!(reparsed.serialize_safe(), expected, "{property} reparse");
+        }
     }
 
     #[test]

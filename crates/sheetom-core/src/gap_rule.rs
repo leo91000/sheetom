@@ -256,6 +256,76 @@ pub(crate) struct BorderSideObservableExpansion {
     pub(crate) color: String,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct TextStrokeExpansion {
+    pub(crate) width: String,
+    pub(crate) width_observable: String,
+    pub(crate) color: String,
+    pub(crate) color_observable: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum GapRuleComponent {
+    Width,
+    Style,
+    Color,
+}
+
+pub(crate) fn gap_rule_component(property_name: &str) -> Option<GapRuleComponent> {
+    match property_name {
+        "-webkit-column-rule-width" | "column-rule-width" | "row-rule-width" | "rule-width" => {
+            Some(GapRuleComponent::Width)
+        }
+        "-webkit-column-rule-style" | "column-rule-style" | "row-rule-style" | "rule-style" => {
+            Some(GapRuleComponent::Style)
+        }
+        "-webkit-column-rule-color" | "column-rule-color" | "row-rule-color" | "rule-color" => {
+            Some(GapRuleComponent::Color)
+        }
+        _ => None,
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct TextStroke {
+    width: Authored<BorderSideWidth>,
+    color: Authored<CssColor>,
+}
+
+impl<'i> Parse<'i> for TextStroke {
+    fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+        let mut width = None;
+        let mut color = None;
+        let mut consumed = false;
+
+        loop {
+            if width.is_none() {
+                if let Ok(value) = input.try_parse(parse_authored::<BorderSideWidth>) {
+                    width = Some(value);
+                    consumed = true;
+                    continue;
+                }
+            }
+            if color.is_none() {
+                if let Ok(value) = input.try_parse(parse_authored::<CssColor>) {
+                    color = Some(value);
+                    consumed = true;
+                    continue;
+                }
+            }
+            break;
+        }
+
+        if !consumed {
+            return Err(input.new_custom_error(ParserError::InvalidValue));
+        }
+        Ok(Self {
+            width: width.unwrap_or_default(),
+            color: color.unwrap_or_default(),
+        })
+    }
+}
+
 pub(crate) fn expand_border_side_observable(
     source: &str,
 ) -> Result<BorderSideObservableExpansion, EngineError> {
@@ -267,18 +337,45 @@ pub(crate) fn expand_border_side_observable(
     })
 }
 
+pub(crate) fn expand_text_stroke(source: &str) -> Result<TextStrokeExpansion, EngineError> {
+    let stroke = parse_entire::<TextStroke>(source)?;
+    Ok(TextStrokeExpansion {
+        width: if stroke.width.authored {
+            serialize_typed(&stroke.width.value)?
+        } else {
+            "initial".to_owned()
+        },
+        width_observable: observable_authored_component(
+            "-webkit-text-stroke-width",
+            &stroke.width,
+        )?,
+        color: if stroke.color.authored {
+            serialize_typed(&stroke.color.value)?
+        } else {
+            "initial".to_owned()
+        },
+        color_observable: observable_authored_component(
+            "-webkit-text-stroke-color",
+            &stroke.color,
+        )?,
+    })
+}
+
 pub(crate) fn parse_gap_rule_longhand(
     property_name: &str,
     source: &str,
 ) -> Result<GapRuleLonghandValue, EngineError> {
-    if property_name.ends_with("rule-width") {
-        return parse_entire(source).map(GapRuleLonghandValue::Width);
-    }
-    if property_name.ends_with("rule-style") {
-        return parse_entire(source).map(GapRuleLonghandValue::Style);
-    }
-    if property_name.ends_with("rule-color") {
-        return parse_entire(source).map(GapRuleLonghandValue::Color);
+    match gap_rule_component(property_name) {
+        Some(GapRuleComponent::Width) => {
+            return parse_entire(source).map(GapRuleLonghandValue::Width);
+        }
+        Some(GapRuleComponent::Style) => {
+            return parse_entire(source).map(GapRuleLonghandValue::Style);
+        }
+        Some(GapRuleComponent::Color) => {
+            return parse_entire(source).map(GapRuleLonghandValue::Color);
+        }
+        None => {}
     }
     Err(EngineError::Parse(format!(
         "unsupported gap-rule longhand: {property_name}"
@@ -540,5 +637,31 @@ mod tests {
             let value = parse_gap_rule_longhand(property, source).unwrap();
             assert!(!value.canonical_value().unwrap().is_empty());
         }
+    }
+
+    #[test]
+    fn text_stroke_tracks_authored_components_without_border_defaults() {
+        for (source, width, color) in [
+            ("red", "initial", "red"),
+            ("medium", "medium", "initial"),
+            ("red 1px", "1px", "red"),
+            ("1px red", "1px", "red"),
+        ] {
+            let expansion = expand_text_stroke(source).unwrap();
+            assert_eq!(expansion.width_observable, width, "{source} width");
+            assert_eq!(expansion.color_observable, color, "{source} color");
+        }
+        assert!(expand_text_stroke("solid").is_err());
+        assert!(expand_text_stroke("red blue").is_err());
+    }
+
+    #[test]
+    fn gap_rule_component_mapping_rejects_similar_suffixes() {
+        assert_eq!(
+            gap_rule_component("column-rule-width"),
+            Some(GapRuleComponent::Width)
+        );
+        assert_eq!(gap_rule_component("imaginary-rule-width"), None);
+        assert_eq!(gap_rule_component("border-image-width"), None);
     }
 }

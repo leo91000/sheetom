@@ -2,14 +2,14 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 285,
+  "mismatchCases": 268,
   "summary": {
     "acceptance": 0,
-    "observable": 189,
-    "cssText": 189,
-    "items": 162,
+    "observable": 185,
+    "cssText": 185,
+    "items": 152,
     "atomicity": 0,
-    "reparse": 4
+    "reparse": 0
   },
   "unresolved": [
     {
@@ -19,13 +19,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-background-size",
-      "sample": "webref-sample.1de0dc7432ee4dad",
-      "kinds": [
-        "reparse"
       ]
     },
     {
@@ -133,13 +126,6 @@
       ]
     },
     {
-      "property": "-webkit-perspective",
-      "sample": "webref-sample.c5c20f1c940867e9",
-      "kinds": [
-        "reparse"
-      ]
-    },
-    {
       "property": "-webkit-shape-image-threshold",
       "sample": "webref-sample.679f46bf5c6cb4ed",
       "kinds": [
@@ -227,85 +213,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.146b9fb0301c0ba5",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.312f4e3d3bd82637",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.6c5043e08c71cd27",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.96b373a72e66fbd4",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.b586ed132e30c205",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.b8ffa0ca26b735ae",
-      "kinds": [
-        "items",
-        "reparse"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.bebf0fb45e5d05f1",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.c62488db0fcdca41",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.e769c82361311b80",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.ee16df7eb183c353",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "-webkit-text-stroke",
-      "sample": "webref-sample.fd22dfbe9321691d",
-      "kinds": [
-        "items"
       ]
     },
     {
@@ -1714,37 +1621,6 @@
     {
       "property": "place-items",
       "sample": "webref-sample.94cc7a1e630414db",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "place-self",
-      "sample": "webref-sample.18d7675ba6cbaa58",
-      "kinds": [
-        "reparse"
-      ]
-    },
-    {
-      "property": "place-self",
-      "sample": "webref-sample.415b0624de6d173f",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "place-self",
-      "sample": "webref-sample.8c312660cd1239ec",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "place-self",
-      "sample": "webref-sample.e8b63ff81c1b9fe7",
       "kinds": [
         "cssText",
         "observable"
