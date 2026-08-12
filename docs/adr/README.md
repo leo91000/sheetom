@@ -188,3 +188,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0177 | [Project layered shorthands from semantic state](./0177-project-layered-shorthands-from-semantic-state.md) | accepted |
 | 0178 | [Generate static instance-scoped WASM factories](./0178-generate-static-instance-scoped-wasm-factories.md) | accepted |
 | 0179 | [Record WASM backend release evidence](./0179-record-wasm-backend-release-evidence.md) | accepted |
+| 0180 | [Promote RC8 without runtime drift](./0180-promote-rc8-without-runtime-drift.md) | accepted |

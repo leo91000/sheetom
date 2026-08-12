@@ -539,6 +539,27 @@ jobs:
           npm pack --pack-destination package-artifact
           npm run release:manifest -- package-artifact
 
+      - name: Verify the first stable artifact promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROMOTION_BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$version" != "0.1.0" ]; then
+            echo "The RC8-to-stable promotion gate does not apply to $version."
+            exit 0
+          fi
+          mkdir reference-release
+          gh release download v0.1.0-rc.8 --dir reference-release
+          arguments=(
+            "--reference=reference-release"
+            "--candidate=package-artifact"
+          )
+          if [ -n "$PROMOTION_BASE_SHA" ]; then
+            arguments+=("--base-sha=$PROMOTION_BASE_SHA")
+          fi
+          node scripts/verify-stable-promotion.ts "${arguments[@]}"
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v7
         with:
