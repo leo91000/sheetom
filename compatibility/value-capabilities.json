@@ -1963,6 +1963,78 @@
       "property": "white-space",
       "input": "preserve unknown",
       "accepted": false
+    },
+    {
+      "id": "contain-intrinsic-size.compound-single",
+      "property": "contain-intrinsic-size",
+      "input": "auto none",
+      "accepted": true,
+      "observable": "auto none"
+    },
+    {
+      "id": "contain-intrinsic-size.compound-pair",
+      "property": "contain-intrinsic-size",
+      "input": "auto none auto 1px",
+      "accepted": true,
+      "observable": "auto none auto 1px"
+    },
+    {
+      "id": "contain-intrinsic-size.simple-compound-pair",
+      "property": "contain-intrinsic-size",
+      "input": "10px auto none",
+      "accepted": true,
+      "observable": "10px auto none"
+    },
+    {
+      "id": "contain-intrinsic-size.compound-simple-pair",
+      "property": "contain-intrinsic-size",
+      "input": "auto 1px 20px",
+      "accepted": true,
+      "observable": "auto 1px 20px"
+    },
+    {
+      "id": "contain-intrinsic-size.calculated-negative-deferred",
+      "property": "contain-intrinsic-size",
+      "input": "auto calc(-1px) 20px",
+      "accepted": true,
+      "observable": "auto calc(-1px) 20px"
+    },
+    {
+      "id": "contain-intrinsic-size.zero-length",
+      "property": "contain-intrinsic-size",
+      "input": "0",
+      "accepted": true,
+      "observable": "0px"
+    },
+    {
+      "id": "contain-intrinsic-size.incomplete-auto-invalid",
+      "property": "contain-intrinsic-size",
+      "input": "auto",
+      "accepted": false
+    },
+    {
+      "id": "contain-intrinsic-size.duplicate-auto-invalid",
+      "property": "contain-intrinsic-size",
+      "input": "auto auto",
+      "accepted": false
+    },
+    {
+      "id": "contain-intrinsic-size.three-axis-invalid",
+      "property": "contain-intrinsic-size",
+      "input": "10px 20px 30px",
+      "accepted": false
+    },
+    {
+      "id": "contain-intrinsic-size.direct-negative-invalid",
+      "property": "contain-intrinsic-size",
+      "input": "-1px",
+      "accepted": false
+    },
+    {
+      "id": "contain-intrinsic-size.extra-token-invalid",
+      "property": "contain-intrinsic-size",
+      "input": "auto none extra",
+      "accepted": false
     }
   ]
 }

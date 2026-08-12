@@ -240,6 +240,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "background"
             | "border-image"
             | "columns"
+            | "contain-intrinsic-size"
             | "container"
             | "flex"
             | "font"
@@ -1173,6 +1174,14 @@ fn synthesize_structural_shorthand(
     if name == "background-position" {
         return synthesize_background_position(records, safe);
     }
+    if name == "contain-intrinsic-size" && records.len() == 2 {
+        let values = record_values(records, safe)?;
+        return Some(if values[0] == values[1] {
+            values[0].clone()
+        } else {
+            values.join(" ")
+        });
+    }
     if matches!(name, "rule-width" | "rule-style" | "rule-color") && records.len() == 2 {
         let values = record_values(records, safe)?;
         return (values[0] == values[1]).then(|| values[0].clone());
@@ -1917,6 +1926,10 @@ fn expand_special_shorthand(
         let values = expand_rule_inset(name, value)?;
         return records_from_values(name, value, values, important, limits);
     }
+    if name == "contain-intrinsic-size" {
+        let values = expand_contain_intrinsic_size(value)?;
+        return records_from_values(name, value, values, important, limits);
+    }
 
     let components = split_top_level_whitespace(value)?;
     let values = match name {
@@ -1957,6 +1970,36 @@ fn expand_special_shorthand(
         _ => return None,
     };
     records_from_values(name, value, values, important, limits)
+}
+
+fn expand_contain_intrinsic_size(value: &str) -> Option<Vec<(&'static str, String)>> {
+    let components = split_top_level_whitespace(value)?;
+    if components.is_empty() || components.len() > 4 {
+        return None;
+    }
+
+    if let Some(value) = typed_longhand_value("contain-intrinsic-width", value) {
+        return Some(vec![
+            ("contain-intrinsic-width", value.clone()),
+            ("contain-intrinsic-height", value),
+        ]);
+    }
+
+    for split in 1..components.len() {
+        let width = components[..split].join(" ");
+        let height = components[split..].join(" ");
+        let Some(width) = typed_longhand_value("contain-intrinsic-width", &width) else {
+            continue;
+        };
+        let Some(height) = typed_longhand_value("contain-intrinsic-height", &height) else {
+            continue;
+        };
+        return Some(vec![
+            ("contain-intrinsic-width", width),
+            ("contain-intrinsic-height", height),
+        ]);
+    }
+    None
 }
 
 fn expand_gap_rule_records(

@@ -160,6 +160,14 @@
       { "id": "grammar.uniform.four", "branch": "four corner values", "property": "corner-shape", "input": "round bevel scoop notch", "accepted": true },
       { "id": "grammar.uniform.five-invalid", "branch": "too many values", "property": "corner-shape", "input": "round bevel scoop notch square", "accepted": false, "preserves": "grammar.uniform.four" }
     ] },
+    { "codec": "contain-intrinsic-size", "cases": [
+      { "id": "grammar.contain-intrinsic-size.compound-single", "branch": "one compound axis value", "property": "contain-intrinsic-size", "input": "auto none", "accepted": true },
+      { "id": "grammar.contain-intrinsic-size.compound-pair", "branch": "two compound axis values", "property": "contain-intrinsic-size", "input": "auto none auto 1px", "accepted": true },
+      { "id": "grammar.contain-intrinsic-size.mixed-pair", "branch": "simple then compound axis", "property": "contain-intrinsic-size", "input": "10px auto none", "accepted": true },
+      { "id": "grammar.contain-intrinsic-size.calculated", "branch": "calculated compound axis", "property": "contain-intrinsic-size", "input": "auto calc(-1px) 20px", "accepted": true },
+      { "id": "grammar.contain-intrinsic-size.incomplete-auto-invalid", "branch": "auto without fallback", "property": "contain-intrinsic-size", "input": "auto", "accepted": false, "preserves": "grammar.contain-intrinsic-size.compound-pair" },
+      { "id": "grammar.contain-intrinsic-size.three-axis-invalid", "branch": "three simple axis values", "property": "contain-intrinsic-size", "input": "10px 20px 30px", "accepted": false, "preserves": "grammar.contain-intrinsic-size.compound-pair" }
+    ] },
     { "codec": "white-space", "cases": [
       { "id": "grammar.white-space.alias", "branch": "legacy alias", "property": "white-space", "input": "pre-wrap", "accepted": true },
       { "id": "grammar.white-space.collapse-mode", "branch": "collapse and mode", "property": "white-space", "input": "preserve nowrap", "accepted": true },

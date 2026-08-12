@@ -6,9 +6,9 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "522dd359430320ff14bf828d75c70382341c8fd4d2a66b20605dce334aebd6c1",
+    "shorthandGrammarContractsSha256": "7f5d5cc186f59f19f87738ab2266f290f05784bd8793e3ec9a5ac17be43c38b5",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "64961487304c0d729801f2efa51f7bd9fb026658ad6291f0ae93c74bc591cb1b"
+    "valueCapabilitiesSha256": "a76ffb0d99a65ef08ef84859ab2039067547a0d27693b2f6e791aeb68cd31874"
   },
   "profiles": [
     {
@@ -117,6 +117,20 @@
         "grammar.columns.negative-height-invalid",
         "grammar.columns.multiple-heights-invalid",
         "grammar.columns.second-slash-invalid"
+      ]
+    },
+    {
+      "codec": "contain-intrinsic-size",
+      "properties": [
+        "contain-intrinsic-size"
+      ],
+      "contractCaseIds": [
+        "grammar.contain-intrinsic-size.compound-single",
+        "grammar.contain-intrinsic-size.compound-pair",
+        "grammar.contain-intrinsic-size.mixed-pair",
+        "grammar.contain-intrinsic-size.calculated",
+        "grammar.contain-intrinsic-size.incomplete-auto-invalid",
+        "grammar.contain-intrinsic-size.three-axis-invalid"
       ]
     },
     {
@@ -251,7 +265,6 @@
         "animation-range",
         "background-position",
         "border-spacing",
-        "contain-intrinsic-size",
         "interest-delay",
         "mask-position",
         "place-content",
@@ -738,7 +751,7 @@
     },
     {
       "property": "contain-intrinsic-size",
-      "codec": "repeated-pair",
+      "codec": "contain-intrinsic-size",
       "breadthCaseId": "shorthand.contain-intrinsic-size.concrete-default",
       "propertyBranchIds": []
     },
