@@ -7,10 +7,9 @@ use crate::error::{ParserError, PrinterError};
 use crate::logical::PropertyCategory;
 use crate::macros::{enum_property, property_bitflags};
 use crate::printer::Printer;
+use crate::properties::calc_size::CalcSize;
 use crate::properties::{Property, PropertyId};
-use crate::traits::{
-  private::TryAdd, IsCompatible, Parse, PropertyHandler, ToCss, TryMap, TryOp, TrySign, Zero,
-};
+use crate::traits::{private::TryAdd, IsCompatible, Parse, PropertyHandler, ToCss, TryMap, TryOp, TrySign, Zero};
 use crate::values::angle::Angle;
 use crate::values::ident::DashedIdent;
 use crate::values::length::{LengthPercentage, LengthValue};
@@ -45,7 +44,11 @@ pub struct AnchorSize {
 /// A dimension accepted by the `anchor-size()` function.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Parse, ToCss)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "kebab-case"))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(rename_all = "kebab-case")
+)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub enum AnchorSizeDimension {
@@ -66,7 +69,11 @@ pub enum AnchorSizeDimension {
 /// A length component accepted by sizing properties, including `anchor-size()`.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(tag = "type", content = "value", rename_all = "kebab-case"))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(tag = "type", content = "value", rename_all = "kebab-case")
+)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub enum SizeLength {
@@ -79,6 +86,12 @@ pub enum SizeLength {
 /// A `<length-percentage>` accepted by sizing properties, including `anchor-size()`
 /// within math expressions.
 pub type SizeLengthPercentage = DimensionPercentage<SizeLength>;
+
+/// A typed `calc-size()` function in a preferred-size calculation context.
+pub type SizeCalcSize = CalcSize<Size, SizeLength>;
+
+/// A typed `calc-size()` function in a maximum-size calculation context.
+pub type MaxSizeCalcSize = CalcSize<MaxSize, SizeLength>;
 
 /// Either an anchor-aware `<length-percentage>`, or the `auto` keyword.
 ///
@@ -137,7 +150,11 @@ pub enum AnchorSide {
 /// A keyword accepted as an `anchor()` side.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Parse, ToCss)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "kebab-case"))]
+#[cfg_attr(
+  feature = "serde",
+  derive(serde::Serialize, serde::Deserialize),
+  serde(rename_all = "kebab-case")
+)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub enum AnchorSideKeyword {
@@ -470,7 +487,6 @@ impl TryAdd<SizeLength> for SizeLength {
     }
   }
 
-
   fn canonical_order(&self, other: &SizeLength) -> Option<std::cmp::Ordering> {
     match (self, other) {
       (SizeLength::Length(_), SizeLength::AnchorSize(_)) => Some(std::cmp::Ordering::Less),
@@ -555,10 +571,7 @@ impl TryInto<Angle> for SizeLength {
 impl IsCompatible for AnchorSize {
   fn is_compatible(&self, browsers: crate::targets::Browsers) -> bool {
     Feature::AnchorSizeSize.is_compatible(browsers)
-      && self
-        .fallback
-        .as_ref()
-        .is_none_or(|fallback| fallback.is_compatible(browsers))
+      && self.fallback.as_ref().is_none_or(|fallback| fallback.is_compatible(browsers))
   }
 }
 
@@ -627,13 +640,10 @@ impl std::ops::Mul<CSSNumber> for InsetLength {
 impl TryAdd<InsetLength> for InsetLength {
   fn try_add(&self, other: &InsetLength) -> Option<InsetLength> {
     match (self, other) {
-      (InsetLength::Length(a), InsetLength::Length(b)) => {
-        a.try_add(b).map(InsetLength::Length)
-      }
+      (InsetLength::Length(a), InsetLength::Length(b)) => a.try_add(b).map(InsetLength::Length),
       _ => None,
     }
   }
-
 
   fn canonical_order(&self, other: &InsetLength) -> Option<std::cmp::Ordering> {
     match (self, other) {
@@ -660,9 +670,7 @@ impl PartialOrd<InsetLength> for InsetLength {
 impl TryOp for InsetLength {
   fn try_op<F: FnOnce(f32, f32) -> f32>(&self, rhs: &Self, op: F) -> Option<Self> {
     match (self, rhs) {
-      (InsetLength::Length(a), InsetLength::Length(b)) => {
-        a.try_op(b, op).map(InsetLength::Length)
-      }
+      (InsetLength::Length(a), InsetLength::Length(b)) => a.try_op(b, op).map(InsetLength::Length),
       _ => None,
     }
   }
@@ -748,9 +756,7 @@ impl IsCompatible for DimensionPercentage<InsetLength> {
   }
 }
 
-fn parse_anchor_name<'i, 't>(
-  input: &mut Parser<'i, 't>,
-) -> Result<String, ParseError<'i, ParserError<'i>>> {
+fn parse_anchor_name<'i, 't>(input: &mut Parser<'i, 't>) -> Result<String, ParseError<'i, ParserError<'i>>> {
   DashedIdent::parse(input).map(|name| name.0.to_string())
 }
 
@@ -791,10 +797,24 @@ pub enum Size {
   Stretch(VendorPrefix),
   /// The `contain` keyword.
   Contain,
+  /// A `calc-size()` function.
+  CalcSize(Box<SizeCalcSize>),
 }
 
 impl<'i> Parse<'i> for Size {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if let Ok(value) = input.try_parse(|input| {
+      SizeCalcSize::parse_with(input, |input| {
+        let value = Size::parse(input)?;
+        if matches!(value, Size::Contain | Size::FitContentFunction(_)) {
+          return Err(input.new_custom_error(ParserError::InvalidValue));
+        }
+        Ok(value)
+      })
+    }) {
+      return Ok(Self::CalcSize(Box::new(value)));
+    }
+
     let res = input.try_parse(|input| {
       let ident = input.expect_ident()?;
       Ok(match_ignore_ascii_case! { &*ident,
@@ -862,6 +882,7 @@ impl ToCss for Size {
         dest.write_str(")")
       }
       LengthPercentage(l) => l.to_css(dest),
+      CalcSize(value) => value.to_css(dest),
     }
   }
 }
@@ -884,6 +905,7 @@ impl IsCompatible for Size {
       }
       .is_compatible(browsers),
       Contain => false, // ??? no data in mdn
+      CalcSize(_) => false,
       Auto => true,
     }
   }
@@ -924,10 +946,24 @@ pub enum MaxSize {
   Stretch(VendorPrefix),
   /// The `contain` keyword.
   Contain,
+  /// A `calc-size()` function.
+  CalcSize(Box<MaxSizeCalcSize>),
 }
 
 impl<'i> Parse<'i> for MaxSize {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if let Ok(value) = input.try_parse(|input| {
+      MaxSizeCalcSize::parse_with(input, |input| {
+        let value = MaxSize::parse(input)?;
+        if matches!(value, MaxSize::None | MaxSize::Contain | MaxSize::FitContentFunction(_)) {
+          return Err(input.new_custom_error(ParserError::InvalidValue));
+        }
+        Ok(value)
+      })
+    }) {
+      return Ok(Self::CalcSize(Box::new(value)));
+    }
+
     let res = input.try_parse(|input| {
       let ident = input.expect_ident()?;
       Ok(match_ignore_ascii_case! { &*ident,
@@ -995,6 +1031,7 @@ impl ToCss for MaxSize {
         dest.write_str(")")
       }
       LengthPercentage(l) => l.to_css(dest),
+      CalcSize(value) => value.to_css(dest),
     }
   }
 }
@@ -1017,6 +1054,7 @@ impl IsCompatible for MaxSize {
       }
       .is_compatible(browsers),
       Contain => false, // ??? no data in mdn
+      CalcSize(_) => false,
       None => true,
     }
   }
@@ -1281,7 +1319,10 @@ impl SizeHandler {
 #[cfg(test)]
 mod tests {
   use super::{AnchorPositionOrAuto, AnchorSizeOrAuto, MaxSize, Size};
-  use crate::{printer::PrinterOptions, traits::{Parse, ToCss}};
+  use crate::{
+    printer::PrinterOptions,
+    traits::{Parse, ToCss},
+  };
   use cssparser::{Parser, ParserInput};
 
   fn parse_and_serialize<T>(source: &str) -> Result<String, ()>
@@ -1291,9 +1332,7 @@ mod tests {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     let value = parser.parse_entirely(T::parse).map_err(|_| ())?;
-    value
-      .to_css_string(PrinterOptions::default())
-      .map_err(|_| ())
+    value.to_css_string(PrinterOptions::default()).map_err(|_| ())
   }
 
   #[test]
@@ -1310,42 +1349,23 @@ mod tests {
       ("anchor-size(width --x)", "anchor-size(--x width)"),
       ("anchor-size(\\2d\\2d x width)", "anchor-size(--x width)"),
       ("anchor-size(--x width, 10%)", "anchor-size(--x width, 10%)"),
-      (
-        "anchor-size(--x self-block, -1px)",
-        "anchor-size(--x self-block, -1px)",
-      ),
+      ("anchor-size(--x self-block, -1px)", "anchor-size(--x self-block, -1px)"),
       ("anchor-size(10px)", "anchor-size(10px)"),
       (
         "anchor-size(width, calc(10px + 5%))",
         "anchor-size(width, calc(5% + 10px))",
       ),
-      (
-        "calc(anchor-size(width) * 2)",
-        "calc(2 * anchor-size(width))",
-      ),
-      (
-        "calc(anchor-size(width) / -2)",
-        "calc(-.5 * anchor-size(width))",
-      ),
+      ("calc(anchor-size(width) * 2)", "calc(2 * anchor-size(width))"),
+      ("calc(anchor-size(width) / -2)", "calc(-.5 * anchor-size(width))"),
       (
         "calc(anchor-size(width) + anchor-size(height))",
         "calc(anchor-size(width) + anchor-size(height))",
       ),
-      (
-        "calc(anchor-size(width) + 10px)",
-        "calc(10px + anchor-size(width))",
-      ),
-      (
-        "min(anchor-size(width), 10px)",
-        "min(anchor-size(width), 10px)",
-      ),
+      ("calc(anchor-size(width) + 10px)", "calc(10px + anchor-size(width))"),
+      ("min(anchor-size(width), 10px)", "min(anchor-size(width), 10px)"),
     ] {
       assert_eq!(parse_and_serialize::<Size>(source).unwrap(), expected, "{source}");
-      assert_eq!(
-        parse_and_serialize::<MaxSize>(source).unwrap(),
-        expected,
-        "{source}"
-      );
+      assert_eq!(parse_and_serialize::<MaxSize>(source).unwrap(), expected, "{source}");
     }
   }
 
@@ -1361,14 +1381,8 @@ mod tests {
         "anchor(--x inside, calc(1px + 5%))",
         "anchor(--x inside, calc(5% + 1px))",
       ),
-      (
-        "calc(anchor(inside) + 1px)",
-        "calc(1px + anchor(inside))",
-      ),
-      (
-        "calc(anchor(inside) * 2)",
-        "calc(2 * anchor(inside))",
-      ),
+      ("calc(anchor(inside) + 1px)", "calc(1px + anchor(inside))"),
+      ("calc(anchor(inside) * 2)", "calc(2 * anchor(inside))"),
       ("min(anchor(inside), 10px)", "min(anchor(inside), 10px)"),
       (
         "anchor(inside, anchor-size(width))",
@@ -1407,10 +1421,7 @@ mod tests {
       "anchor(inside, 1px --x)",
       "anchor(10px)",
     ] {
-      assert!(
-        parse_and_serialize::<AnchorPositionOrAuto>(source).is_err(),
-        "{source}"
-      );
+      assert!(parse_and_serialize::<AnchorPositionOrAuto>(source).is_err(), "{source}");
     }
   }
 
@@ -1442,6 +1453,95 @@ mod tests {
     }
     for source in ["none", "10px", "50%", "calc(10px + 5%)", "fit-content(20em)"] {
       assert!(parse_and_serialize::<MaxSize>(source).is_ok(), "{source}");
+    }
+  }
+
+  #[test]
+  fn parses_complete_preferred_size_calc_size_grammar() {
+    for (source, expected) in [
+      ("calc-size(auto, size)", "calc-size(auto, size)"),
+      ("calc-size(auto, size + 1px)", "calc-size(auto, 1px + size)"),
+      ("calc-size(auto, size / 2)", "calc-size(auto, .5 * size)"),
+      ("calc-size(auto, 50%)", "calc-size(auto, 50%)"),
+      ("calc-size(min-content, size)", "calc-size(min-content, size)"),
+      (
+        "calc-size(max-content, min(size, 10px))",
+        "calc-size(max-content, min(size, 10px))",
+      ),
+      ("calc-size(fit-content, size)", "calc-size(fit-content, size)"),
+      ("calc-size(stretch, size)", "calc-size(stretch, size)"),
+      (
+        "calc-size(-webkit-fill-available, size)",
+        "calc-size(-webkit-fill-available, size)",
+      ),
+      ("calc-size(any, 1px)", "calc-size(any, 1px)"),
+      ("calc-size(10%, size)", "calc-size(10%, size)"),
+      ("calc-size(1px + 2px, size)", "calc-size(3px, size)"),
+      (
+        "calc-size(anchor-size(width), size)",
+        "calc-size(anchor-size(width), size)",
+      ),
+      (
+        "calc-size(calc-size(auto, size), size)",
+        "calc-size(calc-size(auto, size), size)",
+      ),
+      (
+        "calc-size(auto, round(up, size, 20px))",
+        "calc-size(auto, round(up, size, 20px))",
+      ),
+      ("calc-size(auto, sign(size) * 1px)", "calc-size(auto, 1px * sign(size))"),
+      ("calc-size(auto, size, ignored tokens)", "calc-size(auto, size)"),
+      ("calc-size(auto, size; color: red)", "calc-size(auto, size)"),
+    ] {
+      assert_eq!(parse_and_serialize::<Size>(source).unwrap(), expected, "{source}");
+    }
+  }
+
+  #[test]
+  fn parses_max_size_calc_size_without_preferred_only_bases() {
+    for source in [
+      "calc-size(min-content, size)",
+      "calc-size(max-content, size)",
+      "calc-size(fit-content, size)",
+      "calc-size(stretch, size)",
+      "calc-size(any, 1px)",
+      "calc-size(10%, size)",
+      "calc-size(anchor-size(width), size)",
+      "calc-size(calc-size(any, 1px), size)",
+    ] {
+      assert_eq!(parse_and_serialize::<MaxSize>(source).unwrap(), source, "{source}");
+    }
+  }
+
+  #[test]
+  fn rejects_invalid_sizing_calc_size_neighbors() {
+    for source in [
+      "calc-size(any, size)",
+      "calc-size(any, min(size, 10px))",
+      "calc-size(auto, 0)",
+      "calc-size(auto, 1)",
+      "calc-size(auto, 1deg)",
+      "calc-size(auto size)",
+      "calc-size(auto, calc-size(auto, size))",
+      "calc-size(auto, size + garbage)",
+      "calc-size(contain, size)",
+      "calc-size(fit-content(20px), size)",
+      "calc-size(none, size)",
+    ] {
+      assert!(parse_and_serialize::<Size>(source).is_err(), "Size accepted {source}");
+    }
+
+    for source in [
+      "calc-size(auto, size)",
+      "calc-size(calc-size(auto, size), size)",
+      "calc-size(none, size)",
+      "calc-size(contain, size)",
+      "calc-size(fit-content(20px), size)",
+    ] {
+      assert!(
+        parse_and_serialize::<MaxSize>(source).is_err(),
+        "MaxSize accepted {source}"
+      );
     }
   }
 }

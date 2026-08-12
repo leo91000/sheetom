@@ -425,6 +425,7 @@ impl<'i> Parse<'i> for FlexCalcSize {
       if matches!(basis, FlexCalcSizeBasis::Any) && calc_size_contains_size(&calculation) {
         return Err(input.new_custom_error(ParserError::InvalidValue));
       }
+      while input.next_including_whitespace_and_comments().is_ok() {}
       Ok(Self { basis, calculation })
     })
   }
@@ -1531,6 +1532,10 @@ mod tests {
         "calc-size(auto, sign(size) * 1px)",
         "calc-size(auto, 1px * sign(size))",
       ),
+      (
+        "calc-size(auto, size, ignored tokens)",
+        "calc-size(auto, size)",
+      ),
     ] {
       let property = parse_typed("flex-basis", source);
       assert_eq!(
@@ -1552,7 +1557,6 @@ mod tests {
       "calc-size(auto, 1)",
       "calc-size(auto, 1deg)",
       "calc-size(auto size)",
-      "calc-size(auto, size, 1px)",
       "calc-size(auto, calc-size(auto, size))",
     ] {
       assert_typed_rejection("flex-basis", source);

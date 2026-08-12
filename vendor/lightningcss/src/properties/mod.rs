@@ -97,6 +97,7 @@ pub mod border;
 pub mod border_image;
 pub mod border_radius;
 pub mod box_shadow;
+pub mod calc_size;
 pub mod contain;
 pub mod css_modules;
 pub mod custom;
