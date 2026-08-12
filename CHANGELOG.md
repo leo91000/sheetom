@@ -1,5 +1,18 @@
 # sheetom
 
+## 0.1.0-rc.7
+
+### Patch Changes
+
+- d970977: Add the explicit, ESM-only `@sheetom/wasm` backend with the same private Engine Binding, parser, resource limits, and browser-shaped facade as the native package.
+- 11231cd: Preserve compact position and size separators in background and mask CSSOM getters by projecting their typed layered state.
+- e92635e: Publish the root, WebAssembly, and thirteen native implementation packages from one verified lockstep artifact set.
+- 8aee179: Record and verify WebAssembly browser, bundler, memory, and performance evidence in every RC7-or-later Compatibility Report.
+- 2cb6a04: Reject incompatible CSS engine binaries through a generated, fail-closed ABI identity before creating CSSOM state.
+- 43a5fda: Move every native addon into an exact, platform-specific `@sheetom/native-*` optional package so the root package contains only the portable JavaScript facade and loader.
+- f0e70f7: Replace the native-only large-stack parser thread with stack-safe shared rule, custom-function, value and JSON traversal for native and WebAssembly engines.
+- d1de3bf: Version the root, WebAssembly, and native implementation packages as one lockstep Changesets cohort.
+
 ## 0.1.0-rc.6
 
 ### Minor Changes
