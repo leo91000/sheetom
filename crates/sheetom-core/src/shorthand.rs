@@ -3648,9 +3648,11 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
         "column-rule-inset-start",
         "row-rule-inset-end",
         "row-rule-inset-start",
+        "rule-break",
         "rule-color",
         "rule-inset-end",
         "rule-inset-start",
+        "rule-visibility-items",
     ];
     const TWO_VALUE: &[&str] = &[
         "border-block-color",
@@ -3666,11 +3668,9 @@ fn structural_cardinality(name: &str, longhand_count: usize) -> Option<usize> {
         "overscroll-behavior",
         "row-rule-inset-cap",
         "row-rule-inset-junction",
-        "rule-break",
         "rule-inset-cap",
         "rule-inset-junction",
         "rule-style",
-        "rule-visibility-items",
         "timeline-trigger-activation-range",
         "timeline-trigger-active-range",
     ];
@@ -3738,9 +3738,9 @@ fn validate_structural_longhand(name: &str, value: &str) -> Option<String> {
     } else if name.contains("rule-inset") {
         Some("padding-top")
     } else if name.ends_with("rule-break") {
-        return matches!(value, "normal" | "none" | "spanning-item").then(|| value.to_owned());
+        return matches!(value, "normal" | "none" | "intersection").then(|| value.to_owned());
     } else if name.ends_with("rule-visibility-items") {
-        return matches!(value, "normal" | "none" | "all").then(|| value.to_owned());
+        return matches!(value, "normal" | "all" | "between" | "around").then(|| value.to_owned());
     } else if name.starts_with("corner-") && name.ends_with("-shape") {
         return matches!(
             value,

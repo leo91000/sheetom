@@ -8,7 +8,7 @@
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
     "shorthandGrammarContractsSha256": "0bd7cc507f3c451d36b3f4318eb791ae27d4f7540803e13686f063af051e2495",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "f919f433870dad2e97b458ee7bcdc427b8f008042994e1d7183e8d4558c27002"
+    "valueCapabilitiesSha256": "de64e4683d6ee161200c0c48fd822dab2815ccb83d2cf902ae983c623c7f293e"
   },
   "profiles": [
     {
@@ -1099,7 +1099,10 @@
       "property": "rule-break",
       "codec": "uniform",
       "breadthCaseId": "shorthand.rule-break.concrete-default",
-      "propertyBranchIds": []
+      "propertyBranchIds": [
+        "native.rule-break.intersection",
+        "native.rule-break.pair-invalid"
+      ]
     },
     {
       "property": "rule-color",
@@ -1147,7 +1150,10 @@
       "property": "rule-visibility-items",
       "codec": "uniform",
       "breadthCaseId": "shorthand.rule-visibility-items.concrete-default",
-      "propertyBranchIds": []
+      "propertyBranchIds": [
+        "native.rule-visibility-items.around",
+        "native.rule-visibility-items.pair-invalid"
+      ]
     },
     {
       "property": "rule-width",
@@ -1672,6 +1678,100 @@
       "preserves": "native.rule.full",
       "chromium": {
         "id": "native.rule.duplicate-style-invalid",
+        "accepted": false,
+        "items": [],
+        "longhands": [],
+        "shorthandValue": "",
+        "priority": "",
+        "cssText": ""
+      }
+    },
+    {
+      "id": "native.rule-break.intersection",
+      "property": "rule-break",
+      "branch": "intersection keyword",
+      "input": "intersection",
+      "accepted": true,
+      "chromium": {
+        "id": "native.rule-break.intersection",
+        "accepted": true,
+        "items": [
+          "column-rule-break",
+          "row-rule-break"
+        ],
+        "longhands": [
+          {
+            "name": "column-rule-break",
+            "value": "intersection",
+            "priority": ""
+          },
+          {
+            "name": "row-rule-break",
+            "value": "intersection",
+            "priority": ""
+          }
+        ],
+        "shorthandValue": "intersection",
+        "priority": "",
+        "cssText": "rule-break: intersection;"
+      }
+    },
+    {
+      "id": "native.rule-break.pair-invalid",
+      "property": "rule-break",
+      "branch": "multiple partition values",
+      "input": "none intersection",
+      "accepted": false,
+      "preserves": "native.rule-break.intersection",
+      "chromium": {
+        "id": "native.rule-break.pair-invalid",
+        "accepted": false,
+        "items": [],
+        "longhands": [],
+        "shorthandValue": "",
+        "priority": "",
+        "cssText": ""
+      }
+    },
+    {
+      "id": "native.rule-visibility-items.around",
+      "property": "rule-visibility-items",
+      "branch": "around keyword",
+      "input": "around",
+      "accepted": true,
+      "chromium": {
+        "id": "native.rule-visibility-items.around",
+        "accepted": true,
+        "items": [
+          "column-rule-visibility-items",
+          "row-rule-visibility-items"
+        ],
+        "longhands": [
+          {
+            "name": "column-rule-visibility-items",
+            "value": "around",
+            "priority": ""
+          },
+          {
+            "name": "row-rule-visibility-items",
+            "value": "around",
+            "priority": ""
+          }
+        ],
+        "shorthandValue": "around",
+        "priority": "",
+        "cssText": "rule-visibility-items: around;"
+      }
+    },
+    {
+      "id": "native.rule-visibility-items.pair-invalid",
+      "property": "rule-visibility-items",
+      "branch": "multiple visibility values",
+      "input": "between around",
+      "accepted": false,
+      "preserves": "native.rule-visibility-items.around",
+      "chromium": {
+        "id": "native.rule-visibility-items.pair-invalid",
         "accepted": false,
         "items": [],
         "longhands": [],

@@ -246,6 +246,50 @@ const cases = [
         probes: ["font-palette"],
     },
     {
+        id: "rule-break-shorthand-mutate-remove",
+        operations: [
+            ["set", "rule-break", "intersection", "important"],
+            ["set", "row-rule-break", "none", "important"],
+            ["remove", "row-rule-break"],
+        ],
+        probes: ["rule-break", "column-rule-break", "row-rule-break"],
+    },
+    {
+        id: "invalid-rule-break-pair-is-atomic",
+        operations: [
+            ["set", "rule-break", "intersection", "important"],
+            ["set", "rule-break", "none intersection", ""],
+            ["set", "rule-break", "spanning-item", ""],
+        ],
+        probes: ["rule-break", "column-rule-break", "row-rule-break"],
+    },
+    {
+        id: "rule-visibility-shorthand-mutate-remove",
+        operations: [
+            ["set", "rule-visibility-items", "around", "important"],
+            ["set", "row-rule-visibility-items", "between", "important"],
+            ["remove", "row-rule-visibility-items"],
+        ],
+        probes: [
+            "rule-visibility-items",
+            "column-rule-visibility-items",
+            "row-rule-visibility-items",
+        ],
+    },
+    {
+        id: "invalid-rule-visibility-pair-is-atomic",
+        operations: [
+            ["set", "rule-visibility-items", "around", "important"],
+            ["set", "rule-visibility-items", "between around", ""],
+            ["set", "rule-visibility-items", "none", ""],
+        ],
+        probes: [
+            "rule-visibility-items",
+            "column-rule-visibility-items",
+            "row-rule-visibility-items",
+        ],
+    },
+    {
         id: "math-layout-new-keywords",
         operations: [
             ["set", "font-size", "MATH", ""],
