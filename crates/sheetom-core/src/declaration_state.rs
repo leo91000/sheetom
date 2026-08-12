@@ -635,7 +635,9 @@ impl DeclarationState {
                 .is_some_and(|group| group.id == group_id)
             {
                 if !record.pending_substitution() {
-                    let observable = if is_gap_rule_longhand(&record.name) {
+                    let observable = if is_gap_rule_longhand(&record.name)
+                        || record.value.observable_survives_group_break()
+                    {
                         record.observable_value().to_owned()
                     } else {
                         materialize_static_observable(
@@ -3497,6 +3499,17 @@ mod tests {
         assert_eq!(
             state.get_property_value("background"),
             "none, image-set(url(\"a.png\") 1x)"
+        );
+
+        state.set_property(
+            "background",
+            "image-set(url(a.png) 1x) center/cover no-repeat red",
+            "",
+        );
+        state.set_property("background-position-x", "right", "");
+        assert_eq!(
+            state.get_property_value("background"),
+            "image-set(url(\"a.png\") 1x) right center / cover no-repeat red"
         );
     }
 }
