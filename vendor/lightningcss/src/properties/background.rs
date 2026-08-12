@@ -222,19 +222,70 @@ enum_property! {
   }
 }
 
-enum_property! {
-  /// A value for the [background-clip](https://drafts.csswg.org/css-backgrounds-4/#background-clip) property.
-  pub enum BackgroundClip {
-    /// The background is clipped to the border box.
-    BorderBox,
-    /// The background is clipped to the padding box.
-    PaddingBox,
-    /// The background is clipped to the content box.
-    ContentBox,
-    /// The background is clipped to the area painted by the border.
-    Border,
-    /// The background is clipped to the text content of the element.
-    Text,
+/// A value for the [background-clip](https://drafts.csswg.org/css-backgrounds-4/#background-clip) property.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum BackgroundClip {
+  /// The background is clipped to the border box.
+  BorderBox,
+  /// The background is clipped to the padding box.
+  PaddingBox,
+  /// The background is clipped to the content box.
+  ContentBox,
+  /// The background is clipped to the area painted by the border.
+  BorderArea,
+  /// The background is clipped to the text content of the element.
+  Text,
+  /// The background is clipped to the painted border and the text content.
+  #[cfg_attr(feature = "serde", serde(rename = "border-area text"))]
+  BorderAreaText,
+}
+
+impl<'i> Parse<'i> for BackgroundClip {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let location = input.current_source_location();
+    let ident = input.expect_ident()?;
+    Ok(match_ignore_ascii_case! { ident,
+      "border-box" => BackgroundClip::BorderBox,
+      "padding-box" => BackgroundClip::PaddingBox,
+      "content-box" => BackgroundClip::ContentBox,
+      "border-area" => {
+        if input.try_parse(|input| input.expect_ident_matching("text")).is_ok() {
+          BackgroundClip::BorderAreaText
+        } else {
+          BackgroundClip::BorderArea
+        }
+      },
+      "text" => {
+        if input.try_parse(|input| input.expect_ident_matching("border-area")).is_ok() {
+          BackgroundClip::BorderAreaText
+        } else {
+          BackgroundClip::Text
+        }
+      },
+      _ => return Err(location.new_unexpected_token_error(
+        cssparser::Token::Ident(ident.clone())
+      ))
+    })
+  }
+}
+
+impl ToCss for BackgroundClip {
+  fn to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError>
+  where
+    W: std::fmt::Write,
+  {
+    dest.write_str(match self {
+      BackgroundClip::BorderBox => "border-box",
+      BackgroundClip::PaddingBox => "padding-box",
+      BackgroundClip::ContentBox => "content-box",
+      BackgroundClip::BorderArea => "border-area",
+      BackgroundClip::Text => "text",
+      BackgroundClip::BorderAreaText => "border-area text",
+    })
   }
 }
 
@@ -271,6 +322,14 @@ impl BackgroundClip {
       self,
       BackgroundClip::BorderBox | BackgroundClip::PaddingBox | BackgroundClip::ContentBox
     )
+  }
+
+  fn contains_border_area(&self) -> bool {
+    matches!(self, BackgroundClip::BorderArea | BackgroundClip::BorderAreaText)
+  }
+
+  fn contains_text(&self) -> bool {
+    matches!(self, BackgroundClip::Text | BackgroundClip::BorderAreaText)
   }
 }
 
@@ -425,6 +484,9 @@ impl<'i> Parse<'i> for Background<'i> {
       if let Some(origin) = origin {
         clip = Some(origin.into());
       }
+    }
+    if origin.is_none() && clip.as_ref().is_some_and(BackgroundClip::contains_border_area) {
+      origin = Some(BackgroundOrigin::BorderBox);
     }
 
     Ok(Background {
@@ -980,7 +1042,7 @@ impl<'i> BackgroundHandler<'i> {
         && origins.len() == len
         && clips.0.len() == len
       {
-        let clip_prefixes = if clips.0.iter().any(|clip| *clip == BackgroundClip::Text) {
+        let clip_prefixes = if clips.0.iter().any(BackgroundClip::contains_text) {
           context.targets.prefixes(clips.1, Feature::BackgroundClip)
         } else {
           clips.1
@@ -1101,7 +1163,7 @@ impl<'i> BackgroundHandler<'i> {
     }
 
     if let Some((clips, vp)) = clips {
-      let prefixes = if clips.iter().any(|clip| *clip == BackgroundClip::Text) {
+      let prefixes = if clips.iter().any(BackgroundClip::contains_text) {
         context.targets.prefixes(vp, Feature::BackgroundClip)
       } else {
         vp
@@ -1141,5 +1203,64 @@ fn is_background_property(property_id: &PropertyId) -> bool {
     | PropertyId::BackgroundClip(_)
     | PropertyId::Background => true,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::{
+    printer::PrinterOptions,
+    properties::{Property, PropertyId},
+    stylesheet::ParserOptions,
+  };
+
+  fn parse(name: &str, source: &str) -> Option<String> {
+    let property = Property::parse_string(
+      PropertyId::from(name),
+      source,
+      ParserOptions::default(),
+    )
+    .ok()?;
+    if matches!(property, Property::Unparsed(_)) {
+      return None;
+    }
+    property.value_to_css_string(PrinterOptions::default()).ok()
+  }
+
+  #[test]
+  fn parses_background_clip_level_four_values() {
+    for (source, expected) in [
+      ("border-area", "border-area"),
+      ("text", "text"),
+      ("border-area text", "border-area text"),
+      ("text border-area", "border-area text"),
+      ("border-area, text", "border-area, text"),
+    ] {
+      assert_eq!(parse("background-clip", source).as_deref(), Some(expected), "{source}");
+    }
+
+    for source in [
+      "border",
+      "border-area border-area",
+      "text text",
+      "content-box text",
+      "border-area content-box",
+    ] {
+      assert_eq!(parse("background-clip", source), None, "{source}");
+    }
+  }
+
+  #[test]
+  fn parses_background_clip_level_four_inside_the_shorthand() {
+    for (source, expected) in [
+      ("border-area", "border-box border-area"),
+      ("text", "text"),
+      ("text border-area", "border-box border-area text"),
+      ("content-box border-area text", "content-box border-area text"),
+      ("border-area content-box", "content-box border-area"),
+      ("none, text border-area", "none, border-box border-area text"),
+    ] {
+      assert_eq!(parse("background", source).as_deref(), Some(expected), "{source}");
+    }
   }
 }
