@@ -52,6 +52,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "transform origin depth calculation",
+        source: "transform-origin: calc(1px + 2%) center calc(3px + 4px)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
