@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 960,
+  "mismatchCases": 952,
   "summary": {
-    "acceptance": 99,
+    "acceptance": 91,
     "observable": 592,
     "cssText": 592,
     "items": 478,
@@ -7290,62 +7290,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.10fd920960cbbad4",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.200b3f170a69f8da",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.383c2d85761d6865",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.84146c35a7debd11",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.8dc09f1f1ae0a5d2",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.93dfa3335f8fa73a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.ec2ab50375d53a82",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "text-fit",
-      "sample": "webref-sample.f654ce7ad735c6cc",
-      "kinds": [
-        "acceptance"
       ]
     },
     {

@@ -82,6 +82,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "text fit deferred percentage math",
+        source: "text-fit: grow per-line-all min(calc(-1%), 25%)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
