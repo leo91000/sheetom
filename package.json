@@ -1,12 +1,14 @@
 {
   "name": "sheetom",
   "version": "0.1.0-rc.7",
-  "description": "A browser-compatible authoring CSSOM for server-side JavaScript runtimes",
+  "description": "A browser-compatible mutable CSSOM for JavaScript runtimes",
   "keywords": [
     "css",
     "cssom",
     "stylesheet",
-    "lightningcss"
+    "rust",
+    "napi",
+    "wasm"
   ],
   "license": "MIT",
   "repository": {
@@ -70,7 +72,7 @@
     "conformance:drift": "node scripts/check-wpt-drift.ts",
     "conformance:record": "node scripts/record-compatibility.ts",
     "docs:build": "typedoc",
-    "docs:check": "typedoc --emit none",
+    "docs:check": "node scripts/check-documentation.ts && typedoc --emit none",
     "fuzz": "vitest run --project fuzz",
     "generate:engine-abi": "node scripts/engine-abi.ts --check",
     "generate:css-style-declaration-types": "node scripts/generate-css-style-declaration-types.ts --check",

@@ -2,7 +2,7 @@
 status: accepted
 ---
 
-# Project layered shorthands from semantic state
+# ADR 0177: Project layered shorthands from semantic state
 
 Expanded `background`, `mask`, and `-webkit-mask` longhands derive from the typed layer state. Their observable position and size views use the same values, while the Recovered Component Value Tree records only whether those components were explicitly authored. A shared layered shorthand projection owns that boundary; it does not split or reparse source or serialized strings, and it keeps Vendored Lightning Source unchanged. This accepts a focused internal refactor so compact separators, multi-layer values, and future lexical spellings cannot silently replace valid semantic components with defaults.
 
