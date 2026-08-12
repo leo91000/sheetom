@@ -17,7 +17,7 @@
     { "type": "filter-value-list", "coverage": "representative", "evidence": "compatibility/property-value-probes.json", "values": ["blur(1px)", "url(\"x.svg#filter\")"] },
     { "type": "frequency", "coverage": "representative", "evidence": null, "values": ["1Hz"] },
     { "type": "ident-token", "coverage": "representative", "evidence": "vendor/cssparser/src/tokenizer.rs", "values": ["sheetom-ident"] },
-    { "type": "image", "coverage": "representative", "evidence": "scripts/test-native-crash-safety.mjs", "values": ["url(\"x.png\")", "linear-gradient(red, blue)", "image-set(url(a.png) 1x)"] },
+    { "type": "image", "coverage": "representative", "evidence": "scripts/test-native-crash-safety.ts", "values": ["url(\"x.png\")", "linear-gradient(red, blue)", "image-set(url(a.png) 1x)"] },
     { "type": "image-1D", "coverage": "representative", "evidence": null, "values": ["stripes(red 1fr, blue 1fr)"] },
     { "type": "integer", "coverage": "representative", "evidence": "compatibility/numeric-property-contracts.json", "values": ["1", "0", "-1"] },
     { "type": "length-percentage", "coverage": "representative", "evidence": "compatibility/numeric-property-contracts.json", "values": ["1px", "10%", "calc(1px + 5%)"] },

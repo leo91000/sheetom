@@ -47,7 +47,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     }));
     const processSafetyReportPath = path.join(directory, "process-safety.json");
     const processSafetyContractSha256 = createHash("sha256")
-      .update(await readFile("scripts/test-native-crash-safety.mjs"))
+      .update(await readFile("scripts/test-native-crash-safety.ts"))
       .digest("hex");
     await writeFile(processSafetyReportPath, JSON.stringify({
       schemaVersion: 1,
@@ -97,7 +97,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         .update(await readFile("compatibility/browser-geometric-contracts.json"))
         .digest("hex"),
       generatorSha256: createHash("sha256")
-        .update(await readFile("scripts/browser-geometric-differential.mjs"))
+        .update(await readFile("scripts/browser-geometric-differential.ts"))
         .digest("hex"),
     }));
     const webrefPropertyBranches = JSON.parse(await readFile(
@@ -176,7 +176,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     execFileSync(
       process.execPath,
       [
-        "scripts/compose-wasm-backend-evidence.mjs",
+        "scripts/compose-wasm-backend-evidence.ts",
         "--direct",
         wasmDirectReportPath,
         "--bundlers",
@@ -207,7 +207,7 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
     execFileSync(
       process.execPath,
       [
-        "scripts/record-compatibility.mjs",
+        "scripts/record-compatibility.ts",
         "--output",
         output,
         `--operation-report=${operationReportPath}`,

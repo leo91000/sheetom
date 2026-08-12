@@ -62,7 +62,7 @@ jobs:
       - run: npm run wasm:test:performance -- --output "$RUNNER_TEMP/wasm-performance.json"
       - name: Compose backend evidence
         run: >-
-          node scripts/compose-wasm-backend-evidence.mjs
+          node scripts/compose-wasm-backend-evidence.ts
           --direct "$RUNNER_TEMP/wasm-direct.json"
           --bundlers "$RUNNER_TEMP/wasm-bundlers.json"
           --performance "$RUNNER_TEMP/wasm-performance.json"
