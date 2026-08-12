@@ -187,7 +187,7 @@ fn synthesize_special_shorthand(
         "font-variant" => synthesize_font_variant(records, safe),
         "grid" => synthesize_grid(records, safe),
         "grid-area" => synthesize_grid_area(records, safe),
-        "grid-column" | "grid-row" => synthesize_grid_line(records, safe),
+        "grid-column" | "grid-row" => synthesize_grid_line(name, records, safe),
         "grid-template" => synthesize_grid_template(records, safe),
         "mask" => synthesize_mask(records, safe),
         "offset" => synthesize_offset(records, safe),
@@ -726,7 +726,7 @@ fn synthesize_flex(records: &[&DeclarationRecord], safe: bool) -> Option<String>
     Some(format!("{grow} {shrink} {basis}"))
 }
 
-fn synthesize_grid_line(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+fn synthesize_grid_line(name: &str, records: &[&DeclarationRecord], safe: bool) -> Option<String> {
     if records.len() != 2 {
         return None;
     }
@@ -752,7 +752,7 @@ fn synthesize_grid_line(records: &[&DeclarationRecord], safe: bool) -> Option<St
         )
         .is_ok_and(|value| value.recovered().contains_context_dependent_sign())
     }) {
-        return None;
+        return synthesize_typed_shorthand(records, name, safe);
     }
     Some(if end == "auto" {
         start.to_owned()
@@ -787,7 +787,7 @@ fn synthesize_grid_area(records: &[&DeclarationRecord], safe: bool) -> Option<St
         )
         .is_ok_and(|value| value.recovered().contains_context_dependent_sign())
     }) {
-        return None;
+        return synthesize_typed_shorthand(records, "grid-area", safe);
     }
     let retained = values
         .iter()
@@ -1868,6 +1868,14 @@ fn observable_shorthand_override(
 ) -> Option<(String, Option<String>)> {
     if shorthand == "grid" && longhand == "grid-auto-flow" && safe_value == "row dense" {
         return Some(("dense".to_owned(), None));
+    }
+    if matches!(shorthand, "grid-area" | "grid-column" | "grid-row")
+        && matches!(
+            longhand,
+            "grid-row-start" | "grid-column-start" | "grid-row-end" | "grid-column-end"
+        )
+    {
+        return project_observable_value(longhand, safe_value).map(|value| (value, None));
     }
     if shorthand == "background" {
         return observable_background_longhand(longhand, input).map(|value| (value, None));

@@ -2837,6 +2837,61 @@ mod tests {
     }
 
     #[test]
+    fn grid_placement_shorthands_use_typed_cssom_ordering() {
+        for (property, source, expected, longhand) in [
+            ("grid-row", "1 span / auto", "span 1", "grid-row-start"),
+            (
+                "grid-column",
+                "auto / 1 span",
+                "auto / span 1",
+                "grid-column-end",
+            ),
+            (
+                "grid-area",
+                "span sheetom-ident 1 / auto",
+                "span sheetom-ident",
+                "grid-row-start",
+            ),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(property, source, ""),
+                MutationOutcome::Applied,
+                "{property}: {source}"
+            );
+            assert_eq!(
+                state.get_property_value(property),
+                expected,
+                "{property}: {source} shorthand"
+            );
+            assert!(
+                state.get_property_value(longhand).starts_with("span"),
+                "{property}: {source} longhand"
+            );
+            let serialized = state.serialize_safe();
+            let mut reparsed = DeclarationState::new();
+            reparsed.replace_css_text(&serialized);
+            assert_eq!(
+                reparsed.serialize_safe(),
+                serialized,
+                "{property}: {source}"
+            );
+        }
+
+        let mut atomic = DeclarationState::new();
+        assert_eq!(
+            atomic.set_property("grid-row", "span 1", ""),
+            MutationOutcome::Applied
+        );
+        let before = atomic.css_text();
+        assert_eq!(
+            atomic.set_property("grid-row", "1 span sheetom-ident", ""),
+            MutationOutcome::InvalidValue
+        );
+        assert_eq!(atomic.css_text(), before);
+    }
+
+    #[test]
     fn simplified_numeric_calculations_remain_reparsably_idempotent() {
         for source in ["calc(1 / 2)", "calc(50%)"] {
             let mut state = DeclarationState::new();
