@@ -2167,6 +2167,59 @@
       "property": "math-depth",
       "input": "add(infinity)",
       "accepted": false
+    },
+    {
+      "id": "text-box.trim-start-only",
+      "property": "text-box",
+      "input": "trim-start",
+      "accepted": true,
+      "observable": "trim-start"
+    },
+    {
+      "id": "text-box.trim-end-only",
+      "property": "text-box",
+      "input": "trim-end",
+      "accepted": true,
+      "observable": "trim-end"
+    },
+    {
+      "id": "text-box.edge-only",
+      "property": "text-box",
+      "input": "auto",
+      "accepted": true,
+      "observable": "trim-both"
+    },
+    {
+      "id": "text-box.normal-components-reversed",
+      "property": "text-box",
+      "input": "auto none",
+      "accepted": true,
+      "observable": "normal"
+    },
+    {
+      "id": "text-box.paired-edge-before-trim",
+      "property": "text-box",
+      "input": "cap alphabetic trim-end",
+      "accepted": true,
+      "observable": "trim-end cap alphabetic"
+    },
+    {
+      "id": "text-box.interleaved-edge-invalid",
+      "property": "text-box",
+      "input": "cap trim-end alphabetic",
+      "accepted": false
+    },
+    {
+      "id": "text-box.duplicate-trim-invalid",
+      "property": "text-box",
+      "input": "trim-start trim-end",
+      "accepted": false
+    },
+    {
+      "id": "text-box.multiple-edges-invalid",
+      "property": "text-box",
+      "input": "auto text",
+      "accepted": false
     }
   ]
 }

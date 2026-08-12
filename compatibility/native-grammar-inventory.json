@@ -6,9 +6,9 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "7f5d5cc186f59f19f87738ab2266f290f05784bd8793e3ec9a5ac17be43c38b5",
+    "shorthandGrammarContractsSha256": "00f8ddf9c861e64a0ad9563519dd126a483eacb7a425e71526d6ce017e6926a6",
     "derivation": "manifest-profile-property-branches@1",
-    "valueCapabilitiesSha256": "2778f3f95a6aa4e37a1524e669bc51c96e288ca8c960877fafd45ad9e396b6ab"
+    "valueCapabilitiesSha256": "ae8d3ddc38f11ee77af2917ef80aca14c55d9b6d58b0ab6974da0070212b2997"
   },
   "profiles": [
     {
@@ -373,6 +373,12 @@
         "grammar.typed-object.outline",
         "grammar.typed-object.list-style",
         "grammar.typed-object.text-box",
+        "grammar.typed-object.text-box-trim-only",
+        "grammar.typed-object.text-box-edge-only",
+        "grammar.typed-object.text-box-edge-first",
+        "grammar.typed-object.text-box-normal-components",
+        "grammar.typed-object.text-box-interleaved-invalid",
+        "grammar.typed-object.text-box-duplicate-trim-invalid",
         "grammar.typed-object.outline-duplicate-invalid"
       ]
     },

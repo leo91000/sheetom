@@ -232,6 +232,24 @@ const cases = [
         probes: ["math-depth", "text-transform"],
     },
     {
+        id: "text-box-edge-before-trim",
+        operations: [["set", "text-box", "cap alphabetic trim-end", "important"]],
+        probes: ["text-box", "text-box-trim", "text-box-edge"],
+    },
+    {
+        id: "text-box-omitted-components",
+        operations: [["set", "text-box", "auto none", ""]],
+        probes: ["text-box", "text-box-trim", "text-box-edge"],
+    },
+    {
+        id: "invalid-text-box-is-atomic",
+        operations: [
+            ["set", "text-box", "trim-start text", "important"],
+            ["set", "text-box", "cap trim-end alphabetic", ""],
+        ],
+        probes: ["text-box", "text-box-trim", "text-box-edge"],
+    },
+    {
         id: "invalid-text-fit-is-atomic",
         operations: [
             ["set", "text-fit", "shrink consistent 10%", "important"],

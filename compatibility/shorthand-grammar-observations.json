@@ -3573,6 +3573,116 @@
       "cssText": "text-box: cap alphabetic;"
     },
     {
+      "id": "grammar.typed-object.text-box-trim-only",
+      "accepted": true,
+      "items": [
+        "text-box-trim",
+        "text-box-edge"
+      ],
+      "longhands": [
+        {
+          "name": "text-box-trim",
+          "value": "trim-start",
+          "priority": ""
+        },
+        {
+          "name": "text-box-edge",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "trim-start",
+      "priority": "",
+      "cssText": "text-box: trim-start;"
+    },
+    {
+      "id": "grammar.typed-object.text-box-edge-only",
+      "accepted": true,
+      "items": [
+        "text-box-trim",
+        "text-box-edge"
+      ],
+      "longhands": [
+        {
+          "name": "text-box-trim",
+          "value": "trim-both",
+          "priority": ""
+        },
+        {
+          "name": "text-box-edge",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "trim-both",
+      "priority": "",
+      "cssText": "text-box: trim-both;"
+    },
+    {
+      "id": "grammar.typed-object.text-box-edge-first",
+      "accepted": true,
+      "items": [
+        "text-box-trim",
+        "text-box-edge"
+      ],
+      "longhands": [
+        {
+          "name": "text-box-trim",
+          "value": "trim-end",
+          "priority": ""
+        },
+        {
+          "name": "text-box-edge",
+          "value": "cap alphabetic",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "trim-end cap alphabetic",
+      "priority": "",
+      "cssText": "text-box: trim-end cap alphabetic;"
+    },
+    {
+      "id": "grammar.typed-object.text-box-normal-components",
+      "accepted": true,
+      "items": [
+        "text-box-trim",
+        "text-box-edge"
+      ],
+      "longhands": [
+        {
+          "name": "text-box-trim",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "text-box-edge",
+          "value": "auto",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "normal",
+      "priority": "",
+      "cssText": "text-box: normal;"
+    },
+    {
+      "id": "grammar.typed-object.text-box-interleaved-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.typed-object.text-box-duplicate-trim-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
       "id": "grammar.typed-object.outline-duplicate-invalid",
       "accepted": false,
       "items": [],

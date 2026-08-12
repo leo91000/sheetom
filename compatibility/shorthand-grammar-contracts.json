@@ -152,6 +152,12 @@
       { "id": "grammar.typed-object.outline", "branch": "unordered components", "property": "outline", "input": "red dashed 2px", "accepted": true },
       { "id": "grammar.typed-object.list-style", "branch": "list style components", "property": "list-style", "input": "inside square", "accepted": true },
       { "id": "grammar.typed-object.text-box", "branch": "trim and paired edge", "property": "text-box", "input": "trim-both cap alphabetic", "accepted": true },
+      { "id": "grammar.typed-object.text-box-trim-only", "branch": "trim with omitted edge", "property": "text-box", "input": "trim-start", "accepted": true },
+      { "id": "grammar.typed-object.text-box-edge-only", "branch": "edge with omitted trim", "property": "text-box", "input": "auto", "accepted": true },
+      { "id": "grammar.typed-object.text-box-edge-first", "branch": "edge before trim", "property": "text-box", "input": "cap alphabetic trim-end", "accepted": true },
+      { "id": "grammar.typed-object.text-box-normal-components", "branch": "normal components in reverse order", "property": "text-box", "input": "auto none", "accepted": true },
+      { "id": "grammar.typed-object.text-box-interleaved-invalid", "branch": "interleaved edge tokens", "property": "text-box", "input": "cap trim-end alphabetic", "accepted": false, "preserves": "grammar.typed-object.text-box-edge-first" },
+      { "id": "grammar.typed-object.text-box-duplicate-trim-invalid", "branch": "duplicate trim", "property": "text-box", "input": "trim-start trim-end", "accepted": false, "preserves": "grammar.typed-object.text-box-trim-only" },
       { "id": "grammar.typed-object.outline-duplicate-invalid", "branch": "duplicate component", "property": "outline", "input": "solid dashed red", "accepted": false, "preserves": "grammar.typed-object.outline" }
     ] },
     { "codec": "uniform", "cases": [

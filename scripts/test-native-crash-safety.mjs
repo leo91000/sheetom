@@ -107,6 +107,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "text box unordered paired edge",
+        source: "text-box: cap alphabetic trim-end",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
