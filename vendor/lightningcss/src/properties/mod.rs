@@ -133,7 +133,7 @@ use crate::traits::{Parse, ParseWithOptions, Shorthand, ToCss};
 use crate::values::number::{CSSInteger, CSSNumber};
 use crate::values::string::CowArcStr;
 use crate::values::{
-  alpha::*, color::*, easing::EasingFunction, ident::DashedIdentReference, ident::NoneOrCustomIdentList, image::*,
+  alpha::*, color::*, easing::EasingFunction, ident::NoneOrCustomIdentList, image::*,
   length::*, position::*, rect::*, shape::FillRule, size::Size2D, time::Time,
 };
 use crate::vendor_prefix::VendorPrefix;
@@ -1447,7 +1447,7 @@ define_properties! {
   "line-height": LineHeight(LineHeight),
   "font": Font(FontShorthand<'i>) shorthand: true,
   "vertical-align": VerticalAlign(VerticalAlign),
-  "font-palette": FontPalette(DashedIdentReference<'i>),
+  "font-palette": FontPalette(FontPalette<'i>),
 
   "transition-property": TransitionProperty(SmallVec<[PropertyId<'i>; 1]>, VendorPrefix) / WebKit / Moz / Ms,
   "transition-duration": TransitionDuration(SmallVec<[Time; 1]>, VendorPrefix) / WebKit / Moz / Ms,

@@ -3283,7 +3283,7 @@ export type Declaration =
     }
   | {
       property: "font-palette";
-      value: DashedIdentReference;
+      value: FontPalette;
     }
   | {
       property: "transition-property";
@@ -5309,6 +5309,54 @@ export type FontWeight =
   | {
       type: "lighter";
     };
+/** A value for the font-palette property. */
+export type FontPalette =
+  | { type: "normal" }
+  | { type: "light" }
+  | { type: "dark" }
+  | { type: "custom"; value: DashedIdentReference }
+  | { type: "mix"; value: FontPaletteMix };
+/** A palette-mix() value. */
+export interface FontPaletteMix {
+  colorSpace: FontPaletteColorSpace;
+  hueInterpolationMethod: HueInterpolationMethod;
+  first: FontPaletteMixItem;
+  second: FontPaletteMixItem;
+}
+/** One palette and its optional interpolation weight. */
+export interface FontPaletteMixItem {
+  palette: FontPalette;
+  percentage?: FontPalettePercentage | null;
+}
+/** A direct or calculated font-palette interpolation weight. */
+export type FontPalettePercentage =
+  | { type: "percentage"; value: number }
+  | { type: "calculation"; value: unknown };
+/** A color space accepted by palette-mix(). */
+export type FontPaletteColorSpace =
+  | "srgb"
+  | "srgb-linear"
+  | "display-p3"
+  | "display-p3-linear"
+  | "a98-rgb"
+  | "prophoto-rgb"
+  | "rec2020"
+  | "lab"
+  | "oklab"
+  | "xyz"
+  | "xyz-d50"
+  | "xyz-d65"
+  | "hsl"
+  | "hwb"
+  | "lch"
+  | "oklch";
+/** Hue interpolation for polar color spaces. */
+export type HueInterpolationMethod =
+  | "shorter"
+  | "longer"
+  | "increasing"
+  | "decreasing"
+  | "specified";
 /**
  * An [absolute font weight](https://www.w3.org/TR/css-fonts-4/#font-weight-absolute-values), as used in the `font-weight` property.
  *
