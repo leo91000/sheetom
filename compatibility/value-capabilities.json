@@ -2279,6 +2279,72 @@
       "property": "text-decoration",
       "input": "spelling-error 1px 2px",
       "accepted": false
+    },
+    {
+      "id": "container-type.size-scroll-state",
+      "property": "container-type",
+      "input": "size scroll-state",
+      "accepted": true,
+      "observable": "size scroll-state"
+    },
+    {
+      "id": "container-type.reordered-size-scroll-state",
+      "property": "container-type",
+      "input": "scroll-state size",
+      "accepted": true,
+      "observable": "size scroll-state"
+    },
+    {
+      "id": "container-type.inline-size-scroll-state",
+      "property": "container-type",
+      "input": "inline-size scroll-state",
+      "accepted": true,
+      "observable": "inline-size scroll-state"
+    },
+    {
+      "id": "container.size-scroll-state",
+      "property": "container",
+      "input": "none / size scroll-state",
+      "accepted": true,
+      "observable": "none / size scroll-state"
+    },
+    {
+      "id": "container.reordered-size-scroll-state",
+      "property": "container",
+      "input": "none / scroll-state size",
+      "accepted": true,
+      "observable": "none / size scroll-state"
+    },
+    {
+      "id": "container.inline-size-scroll-state",
+      "property": "container",
+      "input": "none / inline-size scroll-state",
+      "accepted": true,
+      "observable": "none / inline-size scroll-state"
+    },
+    {
+      "id": "container-type.normal-scroll-state-invalid",
+      "property": "container-type",
+      "input": "normal scroll-state",
+      "accepted": false
+    },
+    {
+      "id": "container-type.conflicting-size-invalid",
+      "property": "container-type",
+      "input": "size inline-size",
+      "accepted": false
+    },
+    {
+      "id": "container-type.duplicate-scroll-state-invalid",
+      "property": "container-type",
+      "input": "scroll-state scroll-state",
+      "accepted": false
+    },
+    {
+      "id": "container.conflicting-size-invalid",
+      "property": "container",
+      "input": "card / size inline-size",
+      "accepted": false
     }
   ]
 }

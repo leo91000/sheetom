@@ -28,6 +28,18 @@ if (replaceCargoLockVersions(cargoLock, manifest.version) !== cargoLock) {
 
 const reportPath = `compatibility/baselines/${manifest.version}.json`;
 const report = JSON.parse(await readFile(reportPath, "utf8"));
+const shorthandGrammarContracts = JSON.parse(
+  await readFile("compatibility/shorthand-grammar-contracts.json", "utf8"),
+);
+const nativeGrammarInventory = JSON.parse(
+  await readFile("compatibility/native-grammar-inventory.json", "utf8"),
+);
+const valueCapabilities = JSON.parse(
+  await readFile("compatibility/value-capabilities.json", "utf8"),
+);
+const grammarCases = shorthandGrammarContracts.profiles.flatMap(profile => profile.cases);
+const grammarPositive = grammarCases.filter(grammarCase => grammarCase.accepted).length;
+const valuePositive = valueCapabilities.cases.filter(capability => capability.accepted).length;
 if (report.packageVersion !== manifest.version) {
   throw new Error(`${reportPath} does not describe package version ${manifest.version}`);
 }
@@ -64,21 +76,21 @@ const geometricGrammar = nativeGrammar?.geometricBranches;
 const numericProperties = nativeGrammar?.numericProperties;
 const propertyValues = nativeGrammar?.propertyValues;
 if (
-  nativeGrammar?.codecProfiles !== 24 ||
-  nativeGrammar?.shorthandProperties?.passed !== 129 ||
-  nativeGrammar?.shorthandProperties?.total !== 129 ||
-  shorthandGrammar?.passed !== 101 ||
-  shorthandGrammar?.total !== 101 ||
-  shorthandGrammar?.positive !== 76 ||
-  shorthandGrammar?.negative !== 25 ||
-  nativeGrammar?.propertyBranches?.passed !== 10 ||
-  nativeGrammar?.propertyBranches?.total !== 10 ||
-  nativeGrammar?.propertyBranches?.positive !== 5 ||
-  nativeGrammar?.propertyBranches?.negative !== 5 ||
-  nativeGrammar?.valueCapabilities?.passed !== 246 ||
-  nativeGrammar?.valueCapabilities?.total !== 246 ||
-  nativeGrammar?.valueCapabilities?.positive !== 164 ||
-  nativeGrammar?.valueCapabilities?.negative !== 82 ||
+  nativeGrammar?.codecProfiles !== shorthandGrammarContracts.profiles.length ||
+  nativeGrammar?.shorthandProperties?.passed !== nativeGrammarInventory.properties.length ||
+  nativeGrammar?.shorthandProperties?.total !== nativeGrammarInventory.properties.length ||
+  shorthandGrammar?.passed !== grammarCases.length ||
+  shorthandGrammar?.total !== grammarCases.length ||
+  shorthandGrammar?.positive !== grammarPositive ||
+  shorthandGrammar?.negative !== grammarCases.length - grammarPositive ||
+  nativeGrammar?.propertyBranches?.passed !== nativeGrammarInventory.propertyBranches.length ||
+  nativeGrammar?.propertyBranches?.total !== nativeGrammarInventory.propertyBranches.length ||
+  nativeGrammar?.propertyBranches?.positive !== nativeGrammarInventory.propertyBranches.filter(branch => branch.accepted).length ||
+  nativeGrammar?.propertyBranches?.negative !== nativeGrammarInventory.propertyBranches.filter(branch => !branch.accepted).length ||
+  nativeGrammar?.valueCapabilities?.passed !== valueCapabilities.cases.length ||
+  nativeGrammar?.valueCapabilities?.total !== valueCapabilities.cases.length ||
+  nativeGrammar?.valueCapabilities?.positive !== valuePositive ||
+  nativeGrammar?.valueCapabilities?.negative !== valueCapabilities.cases.length - valuePositive ||
   nativeGrammar?.numberResultMath?.passed !== 860 ||
   nativeGrammar?.numberResultMath?.total !== 860 ||
   nativeGrammar?.numberResultMath?.positive !== 616 ||

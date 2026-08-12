@@ -1901,6 +1901,52 @@
       "cssText": "container: card / inline-size;"
     },
     {
+      "id": "grammar.container.size-scroll-state",
+      "accepted": true,
+      "items": [
+        "container-name",
+        "container-type"
+      ],
+      "longhands": [
+        {
+          "name": "container-name",
+          "value": "card",
+          "priority": ""
+        },
+        {
+          "name": "container-type",
+          "value": "size scroll-state",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "card / size scroll-state",
+      "priority": "",
+      "cssText": "container: card / size scroll-state;"
+    },
+    {
+      "id": "grammar.container.reordered-scroll-state",
+      "accepted": true,
+      "items": [
+        "container-name",
+        "container-type"
+      ],
+      "longhands": [
+        {
+          "name": "container-name",
+          "value": "card",
+          "priority": ""
+        },
+        {
+          "name": "container-type",
+          "value": "inline-size scroll-state",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "card / inline-size scroll-state",
+      "priority": "",
+      "cssText": "container: card / inline-size scroll-state;"
+    },
+    {
       "id": "grammar.container.normal",
       "accepted": true,
       "items": [
@@ -1925,6 +1971,24 @@
     },
     {
       "id": "grammar.container.extra-slash-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.container.normal-scroll-state-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.container.conflicting-size-invalid",
       "accepted": false,
       "items": [],
       "longhands": [],

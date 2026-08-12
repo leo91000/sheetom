@@ -208,6 +208,25 @@ const cases = [
         probes: ["contain-intrinsic-size", "contain-intrinsic-width", "contain-intrinsic-height"],
     },
     {
+        id: "container-type-size-and-scroll-state",
+        operations: [["set", "container-type", "scroll-state size", "important"]],
+        probes: ["container-type"],
+    },
+    {
+        id: "container-shorthand-size-and-scroll-state",
+        operations: [["set", "container", "card / scroll-state inline-size", ""]],
+        probes: ["container", "container-name", "container-type"],
+    },
+    {
+        id: "invalid-container-type-is-atomic",
+        operations: [
+            ["set", "container", "card / size scroll-state", "important"],
+            ["set", "container-type", "normal scroll-state", ""],
+            ["set", "container", "card / size inline-size", ""],
+        ],
+        probes: ["container", "container-name", "container-type"],
+    },
+    {
         id: "math-layout-new-keywords",
         operations: [
             ["set", "font-size", "MATH", ""],

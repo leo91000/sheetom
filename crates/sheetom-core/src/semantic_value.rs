@@ -599,6 +599,32 @@ mod tests {
     }
 
     #[test]
+    fn parses_compound_container_types_through_the_vendored_standard_ast() {
+        for (source, expected) in [
+            ("size scroll-state", "size scroll-state"),
+            ("scroll-state size", "size scroll-state"),
+            ("inline-size scroll-state", "inline-size scroll-state"),
+            ("scroll-state inline-size", "inline-size scroll-state"),
+        ] {
+            let declaration = parse_standard_semantic_property("container-type", source).unwrap();
+            assert_eq!(declaration.parse_kind(), PropertyParseKind::Typed);
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
+        }
+
+        for source in [
+            "normal scroll-state",
+            "size inline-size",
+            "size size",
+            "scroll-state scroll-state",
+        ] {
+            assert!(
+                parse_semantic_property("container-type", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
     fn parses_contrast_color_in_every_standard_color_slot() {
         for (name, source) in [
             ("-webkit-tap-highlight-color", "contrast-color(red)"),
