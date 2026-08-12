@@ -160,4 +160,7 @@ inputs should disable diagnostics or drain the queue promptly.
 SheetOM does not implement DOM association, style-sheet collections, cascade,
 selector matching, resolved/computed values, layout, fetching, or sanitizing.
 See the release Compatibility Report for measured engine versions, WPT source,
-known divergences, and explicit exclusions.
+known divergences, explicit exclusions, and backend-specific evidence. From RC7,
+the WebAssembly dimension includes direct and buffered loading, independent
+instances, main-thread and worker execution, four bundlers in three browser
+engines, a memory soak, and an absolute Publisher-shaped workload.

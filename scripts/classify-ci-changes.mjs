@@ -67,9 +67,11 @@ const isWasmPath = filePath =>
     filePath.startsWith("vendor/cssparser/") ||
     filePath.startsWith("vendor/lightningcss/") ||
     filePath.startsWith("scripts/build-wasm-") ||
+    filePath.startsWith("scripts/compose-wasm-") ||
     filePath.startsWith("scripts/finalize-wasm-") ||
     filePath.startsWith("scripts/sync-wasm-") ||
-    filePath.startsWith("scripts/test-wasm-");
+    filePath.startsWith("scripts/test-wasm-") ||
+    filePath.startsWith("scripts/wasm-backend-");
 
 const isAutomationPath = filePath =>
     filePath.startsWith(".github/") ||

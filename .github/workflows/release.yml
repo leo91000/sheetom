@@ -172,6 +172,12 @@ jobs:
           name: wpt-firefox-stable
           path: reports/firefox
 
+      - name: Download WebAssembly backend evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-backend-evidence
+          path: reports/wasm
+
       - name: Record the release Compatibility Report
         shell: bash
         run: |
@@ -199,6 +205,7 @@ jobs:
             --webref-property-report="$RUNNER_TEMP/webref-properties.json" \
             --process-safety-report="$RUNNER_TEMP/process-safety.json" \
             --geometric-report="$RUNNER_TEMP/geometric.json" \
+            --wasm-backend-report=reports/wasm/wasm-backend-evidence.json \
             --wpt-report=chrome=reports/chrome/wpt-chrome.json \
             --wpt-report=firefox=reports/firefox/wpt-firefox.json
           cp "$RUNNER_TEMP/$version.json" "compatibility/baselines/$version.json"

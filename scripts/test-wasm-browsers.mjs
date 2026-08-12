@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,6 +65,7 @@ await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
 if (!address || typeof address === "string") throw new Error("HTTP server has no port");
 const origin = `http://127.0.0.1:${address.port}`;
+const observations = [];
 
 try {
   for (const browserType of selectedBrowsers) {
@@ -136,6 +137,15 @@ try {
         ok: true,
         css: ".worker {\n  color: red;\n}\n",
       });
+      observations.push({
+        browser: browserType.name(),
+        version: browser.version(),
+        mainThread: true,
+        worker: true,
+        streaming: true,
+        bufferedFallback: true,
+        independentInstances: true,
+      });
     } finally {
       await browser.close();
     }
@@ -152,3 +162,9 @@ console.log(
     .map(browserType => browserType?.name())
     .join(", ")}.`,
 );
+const outputIndex = process.argv.indexOf("--output");
+if (outputIndex !== -1) {
+  const output = process.argv[outputIndex + 1];
+  if (!output) throw new Error("--output requires a path");
+  await writeFile(output, `${JSON.stringify({ schemaVersion: 1, observations }, null, 2)}\n`);
+}

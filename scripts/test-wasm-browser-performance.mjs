@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createReadStream } from "node:fs";
 import { createServer } from "node:http";
-import { stat } from "node:fs/promises";
+import { stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -42,6 +42,7 @@ await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
 if (!address || typeof address === "string") throw new Error("HTTP server has no port");
 const moduleUrl = `http://127.0.0.1:${address.port}/index.js`;
+const observations = [];
 
 try {
   for (const [browserName, browserType] of selectedBrowsers) {
@@ -126,6 +127,7 @@ try {
       assert.ok(result.totalMilliseconds <= 30_000, `${browserName} Publisher workload exceeded 30s`);
       assert.ok(result.serializationMilliseconds <= 10_000, `${browserName} serialization exceeded 10s`);
       assert.ok(result.secondSerializationMilliseconds <= 5_000, `${browserName} cached serialization exceeded 5s`);
+      observations.push({ browser: browserName, version: browser.version(), ...result });
       console.log(JSON.stringify({ browser: browserName, ...result }));
     } finally {
       await browser.close();
@@ -133,4 +135,10 @@ try {
   }
 } finally {
   await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+}
+const outputIndex = process.argv.indexOf("--output");
+if (outputIndex !== -1) {
+  const output = process.argv[outputIndex + 1];
+  if (!output) throw new Error("--output requires a path");
+  await writeFile(output, `${JSON.stringify({ schemaVersion: 1, observations }, null, 2)}\n`);
 }

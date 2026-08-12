@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 import { createSheetOM } from "../packages/wasm/dist/index.js";
 
@@ -51,9 +51,17 @@ assert.ok(
   `WASM heap grew by ${secondCycleHeapGrowth} bytes in the second cycle`,
 );
 
-console.log(JSON.stringify({
+const report = {
+  schemaVersion: 1,
   cycles: 36,
   rssGrowth,
   secondCycleExternalGrowth,
   secondCycleHeapGrowth,
-}, null, 2));
+};
+console.log(JSON.stringify(report, null, 2));
+const outputIndex = process.argv.indexOf("--output");
+if (outputIndex !== -1) {
+  const output = process.argv[outputIndex + 1];
+  if (!output) throw new Error("--output requires a path");
+  await writeFile(output, `${JSON.stringify(report, null, 2)}\n`);
+}

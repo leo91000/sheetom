@@ -7,6 +7,10 @@ import {
   replaceCargoLockVersions,
   replaceCargoPackageVersion,
 } from "./sync-cargo-version.mjs";
+import {
+  validateWasmBackendEvidence,
+  wasmBackendContractSha256,
+} from "./wasm-backend-evidence.mjs";
 
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 if (manifest.version === "0.0.0") {
@@ -55,8 +59,24 @@ const valuePositive = valueCapabilities.cases.filter(capability => capability.ac
 if (report.packageVersion !== manifest.version) {
   throw new Error(`${reportPath} does not describe package version ${manifest.version}`);
 }
-if (report.schemaVersion !== 6) {
-  throw new Error("RC6 releases require Compatibility Report schema version 6");
+if (![6, 7].includes(report.schemaVersion)) {
+  throw new Error("RC6-or-later releases require Compatibility Report schema version 6 or 7");
+}
+const releaseCandidate = /-rc\.(\d+)$/u.exec(manifest.version);
+if (releaseCandidate && Number(releaseCandidate[1]) >= 7 && report.schemaVersion !== 7) {
+  throw new Error("RC7-or-later release candidates require WASM Compatibility evidence");
+}
+if (report.schemaVersion === 7) {
+  validateWasmBackendEvidence(report.evidence.wasmBackend);
+  if (
+    report.evidence.wasmBackend.contractSha256 !==
+    await wasmBackendContractSha256(process.cwd())
+  ) {
+    throw new Error("The WASM backend contract does not match the Compatibility Report");
+  }
+  if (!/^[0-9a-f]{64}$/u.test(report.evidence.wasmBackend.executionSha256 ?? "")) {
+    throw new Error("The WASM backend execution evidence is incomplete");
+  }
 }
 const expectedNativeEngine = await nativeEngineEvidence(process.cwd());
 if (JSON.stringify(report.baseline.nativeEngine) !== JSON.stringify(expectedNativeEngine)) {

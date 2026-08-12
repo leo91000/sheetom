@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "packageVersion", "baseline", "summary", "evidence", "resolutions"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "enum": [1, 2, 3, 4, 5, 6] },
+    "schemaVersion": { "enum": [1, 2, 3, 4, 5, 6, 7] },
     "packageVersion": { "type": "string" },
     "baseline": {
       "type": "object",
@@ -329,6 +329,32 @@
             "public": { "$ref": "#/$defs/passCount" }
           }
         },
+        "wasmBackend": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "backend",
+            "browsers",
+            "bundlers",
+            "performance",
+            "memory",
+            "reports",
+            "contractSha256",
+            "executionSha256"
+          ],
+          "properties": {
+            "schemaVersion": { "const": 1 },
+            "backend": { "const": "wasm" },
+            "browsers": { "type": "array", "minItems": 3, "maxItems": 3 },
+            "bundlers": { "type": "array", "minItems": 12, "maxItems": 12 },
+            "performance": { "type": "array", "minItems": 3, "maxItems": 3 },
+            "memory": { "type": "object" },
+            "reports": { "type": "object" },
+            "contractSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "executionSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        },
         "nativeWpt": {
           "type": "array",
           "items": {
@@ -393,7 +419,7 @@
       }
     },
     {
-      "if": { "properties": { "schemaVersion": { "enum": [5, 6] } } },
+      "if": { "properties": { "schemaVersion": { "enum": [5, 6, 7] } } },
       "then": {
         "properties": {
           "baseline": {
@@ -415,7 +441,7 @@
       }
     },
     {
-      "if": { "properties": { "schemaVersion": { "const": 6 } } },
+      "if": { "properties": { "schemaVersion": { "enum": [6, 7] } } },
       "then": {
         "properties": {
           "evidence": {
@@ -430,6 +456,20 @@
                   "webrefBranches": { "type": "object" }
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "schemaVersion": { "const": 7 } } },
+      "then": {
+        "properties": {
+          "evidence": {
+            "type": "object",
+            "required": ["wasmBackend"],
+            "properties": {
+              "wasmBackend": { "type": "object" }
             }
           }
         }
