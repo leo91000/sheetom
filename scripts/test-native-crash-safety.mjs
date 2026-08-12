@@ -67,6 +67,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "border image fill with context dependent math",
+        source: "border-image: image-set(url(a.png) 1x, url(b.png) 2x) sign(1em) fill / 2 / 3 round",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

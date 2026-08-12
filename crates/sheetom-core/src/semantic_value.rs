@@ -335,6 +335,36 @@ mod tests {
     use crate::RecoveredComponentKind;
 
     #[test]
+    fn parses_border_image_slice_fill_without_weakening_neighbors() {
+        for (source, expected) in [
+            ("fill 1", "1 fill"),
+            ("1 fill", "1 fill"),
+            ("1 1 fill", "1 fill"),
+            ("1 2 1 fill", "1 2 fill"),
+            ("1 2 1 2 fill", "1 2 fill"),
+            ("10% fill", "10% fill"),
+            ("sign(1em) fill", "sign(1em) fill"),
+        ] {
+            let declaration = parse_standard_semantic_property("border-image-slice", source)
+                .unwrap_or_else(|error| panic!("{source}: {error:?}"));
+            assert_eq!(declaration.canonical_value().unwrap(), expected, "{source}");
+        }
+
+        for source in [
+            "fill",
+            "1 fill fill",
+            "-1 fill",
+            "1 2 3 4 5 fill",
+            "1px fill",
+        ] {
+            assert!(
+                parse_standard_semantic_property("border-image-slice", source).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
     fn owns_typed_values_after_the_parser_input_is_dropped() {
         let declaration = {
             let name = String::from("background");

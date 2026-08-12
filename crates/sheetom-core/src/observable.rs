@@ -31,6 +31,10 @@ pub(crate) fn project_declaration(
     let mut canonical = declaration.canonical_value()?;
     if starts_math_function(input)
         && !starts_math_function(&canonical)
+        && crate::syntax::split_top_level_whitespace(input)
+            .is_some_and(|components| components.len() == 1)
+        && crate::syntax::split_top_level_whitespace(&canonical)
+            .is_some_and(|components| components.len() == 1)
         && crate::property_constraints::rejects_direct_negative_component(name)
         && crate::property_constraints::has_direct_negative_component(&canonical)
     {
@@ -370,6 +374,9 @@ fn serialize_typed_observable(
     if name == "transform-origin" {
         return serialize_transform_origin(input, canonical);
     }
+    if name == "border-image-slice" {
+        return serialize_border_image_slice_observable(input, canonical);
+    }
     if is_position_pair_property(name) {
         return serialize_position_pair(input, canonical);
     }
@@ -476,6 +483,73 @@ fn serialize_transform_origin(input: &str, canonical: &str) -> String {
     }
 
     output.join(" ")
+}
+
+fn serialize_border_image_slice_observable(input: &str, canonical: &str) -> String {
+    let Some(authored) = border_image_slice_components(input) else {
+        return canonical.to_owned();
+    };
+    let Some(canonical_components) = border_image_slice_components(canonical) else {
+        return canonical.to_owned();
+    };
+    let Some(authored) = expand_four_components(&authored) else {
+        return canonical.to_owned();
+    };
+    let Some(canonical_components) = expand_four_components(&canonical_components) else {
+        return canonical.to_owned();
+    };
+    let projected = authored
+        .into_iter()
+        .zip(canonical_components)
+        .map(|(authored, canonical)| {
+            if starts_math_function(authored) && !starts_math_function(canonical) {
+                format!("calc({canonical})")
+            } else {
+                canonicalize_leading_decimal(canonical)
+            }
+        })
+        .collect::<Vec<_>>();
+    let mut observable = compress_four_components(&projected);
+    if crate::syntax::split_top_level_whitespace(canonical).is_some_and(|components| {
+        components
+            .iter()
+            .any(|value| value.eq_ignore_ascii_case("fill"))
+    }) {
+        observable.push_str(" fill");
+    }
+    observable
+}
+
+fn border_image_slice_components(value: &str) -> Option<Vec<&str>> {
+    let components = crate::syntax::split_top_level_whitespace(value)?;
+    let values = components
+        .into_iter()
+        .filter(|component| !component.eq_ignore_ascii_case("fill"))
+        .collect::<Vec<_>>();
+    (1..=4).contains(&values.len()).then_some(values)
+}
+
+fn expand_four_components<'a>(values: &[&'a str]) -> Option<[&'a str; 4]> {
+    match values {
+        [first] => Some([first, first, first, first]),
+        [first, second] => Some([first, second, first, second]),
+        [first, second, third] => Some([first, second, third, second]),
+        [first, second, third, fourth] => Some([first, second, third, fourth]),
+        _ => None,
+    }
+}
+
+fn compress_four_components(values: &[String]) -> String {
+    if values[0] == values[1] && values[0] == values[2] && values[0] == values[3] {
+        return values[0].clone();
+    }
+    if values[0] == values[2] && values[1] == values[3] {
+        return format!("{} {}", values[0], values[1]);
+    }
+    if values[1] == values[3] {
+        return format!("{} {} {}", values[0], values[1], values[2]);
+    }
+    values.join(" ")
 }
 
 fn serialize_color_pair(input: &str) -> Option<String> {
@@ -1168,6 +1242,21 @@ mod tests {
             ),
         ] {
             assert_eq!(observable("transform-origin", input), expected, "{input}");
+        }
+    }
+
+    #[test]
+    fn serializes_border_image_slice_math_per_component() {
+        for (input, expected) in [
+            ("calc(-1) fill", "calc(-1) fill"),
+            ("calc(1 + 1) fill", "calc(2) fill"),
+            ("min(1, 2) fill", "calc(1) fill"),
+            ("min(1%, 2%) fill", "min(1%, 2%) fill"),
+            ("calc(1 + 1) 2 fill", "calc(2) 2 fill"),
+            ("2 calc(1 + 1) fill", "2 calc(2) fill"),
+            ("calc(1 + 1) calc(1 + 1) fill", "calc(2) fill"),
+        ] {
+            assert_eq!(observable("border-image-slice", input), expected, "{input}");
         }
     }
 

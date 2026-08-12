@@ -545,6 +545,9 @@ fn leading_math_function(source: &str) -> Option<String> {
 }
 
 pub(crate) fn is_numeric_extension_candidate(source: &str) -> bool {
+    if split_top_level_whitespace(source).is_none_or(|components| components.len() != 1) {
+        return false;
+    }
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     match parser.next().ok() {
@@ -1871,6 +1874,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn numeric_extensions_only_claim_a_complete_top_level_component() {
+        for source in ["1", "10%", "calc(1 + 1)", "sign(1em)"] {
+            assert!(is_numeric_extension_candidate(source), "{source}");
+        }
+        for source in ["", "fill 1", "1 fill", "calc(1 + 1) fill", "1 2"] {
+            assert!(!is_numeric_extension_candidate(source), "{source}");
+        }
+    }
 
     fn parse(
         extension: PropertyGrammarExtension,
