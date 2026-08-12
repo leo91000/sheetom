@@ -388,6 +388,24 @@
       ]
     },
     {
+      "property": "scroll-timeline-name",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none none" },
+        { "id": "names", "input": "--x, --y", "invalidNeighbor": "foo" },
+        { "id": "mixed", "input": "none, --x", "invalidNeighbor": "all" },
+        { "id": "repeated-none", "input": "none, none", "invalidNeighbor": "none," }
+      ]
+    },
+    {
+      "property": "view-timeline-name",
+      "branches": [
+        { "id": "none", "input": "none", "invalidNeighbor": "none none" },
+        { "id": "names", "input": "--x, --y", "invalidNeighbor": "foo" },
+        { "id": "mixed", "input": "--x, none", "invalidNeighbor": "all" },
+        { "id": "repeated-none", "input": "none, none", "invalidNeighbor": "none," }
+      ]
+    },
+    {
       "property": "animation-trigger",
       "branches": [
         { "id": "none", "input": "none", "invalidNeighbor": "none play" },

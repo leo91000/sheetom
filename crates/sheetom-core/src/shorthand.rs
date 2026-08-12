@@ -3220,20 +3220,22 @@ fn expand_scroll_timeline(value: &str) -> Option<Vec<(&'static str, String)>> {
         if components.is_empty() || components.len() > 2 {
             return None;
         }
-        let axis = components
-            .iter()
-            .find(|component| matches!(**component, "block" | "inline" | "x" | "y"))
-            .copied()
-            .unwrap_or("block");
-        let name = components
-            .iter()
-            .find(|component| !matches!(**component, "block" | "inline" | "x" | "y"))
-            .copied()?;
-        if name != "none" && !name.starts_with("--") {
-            return None;
+        let mut name = None;
+        let mut axis = None;
+        for component in components {
+            if let Some(value) = typed_longhand_value("scroll-timeline-axis", component) {
+                if axis.replace(value).is_some() {
+                    return None;
+                }
+                continue;
+            }
+            let value = typed_longhand_value("scroll-timeline-name", component)?;
+            if name.replace(value).is_some() {
+                return None;
+            }
         }
-        names.push(name);
-        axes.push(axis);
+        names.push(name?);
+        axes.push(axis.unwrap_or_else(|| "block".to_owned()));
     }
     Some(vec![
         ("scroll-timeline-name", names.join(", ")),

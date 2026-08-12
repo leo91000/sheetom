@@ -303,6 +303,48 @@ const cases = [
         ],
     },
     {
+        id: "scroll-timeline-mixed-name-list-mutate-remove",
+        operations: [
+            ["set", "scroll-timeline", "none inline, --x x", "important"],
+            ["set", "scroll-timeline-name", "none, none", "important"],
+            ["remove", "scroll-timeline-axis"],
+        ],
+        probes: ["scroll-timeline", "scroll-timeline-name", "scroll-timeline-axis"],
+    },
+    {
+        id: "view-timeline-mixed-name-list",
+        operations: [[
+            "set",
+            "view-timeline",
+            "none 10% 20%, --x inline auto",
+            "important",
+        ]],
+        probes: [
+            "view-timeline",
+            "view-timeline-name",
+            "view-timeline-axis",
+            "view-timeline-inset",
+        ],
+    },
+    {
+        id: "invalid-timeline-lists-are-atomic",
+        operations: [
+            ["set", "scroll-timeline", "none, none block", "important"],
+            ["set", "scroll-timeline", "none none", ""],
+            ["set", "view-timeline", "none, none block", "important"],
+            ["set", "view-timeline", "none none", ""],
+        ],
+        probes: [
+            "scroll-timeline",
+            "scroll-timeline-name",
+            "scroll-timeline-axis",
+            "view-timeline",
+            "view-timeline-name",
+            "view-timeline-axis",
+            "view-timeline-inset",
+        ],
+    },
+    {
         id: "math-layout-new-keywords",
         operations: [
             ["set", "font-size", "MATH", ""],

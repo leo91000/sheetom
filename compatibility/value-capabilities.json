@@ -1558,9 +1558,35 @@
       "observable": "--foo, --bar"
     },
     {
+      "id": "longhand.scroll-timeline-name-mixed-list",
+      "property": "scroll-timeline-name",
+      "input": "none,--foo,none",
+      "accepted": true,
+      "observable": "none, --foo, none"
+    },
+    {
       "id": "longhand.scroll-timeline-name-ordinary-invalid",
       "property": "scroll-timeline-name",
       "input": "foo",
+      "accepted": false
+    },
+    {
+      "id": "longhand.scroll-timeline-name-space-list-invalid",
+      "property": "scroll-timeline-name",
+      "input": "none none",
+      "accepted": false
+    },
+    {
+      "id": "longhand.view-timeline-name-mixed-list",
+      "property": "view-timeline-name",
+      "input": "--foo,none",
+      "accepted": true,
+      "observable": "--foo, none"
+    },
+    {
+      "id": "longhand.view-timeline-name-all-invalid",
+      "property": "view-timeline-name",
+      "input": "all",
       "accepted": false
     },
     {

@@ -142,6 +142,16 @@ const crashCases = [
         public: true,
     },
     {
+        name: "scroll timeline mixed none and name list",
+        source: "scroll-timeline: none inline, --x x",
+        public: true,
+    },
+    {
+        name: "view timeline mixed none and name list",
+        source: "view-timeline: none 10% 20%, --x inline auto",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
