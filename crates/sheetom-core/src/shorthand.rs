@@ -216,6 +216,7 @@ fn synthesize_special_shorthand(
         | "rule-inset-junction"
         | "rule-inset-start" => synthesize_rule_inset_component(name, records, safe),
         "scroll-timeline" => synthesize_scroll_timeline(records, safe),
+        "text-emphasis" => synthesize_text_emphasis(records, safe),
         "text-decoration" => synthesize_text_decoration(records, safe),
         "-webkit-text-stroke" => synthesize_text_stroke(records, safe),
         "text-box" => synthesize_text_box(records, safe),
@@ -269,6 +270,7 @@ fn has_authoritative_shorthand_synthesis(name: &str) -> bool {
             | "row-rule-inset"
             | "rule-inset"
             | "scroll-timeline"
+            | "text-emphasis"
             | "text-decoration"
             | "-webkit-text-stroke"
             | "text-box"
@@ -1073,6 +1075,19 @@ fn synthesize_outline(records: &[&DeclarationRecord], safe: bool) -> Option<Stri
     let style = record_value(records, "outline-style", safe)?;
     let width = record_value(records, "outline-width", safe)?;
     Some(format!("{color} {style} {width}"))
+}
+
+fn synthesize_text_emphasis(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let style = record_value(records, "text-emphasis-style", safe)?;
+    let color = record_value(records, "text-emphasis-color", safe)?;
+    let style_default = if safe { "none" } else { "initial" };
+    let color_default = if safe { "currentcolor" } else { "initial" };
+    match (style == style_default, color == color_default) {
+        (true, true) => Some(style_default.to_owned()),
+        (true, false) => Some(color.to_owned()),
+        (false, true) => Some(style.to_owned()),
+        (false, false) => Some(format!("{style} {color}")),
+    }
 }
 
 fn synthesize_rule_inset(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
@@ -1930,6 +1945,9 @@ fn observable_shorthand_override(
             return observable_mask_positions(longhand, input).map(|value| (value, None));
         }
     }
+    if shorthand == "text-emphasis" {
+        return observable_text_emphasis_longhand(longhand, input).map(|value| (value, None));
+    }
     if shorthand == "list-style" && longhand == "list-style-image" && safe_value == "none" {
         let components = split_top_level_whitespace(input)?;
         if !components
@@ -1940,6 +1958,35 @@ fn observable_shorthand_override(
         }
     }
     None
+}
+
+fn observable_text_emphasis_longhand(longhand: &str, input: &str) -> Option<String> {
+    let components = split_top_level_whitespace(input)?;
+    let color_index = components
+        .iter()
+        .position(|component| typed_longhand_value("text-emphasis-color", component).is_some());
+    match longhand {
+        "text-emphasis-color" => color_index.map_or_else(
+            || Some("initial".to_owned()),
+            |index| {
+                let source = components[index];
+                project_observable_value(longhand, source).or_else(|| Some(source.to_owned()))
+            },
+        ),
+        "text-emphasis-style" => {
+            let source = components
+                .iter()
+                .enumerate()
+                .filter_map(|(index, component)| (Some(index) != color_index).then_some(*component))
+                .collect::<Vec<_>>()
+                .join(" ");
+            if source.is_empty() {
+                return Some("initial".to_owned());
+            }
+            project_observable_value(longhand, &source).or(Some(source))
+        }
+        _ => None,
+    }
 }
 
 fn observable_mask_images(input: &str) -> Option<String> {
