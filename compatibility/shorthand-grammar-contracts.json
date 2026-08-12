@@ -54,7 +54,15 @@
       { "id": "grammar.columns.width", "branch": "width", "property": "columns", "input": "100px", "accepted": true },
       { "id": "grammar.columns.count", "branch": "count", "property": "columns", "input": "2", "accepted": true },
       { "id": "grammar.columns.both", "branch": "width and count", "property": "columns", "input": "100px 2", "accepted": true },
-      { "id": "grammar.columns.two-widths-invalid", "branch": "duplicate width", "property": "columns", "input": "100px 200px", "accepted": false, "preserves": "grammar.columns.both" }
+      { "id": "grammar.columns.height", "branch": "explicit height", "property": "columns", "input": "100px 2 / 300px", "accepted": true },
+      { "id": "grammar.columns.auto-height", "branch": "explicit initial height", "property": "columns", "input": "1px / auto", "accepted": true },
+      { "id": "grammar.columns.calculated-height", "branch": "calculated height", "property": "columns", "input": "2 / calc(10px + 20px)", "accepted": true },
+      { "id": "grammar.columns.zero-height", "branch": "unitless zero height", "property": "columns", "input": "auto / 0", "accepted": true },
+      { "id": "grammar.columns.two-widths-invalid", "branch": "duplicate width", "property": "columns", "input": "100px 200px", "accepted": false, "preserves": "grammar.columns.both" },
+      { "id": "grammar.columns.percentage-height-invalid", "branch": "percentage height", "property": "columns", "input": "auto / 10%", "accepted": false, "preserves": "grammar.columns.height" },
+      { "id": "grammar.columns.negative-height-invalid", "branch": "negative height", "property": "columns", "input": "auto / -1px", "accepted": false, "preserves": "grammar.columns.height" },
+      { "id": "grammar.columns.multiple-heights-invalid", "branch": "multiple heights", "property": "columns", "input": "auto / 1px 2px", "accepted": false, "preserves": "grammar.columns.height" },
+      { "id": "grammar.columns.second-slash-invalid", "branch": "multiple height separators", "property": "columns", "input": "auto / 1px / 2px", "accepted": false, "preserves": "grammar.columns.height" }
     ] },
     { "codec": "container", "cases": [
       { "id": "grammar.container.name", "branch": "name", "property": "container", "input": "card", "accepted": true },

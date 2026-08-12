@@ -57,6 +57,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "columns calculated height",
+        source: "columns: min(10em, 50vw) 3 / max(10px, calc(20px + 5vh))",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

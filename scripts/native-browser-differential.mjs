@@ -217,6 +217,44 @@ const cases = [
         probes: ["transform-origin"],
     },
     {
+        id: "columns-height-and-webkit-alias",
+        operations: [["set", "-webkit-columns", "2 100px / calc(10px + 20px)", "important"]],
+        probes: [
+            "columns",
+            "-webkit-columns",
+            "column-width",
+            "column-count",
+            "column-height",
+            "column-wrap",
+        ],
+    },
+    {
+        id: "columns-compatible-longhand-mutations",
+        operations: [
+            ["set", "columns", "100px 2 / 300px", "important"],
+            ["set", "column-height", "400px", "important"],
+            ["set", "column-wrap", "wrap", "important"],
+        ],
+        probes: ["columns", "column-height", "column-wrap"],
+    },
+    {
+        id: "columns-height-removal",
+        operations: [
+            ["set", "columns", "100px 2 / 300px", "important"],
+            ["set", "column-wrap", "wrap", "important"],
+            ["remove", "column-height"],
+        ],
+        probes: ["columns", "column-width", "column-count", "column-height", "column-wrap"],
+    },
+    {
+        id: "invalid-columns-height-is-atomic",
+        operations: [
+            ["set", "columns", "5px 3 / 100px", "important"],
+            ["set", "columns", "auto / 10%", ""],
+        ],
+        probes: ["columns", "column-height"],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",
