@@ -154,6 +154,24 @@ const cases = [
         probes: ["text-fit"],
     },
     {
+        id: "initial-letter-leading-sink-canonicalization",
+        operations: [["set", "initial-letter", "drop 1.5", "important"]],
+        probes: ["initial-letter"],
+    },
+    {
+        id: "initial-letter-calculated-size-and-sink",
+        operations: [["set", "initial-letter", "calc(1 + 1) calc(2 + 1)", ""]],
+        probes: ["initial-letter"],
+    },
+    {
+        id: "invalid-initial-letter-is-atomic",
+        operations: [
+            ["set", "initial-letter", "1.5 raise", "important"],
+            ["set", "initial-letter", "1 1.5", ""],
+        ],
+        probes: ["initial-letter"],
+    },
+    {
         id: "invalid-text-fit-is-atomic",
         operations: [
             ["set", "text-fit", "shrink consistent 10%", "important"],

@@ -1818,6 +1818,85 @@
       "property": "text-fit",
       "input": "none 10% 20%",
       "accepted": false
+    },
+    {
+      "id": "initial-letter.number-sink",
+      "property": "initial-letter",
+      "input": "1.5 1",
+      "accepted": true,
+      "observable": "1.5 1"
+    },
+    {
+      "id": "initial-letter.leading-drop",
+      "property": "initial-letter",
+      "input": "drop 1",
+      "accepted": true,
+      "observable": "1 drop"
+    },
+    {
+      "id": "initial-letter.trailing-raise",
+      "property": "initial-letter",
+      "input": "1 raise",
+      "accepted": true,
+      "observable": "1 raise"
+    },
+    {
+      "id": "initial-letter.calculated-size",
+      "property": "initial-letter",
+      "input": "calc(1 + 1) drop",
+      "accepted": true,
+      "observable": "calc(2) drop"
+    },
+    {
+      "id": "initial-letter.calculated-sink",
+      "property": "initial-letter",
+      "input": "1 calc(1.5)",
+      "accepted": true,
+      "observable": "1 calc(1.5)"
+    },
+    {
+      "id": "initial-letter.deferred-negative-size",
+      "property": "initial-letter",
+      "input": "calc(-1) raise",
+      "accepted": true,
+      "observable": "calc(-1) raise"
+    },
+    {
+      "id": "initial-letter.context-dependent-sink",
+      "property": "initial-letter",
+      "input": "1 sign(1em)",
+      "accepted": true,
+      "observable": "1 sign(1em)"
+    },
+    {
+      "id": "initial-letter.zero-size-invalid",
+      "property": "initial-letter",
+      "input": "0",
+      "accepted": false
+    },
+    {
+      "id": "initial-letter.fractional-direct-sink-invalid",
+      "property": "initial-letter",
+      "input": "1 1.5",
+      "accepted": false
+    },
+    {
+      "id": "initial-letter.missing-size-invalid",
+      "property": "initial-letter",
+      "input": "drop",
+      "accepted": false
+    },
+    {
+      "id": "initial-letter.third-component-invalid",
+      "property": "initial-letter",
+      "input": "1 drop 2",
+      "accepted": false
+    },
+    {
+      "id": "initial-letter.normal-neighbor-invalid",
+      "property": "initial-letter",
+      "input": "normal 1",
+      "accepted": false
     }
   ]
 }

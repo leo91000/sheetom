@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 952,
+  "mismatchCases": 946,
   "summary": {
-    "acceptance": 91,
+    "acceptance": 85,
     "observable": 592,
     "cssText": 592,
     "items": 478,
@@ -4955,48 +4955,6 @@
     {
       "property": "image-rendering",
       "sample": "webref-sample.b989cbbaf5b29794",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "initial-letter",
-      "sample": "webref-sample.158af63d80f94f5b",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "initial-letter",
-      "sample": "webref-sample.3c22a4ef6d6f1ce6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "initial-letter",
-      "sample": "webref-sample.5c402301c9097356",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "initial-letter",
-      "sample": "webref-sample.84938262b0159253",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "initial-letter",
-      "sample": "webref-sample.d25de2c818162871",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "initial-letter",
-      "sample": "webref-sample.d46d406414bfaa52",
       "kinds": [
         "acceptance"
       ]
