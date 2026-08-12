@@ -2,12 +2,12 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 1097,
+  "mismatchCases": 1078,
   "summary": {
-    "acceptance": 181,
-    "observable": 640,
-    "cssText": 640,
-    "items": 528,
+    "acceptance": 166,
+    "observable": 638,
+    "cssText": 638,
+    "items": 524,
     "atomicity": 0,
     "reparse": 22
   },
@@ -1377,13 +1377,6 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.0403d4a2e1e991e4",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.05e5677fcd4febaf",
       "kinds": [
         "cssText",
@@ -1444,13 +1437,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.18eb7fccf9cd0acd",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -1536,13 +1522,6 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.3c9535ae1b0a30ee",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.3ed8df29d3ad1004",
       "kinds": [
         "cssText",
@@ -1583,13 +1562,6 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.4f5fd59d622b7442",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.54aa50f756169ef7",
       "kinds": [
         "cssText",
@@ -1602,13 +1574,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.589c992d5f73494a",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -1637,25 +1602,9 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.5e5edc0b452cf356",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.5eb08d2d617e399b",
       "kinds": [
         "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.609db81669521437",
-      "kinds": [
-        "cssText",
-        "items",
         "observable"
       ]
     },
@@ -1677,13 +1626,6 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.6b0267e265907833",
-      "kinds": [
-        "items"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.6b15fa53ed4286c4",
       "kinds": [
         "cssText",
@@ -1696,13 +1638,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.6d8a859b581e9ecc",
-      "kinds": [
-        "items"
       ]
     },
     {
@@ -1771,24 +1706,10 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.7adb6aaf47d1f065",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.7bd08efaa11a0888",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.7ca9064fc0fc279e",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -1806,13 +1727,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.810bb8b06f98b0de",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -2029,13 +1943,6 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.eaab90f59cfaab63",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.eaebb6947c95d06e",
       "kinds": [
         "cssText",
@@ -2053,33 +1960,10 @@
     },
     {
       "property": "background",
-      "sample": "webref-sample.f07ce0fe8cb5e12e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "background",
       "sample": "webref-sample.f12d4750fa3d10c4",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.f20e1b39c83caab4",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background",
-      "sample": "webref-sample.f479d00b48c0b06a",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -2107,27 +1991,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "background-clip",
-      "sample": "webref-sample.42de59aa9f1c9a3d",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background-clip",
-      "sample": "webref-sample.75b92c5a18a6ae18",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "background-clip",
-      "sample": "webref-sample.f0e229ccfb210a09",
-      "kinds": [
-        "acceptance"
       ]
     },
     {

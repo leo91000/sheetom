@@ -603,7 +603,9 @@ fn synthesize_background(records: &[&DeclarationRecord], safe: bool) -> Option<S
                 components.push(value.to_owned());
             }
         }
-        if origin != "initial" || clip != "initial" {
+        if origin == "initial" && clip == "text" {
+            components.push(clip.to_owned());
+        } else if origin != "initial" || clip != "initial" {
             if origin == "initial" || clip == "initial" {
                 return None;
             }
@@ -1162,6 +1164,9 @@ fn synthesize_structural_shorthand(
     records: &[&DeclarationRecord],
     safe: bool,
 ) -> Option<String> {
+    if name == "background-position" {
+        return synthesize_background_position(records, safe);
+    }
     if matches!(name, "rule-width" | "rule-style" | "rule-color") && records.len() == 2 {
         let values = record_values(records, safe)?;
         return (values[0] == values[1]).then(|| values[0].clone());
@@ -1181,6 +1186,24 @@ fn synthesize_structural_shorthand(
         });
     }
     synthesize_repeated_pair(name, records, safe)
+}
+
+fn synthesize_background_position(records: &[&DeclarationRecord], safe: bool) -> Option<String> {
+    let x = value_list(record_value(records, "background-position-x", safe)?)?;
+    let y = value_list(record_value(records, "background-position-y", safe)?)?;
+    if x.len() != y.len() || x.is_empty() {
+        return None;
+    }
+    if x.len() == 1 && x[0] == "initial" && y[0] == "initial" {
+        return Some("initial".to_owned());
+    }
+    x.into_iter()
+        .zip(y)
+        .map(|(x, y)| {
+            (!matches!(x, "initial") && !matches!(y, "initial")).then(|| format!("{x} {y}"))
+        })
+        .collect::<Option<Vec<_>>>()
+        .map(|layers| layers.join(", "))
 }
 
 fn record_values(records: &[&DeclarationRecord], safe: bool) -> Option<Vec<String>> {
@@ -1758,12 +1781,20 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
         "round",
     ];
     let attachments = ["scroll", "fixed", "local"];
-    let boxes = ["border-box", "padding-box", "content-box"];
-    let box_values = components
+    let visual_boxes = ["border-box", "padding-box", "content-box"];
+    let visual_box_values = components
         .iter()
-        .filter(|component| boxes.contains(component))
+        .filter(|component| visual_boxes.contains(component))
         .copied()
         .collect::<Vec<_>>();
+    let has_border_area = components.contains(&"border-area");
+    let has_text = components.contains(&"text");
+    let special_clip = match (has_border_area, has_text) {
+        (true, true) => Some("border-area text"),
+        (true, false) => Some("border-area"),
+        (false, true) => Some("text"),
+        (false, false) => None,
+    };
     let slash = components.iter().position(|component| *component == "/");
     let (position_x, position_y) = position_axis_components(input)?;
     let value = match longhand {
@@ -1787,11 +1818,15 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
             .copied()
             .unwrap_or("initial")
             .to_owned(),
-        "background-origin" => box_values.first().copied().unwrap_or("initial").to_owned(),
-        "background-clip" => box_values
-            .get(1)
-            .or_else(|| box_values.first())
+        "background-origin" => visual_box_values
+            .first()
             .copied()
+            .or_else(|| has_border_area.then_some("border-box"))
+            .unwrap_or("initial")
+            .to_owned(),
+        "background-clip" => special_clip
+            .or_else(|| visual_box_values.get(1).copied())
+            .or_else(|| visual_box_values.first().copied())
             .unwrap_or("initial")
             .to_owned(),
         _ => return None,

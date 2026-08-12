@@ -30,7 +30,12 @@
       { "id": "grammar.background.color", "branch": "color", "property": "background", "input": "red", "accepted": true },
       { "id": "grammar.background.image", "branch": "image", "property": "background", "input": "linear-gradient(red, blue)", "accepted": true },
       { "id": "grammar.background.layer", "branch": "position size layer", "property": "background", "input": "url(\"x.png\") center / cover no-repeat red", "accepted": true },
-      { "id": "grammar.background.color-before-comma-invalid", "branch": "color before final layer", "property": "background", "input": "red, url(\"x.png\")", "accepted": false, "preserves": "grammar.background.color" }
+      { "id": "grammar.background.border-area-clip", "branch": "painted border clip", "property": "background", "input": "border-area", "accepted": true },
+      { "id": "grammar.background.text-clip", "branch": "text clip", "property": "background", "input": "text", "accepted": true },
+      { "id": "grammar.background.compound-clip", "branch": "painted border and text clip", "property": "background", "input": "text border-area", "accepted": true },
+      { "id": "grammar.background.origin-compound-clip", "branch": "visual origin and compound clip", "property": "background", "input": "content-box border-area text", "accepted": true },
+      { "id": "grammar.background.color-before-comma-invalid", "branch": "color before final layer", "property": "background", "input": "red, url(\"x.png\")", "accepted": false, "preserves": "grammar.background.color" },
+      { "id": "grammar.background.duplicate-clip-invalid", "branch": "duplicate compound clip keyword", "property": "background", "input": "border-area border-area", "accepted": false, "preserves": "grammar.background.compound-clip" }
     ] },
     { "codec": "border", "cases": [
       { "id": "grammar.border.width", "branch": "width", "property": "border", "input": "2px", "accepted": true },
