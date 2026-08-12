@@ -11,7 +11,7 @@ use crate::macros::*;
 use crate::printer::{Printer, PrinterOptions};
 use crate::targets::should_compile;
 use crate::traits::ParseWithOptions;
-use crate::traits::{IsCompatible, Parse, PropertyHandler, Shorthand, ToCss};
+use crate::traits::{IsCompatible, Parse, PropertyHandler, Shorthand, ToCss, TrySign};
 use crate::values::calc::Calc;
 use crate::values::color::{ColorSpaceName, HueInterpolationMethod};
 use crate::values::ident::DashedIdentReference;
@@ -420,6 +420,8 @@ pub enum FontSize {
   Absolute(AbsoluteFontSize),
   /// A relative font size keyword.
   Relative(RelativeFontSize),
+  /// The preferred font size for mathematical formulas.
+  Math,
 }
 
 impl IsCompatible for FontSize {
@@ -430,7 +432,7 @@ impl IsCompatible for FontSize {
       }
       FontSize::Length(l) => l.is_compatible(browsers),
       FontSize::Absolute(a) => a.is_compatible(browsers),
-      FontSize::Relative(..) => true,
+      FontSize::Relative(..) | FontSize::Math => true,
     }
   }
 }
@@ -858,7 +860,7 @@ impl IsCompatible for FontVariantCaps {
 }
 
 /// A value for the [line-height](https://www.w3.org/TR/2020/WD-css-inline-3-20200827/#propdef-line-height) property.
-#[derive(Debug, Clone, PartialEq, Parse, ToCss)]
+#[derive(Debug, Clone, PartialEq, ToCss)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
 #[cfg_attr(
   feature = "serde",
@@ -879,6 +881,30 @@ pub enum LineHeight {
 impl Default for LineHeight {
   fn default() -> LineHeight {
     LineHeight::Normal
+  }
+}
+
+impl<'i> Parse<'i> for LineHeight {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    if input.try_parse(|input| input.expect_ident_matching("normal")).is_ok() {
+      return Ok(Self::Normal);
+    }
+
+    let state = input.state();
+    let authored_function = matches!(input.next(), Ok(Token::Function(_)));
+    input.reset(&state);
+    if let Ok(value) = input.try_parse(CSSNumber::parse) {
+      if !authored_function && value < 0.0 {
+        return Err(input.new_custom_error(ParserError::InvalidValue));
+      }
+      return Ok(Self::Number(value));
+    }
+
+    let value = LengthPercentage::parse(input)?;
+    if !authored_function && value.try_sign().is_some_and(|sign| sign < 0.0) {
+      return Err(input.new_custom_error(ParserError::InvalidValue));
+    }
+    Ok(Self::Length(value))
   }
 }
 
@@ -1516,6 +1542,32 @@ mod tests {
         input
       );
       assert!(property.longhand(&PropertyId::from("font-size")).is_none());
+    }
+  }
+
+  #[test]
+  fn parses_math_font_sizes_inside_the_shorthand() {
+    for (input, expected) in [
+      ("math serif", "math serif"),
+      ("normal math / normal \"sheetom\"", "math sheetom"),
+      ("italic math/1.2 serif", "italic math / 1.2 serif"),
+    ] {
+      let property = Property::parse_string(PropertyId::from("font"), input, ParserOptions::default())
+        .expect("math font size should parse");
+      assert_eq!(
+        property
+          .value_to_css_string(PrinterOptions::default())
+          .expect("math font shorthand should serialize"),
+        expected,
+        "{input}",
+      );
+    }
+
+    for input in ["math math serif", "math / -1 serif", "math / normal"] {
+      assert!(matches!(
+        Property::parse_string(PropertyId::from("font"), input, ParserOptions::default()),
+        Ok(Property::Unparsed(_))
+      ), "{input}");
     }
   }
 
