@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 1006,
+  "mismatchCases": 972,
   "summary": {
-    "acceptance": 145,
+    "acceptance": 111,
     "observable": 592,
     "cssText": 592,
     "items": 478,
@@ -4294,67 +4294,11 @@
       ]
     },
     {
-      "property": "corner-block-end-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-block-end-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "corner-block-start-shape",
       "sample": "webref-sample.12eadfde933078e8",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "corner-block-start-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-block-start-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-bottom-left-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-bottom-left-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-bottom-right-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-bottom-right-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4366,67 +4310,11 @@
       ]
     },
     {
-      "property": "corner-bottom-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-bottom-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-end-end-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-end-end-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-end-start-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-end-start-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "corner-inline-end-shape",
       "sample": "webref-sample.12eadfde933078e8",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "corner-inline-end-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-inline-end-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4438,20 +4326,6 @@
       ]
     },
     {
-      "property": "corner-inline-start-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-inline-start-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "corner-left-shape",
       "sample": "webref-sample.12eadfde933078e8",
       "kinds": [
@@ -4460,39 +4334,11 @@
       ]
     },
     {
-      "property": "corner-left-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-left-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "corner-right-shape",
       "sample": "webref-sample.12eadfde933078e8",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "corner-right-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-right-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4505,80 +4351,10 @@
     },
     {
       "property": "corner-shape",
-      "sample": "webref-sample.97849d0fdc201dc2",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-shape",
       "sample": "webref-sample.bb7e0b1f6264ff98",
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "corner-shape",
-      "sample": "webref-sample.ccca0c856d129804",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-start-end-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-start-end-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-start-start-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-start-start-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-top-left-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-top-left-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-top-right-shape",
-      "sample": "webref-sample.2fcd7aef1b622855",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-top-right-shape",
-      "sample": "webref-sample.ab685f3979854654",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4587,20 +4363,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "corner-top-shape",
-      "sample": "webref-sample.23b5da672bb0852a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "corner-top-shape",
-      "sample": "webref-sample.785148f2772dcaf6",
-      "kinds": [
-        "acceptance"
       ]
     },
     {

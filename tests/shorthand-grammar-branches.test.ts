@@ -89,6 +89,54 @@ test("repeated logical and corner values match Chromium branches", () => {
   assert.equal(mutable.style.getPropertyValue("corner-shape"), "");
 });
 
+test("corner shapes retain bare infinite superellipse exponents", () => {
+  const rule = createRule();
+  rule.style.setProperty(
+    "corner-shape",
+    "superellipse(infinity) superellipse(-infinity)",
+  );
+
+  assert.deepEqual(
+    Array.from({ length: rule.style.length }, (_, index) => rule.style.item(index)),
+    [
+      "corner-top-left-shape",
+      "corner-top-right-shape",
+      "corner-bottom-right-shape",
+      "corner-bottom-left-shape",
+    ],
+  );
+  assert.deepEqual(
+    Array.from({ length: rule.style.length }, (_, index) =>
+      rule.style.getPropertyValue(rule.style.item(index))
+    ),
+    [
+      "superellipse(infinity)",
+      "superellipse(-infinity)",
+      "superellipse(infinity)",
+      "superellipse(-infinity)",
+    ],
+  );
+  assert.equal(
+    rule.style.getPropertyValue("corner-shape"),
+    "superellipse(infinity) superellipse(-infinity)",
+  );
+  assert.equal(
+    rule.style.cssText,
+    "corner-shape: superellipse(infinity) superellipse(-infinity);",
+  );
+
+  const before = rule.style.cssText;
+  rule.style.setProperty("corner-shape", "superellipse(NaN)");
+  assert.equal(rule.style.cssText, before);
+  rule.style.setProperty("corner-top-left-shape", "square");
+  assert.equal(
+    rule.style.getPropertyValue("corner-shape"),
+    "square superellipse(-infinity) superellipse(infinity)",
+  );
+  assert.equal(rule.style.removeProperty("corner-top-left-shape"), "square");
+  assert.equal(rule.style.getPropertyValue("corner-shape"), "");
+});
+
 test("compound placement values expand and synthesize like Chromium", () => {
   const cases = [
     {

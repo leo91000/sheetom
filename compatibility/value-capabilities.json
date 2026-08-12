@@ -1316,6 +1316,33 @@
       "observable": "superellipse(-1)"
     },
     {
+      "id": "longhand.corner-shape-positive-infinity",
+      "property": "corner-top-left-shape",
+      "input": "superellipse(infinity)",
+      "accepted": true,
+      "observable": "superellipse(infinity)"
+    },
+    {
+      "id": "longhand.corner-shape-negative-infinity",
+      "property": "corner-top-left-shape",
+      "input": "superellipse(-infinity)",
+      "accepted": true,
+      "observable": "superellipse(-infinity)"
+    },
+    {
+      "id": "longhand.corner-shape-calculated-nan",
+      "property": "corner-top-left-shape",
+      "input": "superellipse(calc(NaN))",
+      "accepted": true,
+      "observable": "superellipse(calc(NaN))"
+    },
+    {
+      "id": "longhand.corner-shape-bare-nan-invalid",
+      "property": "corner-top-left-shape",
+      "input": "superellipse(NaN)",
+      "accepted": false
+    },
+    {
       "id": "longhand.corner-shape-empty-superellipse-invalid",
       "property": "corner-top-left-shape",
       "input": "superellipse()",

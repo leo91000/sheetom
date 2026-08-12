@@ -72,6 +72,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "corner shape non finite exponents",
+        source: "corner-shape: superellipse(infinity) superellipse(-infinity) superellipse(calc(NaN))",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
