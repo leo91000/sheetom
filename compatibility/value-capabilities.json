@@ -2035,6 +2035,138 @@
       "property": "contain-intrinsic-size",
       "input": "auto none extra",
       "accepted": false
+    },
+    {
+      "id": "math-layout.font-size-math",
+      "property": "font-size",
+      "input": "MATH",
+      "accepted": true,
+      "observable": "math"
+    },
+    {
+      "id": "math-layout.baseline-shift-sub",
+      "property": "baseline-shift",
+      "input": "SUB",
+      "accepted": true,
+      "observable": "sub"
+    },
+    {
+      "id": "math-layout.baseline-shift-super",
+      "property": "baseline-shift",
+      "input": "super",
+      "accepted": true,
+      "observable": "super"
+    },
+    {
+      "id": "math-layout.text-transform-math-auto",
+      "property": "text-transform",
+      "input": "MATH-AUTO",
+      "accepted": true,
+      "observable": "math-auto"
+    },
+    {
+      "id": "math-layout.depth-auto-add",
+      "property": "math-depth",
+      "input": "AUTO-ADD",
+      "accepted": true,
+      "observable": "auto-add"
+    },
+    {
+      "id": "math-layout.depth-add-integer",
+      "property": "math-depth",
+      "input": "add(+1)",
+      "accepted": true,
+      "observable": "add(1)"
+    },
+    {
+      "id": "math-layout.depth-add-calculation",
+      "property": "math-depth",
+      "input": "add(calc(1 + 1))",
+      "accepted": true,
+      "observable": "add(calc(2))"
+    },
+    {
+      "id": "math-layout.depth-add-math-function",
+      "property": "math-depth",
+      "input": "add(min(1, 2))",
+      "accepted": true,
+      "observable": "add(calc(1))"
+    },
+    {
+      "id": "math-layout.depth-add-positive-infinity",
+      "property": "math-depth",
+      "input": "add(calc(infinity))",
+      "accepted": true,
+      "observable": "add(calc(infinity))"
+    },
+    {
+      "id": "math-layout.depth-add-negative-infinity",
+      "property": "math-depth",
+      "input": "add(calc(-infinity))",
+      "accepted": true,
+      "observable": "add(calc(-infinity))"
+    },
+    {
+      "id": "math-layout.depth-add-nan",
+      "property": "math-depth",
+      "input": "add(calc(NaN))",
+      "accepted": true,
+      "observable": "add(calc(NaN))"
+    },
+    {
+      "id": "math-layout.depth-add-division-by-zero",
+      "property": "math-depth",
+      "input": "add(calc(1 / 0))",
+      "accepted": true,
+      "observable": "add(calc(infinity))"
+    },
+    {
+      "id": "math-layout.font-size-extra-invalid",
+      "property": "font-size",
+      "input": "math extra",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.baseline-shift-pair-invalid",
+      "property": "baseline-shift",
+      "input": "sub super",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.text-transform-pair-invalid",
+      "property": "text-transform",
+      "input": "math-auto uppercase",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.depth-decimal-invalid",
+      "property": "math-depth",
+      "input": "add(1.0)",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.depth-empty-invalid",
+      "property": "math-depth",
+      "input": "add()",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.depth-extra-invalid",
+      "property": "math-depth",
+      "input": "add(1) extra",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.depth-unknown-function-invalid",
+      "property": "math-depth",
+      "input": "add(foo(1))",
+      "accepted": false
+    },
+    {
+      "id": "math-layout.depth-bare-infinity-invalid",
+      "property": "math-depth",
+      "input": "add(infinity)",
+      "accepted": false
     }
   ]
 }

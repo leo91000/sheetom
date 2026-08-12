@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 937,
+  "mismatchCases": 929,
   "summary": {
-    "acceptance": 76,
+    "acceptance": 68,
     "observable": 592,
     "cssText": 592,
     "items": 478,
@@ -1971,20 +1971,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "baseline-shift",
-      "sample": "webref-sample.11f58d17016e2bc7",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "baseline-shift",
-      "sample": "webref-sample.13e9048b03c54474",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4397,13 +4383,6 @@
       ]
     },
     {
-      "property": "font-size",
-      "sample": "webref-sample.9ffd99d1af829393",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "font-style",
       "sample": "webref-sample.f1831d474c657d10",
       "kinds": [
@@ -5868,34 +5847,6 @@
       ]
     },
     {
-      "property": "math-depth",
-      "sample": "webref-sample.2ac005b68dce01f6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "math-depth",
-      "sample": "webref-sample.71bf9cddd87a6774",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "math-depth",
-      "sample": "webref-sample.c6c16becb137b5e9",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "math-depth",
-      "sample": "webref-sample.facb4d48bec9147a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "opacity",
       "sample": "webref-sample.679f46bf5c6cb4ed",
       "kinds": [
@@ -7238,13 +7189,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "text-transform",
-      "sample": "webref-sample.3147794264b09230",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
