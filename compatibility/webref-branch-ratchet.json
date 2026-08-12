@@ -2,12 +2,12 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 817,
+  "mismatchCases": 798,
   "summary": {
-    "acceptance": 25,
-    "observable": 523,
-    "cssText": 523,
-    "items": 478,
+    "acceptance": 8,
+    "observable": 521,
+    "cssText": 521,
+    "items": 476,
     "atomicity": 0,
     "reparse": 17
   },
@@ -103,20 +103,6 @@
     {
       "property": "-webkit-clip-path",
       "sample": "webref-sample.f102cb92b24dc3aa",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-after",
-      "sample": "webref-sample.9b7fa097487b80aa",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-column-break-before",
-      "sample": "webref-sample.9b7fa097487b80aa",
       "kinds": [
         "acceptance"
       ]
@@ -985,13 +971,6 @@
       ]
     },
     {
-      "property": "-webkit-transform-style",
-      "sample": "webref-sample.3ae9a6a3d060a38c",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "-webkit-transition",
       "sample": "webref-sample.10e6d1597331feff",
       "kinds": [
@@ -1069,13 +1048,6 @@
       "kinds": [
         "cssText",
         "observable"
-      ]
-    },
-    {
-      "property": "all",
-      "sample": "webref-sample.4fcc5e2c6ec7561e",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4107,20 +4079,6 @@
       ]
     },
     {
-      "property": "display",
-      "sample": "webref-sample.115470415bde3b48",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "display",
-      "sample": "webref-sample.52975737da49e5fe",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "fill-opacity",
       "sample": "webref-sample.34dd25b141e323a8",
       "kinds": [
@@ -4348,31 +4306,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "grid-auto-flow",
-      "sample": "webref-sample.141dbf0ccaa35c77",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "grid-auto-flow",
-      "sample": "webref-sample.554b3e6551410cbe",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "grid-auto-flow",
-      "sample": "webref-sample.7b0076072b113944",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -4673,20 +4606,6 @@
     {
       "property": "hyphenate-limit-chars",
       "sample": "webref-sample.9a41cfe7c1ddf66e",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "image-rendering",
-      "sample": "webref-sample.6b2978a259749c20",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "image-rendering",
-      "sample": "webref-sample.b989cbbaf5b29794",
       "kinds": [
         "acceptance"
       ]
@@ -5830,20 +5749,6 @@
       ]
     },
     {
-      "property": "page-break-after",
-      "sample": "webref-sample.ad2abba1f4a69dfb",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "page-break-before",
-      "sample": "webref-sample.ad2abba1f4a69dfb",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "place-content",
       "sample": "webref-sample.90a7ba322a55b0de",
       "kinds": [
@@ -5964,27 +5869,6 @@
       ]
     },
     {
-      "property": "scroll-marker-group",
-      "sample": "webref-sample.2d55e5b09b56358e",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "scroll-marker-group",
-      "sample": "webref-sample.9746391538c2caa0",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "scroll-marker-group",
-      "sample": "webref-sample.a62f694997a130a3",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "scroll-padding",
       "sample": "webref-sample.2647c79fb1fac9a6",
       "kinds": [
@@ -6023,13 +5907,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "scrollbar-gutter",
-      "sample": "webref-sample.4f1a8e8ec0596959",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -6360,13 +6237,6 @@
       ]
     },
     {
-      "property": "transform-style",
-      "sample": "webref-sample.3ae9a6a3d060a38c",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "transition",
       "sample": "webref-sample.10e6d1597331feff",
       "kinds": [
@@ -6471,13 +6341,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "word-break",
-      "sample": "webref-sample.e6fc3cac768e103a",
-      "kinds": [
-        "acceptance"
       ]
     }
   ]

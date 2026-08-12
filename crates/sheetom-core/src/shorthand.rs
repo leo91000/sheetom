@@ -1403,7 +1403,7 @@ fn is_repeated_four_value(name: &str) -> bool {
 fn is_css_wide_keyword(value: &str) -> bool {
     matches!(
         value,
-        "initial" | "inherit" | "unset" | "revert" | "revert-layer"
+        "initial" | "inherit" | "unset" | "revert" | "revert-layer" | "revert-rule"
     )
 }
 
@@ -1514,6 +1514,17 @@ pub(crate) fn parse_value_for_source_with_limits(
 
     crate::property_constraints::validate_authored_property_capability(source_name, value)
         .map_err(map_engine_error)?;
+
+    let legacy_break_value = if value.eq_ignore_ascii_case("always") {
+        match source_name {
+            "page-break-after" | "page-break-before" => Some("page"),
+            "-webkit-column-break-after" | "-webkit-column-break-before" => Some("column"),
+            _ => None,
+        }
+    } else {
+        None
+    };
+    let value = legacy_break_value.unwrap_or(value);
 
     let legacy_webkit_radius;
     let value = if source_name == "-webkit-border-radius"
@@ -1667,7 +1678,7 @@ fn css_wide_keyword(value: &str) -> Option<String> {
     let keyword = value.trim().to_ascii_lowercase();
     matches!(
         keyword.as_str(),
-        "initial" | "inherit" | "unset" | "revert" | "revert-layer"
+        "initial" | "inherit" | "unset" | "revert" | "revert-layer" | "revert-rule"
     )
     .then_some(keyword)
 }
