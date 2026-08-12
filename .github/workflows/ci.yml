@@ -220,15 +220,23 @@ jobs:
       - run: npm run wasm:check
       - run: npm run wasm:build
       - run: npm run wasm:test
-      - run: npm run wasm:test:memory
+      - run: npm run wasm:test:memory -- --output "$RUNNER_TEMP/wasm-memory.json"
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Exercise direct HTTP and worker initialization
-        run: npm run wasm:test:browsers
+        run: npm run wasm:test:browsers -- --output "$RUNNER_TEMP/wasm-direct.json"
       - name: Exercise Vite, esbuild, Rollup, and Webpack consumers
-        run: npm run wasm:test:bundlers
+        run: npm run wasm:test:bundlers -- --output "$RUNNER_TEMP/wasm-bundlers.json"
       - name: Gate the browser Publisher workload
-        run: npm run wasm:test:performance
+        run: npm run wasm:test:performance -- --output "$RUNNER_TEMP/wasm-performance.json"
+      - name: Compose WebAssembly backend evidence
+        run: >-
+          node scripts/compose-wasm-backend-evidence.mjs
+          --direct "$RUNNER_TEMP/wasm-direct.json"
+          --bundlers "$RUNNER_TEMP/wasm-bundlers.json"
+          --performance "$RUNNER_TEMP/wasm-performance.json"
+          --memory "$RUNNER_TEMP/wasm-memory.json"
+          --output "$RUNNER_TEMP/wasm-backend-evidence.json"
       - name: Pack the tested WebAssembly package
         run: |
           mkdir wasm-package
@@ -236,7 +244,9 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: sheetom-wasm-package
-          path: wasm-package/*.tgz
+          path: |
+            wasm-package/*.tgz
+            ${{ runner.temp }}/wasm-backend-evidence.json
           if-no-files-found: error
 
   native-bindings:

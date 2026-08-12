@@ -4,6 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { nativeEngineEvidence } from "./native-engine-evidence.mjs";
+import {
+  validateWasmBackendEvidence,
+  wasmBackendContractSha256,
+} from "./wasm-backend-evidence.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const compatibilityRoot = path.join(repositoryRoot, "compatibility");
@@ -330,6 +334,13 @@ if (
   throw new Error("Geometric browser differential evidence is incomplete");
 }
 
+const wasmBackendEvidence = await requiredEvidenceReport("wasm-backend-report");
+const wasmBackendReport = wasmBackendEvidence.report;
+validateWasmBackendEvidence(wasmBackendReport);
+if (wasmBackendReport.contractSha256 !== await wasmBackendContractSha256(repositoryRoot)) {
+  throw new Error("WASM backend evidence does not match its reviewed contract");
+}
+
 const reportArguments = process.argv
   .filter(argument => argument.startsWith("--wpt-report="))
   .map(argument => argument.slice("--wpt-report=".length));
@@ -378,7 +389,7 @@ for (const reportArgument of reportArguments) {
 }
 const report = {
   $schema: "../schemas/compatibility-report.schema.json",
-  schemaVersion: 6,
+  schemaVersion: 7,
   packageVersion: packageManifest.version,
   baseline: {
     wptCommit: wptLock.commit,
@@ -502,6 +513,12 @@ const report = {
       executionSha256: createHash("sha256").update(processSafetyEvidence.bytes).digest("hex"),
       native: processSafetyReport.native,
       public: processSafetyReport.public,
+    },
+    wasmBackend: {
+      ...wasmBackendReport,
+      executionSha256: createHash("sha256")
+        .update(wasmBackendEvidence.bytes)
+        .digest("hex"),
     },
     nativeWpt
   },

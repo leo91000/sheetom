@@ -27,6 +27,7 @@ const packageOutput = path.join(temporaryRoot, "package");
 const consumerRoot = path.join(temporaryRoot, "consumer");
 const sourceRoot = path.join(consumerRoot, "src");
 const packageRoot = path.join(consumerRoot, "node_modules", "@sheetom", "wasm");
+const observations = [];
 
 function runNpm(arguments_, cwd) {
   execFileSync("npm", arguments_, { cwd, stdio: "inherit" });
@@ -218,6 +219,13 @@ try {
           const page = await browser.newPage();
           await page.goto(url);
           await page.evaluate(() => Promise.all([globalThis.sheetomMain, globalThis.sheetomWorker]));
+          observations.push({
+            bundler,
+            browser: browserName,
+            version: browser.version(),
+            mainThread: true,
+            worker: true,
+          });
           console.log(`Verified ${bundler} in ${browserName} on the main thread and worker.`);
         } finally {
           await browser.close();
@@ -226,6 +234,12 @@ try {
     } finally {
       await new Promise(resolve => server.close(resolve));
     }
+  }
+  const outputIndex = process.argv.indexOf("--output");
+  if (outputIndex !== -1) {
+    const output = process.argv[outputIndex + 1];
+    if (!output) throw new Error("--output requires a path");
+    await writeFile(output, `${JSON.stringify({ schemaVersion: 1, observations }, null, 2)}\n`);
   }
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });

@@ -167,3 +167,12 @@ test("WASM implementation changes run the shared and browser backend gates", () 
         wasm: true,
     });
 });
+
+test("WASM evidence contracts rerun the backend matrix", () => {
+  for (const filename of [
+    "scripts/compose-wasm-backend-evidence.mjs",
+    "scripts/wasm-backend-evidence.mjs",
+  ]) {
+    assert.equal(classifyPaths([filename]).wasm, true, filename);
+  }
+});

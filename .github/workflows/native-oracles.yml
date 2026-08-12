@@ -19,6 +19,61 @@ permissions:
   contents: read
 
 jobs:
+  wasm-backend:
+    name: WebAssembly backend evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      WASM_BINDGEN_VERSION: 0.2.127
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Set up the shared Rust compilation cache
+        uses: ./.github/actions/setup-rust-cache
+        with:
+          cache-key: wasm32-release-evidence
+      - uses: actions/cache@v5
+        id: wasm-bindgen-cache
+        with:
+          path: |
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+          key: wasm-bindgen-${{ runner.os }}-${{ env.WASM_BINDGEN_VERSION }}
+      - name: Install the pinned WebAssembly toolchain
+        run: |
+          rustup target add wasm32-unknown-unknown
+          if [[ "${{ steps.wasm-bindgen-cache.outputs.cache-hit }}" != "true" ]]; then
+            cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+          fi
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run wasm:build
+      - run: npm run wasm:test
+      - run: npm run wasm:test:memory -- --output "$RUNNER_TEMP/wasm-memory.json"
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run wasm:test:browsers -- --output "$RUNNER_TEMP/wasm-direct.json"
+      - run: npm run wasm:test:bundlers -- --output "$RUNNER_TEMP/wasm-bundlers.json"
+      - run: npm run wasm:test:performance -- --output "$RUNNER_TEMP/wasm-performance.json"
+      - name: Compose backend evidence
+        run: >-
+          node scripts/compose-wasm-backend-evidence.mjs
+          --direct "$RUNNER_TEMP/wasm-direct.json"
+          --bundlers "$RUNNER_TEMP/wasm-bundlers.json"
+          --performance "$RUNNER_TEMP/wasm-performance.json"
+          --memory "$RUNNER_TEMP/wasm-memory.json"
+          --output "$RUNNER_TEMP/wasm-backend-evidence.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wasm-backend-evidence
+          path: ${{ runner.temp }}/wasm-backend-evidence.json
+          if-no-files-found: error
+
   stable-browser-wpt:
     name: WPT / ${{ matrix.browser }} stable
     runs-on: ubuntu-24.04

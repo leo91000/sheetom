@@ -189,7 +189,10 @@ SheetOM targets standards and shared browser behavior first, with Chromium
 behavior used only as the final measured divergence fallback. Versioned JSON
 Operation Fixtures execute through SheetOM and native browser adapters;
 applicable WPT subtests retain their pinned source path, title, and blob SHA.
-Every release ships its machine-readable Compatibility Report.
+Every release ships its machine-readable Compatibility Report. RC7-or-later
+reports distinguish native and WebAssembly backend evidence; the WASM dimension
+records direct HTTP, worker, bundler, memory-soak, and Publisher-shaped browser
+results instead of inferring them from the shared Rust engine.
 
 Modern or implementation-dependent value grammar is bounded by the checked-in
 [`Value Capability Corpus`](./compatibility/value-capabilities.json). Each
