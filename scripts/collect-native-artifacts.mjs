@@ -1,4 +1,5 @@
-import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
+import { cp, mkdir, readdir, stat } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,8 +9,9 @@ import {
 } from "./native-artifact-contract.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
+const { TARGET_BY_NAME } = require("../native/resolve-target.cjs");
 const sourceDirectory = path.resolve(process.argv[2] ?? "native-artifacts");
-const nativeDirectory = path.join(repositoryRoot, "native");
 const expected = new Set(expectedNativeArtifacts);
 
 async function discover(directory) {
@@ -39,12 +41,13 @@ for (const artifact of artifacts) {
 
 assertCompleteNativeArtifactNames(byName.keys());
 
-await mkdir(nativeDirectory, { recursive: true });
-for (const entry of await readdir(nativeDirectory)) {
-  if (entry.endsWith(".node")) await rm(path.join(nativeDirectory, entry));
-}
 for (const [filename, artifact] of byName) {
-  await cp(artifact, path.join(nativeDirectory, filename));
+  const targetName = filename.slice("sheetom-native.".length, -".node".length);
+  const target = TARGET_BY_NAME.get(targetName);
+  if (!target) throw new Error(`Native artifact has no package target: ${filename}`);
+  const packageDirectory = path.join(repositoryRoot, "packages", `native-${target.target}`);
+  await mkdir(packageDirectory, { recursive: true });
+  await cp(artifact, path.join(packageDirectory, filename));
 }
 
 console.log(`Collected ${byName.size} complete native artifacts.`);

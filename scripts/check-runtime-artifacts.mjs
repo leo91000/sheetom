@@ -2,6 +2,8 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { expectedNativePackages } from "./native-artifact-contract.mjs";
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoot = path.join(repositoryRoot, "src");
 const packageManifest = JSON.parse(await readFile(
@@ -19,6 +21,26 @@ if (runtimeDependencies.length > 0) {
   throw new Error(
     `SheetOM must not have JavaScript runtime dependencies: ${runtimeDependencies.join(", ")}`,
   );
+}
+
+const optionalDependencies = packageManifest.optionalDependencies ?? {};
+const optionalPackageNames = Object.keys(optionalDependencies).sort();
+const expectedOptionalPackageNames = [...expectedNativePackages].sort();
+if (JSON.stringify(optionalPackageNames) !== JSON.stringify(expectedOptionalPackageNames)) {
+  throw new Error("SheetOM optional dependencies do not match the native target registry");
+}
+for (const packageName of expectedNativePackages) {
+  if (optionalDependencies[packageName] === packageManifest.version) continue;
+  throw new Error(`${packageName} must be pinned exactly to ${packageManifest.version}`);
+}
+
+const packagedFiles = packageManifest.files ?? [];
+if (
+  packagedFiles.includes("native") ||
+  !packagedFiles.includes("native/index.cjs") ||
+  !packagedFiles.includes("native/resolve-target.cjs")
+) {
+  throw new Error("The root package must include only the native loader, never native addons");
 }
 
 async function sourceFiles(directory) {

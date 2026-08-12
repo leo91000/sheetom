@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,11 +11,13 @@ const [artifactPath, runtime = "node"] = process.argv.slice(2);
 if (!artifactPath) throw new Error("Usage: test-tarball.mjs <tarball-or-directory> [node|bun|deno]");
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
+const { resolveTarget } = require("../native/resolve-target.cjs");
 const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
 const artifact = path.resolve(artifactPath);
-const tarball = artifact.endsWith(".tgz")
-  ? artifact
-  : await resolveSingleTarball(artifact);
+const localTarget = resolveTarget();
+if (!localTarget) throw new Error("Current platform has no native package target");
+const tarballs = await resolveTarballs(artifact);
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-consumer-"));
 const packageDirectory = path.join(temporaryRoot, "consumer");
 
@@ -27,19 +30,26 @@ function runNpm(arguments_, options) {
   execFileSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "npm", ...arguments_], options);
 }
 
-async function resolveSingleTarball(directory) {
-  const entries = (await readdir(directory))
-    .filter(entry => entry.endsWith(".tgz"));
-  if (entries.length !== 1) {
-    throw new Error(`Expected one tarball in ${directory}, found ${entries.length}`);
+async function resolveTarballs(input) {
+  const directory = input.endsWith(".tgz") ? path.dirname(input) : input;
+  const entries = (await readdir(directory)).filter(entry => entry.endsWith(".tgz"));
+  const inputName = path.basename(input);
+  const root = input.endsWith(".tgz") && /^sheetom-\d/.test(inputName)
+    ? inputName
+    : entries.find(entry => /^sheetom-\d/.test(entry));
+  const native = entries.find(entry => entry.startsWith(`sheetom-native-${localTarget}-`));
+  if (!root || !native) {
+    throw new Error(
+      `Expected root and @sheetom/native-${localTarget} tarballs in ${directory}`,
+    );
   }
-  return path.join(directory, entries[0]);
+  return [path.join(directory, native), path.join(directory, root)];
 }
 
 try {
   await mkdir(packageDirectory);
   runNpm(["init", "--yes"], { cwd: packageDirectory, stdio: "ignore" });
-  runNpm(["install", "--ignore-scripts", tarball], {
+  runNpm(["install", "--ignore-scripts", ...tarballs], {
     cwd: packageDirectory,
     stdio: "inherit",
   });
@@ -49,6 +59,19 @@ try {
   ));
   if (Object.keys(installedManifest.dependencies ?? {}).length > 0) {
     throw new Error("published SheetOM package must not install JavaScript runtime dependencies");
+  }
+  const installedNativeManifest = JSON.parse(await readFile(
+    path.join(
+      packageDirectory,
+      "node_modules",
+      "@sheetom",
+      `native-${localTarget}`,
+      "package.json",
+    ),
+    "utf8",
+  ));
+  if (installedNativeManifest.name !== `@sheetom/native-${localTarget}`) {
+    throw new Error("installed native package does not match the current platform");
   }
 
   const esmProbe = `

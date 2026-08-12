@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,12 +8,29 @@ import { fileURLToPath } from "node:url";
 import { readNativeEngineRevision } from "./native-engine-revision.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
+const { resolveTarget, TARGET_BY_NAME } = require("../native/resolve-target.cjs");
 const expectedEngineRevision = await readNativeEngineRevision(repositoryRoot);
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "sheetom-package-"));
 const packageDirectory = path.join(temporaryRoot, "package");
 
 try {
   await mkdir(packageDirectory);
+  const localTargetName = resolveTarget();
+  const localTarget = TARGET_BY_NAME.get(localTargetName);
+  if (!localTarget) throw new Error("Current platform has no native package target");
+  const nativePackResult = JSON.parse(execFileSync(
+    process.execPath,
+    [
+      "scripts/pack-native-packages.mjs",
+      temporaryRoot,
+      `--target=${localTargetName}`,
+    ],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  ));
+  const nativeFilename = nativePackResult[0]?.filename;
+  if (!nativeFilename) throw new Error("native npm pack did not produce a tarball");
+
   const packResult = JSON.parse(execFileSync(
     "npm",
     ["pack", "--json", "--pack-destination", temporaryRoot],
@@ -22,8 +40,17 @@ try {
   if (!filename) throw new Error("npm pack did not produce a tarball");
 
   const tarball = path.join(temporaryRoot, filename);
+  const rootNativeFiles = packResult[0].files.filter(file => file.path.endsWith(".node"));
+  if (rootNativeFiles.length !== 0) {
+    throw new Error(`root SheetOM tarball contains native addons: ${rootNativeFiles.map(file => file.path).join(", ")}`);
+  }
   execFileSync("npm", ["init", "--yes"], { cwd: packageDirectory, stdio: "ignore" });
-  execFileSync("npm", ["install", "--ignore-scripts", tarball], {
+  execFileSync("npm", [
+    "install",
+    "--ignore-scripts",
+    path.join(temporaryRoot, nativeFilename),
+    tarball,
+  ], {
     cwd: packageDirectory,
     stdio: "inherit",
   });
@@ -33,6 +60,19 @@ try {
   ));
   if (Object.keys(installedManifest.dependencies ?? {}).length > 0) {
     throw new Error("published SheetOM package must not install JavaScript runtime dependencies");
+  }
+  const installedNativeManifest = JSON.parse(await readFile(
+    path.join(
+      packageDirectory,
+      "node_modules",
+      "@sheetom",
+      `native-${localTargetName}`,
+      "package.json",
+    ),
+    "utf8",
+  ));
+  if (installedNativeManifest.name !== localTarget.packageName) {
+    throw new Error("installed native package does not match the current platform");
   }
 
   const esmProbe = `

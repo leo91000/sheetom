@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { assertCompleteNativeTarballEntries } from "./native-artifact-contract.mjs";
+import { assertRootTarballHasNoNativeAddon } from "./native-artifact-contract.mjs";
 
 const registryOrigin = "https://registry.npmjs.org";
 
@@ -113,7 +113,7 @@ function runInherited(command, arguments_, options = {}) {
 
 function verifyReleaseTarball(tarball, manifest) {
   const entries = run("tar", ["-tzf", tarball]).trim().split("\n").filter(Boolean);
-  assertCompleteNativeTarballEntries(entries);
+  assertRootTarballHasNoNativeAddon(entries);
   const packedManifest = JSON.parse(run("tar", ["-xOzf", tarball, "package/package.json"]));
   if (packedManifest.name !== manifest.name || packedManifest.version !== manifest.version) {
     throw new Error(

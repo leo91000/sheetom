@@ -11,8 +11,9 @@ import {
 import { hasReleaseVersionChange } from "../scripts/detect-release-version-change.mjs";
 import {
   assertCompleteNativeArtifactNames,
-  assertCompleteNativeTarballEntries,
   expectedNativeArtifacts,
+  assertPlatformTarballEntries,
+  assertRootTarballHasNoNativeAddon,
 } from "../scripts/native-artifact-contract.mjs";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -107,13 +108,24 @@ describe("release automation", () => {
     expect(() => parsePackResult("[]")).toThrow(/exactly one/);
   });
 
-  it("requires every supported native binary in a release tarball", () => {
+  it("requires every supported native binary before packaging", () => {
     expect(() => assertCompleteNativeArtifactNames(expectedNativeArtifacts)).not.toThrow();
     expect(() => assertCompleteNativeArtifactNames(expectedNativeArtifacts.slice(1)))
       .toThrow(/incomplete/);
-    expect(() => assertCompleteNativeTarballEntries(
-      expectedNativeArtifacts.map(name => `package/native/${name}`),
-    )).not.toThrow();
+  });
+
+  it("keeps native addons out of the root package and exactly one per platform package", () => {
+    expect(() => assertRootTarballHasNoNativeAddon([
+      "package/dist/index.js",
+      "package/native/index.cjs",
+    ])).not.toThrow();
+    expect(() => assertRootTarballHasNoNativeAddon([
+      "package/native/sheetom-native.linux-x64-gnu.node",
+    ])).toThrow(/contains native addons/);
+    expect(() => assertPlatformTarballEntries([
+      "package/index.cjs",
+      "package/sheetom-native.linux-x64-gnu.node",
+    ], "sheetom-native.linux-x64-gnu.node")).not.toThrow();
   });
 
   it("uses the exact prebuilt release tarball and computes npm integrity", async () => {

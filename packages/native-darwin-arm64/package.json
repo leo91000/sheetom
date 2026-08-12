@@ -1,0 +1,26 @@
+{
+  "name": "@sheetom/native-darwin-arm64",
+  "version": "0.1.0-rc.6",
+  "description": "Native SheetOM engine for darwin-arm64",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leo91000/sheetom.git",
+    "directory": "packages/native-darwin-arm64"
+  },
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "files": [
+    "index.cjs",
+    "sheetom-native.darwin-arm64.node",
+    "LICENSE",
+    "README.md"
+  ],
+  "preferUnplugged": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

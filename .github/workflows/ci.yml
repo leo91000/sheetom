@@ -202,6 +202,11 @@ jobs:
           - target: aarch64-pc-windows-msvc
             os: windows-2025
             load_on_builder: false
+          # Build with the x64 toolchain, then execute the packaged bytes with
+          # x86 Node in the package-consumer matrix.
+          - target: i686-pc-windows-msvc
+            os: windows-2025
+            load_on_builder: false
           # Apple Silicon cross-compiles the x64 binary faster; the packaged
           # bytes are still executed by the macos-15-intel consumer job.
           - target: x86_64-apple-darwin
@@ -231,13 +236,63 @@ jobs:
       - run: npm install --global npm@11.16.0
       - run: npm ci
       - name: Install the cross-compiled Rust target
-        if: matrix.target == 'x86_64-apple-darwin' || matrix.target == 'aarch64-pc-windows-msvc'
+        if: >-
+          matrix.target == 'x86_64-apple-darwin' ||
+          matrix.target == 'aarch64-pc-windows-msvc' ||
+          matrix.target == 'i686-pc-windows-msvc'
         run: rustup target add ${{ matrix.target }}
       - name: Build the native target
         run: npm run native:build:target -- ${{ matrix.target }}
       - name: Load and exercise the native target
         if: matrix.load_on_builder != false
         run: node scripts/test-native-loader.mjs && node scripts/test-native-foundation.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sheetom-native-${{ matrix.target }}
+          path: native/*.node
+          if-no-files-found: error
+
+  native-foreign-bindings:
+    needs: changes
+    if: needs.changes.outputs.native == 'true' || needs.changes.outputs.package == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - armv7-unknown-linux-gnueabihf
+          - armv7-unknown-linux-musleabihf
+          - powerpc64le-unknown-linux-gnu
+          - s390x-unknown-linux-gnu
+    env:
+      CROSS_VERSION: 0.2.5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/cache@v5
+        id: cross-cache
+        with:
+          path: ~/.cargo/bin/cross
+          key: cross-${{ runner.os }}-${{ env.CROSS_VERSION }}
+      - name: Install the pinned cross compiler
+        if: steps.cross-cache.outputs.cache-hit != 'true'
+        run: cargo install cross --version "$CROSS_VERSION" --locked
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target/${{ matrix.target }}
+          key: native-cross-${{ matrix.target }}-1.88-${{ hashFiles('Cargo.lock') }}
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - name: Build the foreign native target
+        run: npm run native:build:cross-target -- ${{ matrix.target }}
       - uses: actions/upload-artifact@v7
         with:
           name: sheetom-native-${{ matrix.target }}
@@ -367,7 +422,7 @@ jobs:
         run: npm run native:build && npm run test:differential
 
   package-artifact:
-    needs: [changes, native-bindings, native-musl-bindings]
+    needs: [changes, native-bindings, native-musl-bindings, native-foreign-bindings]
     if: needs.changes.outputs.package == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -403,13 +458,14 @@ jobs:
       - name: Build package artifact
         run: |
           mkdir package-artifact
+          node scripts/pack-native-packages.mjs package-artifact > package-artifact/native-packages.json
           npm pack --pack-destination package-artifact
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v7
         with:
           name: sheetom-package
-          path: package-artifact/*.tgz
+          path: package-artifact
           if-no-files-found: error
 
   minimum-node:
@@ -441,28 +497,41 @@ jobs:
         include:
           - os: ubuntu-24.04
             node: 22
+            architecture: x64
           - os: ubuntu-24.04
             node: 24
+            architecture: x64
           - os: ubuntu-24.04-arm
             node: 22
+            architecture: arm64
           - os: windows-2025
             node: 22
+            architecture: x64
           - os: windows-2025
             node: 24
+            architecture: x64
+          - os: windows-2025
+            node: 22
+            architecture: x86
           - os: windows-11-arm
             node: 22
+            architecture: arm64
           - os: macos-15
             node: 22
+            architecture: arm64
           - os: macos-15
             node: 24
+            architecture: arm64
           - os: macos-15-intel
             node: 22
+            architecture: x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
+          architecture: ${{ matrix.architecture }}
           cache: npm
       - uses: actions/download-artifact@v8
         with:
@@ -470,6 +539,57 @@ jobs:
           path: package-artifact
       - name: Test with the npm bundled with the selected Node version
         run: node scripts/test-tarball.mjs package-artifact node
+
+  foreign-package-consumer:
+    needs: package-artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-arm-gnueabihf
+            platform: linux/arm/v7
+            qemu: arm
+            image: node:22.23.2-bookworm
+          - target: linux-arm-musleabihf
+            platform: linux/arm/v7
+            qemu: arm
+            image: node:22.23.2-alpine
+          - target: linux-ppc64-gnu
+            platform: linux/ppc64le
+            qemu: ppc64le
+            image: node:22.23.2-bookworm
+          - target: linux-s390x-gnu
+            platform: linux/s390x
+            qemu: s390x
+            image: sheetom-node-s390x
+            custom_image: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+        with:
+          platforms: ${{ matrix.qemu }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: sheetom-package
+          path: package-artifact
+      - name: Build the pinned glibc s390x Node runtime
+        if: matrix.custom_image == true
+        run: >-
+          docker build
+          --platform ${{ matrix.platform }}
+          --file .github/native-s390x-consumer.Dockerfile
+          --tag ${{ matrix.image }}
+          .github
+      - name: Load and exercise the exact foreign package
+        run: >-
+          docker run --rm
+          --platform ${{ matrix.platform }}
+          --volume "${{ github.workspace }}:/workspace"
+          --workdir /workspace
+          ${{ matrix.image }}
+          node scripts/test-tarball.mjs package-artifact node
 
   musl-consumer:
     needs: package-artifact

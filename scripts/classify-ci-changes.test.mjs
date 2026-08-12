@@ -47,11 +47,17 @@ test("the generated native property catalog does not trigger browser jobs", () =
 });
 
 test("native packaging scripts rebuild the native matrix and package artifact", () => {
-    assert.deepEqual(classifyPaths(["scripts/collect-native-artifacts.mjs"]), {
-        ...none,
-        native: true,
-        package: true,
-    });
+    for (const filePath of [
+        "scripts/collect-native-artifacts.mjs",
+        "scripts/pack-native-packages.mjs",
+        "packages/native-linux-x64-gnu/package.json",
+    ]) {
+        assert.deepEqual(classifyPaths([filePath]), {
+            ...none,
+            native: true,
+            package: true,
+        });
+    }
 });
 
 test("release version synchronization rebuilds native package evidence", () => {
