@@ -6,7 +6,7 @@
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "shorthandCapabilitiesSha256": "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33",
-    "shorthandGrammarContractsSha256": "fc6bf36b00c4098c6a862d20864550ad72c0a8d42ba1b094d1d896300689d404",
+    "shorthandGrammarContractsSha256": "670a203656e3e270a27df424d3c4fd09aa2965294d31fcc4b5770231622cdbec",
     "derivation": "manifest-profile-property-branches@1",
     "valueCapabilitiesSha256": "344bbc86df6e1be4738baa21690e5544fc0295830312733811434a02115b817f"
   },
@@ -33,7 +33,12 @@
         "grammar.background.color",
         "grammar.background.image",
         "grammar.background.layer",
-        "grammar.background.color-before-comma-invalid"
+        "grammar.background.border-area-clip",
+        "grammar.background.text-clip",
+        "grammar.background.compound-clip",
+        "grammar.background.origin-compound-clip",
+        "grammar.background.color-before-comma-invalid",
+        "grammar.background.duplicate-clip-invalid"
       ]
     },
     {

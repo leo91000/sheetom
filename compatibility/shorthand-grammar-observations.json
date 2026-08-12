@@ -709,7 +709,276 @@
       "cssText": "background: url(\"x.png\") center center / cover no-repeat red;"
     },
     {
+      "id": "grammar.background.border-area-clip",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "border-area",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "border-box border-area",
+      "priority": "",
+      "cssText": "background: border-box border-area;"
+    },
+    {
+      "id": "grammar.background.text-clip",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "text",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "text",
+      "priority": "",
+      "cssText": "background: text;"
+    },
+    {
+      "id": "grammar.background.compound-clip",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "border-box",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "border-area text",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "border-box border-area text",
+      "priority": "",
+      "cssText": "background: border-box border-area text;"
+    },
+    {
+      "id": "grammar.background.origin-compound-clip",
+      "accepted": true,
+      "items": [
+        "background-image",
+        "background-position-x",
+        "background-position-y",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "longhands": [
+        {
+          "name": "background-image",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-x",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-position-y",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-size",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-repeat",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-attachment",
+          "value": "initial",
+          "priority": ""
+        },
+        {
+          "name": "background-origin",
+          "value": "content-box",
+          "priority": ""
+        },
+        {
+          "name": "background-clip",
+          "value": "border-area text",
+          "priority": ""
+        },
+        {
+          "name": "background-color",
+          "value": "initial",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "content-box border-area text",
+      "priority": "",
+      "cssText": "background: content-box border-area text;"
+    },
+    {
       "id": "grammar.background.color-before-comma-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.background.duplicate-clip-invalid",
       "accepted": false,
       "items": [],
       "longhands": [],

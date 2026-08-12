@@ -255,6 +255,42 @@ const cases = [
         probes: ["columns", "column-height"],
     },
     {
+        id: "background-level-four-clip-layers",
+        operations: [[
+            "set",
+            "background",
+            "none, none center / 1px repeat-x scroll text border-area content-box red",
+            "important",
+        ]],
+        probes: ["background", "background-origin", "background-clip"],
+    },
+    {
+        id: "background-level-four-clip-mutation",
+        operations: [
+            ["set", "background", "none, border-area text", "important"],
+            ["set", "background-clip", "text, text border-area", "important"],
+        ],
+        probes: ["background", "background-origin", "background-clip"],
+    },
+    {
+        id: "background-level-four-origin-removal",
+        operations: [
+            ["set", "background", "none, border-area text", "important"],
+            ["set", "background-clip", "text, border-area text", "important"],
+            ["remove", "background-origin"],
+        ],
+        probes: ["background", "background-origin", "background-clip"],
+    },
+    {
+        id: "invalid-background-level-four-clip-is-atomic",
+        operations: [
+            ["set", "background", "content-box border-area text", "important"],
+            ["set", "background", "border-area border-area", ""],
+            ["set", "background-clip", "content-box text", ""],
+        ],
+        probes: ["background", "background-origin", "background-clip"],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",

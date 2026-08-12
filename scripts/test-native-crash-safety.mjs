@@ -62,6 +62,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "background level four compound clip",
+        source: "background: image-set(url(a.png) 1x, url(b.png) 2x) center/cover border-area text",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
