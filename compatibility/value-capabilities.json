@@ -1672,6 +1672,93 @@
       "property": "transition-behavior",
       "input": "normal,",
       "accepted": false
+    },
+    {
+      "id": "sizing.calc-size-auto",
+      "property": "width",
+      "input": "calc-size(auto, size)",
+      "accepted": true,
+      "observable": "calc-size(auto, size)"
+    },
+    {
+      "id": "sizing.calc-size-arithmetic",
+      "property": "width",
+      "input": "calc-size(auto, size / 2 + 1px)",
+      "accepted": true,
+      "observable": "calc-size(auto, 1px + (0.5 * size))"
+    },
+    {
+      "id": "sizing.calc-size-anchor-basis",
+      "property": "width",
+      "input": "calc-size(anchor-size(width), size)",
+      "accepted": true,
+      "observable": "calc-size(anchor-size(width), size)"
+    },
+    {
+      "id": "sizing.calc-size-nested-basis",
+      "property": "width",
+      "input": "calc-size(calc-size(auto, size), size)",
+      "accepted": true,
+      "observable": "calc-size(calc-size(auto, size), size)"
+    },
+    {
+      "id": "sizing.calc-size-recovered-tail",
+      "property": "width",
+      "input": "calc-size(auto, size, ignored tokens)",
+      "accepted": true,
+      "observable": "calc-size(auto, size)"
+    },
+    {
+      "id": "sizing.calc-size-confined-semicolon-recovery",
+      "property": "width",
+      "input": "calc-size(auto, size; color: red)",
+      "accepted": true,
+      "observable": "calc-size(auto, size)"
+    },
+    {
+      "id": "sizing.max-calc-size-intrinsic-basis",
+      "property": "max-width",
+      "input": "calc-size(min-content, size)",
+      "accepted": true,
+      "observable": "calc-size(min-content, size)"
+    },
+    {
+      "id": "sizing.max-calc-size-any-basis",
+      "property": "max-width",
+      "input": "calc-size(any, 1px)",
+      "accepted": true,
+      "observable": "calc-size(any, 1px)"
+    },
+    {
+      "id": "sizing.max-calc-size-nested-any-basis",
+      "property": "max-width",
+      "input": "calc-size(calc-size(any, 1px), size)",
+      "accepted": true,
+      "observable": "calc-size(calc-size(any, 1px), size)"
+    },
+    {
+      "id": "sizing.calc-size-any-uses-size-invalid",
+      "property": "width",
+      "input": "calc-size(any, size)",
+      "accepted": false
+    },
+    {
+      "id": "sizing.calc-size-number-result-invalid",
+      "property": "width",
+      "input": "calc-size(auto, 0)",
+      "accepted": false
+    },
+    {
+      "id": "sizing.calc-size-fit-content-function-basis-invalid",
+      "property": "width",
+      "input": "calc-size(fit-content(20px), size)",
+      "accepted": false
+    },
+    {
+      "id": "sizing.max-calc-size-auto-basis-invalid",
+      "property": "max-width",
+      "input": "calc-size(auto, size)",
+      "accepted": false
     }
   ]
 }

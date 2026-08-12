@@ -2,9 +2,9 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 972,
+  "mismatchCases": 960,
   "summary": {
-    "acceptance": 111,
+    "acceptance": 99,
     "observable": 592,
     "cssText": 592,
     "items": 478,
@@ -117,20 +117,6 @@
     {
       "property": "-webkit-column-break-before",
       "sample": "webref-sample.9b7fa097487b80aa",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-logical-height",
-      "sample": "webref-sample.6bdf46aab04b9410",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-logical-width",
-      "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
         "acceptance"
       ]
@@ -811,20 +797,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-height",
-      "sample": "webref-sample.69cf2381dc1226a6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "-webkit-min-logical-width",
-      "sample": "webref-sample.69cf2381dc1226a6",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -2011,13 +1983,6 @@
     {
       "property": "baseline-shift",
       "sample": "webref-sample.13e9048b03c54474",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "block-size",
-      "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
         "acceptance"
       ]
@@ -4967,13 +4932,6 @@
       ]
     },
     {
-      "property": "height",
-      "sample": "webref-sample.e0ad5904211201f6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
       "property": "hyphenate-limit-chars",
       "sample": "webref-sample.84451372fc346b62",
       "kinds": [
@@ -5039,13 +4997,6 @@
     {
       "property": "initial-letter",
       "sample": "webref-sample.d46d406414bfaa52",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "inline-size",
-      "sample": "webref-sample.6bdf46aab04b9410",
       "kinds": [
         "acceptance"
       ]
@@ -6010,34 +5961,6 @@
     {
       "property": "math-depth",
       "sample": "webref-sample.facb4d48bec9147a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "min-block-size",
-      "sample": "webref-sample.69cf2381dc1226a6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "min-height",
-      "sample": "webref-sample.e0ad5904211201f6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "min-inline-size",
-      "sample": "webref-sample.69cf2381dc1226a6",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "min-width",
-      "sample": "webref-sample.e0ad5904211201f6",
       "kinds": [
         "acceptance"
       ]
@@ -7616,13 +7539,6 @@
     {
       "property": "white-space",
       "sample": "webref-sample.f54ff8f153e51a78",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "width",
-      "sample": "webref-sample.e0ad5904211201f6",
       "kinds": [
         "acceptance"
       ]

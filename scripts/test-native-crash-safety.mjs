@@ -77,6 +77,11 @@ const crashCases = [
         public: true,
     },
     {
+        name: "nested calc size with anchor math and recovered tail",
+        source: "width: calc-size(calc-size(anchor-size(width), size / 2 + 1px), min(size, 10px), ignored tokens)",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,
