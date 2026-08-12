@@ -62,6 +62,14 @@ test("release version synchronization rebuilds native package evidence", () => {
     });
 });
 
+test("the generated Engine ABI Identity rebuilds native and package artifacts", () => {
+    assert.deepEqual(classifyPaths(["engine-abi.json", "scripts/engine-abi.mjs"]), {
+        ...none,
+        native: true,
+        package: true,
+    });
+});
+
 test("native and public crash workers run the subprocess safety gate", () => {
     assert.deepEqual(
         classifyPaths(["scripts/native-crash-worker.mjs", "scripts/public-crash-worker.mjs"]),

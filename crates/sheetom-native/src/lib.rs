@@ -183,6 +183,12 @@ pub fn native_engine_revision() -> &'static str {
     ENGINE_REVISION
 }
 
+/// Identifies the exact private contract and Syntax Engine Set compiled into the addon.
+#[napi]
+pub fn engine_abi_identity() -> &'static str {
+    env!("SHEETOM_ENGINE_ABI_IDENTITY")
+}
+
 /// Exercises the native string boundary while the engine runs in shadow mode.
 ///
 /// This deliberately accepts and returns owned strings. Lightning CSS AST nodes

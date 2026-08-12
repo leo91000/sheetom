@@ -7,3 +7,4 @@ execFileSync(
   ["install", "--package-lock-only", "--ignore-scripts"],
   { stdio: "inherit" },
 );
+execFileSync(process.execPath, ["scripts/engine-abi.mjs", "--record"], { stdio: "inherit" });

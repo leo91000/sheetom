@@ -1,4 +1,4 @@
-import { nativeBinding } from "./native-binding.js";
+import { engineBinding } from "./default-engine-binding.js";
 import {
   defaultResourceBudget,
   nativeBudgetArguments,
@@ -18,7 +18,7 @@ export function parseNativeRule(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeRuleDescription | null {
-  return parseNativeRulePayload(() => nativeBinding.parseRecoveredRuleTreeJson(
+  return parseNativeRulePayload(() => engineBinding.parseRecoveredRuleTreeJson(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));
@@ -28,7 +28,7 @@ export function parseNativeRuleWithErrorRecovery(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
 ): NativeRuleDescription | null {
-  return parseNativeRulePayload(() => nativeBinding.parseRecoveredSingleRuleTreeJson(
+  return parseNativeRulePayload(() => engineBinding.parseRecoveredSingleRuleTreeJson(
     source,
     ...nativeBudgetArguments(resourceBudget),
   ));

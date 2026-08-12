@@ -1,4 +1,4 @@
-import { nativeBinding } from "./native-binding.js";
+import { engineBinding } from "./default-engine-binding.js";
 import {
   defaultResourceBudget,
   nativeBudgetArguments,
@@ -13,7 +13,7 @@ export function scanTopLevelRules(
 ): string[] {
   let encoded: string;
   try {
-    encoded = nativeBinding.scanTopLevelRulesJson(
+    encoded = engineBinding.scanTopLevelRulesJson(
       css,
       ...nativeBudgetArguments(resourceBudget),
     );

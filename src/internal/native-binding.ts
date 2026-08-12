@@ -2,68 +2,34 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-type NativeBudgetArguments = [number, number, number, number, number];
+import {
+  type EngineBinding,
+  type EngineDeclarationStateHandle,
+  validateEngineBindingIdentity,
+} from "./engine-binding.js";
 
-export type NativeMutationOutcome =
-  | "applied"
-  | "invalid-name"
-  | "invalid-priority"
-  | "invalid-value"
-  | "unsupported-shorthand";
-
-export interface NativeDeclarationStateHandle {
-  readonly length: number;
-  readonly cssText: string;
-  item(index: number): string;
-  getPropertyValue(name: string): string;
-  getPropertyPriority(name: string): string;
-  setProperty(
-    name: string,
-    value: string,
-    priority: string,
-    reservedNestingDepth?: number,
-  ): NativeMutationOutcome;
-  removeProperty(name: string): string;
-  replaceCssText(source: string, reservedNestingDepth?: number): void;
-  serializeFormatted(safe: boolean, indent: string, separator: string): string;
-}
-
-interface NativeBinding {
-  normalizeMedia(source: string, ...budget: NativeBudgetArguments): string;
-  normalizeSelector(source: string, ...budget: NativeBudgetArguments): string;
-  normalizeSupports(source: string, ...budget: NativeBudgetArguments): string;
-  parseContainerPreludeJson(source: string, ...budget: NativeBudgetArguments): string;
-  parseCounterStyleDescriptorValue(
-    name: string,
-    value: string,
-    ...budget: NativeBudgetArguments
-  ): string | null;
-  parseCounterStyleDescriptorsJson(source: string, ...budget: NativeBudgetArguments): string;
-  parseCounterStyleNameJson(source: string, ...budget: NativeBudgetArguments): string | null;
-  serializeIdentifierValue(value: string): string;
-  serializeFontFamilyValue(value: string): string;
+interface NativeAddonBinding extends Omit<EngineBinding, "createDeclarationState"> {
   NativeDeclarationState: new (
     context?: "style" | "font-face" | "function",
-    ...budget: NativeBudgetArguments
-  ) => NativeDeclarationStateHandle;
-  parseRecoveredRuleTreeJson(source: string, ...budget: NativeBudgetArguments): string;
-  parseRecoveredSingleRuleTreeJson(source: string, ...budget: NativeBudgetArguments): string;
-  parseStylesheetTreeJson(
-    source: string,
-    errorRecovery: boolean,
-    ...budget: NativeBudgetArguments
-  ): string;
-  parseScopePreludeJson(source: string, ...budget: NativeBudgetArguments): string;
-  scanTopLevelRulesJson(source: string, ...budget: NativeBudgetArguments): string;
+    ...budget: [number, number, number, number, number]
+  ) => EngineDeclarationStateHandle;
 }
 
-function loadBinding(): NativeBinding {
+function loadBinding(): EngineBinding {
   const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
   const packageRoot = path.basename(moduleDirectory) === "dist"
     ? path.dirname(moduleDirectory)
     : path.resolve(moduleDirectory, "../..");
   const require = createRequire(import.meta.url);
-  return require(path.join(packageRoot, "native", "index.cjs")) as NativeBinding;
+  const addon = require(path.join(packageRoot, "native", "index.cjs")) as NativeAddonBinding;
+  validateEngineBindingIdentity(addon);
+  return {
+    ...addon,
+    createDeclarationState: (context, ...budget) => new addon.NativeDeclarationState(
+      context,
+      ...budget,
+    ),
+  };
 }
 
-export const nativeBinding = loadBinding();
+export const nativeEngineBinding = loadBinding();
