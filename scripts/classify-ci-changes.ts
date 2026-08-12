@@ -15,7 +15,7 @@ const OUTPUT_NAMES = [
 const isDocumentationPath = filePath =>
     filePath.endsWith(".md") ||
     filePath.startsWith("docs/") ||
-    ["CONTEXT.md", "LICENSE", "SECURITY.md", "SUPPORT.md"].includes(filePath);
+    ["CONTRIBUTING.md", "LICENSE", "SECURITY.md", "SUPPORT.md"].includes(filePath);
 
 const isReleaseMetadataPath = filePath => filePath.startsWith(".changeset/");
 

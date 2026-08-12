@@ -1,73 +1,36 @@
 # SheetOM
 
-SheetOM is a mutable, browser-shaped CSS authoring object model for Node.js,
-Bun, and Deno. Its repository-owned Rust engine handles parsing,
-canonicalization, declaration state, and safe CSS serialization; JavaScript
-only owns the public WebIDL-shaped facade and live object identity.
+**A browser-compatible, mutable CSSOM for JavaScript outside the browser.**
 
-It is intended for server-side stylesheet editing and serialization. It does
-not implement the DOM, cascade, selector matching, layout, or computed styles.
+SheetOM lets build tools, publishers, and server applications parse, inspect,
+mutate, and serialize stylesheets with familiar browser APIs. It preserves
+browser recovery behavior for malformed-but-accepted CSS while still producing
+deterministic, reparsable stylesheet output.
+
+- Browser-shaped `CSSStyleSheet`, rules, and declarations
+- Transactional `setProperty()` behavior and correct shorthand/longhand state
+- Forgiving whole-sheet parsing without a DOM or global installation
+- One repository-owned Rust engine for native and WebAssembly backends
+- ESM, CommonJS, TypeScript, Node.js, Bun, Deno, browsers, and workers
+
+SheetOM focuses on the **Authoring CSSOM**. It does not implement the cascade,
+selector matching, layout, computed styles, fetching, or DOM attachment.
 
 ## Install
 
-Install the active release:
+For Node.js, Bun, or Deno:
 
 ```sh
 npm install sheetom
 ```
 
-After the first stable release, use `npm install sheetom@next` to opt into an
-active prerelease. Until then, the `latest` and `next` dist-tags both identify
-the active release candidate.
-
-The root package has no JavaScript runtime or peer dependencies and contains no
-native addon. It pins one matching `@sheetom/native-*` implementation as an
-optional dependency, so npm installs only the binary for the current operating
-system, CPU, and Linux libc. Installing with `--omit=optional` is unsupported
-and produces an explicit missing-binding error rather than a behavioral
-fallback. The native engine includes a pinned, locally maintained Lightning CSS
-source snapshot; consumers do not install a second parser, provide globals, or
-select a fallback engine.
-SheetOM owns observable-value serialization and shorthand expansion rather
-than delegating CSSOM state to a browser-DOM emulation package.
-
-Node.js 22 executes the exact published package on macOS arm64/x64, Windows
-arm64/x64/x86, Linux glibc arm64/ARMv7/x64/ppc64le/s390x, and Linux musl
-arm64/ARMv7/x64. Node.js 24 is additionally tested on Linux x64, Windows x64,
-and macOS arm64. Bun 1.3.1 and Deno 2.9.5 are tested on Linux x64. Deno must use a local
-`node_modules` directory and grant SheetOM's native binding FFI and
-system-information permissions:
-
-```sh
-deno run --node-modules-dir=manual --allow-ffi --allow-sys app.ts
-```
-
-SheetOM exports browser-named classes but never modifies `globalThis`.
-
-Browser applications can install the separate, ESM-only WebAssembly backend:
+For browsers and compatible JavaScript isolates:
 
 ```sh
 npm install @sheetom/wasm
 ```
 
-```ts
-import { createSheetOM } from "@sheetom/wasm";
-
-const { CSSStyleSheet } = await createSheetOM();
-const sheet = new CSSStyleSheet();
-sheet.replaceSync(".card { color: red; }");
-```
-
-`createSheetOM()` resolves the `.wasm` file relative to its own module and
-shares concurrent default initialization within one JavaScript realm. Passing
-an explicit `URL`, `Response`, `ArrayBuffer`, or `WebAssembly.Module` creates
-an independent facade with distinct class identity. The WASM backend uses the
-same Rust parser, Engine ABI Identity, Resource Budget, and CSSOM facade as the
-native package; it is never an automatic fallback for a missing native addon.
-See [`@sheetom/wasm` usage](./packages/wasm/README.md) for server and worker
-requirements.
-
-## Use
+## Quick start
 
 ```ts
 import { CSSStyleRule, CSSStyleSheet, parseStyleSheet } from "sheetom";
@@ -77,41 +40,42 @@ sheet.replaceSync(".card { width: 12px; }");
 
 const rule = sheet.cssRules[0];
 if (rule instanceof CSSStyleRule) {
-  rule.style.setProperty("padding", "8px 16px");
-  rule.style.setProperty("background-color", "rebeccapurple");
+  rule.style.padding = "8px 16px";
+  rule.style.backgroundColor = "rebeccapurple";
+  rule.style.setProperty("--card-gap", "12px");
 }
 
 console.log(sheet.serialize());
 
-const existing = parseStyleSheet('@import "theme.css"; .card { color: red; }', {
-  href: "https://example.com/assets/app.css",
-});
+const existing = parseStyleSheet(
+  '@import "theme.css"; .card { color: red; }',
+  { href: "https://example.com/assets/app.css" },
+);
+
 console.log(existing.cssRules.length); // 2
 ```
 
-`setProperty()` is the standard, fully typed way to set a declaration,
-especially when its name is dynamic. Browser-style camelCase assignments such
-as `rule.style.backgroundColor = "rebeccapurple"` work at runtime, but the
-current TypeScript declarations do not enumerate every named CSS property.
+Named CSS properties are typed and assignable directly. Use `setProperty()`
+when a property name is dynamic, custom, or hyphenated. `CSSStyleSheet` is the
+only public CSSOM constructor; rules and declarations come from a sheet, just
+as they do in browsers.
 
-Constructed sheets follow browser replacement behavior and strip `@import`.
-`parseStyleSheet` creates a regular authoring sheet and preserves valid imports
-without loading them.
+Constructed sheets strip `@import` during replacement. `parseStyleSheet()` is a
+SheetOM extension for existing regular stylesheets and preserves valid imports
+without fetching them.
 
-## Recovered values and reparsable serialization
+## Browser recovery, safe output
 
-SheetOM distinguishes browser-facing CSSOM text from reparsable stylesheet
-output. Chromium accepts some values using CSS Syntax end-of-input recovery
-while preserving the unclosed input in `getPropertyValue()` and `cssText`:
+Browsers accept some CSS using end-of-input recovery and expose the incomplete
+spelling through CSSOM. SheetOM keeps that observable behavior separate from
+whole-sheet output:
 
 ```ts
 const sheet = new CSSStyleSheet();
 sheet.insertRule(".card {}");
 
 const rule = sheet.cssRules[0];
-if (!(rule instanceof CSSStyleRule)) {
-  throw new TypeError("Expected a style rule");
-}
+if (!(rule instanceof CSSStyleRule)) throw new TypeError("Expected a style rule");
 
 rule.style.setProperty("padding", "72px var(--space, var(--space,");
 
@@ -122,176 +86,105 @@ rule.style.cssText;
 // "padding: 72px var(--space, var(--space,;"
 
 sheet.serialize();
-// reparsable CSS with the missing syntax repaired
+// reparsable CSS with the missing syntax safely confined and repaired
 ```
 
-The three text surfaces have distinct contracts:
-
-| Surface | Contract |
+| Surface | Purpose |
 | --- | --- |
-| `rule.style.cssText` | Browser-compatible observable declaration text, including accepted recovery quirks. |
-| `rule.cssText` | Browser-compatible observable text for one rule and its current descendants. |
-| `sheet.serialize()` | Deterministic, reparsable stylesheet output with recoverable syntax confined to its declaration or rule. |
+| `style.cssText` | Browser-compatible declaration text, including measured recovery quirks. |
+| `rule.cssText` | Browser-compatible text for the current rule. |
+| `sheet.serialize()` | Deterministic, reparsable CSS for a complete stylesheet. |
 
-Reparsable serialization means that the output can be parsed again without one
-declaration leaking into the next declaration or rule, while preserving the
-valid semantic state owned by SheetOM. It does not sanitize URLs, enforce CSP,
-block remote resources, or make valid hostile CSS safe to render.
+Invalid property values and priorities are atomic no-ops: the previous state
+survives unchanged. Static shorthands are stored as canonical longhands, so
+editing and then removing one longhand cannot accidentally reactivate an old
+shorthand value.
 
-Invalid `setProperty` values and priorities are atomic no-ops, matching browser
-behavior. Opt into mutation diagnostics with `{ diagnostics: true }` and drain
-them using `takeDiagnostics()`. `SheetOMDiagnostic.code` is a stable string
-union. Diagnostics retain the complete rejected input until drained; when
-processing untrusted or very large input, callers should leave diagnostics off
-or drain them promptly to bound memory use.
+Reparsable output prevents malformed input from leaking into a following
+declaration or rule. It is not a CSS sanitizer, URL policy, CSP, or rendering
+sandbox.
 
-Static shorthands are owned as canonical longhand records. Updating or removing
-one longhand can therefore never reactivate an older shorthand value. Shorthand
-getters and `cssText` are synthesized only while the complete current longhand
-set has compatible values and priorities; genuinely deferred substitutions
-retain separate provenance until a longhand mutation breaks their group.
+## Native and WebAssembly runtimes
 
-The Chromium 151 compatibility baseline covers all 129 manifested
-multi-longhand shorthands. Grammar depth is a finite reviewed contract rather
-than a claim to implement every future CSS production: 24 codec profiles
-currently carry 96 positive and neighboring-negative branch cases, including
-cardinality, slash and comma lists, compound optional keywords, mutation
-atomicity, and reparsable round-trips. CI reprobes those cases against the
-pinned Chromium engine, and a release is blocked unless all 129 breadth seeds
-and all 96 reviewed branches pass exactly. The contracts and browser
-observations ship as audit evidence but are never imported as runtime value
-authority.
+The `sheetom` package contains the JavaScript facade and selects one exact
+`@sheetom/native-*` optional package for the current platform. It installs no
+JavaScript parser dependency, downloads no binary at install time, and never
+falls back to a different engine. Omitting optional dependencies is unsupported
+and fails explicitly.
 
-Relative colors use the same typed engine rather than a text fallback. The
-pinned Chromium 151 and WPT corpus contains 1,146 accepted and 160 rejected
-branches across `rgb()`, `hsl()`, `hwb()`, Lab, LCH, predefined color spaces,
-channel calculations, missing components, and nested color functions. CI
-compares all 1,306 browser-facing getters in one batched browser session and
-also requires every accepted value to survive reparsable serialization.
+| Runtime | Entry point | Notes |
+| --- | --- | --- |
+| Node.js 22+ | `sheetom` | ESM and CommonJS; prebuilt native packages for macOS, Windows, GNU Linux, and musl Linux targets. |
+| Bun | `sheetom` | Tested through the npm package on Linux x64. |
+| Deno | `sheetom` | Uses npm resolution and requires native FFI/system permissions. |
+| Browsers and workers | `@sheetom/wasm` | ESM-only asynchronous factory; no WASI or global installation. |
 
-## API scope
-
-- `CSSStyleSheet`, live `CSSRuleList`, `CSSRule`, and `MediaList`
-- nested `CSSStyleRule`, `CSSGroupingRule`, and `CSSConditionRule`
-- media, supports, container, layer, scope, and starting-style rules
-- import, font-face, page/margin, nested-declaration, and position-try rules
-- keyframes and mutable keyframe rules
-- counter-style descriptors and font-feature-value maps
-- custom `@function` parameters, return types, conditional groups, and live
-  function descriptors
-- live indexed and named `CSSStyleDeclaration`
-- `insertRule`, `deleteRule`, `replace`, and `replaceSync`
-- `parseStyleSheet` for forgiving regular-sheet parsing
-- browser-facing `cssText` and reparsable `serialize()` output
-- generic retention of read-only metadata rules and experimental/future rules
-
-SheetOM targets standards and shared browser behavior first, with Chromium
-behavior used only as the final measured divergence fallback. Versioned JSON
-Operation Fixtures execute through SheetOM and native browser adapters;
-applicable WPT subtests retain their pinned source path, title, and blob SHA.
-Every release ships its machine-readable Compatibility Report. RC7-or-later
-reports distinguish native and WebAssembly backend evidence; the WASM dimension
-records direct HTTP, worker, bundler, memory-soak, and Publisher-shaped browser
-results instead of inferring them from the shared Rust engine.
-
-Modern or implementation-dependent value grammar is bounded by the checked-in
-[`Value Capability Corpus`](./compatibility/value-capabilities.json). Each
-measured family includes accepted and rejected neighboring cases; browser
-probing occurs only during conformance work and never at runtime.
-The corpus includes 94 CSS Math branches across number, integer, length,
-percentage, angle, and time contexts. It locks dimensional rejection,
-mixed-unit ordering, non-finite constants, function arity, CSSOM observable
-serialization, and atomic failure to Chromium 151.
-
-Computed-context number results are covered separately by the checked-in
-[`Number Result Math Corpus`](./compatibility/number-result-math-capabilities.json).
-It records 860 batched Chromium observations across all 70 accepting
-properties, including relative lengths, percentages, dynamic products and
-quotients, dimension-result neighbors, invalid dimensional multiplication,
-CSSOM expansion, declaration serialization, multi-item animations, slash
-sections, and contextual values in every position of `flex`, `grid`, columns,
-aspect ratios, and border-image families. Both direct and composite properties
-must pass mutation, `cssText`, safe round-trip, and atomic-rejection gates.
-
-Direct numeric and cross-dimension syntax is gated independently by the
-[`Numeric Property Contracts`](./compatibility/numeric-property-contracts.json).
-It crosses 57 number-, percentage-, length-, and legacy-number properties with
-11 accepted and rejected neighboring branches. The public binding must match
-Chromium for acceptance, observable values, `cssText`, indexed names, and
-invalid-mutation atomicity; the browser observations remain test evidence and
-are never loaded by the runtime.
-
-The corresponding shorthand depth evidence is split between the reviewed
-[`Grammar Branch Contracts`](./compatibility/shorthand-grammar-contracts.json)
-and the generated
-[`Chromium observations`](./compatibility/shorthand-grammar-observations.json).
-
-See [the behavioral API reference](./docs/api.md) for return, exception,
-identity, and detachment contracts. Maintainers use the separately reviewed
-[release procedure](./docs/releasing.md); Changesets never publishes by itself.
-
-The checked-in ordinary-property manifest was generated against Chromium
-151.0.7922.34. Run `npm run generate:properties` only when intentionally
-advancing the Compatibility Baseline.
-
-## Security and resource boundaries
-
-SheetOM does not fetch `@import` targets or URLs and does not execute CSS. It is
-also not a sanitizer: valid authored URLs, imports, and browser features remain
-in serialized output. Callers must apply their own content and resource policy
-before attaching untrusted output to a document or another rendering
-environment.
-
-Every sheet has a high default Resource Budget that is checked before native
-parsing or CSSOM mutation: 64 MiB of stylesheet source, 1 MiB per declaration
-value, syntax depth 4,096, one million rules, and 100,000 declarations per
-block. Exceeding a budget throws `RangeError` without changing the previous
-sheet or declaration state. Limits are UTF-8 byte counts where applicable and
-can be changed per sheet without affecting other sheets:
-
-```js
-const bounded = new CSSStyleSheet({
-  resourceBudget: {
-    maxStylesheetBytes: 8 * 1024 * 1024,
-    maxRuleCount: 100_000,
-  },
-});
-```
-
-Resource Budgets protect the host process; they are not content policy,
-sanitization, or a rendering sandbox. See [the API contract](./docs/api.md) and
-[SECURITY.md](./SECURITY.md) for details.
-
-## Development
+Deno example:
 
 ```sh
-npm run check
-npm run test:browser:matrix
-npm run test:differential
-npm run conformance:drift
-npm run fuzz
-npm run benchmark
+deno run --node-modules-dir=manual --allow-ffi --allow-sys app.ts
 ```
 
-`npm run check` covers types, public unit behavior, conformance documents, API
-documentation, build output, runtime artifacts, and the packed-package smoke
-test. Use `npm run test:browser:matrix` on a machine with all Playwright
-dependencies to run Chromium, Firefox, and WebKit. CI separately runs
-`npm run test:differential`, a deterministic, grammar-oriented declaration
-differential with native-browser reparsing witnesses. Any minimized mismatch
-must become an immutable Operation Fixture with an explicit Compatibility
-Resolution.
+WebAssembly example:
 
-`npm run docs:build` generates the TypeDoc reference under `site/api`. The
-benchmark gates both a 10,000-rule stress case and a publisher-shaped reference
-workload with one shared stylesheet, 20 page stylesheets, nested layers/media,
-distributed mutations, and two idempotent serialization passes.
+```ts
+import { createSheetOM } from "@sheetom/wasm";
 
-Only the latest published `0.x` minor and its active prereleases receive fixes
-before 1.0. During `0.x`, observable compatibility corrections and interface
-breaks require a new minor version and migration note; patches remain backward
-compatible.
+const { CSSStyleSheet } = await createSheetOM();
+const sheet = new CSSStyleSheet();
+sheet.replaceSync(".card { color: red; }");
+```
+
+The native and WebAssembly packages execute the same Rust engine and verify an
+exact engine ABI identity before exposing CSSOM objects. `createSheetOM()`
+shares default initialization within one JavaScript realm; passing an explicit
+`URL`, `Response`, `ArrayBuffer`, or `WebAssembly.Module` creates an isolated
+facade with its own class identity.
+
+## Compatibility contract
+
+SheetOM tests complete observable state—not only whether serialized CSS looks
+similar. Its versioned evidence covers getters, `cssText`, indexed property
+order, priorities, invalid-mutation atomicity, live identity, shorthand
+sequences, recovery, native-browser reparsing, subprocess crash safety,
+grammar-oriented fuzzing, and Publisher-shaped performance workloads.
+
+Standards and shared browser behavior take precedence. When browser engines
+genuinely differ, SheetOM records the result and follows the pinned Chromium
+baseline as its final fallback. Browser observations and WPT mappings remain
+test evidence; they are never imported as runtime authority.
+
+See [Compatibility](./docs/compatibility.md) for the exact promise, evidence,
+and exclusions.
+
+## Resource limits and diagnostics
+
+Each sheet has configurable limits for stylesheet bytes, declaration-value
+bytes, syntax depth, rule count, and declarations per block. A limit violation
+throws `RangeError` before mutation. These budgets protect the host process;
+they are not content policy.
+
+Mutation diagnostics are opt-in:
+
+```ts
+const sheet = new CSSStyleSheet({ diagnostics: true });
+// ...mutate the sheet...
+const diagnostics = sheet.takeDiagnostics();
+```
+
+Diagnostics retain rejected inputs until drained. Leave them disabled or drain
+them promptly when handling untrusted or unusually large source.
+
+## Documentation
+
+- [API behavior](./docs/api.md)
+- [Architecture](https://github.com/leo91000/sheetom/blob/main/docs/architecture.md)
+- [Compatibility](https://github.com/leo91000/sheetom/blob/main/docs/compatibility.md)
+- [Contributing](https://github.com/leo91000/sheetom/blob/main/CONTRIBUTING.md)
+- [Release process](https://github.com/leo91000/sheetom/blob/main/docs/releasing.md)
+- [Architecture decisions](https://github.com/leo91000/sheetom/blob/main/docs/adr/README.md)
+- [Security policy](./SECURITY.md)
 
 ## License
 
-MIT
+MIT. Vendored parser sources retain their upstream licenses and provenance.

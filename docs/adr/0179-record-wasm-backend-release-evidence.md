@@ -1,4 +1,8 @@
-# ADR 0175: Record WASM backend release evidence
+---
+status: accepted
+---
+
+# ADR 0179: Record WASM backend release evidence
 
 ## Decision
 

@@ -59,7 +59,7 @@ CSS is safe to attach at the Rendering Boundary.
 
 `resourceBudget` configures per-sheet limits and is inherited by every parsed,
 nested, inserted, and later detached rule or declaration object from that
-sheet. Omitted fields use these RC6 defaults:
+sheet. Omitted fields use these defaults:
 
 | Field | Default | Measures |
 | --- | ---: | --- |
@@ -160,7 +160,10 @@ inputs should disable diagnostics or drain the queue promptly.
 SheetOM does not implement DOM association, style-sheet collections, cascade,
 selector matching, resolved/computed values, layout, fetching, or sanitizing.
 See the release Compatibility Report for measured engine versions, WPT source,
-known divergences, explicit exclusions, and backend-specific evidence. From RC7,
-the WebAssembly dimension includes direct and buffered loading, independent
+known divergences, explicit exclusions, and backend-specific evidence. The
+WebAssembly dimension includes direct and buffered loading, independent
 instances, main-thread and worker execution, four bundlers in three browser
 engines, a memory soak, and an absolute Publisher-shaped workload.
+
+The broader evidence and browser-precedence policy are documented in
+[Compatibility](./compatibility.md).

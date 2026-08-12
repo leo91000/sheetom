@@ -1,4 +1,8 @@
-# ADR 0174: Generate static instance-scoped WASM factories
+---
+status: accepted
+---
+
+# ADR 0178: Generate static instance-scoped WASM factories
 
 ## Decision
 
