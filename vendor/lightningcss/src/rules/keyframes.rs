@@ -73,7 +73,7 @@ impl<'i> Parse<'i> for KeyframesName<'i> {
       Token::Ident(ref s) => {
         // CSS-wide keywords without quotes throws an error.
         match_ignore_ascii_case! { &*s,
-          "none" | "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" => {
+          "none" | "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" | "revert-rule" => {
             Err(input.new_unexpected_token_error(Token::Ident(s.clone())))
           },
           _ => {
@@ -103,7 +103,7 @@ impl<'i> ToCss for KeyframesName<'i> {
       KeyframesName::Custom(s) => {
         // CSS-wide keywords and `none` cannot remove quotes.
         match_ignore_ascii_case! { &*s,
-          "none" | "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" => {
+          "none" | "initial" | "inherit" | "unset" | "default" | "revert" | "revert-layer" | "revert-rule" => {
             serialize_string(&s, dest)?;
           },
           _ => {

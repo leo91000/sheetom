@@ -42,6 +42,7 @@ pub enum DisplayInside {
   Box(VendorPrefix),
   Grid,
   Ruby,
+  Math,
 }
 
 impl<'i> Parse<'i> for DisplayInside {
@@ -59,6 +60,7 @@ impl<'i> Parse<'i> for DisplayInside {
       "-moz-box" => Ok(DisplayInside::Box(VendorPrefix::Moz)),
       "grid" => Ok(DisplayInside::Grid),
       "ruby" => Ok(DisplayInside::Ruby),
+      "math" => Ok(DisplayInside::Math),
       _ => Err(location.new_unexpected_token_error(
         cssparser::Token::Ident(ident.clone())
       ))
@@ -89,6 +91,7 @@ impl ToCss for DisplayInside {
       }
       DisplayInside::Grid => dest.write_str("grid"),
       DisplayInside::Ruby => dest.write_str("ruby"),
+      DisplayInside::Math => dest.write_str("math"),
     }
   }
 }
@@ -160,7 +163,7 @@ impl<'i> Parse<'i> for DisplayPair {
         // "If <display-outside> is omitted, the element’s outside display type
         // defaults to block — except for ruby, which defaults to inline."
         // https://drafts.csswg.org/css-display/#inside-model
-        DisplayInside::Ruby => DisplayOutside::Inline,
+        DisplayInside::Ruby | DisplayInside::Math => DisplayOutside::Inline,
         _ => DisplayOutside::Block,
       });
 
@@ -272,7 +275,7 @@ impl ToCss for DisplayPair {
         is_list_item,
       } => {
         let default_outside = match inside {
-          DisplayInside::Ruby => DisplayOutside::Inline,
+          DisplayInside::Ruby | DisplayInside::Math => DisplayOutside::Inline,
           _ => DisplayOutside::Block,
         };
 

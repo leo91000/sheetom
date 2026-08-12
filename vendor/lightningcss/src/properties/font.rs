@@ -580,6 +580,7 @@ enum_property! {
     // https://drafts.csswg.org/css-cascade-5/#defaulting-keywords
     "revert": Revert,
     "revert-layer": RevertLayer,
+    "revert-rule": RevertRule,
   }
 }
 

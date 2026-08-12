@@ -245,6 +245,8 @@ enum_property! {
     BreakAll,
     /// Breaking is allowed if there is no otherwise acceptable break points in a line.
     BreakWord,
+    /// Language-specific phrase boundaries are preferred over individual word boundaries.
+    AutoPhrase,
   }
 }
 

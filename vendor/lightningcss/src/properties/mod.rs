@@ -712,7 +712,11 @@ macro_rules! define_properties {
               }
             },
           )+
-          PropertyId::All => return Ok(Property::All(CSSWideKeyword::parse(input)?)),
+          PropertyId::All => {
+            let value = CSSWideKeyword::parse(input)?;
+            input.expect_exhausted()?;
+            return Ok(Property::All(value));
+          },
           PropertyId::Custom(name) => return Ok(Property::Custom(CustomProperty::parse(name, input, options)?)),
           _ => {}
         };
@@ -1699,5 +1703,59 @@ enum_property! {
     "revert": Revert,
     /// Rolls back the cascade to the value of the previous cascade layer.
     "revert-layer": RevertLayer,
+    /// Rolls back the cascade to the value before the current scope rule.
+    "revert-rule": RevertRule,
+  }
+}
+
+#[cfg(test)]
+mod current_browser_grammar_tests {
+  use super::*;
+
+  fn parse(name: &str, source: &str) -> Result<String, ()> {
+    let property = Property::parse_string(
+      PropertyId::from(name),
+      source,
+      ParserOptions::default(),
+    )
+    .map_err(|_| ())?;
+    if matches!(property, Property::Unparsed(_) | Property::Custom(_)) {
+      return Err(());
+    }
+    property
+      .value_to_css_string(PrinterOptions::default())
+      .map_err(|_| ())
+  }
+
+  #[test]
+  fn parses_current_keyword_and_ordered_set_branches() {
+    for (name, source, expected) in [
+      ("all", "revert-rule", "revert-rule"),
+      ("word-break", "auto-phrase", "auto-phrase"),
+      ("transform-style", "preserve-3d", "preserve-3d"),
+      ("image-rendering", "pixelated", "pixelated"),
+      ("image-rendering", "crisp-edges", "crisp-edges"),
+      ("display", "math", "math"),
+      ("display", "inline math", "math"),
+      ("display", "block math", "block math"),
+      ("grid-auto-flow", "dense", "dense"),
+      ("grid-auto-flow", "dense row", "dense"),
+    ] {
+      assert_eq!(parse(name, source).as_deref(), Ok(expected), "{name}: {source}");
+    }
+  }
+
+  #[test]
+  fn rejects_neighboring_invalid_keyword_and_ordered_set_values() {
+    for (name, source) in [
+      ("all", "revert-rule extra"),
+      ("word-break", "normal auto-phrase"),
+      ("transform-style", "preserve3d"),
+      ("image-rendering", "pixelated crisp-edges"),
+      ("display", "math list-item"),
+      ("grid-auto-flow", "dense dense"),
+    ] {
+      assert!(parse(name, source).is_err(), "{name}: {source}");
+    }
   }
 }
