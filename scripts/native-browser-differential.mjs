@@ -290,6 +290,19 @@ const cases = [
         ],
     },
     {
+        id: "overscroll-chain-shorthand-mutate-remove",
+        operations: [
+            ["set", "overscroll-behavior", "chain contain", "important"],
+            ["set", "overscroll-behavior-y", "chain", "important"],
+            ["remove", "overscroll-behavior-y"],
+        ],
+        probes: [
+            "overscroll-behavior",
+            "overscroll-behavior-x",
+            "overscroll-behavior-y",
+        ],
+    },
+    {
         id: "math-layout-new-keywords",
         operations: [
             ["set", "font-size", "MATH", ""],

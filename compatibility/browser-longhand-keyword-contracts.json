@@ -46,7 +46,7 @@
     { "id": "overflow-anchor", "properties": ["overflow-anchor"], "values": ["visible", "none", "auto"] },
     { "id": "logical-overflow", "properties": ["overflow-block", "overflow-inline"], "values": ["visible", "hidden", "clip", "scroll", "auto"] },
     { "id": "overlay", "properties": ["overlay"], "values": ["none", "auto"] },
-    { "id": "logical-overscroll", "properties": ["overscroll-behavior-block", "overscroll-behavior-inline"], "values": ["auto", "contain", "none"] },
+    { "id": "overscroll", "properties": ["overscroll-behavior-x", "overscroll-behavior-y", "overscroll-behavior-block", "overscroll-behavior-inline"], "values": ["auto", "contain", "none", "chain"] },
     { "id": "page-margin-safety", "properties": ["page-margin-safety"], "values": ["none", "clamp", "add"] },
     { "id": "pointer-events", "properties": ["pointer-events"], "values": ["none", "auto", "stroke", "fill", "painted", "visible", "visiblestroke", "visiblefill", "visiblepainted", "bounding-box", "all"] },
     { "id": "reading-flow", "properties": ["reading-flow"], "values": ["normal", "flex-visual", "flex-flow", "grid-rows", "grid-columns", "grid-order", "source-order"] },

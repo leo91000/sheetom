@@ -2,11 +2,11 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 851,
+  "mismatchCases": 829,
   "summary": {
-    "acceptance": 42,
-    "observable": 540,
-    "cssText": 540,
+    "acceptance": 37,
+    "observable": 523,
+    "cssText": 523,
     "items": 478,
     "atomicity": 0,
     "reparse": 17
@@ -2239,14 +2239,6 @@
       ]
     },
     {
-      "property": "border-block-color",
-      "sample": "webref-sample.91ab672a6f82152b",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
       "property": "border-block-end",
       "sample": "webref-sample.13bdf724260d9ee9",
       "kinds": [
@@ -2636,22 +2628,6 @@
       "sample": "webref-sample.f953aca895324c8f",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "border-block-style",
-      "sample": "webref-sample.190968ee91206fe3",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-block-width",
-      "sample": "webref-sample.9d3ead3f83e65b5b",
-      "kinds": [
-        "cssText",
-        "observable"
       ]
     },
     {
@@ -3204,14 +3180,6 @@
       ]
     },
     {
-      "property": "border-inline-color",
-      "sample": "webref-sample.91ab672a6f82152b",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
       "property": "border-inline-end",
       "sample": "webref-sample.13bdf724260d9ee9",
       "kinds": [
@@ -3601,22 +3569,6 @@
       "sample": "webref-sample.f953aca895324c8f",
       "kinds": [
         "items"
-      ]
-    },
-    {
-      "property": "border-inline-style",
-      "sample": "webref-sample.190968ee91206fe3",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-inline-width",
-      "sample": "webref-sample.9d3ead3f83e65b5b",
-      "kinds": [
-        "cssText",
-        "observable"
       ]
     },
     {
@@ -4143,86 +4095,6 @@
       "sample": "webref-sample.f102cb92b24dc3aa",
       "kinds": [
         "acceptance"
-      ]
-    },
-    {
-      "property": "corner-block-end-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-block-start-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-bottom-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-inline-end-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-inline-start-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-left-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-right-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-shape",
-      "sample": "webref-sample.63d77604007a0faf",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-shape",
-      "sample": "webref-sample.bb7e0b1f6264ff98",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "corner-top-shape",
-      "sample": "webref-sample.12eadfde933078e8",
-      "kinds": [
-        "cssText",
-        "observable"
       ]
     },
     {
@@ -5944,49 +5816,6 @@
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "overscroll-behavior",
-      "sample": "webref-sample.84d603d2e414bdba",
-      "kinds": [
-        "cssText",
-        "observable"
-      ]
-    },
-    {
-      "property": "overscroll-behavior",
-      "sample": "webref-sample.bf527987aeee1524",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "overscroll-behavior-block",
-      "sample": "webref-sample.6b510161701707bc",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "overscroll-behavior-inline",
-      "sample": "webref-sample.6b510161701707bc",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "overscroll-behavior-x",
-      "sample": "webref-sample.6b510161701707bc",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "overscroll-behavior-y",
-      "sample": "webref-sample.6b510161701707bc",
-      "kinds": [
-        "acceptance"
       ]
     },
     {

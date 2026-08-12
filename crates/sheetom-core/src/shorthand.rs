@@ -1539,7 +1539,10 @@ pub(crate) fn parse_value_for_source_with_limits(
         });
     }
     if let Some(longhands) = expand_structural_shorthand(name, value, important, limits) {
-        let value = validated_expanded_shorthand_value(name, value, limits)?;
+        let record_refs = longhands.iter().collect::<Vec<_>>();
+        let canonical = synthesize_structural_shorthand(name, &record_refs, false)
+            .unwrap_or_else(|| value.to_owned());
+        let value = validated_expanded_shorthand_value(name, &canonical, limits)?;
         return Ok(ParsedValue {
             value,
             longhands: Some(longhands),
@@ -3734,7 +3737,7 @@ fn validate_structural_longhand(name: &str, value: &str) -> Option<String> {
     }
 
     let validation_name = if name.starts_with("overscroll-behavior-") {
-        return matches!(value, "auto" | "contain" | "none").then(|| value.to_owned());
+        return matches!(value, "auto" | "contain" | "none" | "chain").then(|| value.to_owned());
     } else if name.contains("rule-inset") {
         Some("padding-top")
     } else if name.ends_with("rule-break") {

@@ -1475,7 +1475,7 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::Keyword(&["normal", "sub", "super"]) => [
         "font-variant-position",
     ],
-    BrowserLonghandGrammar::Keyword(&["auto", "contain", "none"]) => [
+    BrowserLonghandGrammar::Keyword(&["auto", "contain", "none", "chain"]) => [
         "overscroll-behavior-x",
         "overscroll-behavior-y",
     ],
@@ -1639,7 +1639,7 @@ define_browser_longhand_registry! {
         "overflow-inline",
     ],
     BrowserLonghandGrammar::Keyword(&["none", "auto"]) => ["overlay"],
-    BrowserLonghandGrammar::Keyword(&["auto", "contain", "none"]) => [
+    BrowserLonghandGrammar::Keyword(&["auto", "contain", "none", "chain"]) => [
         "overscroll-behavior-block",
         "overscroll-behavior-inline",
     ],
