@@ -820,14 +820,40 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
             | "container"
             | "flex"
             | "flex-flow"
+            | "font-synthesis"
             | "font-variant"
+            | "gap"
+            | "grid-gap"
             | "grid-area"
             | "grid-column"
             | "grid-row"
             | "place-self"
+            | "place-content"
+            | "place-items"
             | "grid"
             | "grid-template"
             | "mask"
+            | "mask-position"
+            | "-webkit-mask-position"
+            | "background-position"
+            | "border-spacing"
+            | "border-color"
+            | "border-style"
+            | "border-width"
+            | "interest-delay"
+            | "margin"
+            | "margin-block"
+            | "margin-inline"
+            | "overflow"
+            | "padding"
+            | "padding-block"
+            | "padding-inline"
+            | "scroll-margin"
+            | "scroll-margin-block"
+            | "scroll-margin-inline"
+            | "scroll-padding"
+            | "scroll-padding-block"
+            | "scroll-padding-inline"
             | "list-style"
             | "offset"
             | "position-try"
@@ -1434,6 +1460,21 @@ mod tests {
         state.set_property("padding-left", "3px", "");
         assert_eq!(state.get_property_value("padding"), "");
         assert_eq!(state.get_property_value("padding-left"), "3px");
+
+        let mut equal_priority = DeclarationState::new();
+        assert_eq!(
+            equal_priority.set_property("padding", value, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            equal_priority.set_property("padding-left", "3px", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(equal_priority.get_property_value("padding"), "");
+        assert_eq!(
+            equal_priority.serialize(false),
+            "padding-top: ; padding-right: ; padding-bottom: ; padding-left: 3px;"
+        );
     }
 
     #[test]
@@ -3309,6 +3350,42 @@ mod tests {
                 MutationOutcome::Applied,
             );
             assert_eq!(state.get_property_value("cursor"), expected, "{input}");
+        }
+    }
+
+    #[test]
+    fn canonical_shorthand_provenance_matches_chromium_families() {
+        for (property, input, expected) in [
+            ("overflow", "visible visible", "visible"),
+            (
+                "background-position",
+                "center, center",
+                "center center, center center",
+            ),
+            ("padding", "1px 1px 1px 1px", "1px"),
+            ("padding-block", "1px 1px", "1px"),
+            ("border-color", "red red red red", "red"),
+            ("scroll-padding", "auto auto auto auto", "auto"),
+            (
+                "mask-position",
+                "center, center",
+                "center center, center center",
+            ),
+            ("font-synthesis", "small-caps weight", "weight small-caps"),
+            ("place-items", "normal first baseline", "normal baseline"),
+            ("gap", "normal calc(1px + 5%)", "normal calc(5% + 1px)"),
+        ] {
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(property, input, ""),
+                MutationOutcome::Applied,
+                "{property}: {input}",
+            );
+            assert_eq!(
+                state.get_property_value(property),
+                expected,
+                "{property}: {input}",
+            );
         }
     }
 
