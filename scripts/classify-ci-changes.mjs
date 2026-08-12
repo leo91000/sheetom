@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-const OUTPUT_NAMES = ["browser", "docs", "native", "package", "performance", "quality"];
+const OUTPUT_NAMES = ["browser", "docs", "native", "package", "performance", "quality", "vendor"];
 
 const isDocumentationPath = filePath =>
     filePath.endsWith(".md") ||
@@ -27,6 +27,15 @@ const isNativePath = filePath =>
     filePath.startsWith("scripts/build-native-") ||
     filePath.startsWith("scripts/collect-native-") ||
     filePath.startsWith("scripts/test-native-");
+
+const isVendorPath = filePath =>
+    filePath === "Cargo.lock" ||
+    filePath === "Cargo.toml" ||
+    filePath === "package.json" ||
+    filePath === "rust-toolchain.toml" ||
+    filePath.startsWith(".cargo/") ||
+    filePath.startsWith("vendor/cssparser/") ||
+    filePath.startsWith("vendor/lightningcss/");
 
 const isAutomationPath = filePath =>
     filePath.startsWith(".github/") ||
@@ -87,6 +96,7 @@ export function classifyPaths(filePaths, { forceFull = false } = {}) {
         package: native || filePaths.some(isPackagePath),
         performance: filePaths.some(isPerformancePath),
         quality,
+        vendor: filePaths.some(isVendorPath),
     };
 }
 

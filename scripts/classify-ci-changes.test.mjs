@@ -10,6 +10,7 @@ const none = {
     package: false,
     performance: false,
     quality: false,
+    vendor: false,
 };
 
 test("documentation changes run only documentation validation", () => {
@@ -22,6 +23,7 @@ test("vendored source changes rebuild native validation and package artifacts", 
         native: true,
         package: true,
         performance: true,
+        vendor: true,
     });
 });
 
@@ -77,6 +79,7 @@ test("browser-backed grammar generators still run browser validation", () => {
         browser: true,
         docs: true,
         quality: true,
+        vendor: false,
     });
 });
 
@@ -89,6 +92,7 @@ test("Webref grammar sampling reruns browser evidence without native or package 
         browser: true,
         docs: true,
         quality: true,
+        vendor: false,
     });
 });
 
@@ -100,6 +104,7 @@ test("public runtime changes run every relevant JavaScript gate", () => {
         package: true,
         performance: true,
         quality: true,
+        vendor: false,
     });
 });
 
@@ -111,6 +116,7 @@ test("workflow and classifier changes fail safe to the complete matrix", () => {
         package: true,
         performance: true,
         quality: true,
+        vendor: true,
     });
 });
 
@@ -122,5 +128,12 @@ test("scheduled runs force the complete matrix", () => {
         package: true,
         performance: true,
         quality: true,
+        vendor: true,
     });
+});
+
+test("root Rust and package command changes keep vendored tests enabled", () => {
+    for (const filePath of ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "package.json"]) {
+        assert.equal(classifyPaths([filePath]).vendor, true, filePath);
+    }
 });
