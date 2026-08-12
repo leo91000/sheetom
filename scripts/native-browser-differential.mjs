@@ -291,6 +291,31 @@ const cases = [
         probes: ["background", "background-origin", "background-clip"],
     },
     {
+        id: "border-image-slice-fill-canonicalization",
+        operations: [
+            ["set", "border-image-slice", "fill 1 2 1 2", "important"],
+            ["set", "border-image-slice", "calc(1 + 1) fill", "important"],
+        ],
+        probes: ["border-image", "border-image-slice"],
+    },
+    {
+        id: "border-image-fill-longhand-mutation",
+        operations: [
+            ["set", "border-image", "url(\"x.png\") fill 1 2 / 3 / 4 round", "important"],
+            ["set", "border-image-slice", "10% fill", "important"],
+        ],
+        probes: ["border-image", "border-image-slice", "border-image-width"],
+    },
+    {
+        id: "invalid-border-image-slice-fill-is-atomic",
+        operations: [
+            ["set", "border-image-slice", "10% fill", "important"],
+            ["set", "border-image-slice", "1 fill fill", ""],
+            ["set", "border-image-slice", "-1 fill", ""],
+        ],
+        probes: ["border-image", "border-image-slice"],
+    },
+    {
         id: "anchor-inset-canonicalization",
         operations: [[
             "set",

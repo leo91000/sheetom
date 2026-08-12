@@ -2,14 +2,14 @@
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
   "corpusSha256": "ccb4f9380048e90c43a53d04034325456dfcc5b3e145cd811949292d477c7fd1",
-  "mismatchCases": 1078,
+  "mismatchCases": 1006,
   "summary": {
-    "acceptance": 166,
-    "observable": 638,
-    "cssText": 638,
-    "items": 524,
+    "acceptance": 145,
+    "observable": 592,
+    "cssText": 592,
+    "items": 478,
     "atomicity": 0,
-    "reparse": 22
+    "reparse": 17
   },
   "unresolved": [
     {
@@ -2857,33 +2857,6 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.059bbaaec36d642e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.066f398d3591e126",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.067709852c3dbb33",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.0933bf32b23284b3",
       "kinds": [
         "cssText",
@@ -2893,52 +2866,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.0b99a57e3abf15ea",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.0c89ce0cd395f3d8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.0d3851ccff4b95a1",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.0ec0dcd5372ecbce",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.12983d66a23d97e6",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.13dc4a774047b171",
       "kinds": [
         "cssText",
         "items",
@@ -2974,33 +2902,6 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.2c5fb24d194c6362",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.2c9030c541c15234",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.2cc69c8ec9990779",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.2d3f013ddcb08988",
       "kinds": [
         "cssText",
@@ -3028,124 +2929,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.34a82b3bd042878b",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.360fbed0b37a16c0",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.3a7673862fd65160",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.3cbc2b7e9dc6a951",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.40be15471596d173",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.40c713e98aad564f",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.41be2844ced19fb8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.41c595db8a073c62",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.48e492d71fe8ca69",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.4e682c776b5ba257",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.4ef2063a6cfe5da6",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.53799e24123460ac",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.5c4e76a66eda98b8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.5fb148d20dc8d376",
       "kinds": [
         "cssText",
         "items",
@@ -3163,79 +2947,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.63487573f62eb64a",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.68e13d3689e56006",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.6a51df665484921c",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.7558b9ac0b28b8d8",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.7f6ce082661d512b",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.85e480f46475dcce",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.896ae0d1907b2adf",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.8b015fc2946fd295",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.8cb7fb47f372d86d",
       "kinds": [
         "cssText",
         "items",
@@ -3253,43 +2965,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.91214945009b96bb",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.967d86f7818e8f23",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.9a372517adc77294",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.9ba524de274c3992",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.9dabcbe531548d8e",
       "kinds": [
         "cssText",
         "items",
@@ -3316,43 +2992,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.ac9e19e69db5320c",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.ae59bb7d4ff579a3",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.b554f4ade704fa37",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.b5a3249314452f46",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.b661c15fd4bf97a3",
       "kinds": [
         "cssText",
         "items",
@@ -3406,15 +3046,6 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.cf7e993473adc45e",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.d41c6b5d584ce4e4",
       "kinds": [
         "cssText",
@@ -3433,43 +3064,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.d95dc02e7b31070c",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.e0fee389d380c21d",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.e1db451a1c5c1e10",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.e9f7c83f54afe4c1",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.ea8a1ab5b68e0bb1",
       "kinds": [
         "cssText",
         "items",
@@ -3487,25 +3082,7 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.ec4e83cbffc4602b",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.f180226a78d3cef9",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.f37dd4b6cb8abf1f",
       "kinds": [
         "cssText",
         "items",
@@ -3532,94 +3109,11 @@
     },
     {
       "property": "border-image",
-      "sample": "webref-sample.fb6d1c18f9db1103",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.fb8343f9d17243ac",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image",
       "sample": "webref-sample.fbb6cd6851569526",
       "kinds": [
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "border-image",
-      "sample": "webref-sample.fc47462ffd8f9b60",
-      "kinds": [
-        "cssText",
-        "items",
-        "observable"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.2c91aa27b513264a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.494ff867ad6aab81",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.54ccdb7d6d1a37bd",
-      "kinds": [
-        "reparse"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.55d5e6d77178a53e",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.584ab5f5665e5624",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.839ffd9d73aaf4db",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.8bdde56468a1f058",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "border-image-slice",
-      "sample": "webref-sample.b1a13f70713d29e3",
-      "kinds": [
-        "acceptance"
       ]
     },
     {
@@ -5538,58 +5032,20 @@
     },
     {
       "property": "grid-column-end",
-      "sample": "webref-sample.649cbec91eabd4ca",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-column-end",
-      "sample": "webref-sample.8e714f6ccce839f2",
-      "kinds": [
-        "reparse"
-      ]
-    },
-    {
-      "property": "grid-column-end",
       "sample": "webref-sample.b83bf6d730fc2706",
       "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-column-end",
-      "sample": "webref-sample.f9d3f48f8debae6a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-column-start",
-      "sample": "webref-sample.649cbec91eabd4ca",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-column-start",
-      "sample": "webref-sample.8e714f6ccce839f2",
-      "kinds": [
-        "reparse"
+        "cssText",
+        "items",
+        "observable"
       ]
     },
     {
       "property": "grid-column-start",
       "sample": "webref-sample.b83bf6d730fc2706",
       "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-column-start",
-      "sample": "webref-sample.f9d3f48f8debae6a",
-      "kinds": [
-        "acceptance"
+        "cssText",
+        "items",
+        "observable"
       ]
     },
     {
@@ -5732,58 +5188,20 @@
     },
     {
       "property": "grid-row-end",
-      "sample": "webref-sample.649cbec91eabd4ca",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-row-end",
-      "sample": "webref-sample.8e714f6ccce839f2",
-      "kinds": [
-        "reparse"
-      ]
-    },
-    {
-      "property": "grid-row-end",
       "sample": "webref-sample.b83bf6d730fc2706",
       "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-row-end",
-      "sample": "webref-sample.f9d3f48f8debae6a",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-row-start",
-      "sample": "webref-sample.649cbec91eabd4ca",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-row-start",
-      "sample": "webref-sample.8e714f6ccce839f2",
-      "kinds": [
-        "reparse"
+        "cssText",
+        "items",
+        "observable"
       ]
     },
     {
       "property": "grid-row-start",
       "sample": "webref-sample.b83bf6d730fc2706",
       "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "grid-row-start",
-      "sample": "webref-sample.f9d3f48f8debae6a",
-      "kinds": [
-        "acceptance"
+        "cssText",
+        "items",
+        "observable"
       ]
     },
     {
@@ -7279,25 +6697,11 @@
     },
     {
       "property": "scale",
-      "sample": "webref-sample.4abcb6b67afd6298",
-      "kinds": [
-        "acceptance"
-      ]
-    },
-    {
-      "property": "scale",
       "sample": "webref-sample.8ccd73baed8d48a7",
       "kinds": [
         "cssText",
         "items",
         "observable"
-      ]
-    },
-    {
-      "property": "scale",
-      "sample": "webref-sample.9d5f90a8a8698115",
-      "kinds": [
-        "acceptance"
       ]
     },
     {

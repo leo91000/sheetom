@@ -46,8 +46,10 @@
     { "codec": "border-image", "cases": [
       { "id": "grammar.border-image.none", "branch": "none", "property": "border-image", "input": "none", "accepted": true },
       { "id": "grammar.border-image.slice", "branch": "source and slice", "property": "border-image", "input": "url(\"x.png\") 30", "accepted": true },
+      { "id": "grammar.border-image.fill", "branch": "fill before slice and slash sections", "property": "border-image", "input": "url(\"x.png\") fill 1 2 / 3 / 4 round", "accepted": true },
       { "id": "grammar.border-image.full", "branch": "slash sections", "property": "border-image", "input": "url(\"x.png\") 30 / 10 / 0 stretch", "accepted": true },
-      { "id": "grammar.border-image.extra-slash-invalid", "branch": "too many slash sections", "property": "border-image", "input": "url(\"x.png\") 30 / 10 / 0 / 1", "accepted": false, "preserves": "grammar.border-image.full" }
+      { "id": "grammar.border-image.extra-slash-invalid", "branch": "too many slash sections", "property": "border-image", "input": "url(\"x.png\") 30 / 10 / 0 / 1", "accepted": false, "preserves": "grammar.border-image.full" },
+      { "id": "grammar.border-image.duplicate-fill-invalid", "branch": "duplicate fill marker", "property": "border-image", "input": "url(\"x.png\") 30 fill fill / 10", "accepted": false, "preserves": "grammar.border-image.fill" }
     ] },
     { "codec": "border-radius", "cases": [
       { "id": "grammar.border-radius.one", "branch": "one radius", "property": "border-radius", "input": "4px", "accepted": true },
