@@ -38,6 +38,7 @@ pub enum BrowserLonghandValue {
     },
     AutoLength(Option<Length>),
     ColumnCount(ColumnCountValue),
+    HyphenateLimitChars(Vec<HyphenateLimitCharsComponent>),
     ContainIntrinsic(ContainIntrinsicValue),
     DashedIdentList(DashedIdentListValue),
     TimelineNameList(Vec<KeywordOrDashedIdentValue>),
@@ -114,6 +115,15 @@ pub enum BrowserLonghandValue {
 pub struct ColumnCountValue {
     count: Option<Calc<PreservedLengthPercentage>>,
     wrap_calc: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum HyphenateLimitCharsComponent {
+    Auto,
+    Number {
+        value: Calc<PreservedLengthPercentage>,
+        authored_math: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -413,6 +423,11 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::AutoLength(None) => Ok("auto".to_owned()),
             BrowserLonghandValue::AutoLength(Some(value)) => serialize_zero_length(value),
             BrowserLonghandValue::ColumnCount(value) => value.canonical_value(),
+            BrowserLonghandValue::HyphenateLimitChars(values) => values
+                .iter()
+                .map(HyphenateLimitCharsComponent::canonical_value)
+                .collect::<Result<Vec<_>, EngineError>>()
+                .map(|values| values.join(" ")),
             BrowserLonghandValue::ContainIntrinsic(value) => value.canonical_value(),
             BrowserLonghandValue::DashedIdentList(DashedIdentListValue::None) => {
                 Ok("none".to_owned())
@@ -965,6 +980,25 @@ impl ColumnCountValue {
     }
 }
 
+impl HyphenateLimitCharsComponent {
+    fn canonical_value(&self) -> Result<String, EngineError> {
+        match self {
+            Self::Auto => Ok("auto".to_owned()),
+            Self::Number {
+                value,
+                authored_math,
+            } => {
+                let serialized = serialize_typed(value)?;
+                if *authored_math && !leading_math_function(&serialized) {
+                    Ok(format!("calc({serialized})"))
+                } else {
+                    Ok(serialized)
+                }
+            }
+        }
+    }
+}
+
 impl ContainIntrinsicValue {
     fn canonical_value(&self) -> Result<String, EngineError> {
         match self {
@@ -1034,6 +1068,7 @@ pub(crate) fn parse_browser_longhand(
         }
         Some(BrowserLonghandGrammar::AutoLength) => parse_auto_length(source),
         Some(BrowserLonghandGrammar::ColumnCount) => parse_column_count(source),
+        Some(BrowserLonghandGrammar::HyphenateLimitChars) => parse_hyphenate_limit_chars(source),
         Some(BrowserLonghandGrammar::ContainIntrinsic) => parse_contain_intrinsic(source),
         Some(BrowserLonghandGrammar::DashedIdentList { allow_all }) => {
             parse_dashed_ident_list(source, allow_all)
@@ -1132,7 +1167,7 @@ pub(crate) fn parse_browser_fallback(
         "box-shadow" | "text-shadow" => &["none"],
         "font-size" => &["math"],
         "zoom" => &["normal"],
-        "hyphenate-limit-chars" | "resize" | "rx" | "ry" => &["auto"],
+        "resize" | "rx" | "ry" => &["auto"],
         "text-transform" => &["math-auto"],
         "-webkit-line-clamp" => &["none"],
         _ => return Ok(None),
@@ -1267,6 +1302,7 @@ enum BrowserLonghandGrammar {
     LengthPercentage { non_negative: bool },
     AutoLength,
     ColumnCount,
+    HyphenateLimitChars,
     ContainIntrinsic,
     DashedIdentList { allow_all: bool },
     TimelineNameList,
@@ -1360,6 +1396,7 @@ define_browser_longhand_registry! {
     BrowserLonghandGrammar::LengthPercentage { non_negative: true } => ["shape-margin"],
     BrowserLonghandGrammar::AutoLength => ["column-height", "column-width"],
     BrowserLonghandGrammar::ColumnCount => ["column-count"],
+    BrowserLonghandGrammar::HyphenateLimitChars => ["hyphenate-limit-chars"],
     BrowserLonghandGrammar::TimeOrNormal => ["interest-delay-end", "interest-delay-start"],
     BrowserLonghandGrammar::DashedIdentList { allow_all: false } => [
         "anchor-name",
@@ -2557,6 +2594,43 @@ fn parse_column_count(source: &str) -> Result<BrowserLonghandValue, EngineError>
             count: Some(count),
             wrap_calc,
         }))
+    })
+}
+
+fn parse_hyphenate_limit_chars(source: &str) -> Result<BrowserLonghandValue, EngineError> {
+    parse_entire(source, |input| {
+        let mut components = Vec::with_capacity(3);
+        while !input.is_exhausted() && components.len() < 3 {
+            if input
+                .try_parse(|input| input.expect_ident_matching("auto"))
+                .is_ok()
+            {
+                components.push(HyphenateLimitCharsComponent::Auto);
+                continue;
+            }
+
+            let state = input.state();
+            let authored_math = matches!(input.next(), Ok(Token::Function(_)));
+            input.reset(&state);
+            let value = match input.try_parse(Calc::<PreservedLengthPercentage>::parse) {
+                Ok(value) => value,
+                Err(_) => Calc::Number(CSSNumber::parse(input)?),
+            };
+            if !value.resolves_to_number()
+                || !authored_math
+                    && matches!(value, Calc::Number(value) if value < 1.0 || value.fract() != 0.0)
+            {
+                return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+            }
+            components.push(HyphenateLimitCharsComponent::Number {
+                value,
+                authored_math,
+            });
+        }
+        if components.is_empty() {
+            return Err(input.new_custom_error(lightningcss::error::ParserError::InvalidValue));
+        }
+        Ok(BrowserLonghandValue::HyphenateLimitChars(components))
     })
 }
 
@@ -3841,8 +3915,8 @@ mod tests {
             );
             branch_count += entry["branches"].as_array().unwrap().len();
         }
-        assert_eq!(properties.len(), 46);
-        assert_eq!(branch_count, 218);
+        assert_eq!(properties.len(), 47);
+        assert_eq!(branch_count, 226);
     }
 
     #[test]

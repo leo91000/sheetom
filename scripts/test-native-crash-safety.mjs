@@ -172,6 +172,16 @@ const crashCases = [
         public: true,
     },
     {
+        name: "hyphenate limit mixed calculation triple",
+        source: "hyphenate-limit-chars: calc(1 + 1) auto calc(.5)",
+        public: true,
+    },
+    {
+        name: "font math size shorthand",
+        source: "font: normal math / normal \"sheetom\"",
+        public: true,
+    },
+    {
         name: "large SVG path command sequence",
         mode: "geometric-svg-path",
         repeatCount: 50_000,

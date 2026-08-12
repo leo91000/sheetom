@@ -2670,7 +2670,266 @@
       "cssText": "font: italic 700 16px / 1.5 serif;"
     },
     {
+      "id": "grammar.font.math-size",
+      "accepted": true,
+      "items": [
+        "font-style",
+        "font-variant-caps",
+        "font-variant-ligatures",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-alternates",
+        "font-size-adjust",
+        "font-language-override",
+        "font-kerning",
+        "font-optical-sizing",
+        "font-feature-settings",
+        "font-variation-settings",
+        "font-variant-position",
+        "font-variant-emoji",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family"
+      ],
+      "longhands": [
+        {
+          "name": "font-style",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-caps",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-ligatures",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-numeric",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-east-asian",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-alternates",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size-adjust",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "font-language-override",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-kerning",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-optical-sizing",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-feature-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variation-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-emoji",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-weight",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-stretch",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size",
+          "value": "math",
+          "priority": ""
+        },
+        {
+          "name": "line-height",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-family",
+          "value": "sheetom",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "math sheetom",
+      "priority": "",
+      "cssText": "font: math sheetom;"
+    },
+    {
+      "id": "grammar.font.math-size-line-height",
+      "accepted": true,
+      "items": [
+        "font-style",
+        "font-variant-caps",
+        "font-variant-ligatures",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-alternates",
+        "font-size-adjust",
+        "font-language-override",
+        "font-kerning",
+        "font-optical-sizing",
+        "font-feature-settings",
+        "font-variation-settings",
+        "font-variant-position",
+        "font-variant-emoji",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family"
+      ],
+      "longhands": [
+        {
+          "name": "font-style",
+          "value": "italic",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-caps",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-ligatures",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-numeric",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-east-asian",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-alternates",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size-adjust",
+          "value": "none",
+          "priority": ""
+        },
+        {
+          "name": "font-language-override",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-kerning",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-optical-sizing",
+          "value": "auto",
+          "priority": ""
+        },
+        {
+          "name": "font-feature-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variation-settings",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-position",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-variant-emoji",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-weight",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-stretch",
+          "value": "normal",
+          "priority": ""
+        },
+        {
+          "name": "font-size",
+          "value": "math",
+          "priority": ""
+        },
+        {
+          "name": "line-height",
+          "value": "1.2",
+          "priority": ""
+        },
+        {
+          "name": "font-family",
+          "value": "serif",
+          "priority": ""
+        }
+      ],
+      "shorthandValue": "italic math / 1.2 serif",
+      "priority": "",
+      "cssText": "font: italic math / 1.2 serif;"
+    },
+    {
       "id": "grammar.font.missing-family-invalid",
+      "accepted": false,
+      "items": [],
+      "longhands": [],
+      "shorthandValue": "",
+      "priority": "",
+      "cssText": ""
+    },
+    {
+      "id": "grammar.font.duplicate-math-invalid",
       "accepted": false,
       "items": [],
       "longhands": [],

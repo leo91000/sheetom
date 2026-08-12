@@ -375,6 +375,19 @@
       ]
     },
     {
+      "property": "hyphenate-limit-chars",
+      "branches": [
+        { "id": "auto", "input": "auto", "invalidNeighbor": "none" },
+        { "id": "integer", "input": "1", "invalidNeighbor": "0" },
+        { "id": "two-components", "input": "auto 2", "invalidNeighbor": "auto 0" },
+        { "id": "three-components", "input": "1 auto 3", "invalidNeighbor": "1 auto 3 4" },
+        { "id": "all-auto", "input": "auto auto auto", "invalidNeighbor": "auto auto auto auto" },
+        { "id": "calculation", "input": "calc(1 + 1)", "invalidNeighbor": "calc(1px)" },
+        { "id": "fractional-calculation", "input": "calc(1.5)", "invalidNeighbor": "1.5" },
+        { "id": "mixed-calculations", "input": "calc(1 + 1) auto calc(.5)", "invalidNeighbor": "calc(1 + 1) auto calc(1px)" }
+      ]
+    },
+    {
       "property": "clip",
       "branches": [
         { "id": "auto", "input": "auto", "invalidNeighbor": "auto rect(0 0 0 0)" },
