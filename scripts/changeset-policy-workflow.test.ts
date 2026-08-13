@@ -7,6 +7,17 @@ const workflow = await readFile(
   "utf8",
 );
 
+function job(name: string): string {
+  const marker = `  ${name}:\n`;
+  const start = workflow.indexOf(marker);
+  assert.notEqual(start, -1, `missing ${name} job`);
+  const remainder = workflow.slice(start + marker.length);
+  const next = remainder.search(/^  [a-z][a-z-]*:\n/mu);
+  return next === -1
+    ? workflow.slice(start)
+    : workflow.slice(start, start + marker.length + next);
+}
+
 test("the generated Changesets release pull request needs no recursive Changeset", () => {
   assert.match(
     workflow,
@@ -16,4 +27,8 @@ test("the generated Changesets release pull request needs no recursive Changeset
     workflow,
     /github\.ref_name == 'changeset-release\/main'/u,
   );
+});
+
+test("the stable promotion gate checks out its comparison history", () => {
+  assert.match(job("package-artifact"), /fetch-depth: 0/u);
 });
