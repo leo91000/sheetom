@@ -67,7 +67,7 @@ jobs:
         run: npm run changeset:check
         env:
           SHEETOM_CHANGESET_BASE: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
-          SHEETOM_NO_CHANGESET: ${{ contains(github.event.pull_request.labels.*.name, 'no-changeset') && '1' || '0' }}
+          SHEETOM_NO_CHANGESET: ${{ (contains(github.event.pull_request.labels.*.name, 'no-changeset') || github.head_ref == 'changeset-release/main' || github.ref_name == 'changeset-release/main') && '1' || '0' }}
 
   quality:
     needs: changes
