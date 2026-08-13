@@ -200,7 +200,7 @@ jobs:
       - name: Set up the shared Rust compilation cache
         uses: ./.github/actions/setup-rust-cache
         with:
-          cache-key: wasm32-release
+          cache-key: wasm32-size
       - uses: actions/cache@v5
         id: wasm-bindgen-cache
         with:
@@ -209,6 +209,11 @@ jobs:
             ~/.cargo/bin/wasm-bindgen-test-runner
             ~/.cargo/bin/wasm2es6js
           key: wasm-bindgen-${{ runner.os }}-${{ env.WASM_BINDGEN_VERSION }}
+      - name: Restore the pinned Playwright browser cohort
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-wasm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install the pinned WebAssembly toolchain
         run: |
           rustup target add wasm32-unknown-unknown

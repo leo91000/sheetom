@@ -20,3 +20,7 @@ codegen-units = 1
 lto = true
 panic = "unwind"
 strip = "symbols"
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"

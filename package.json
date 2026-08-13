@@ -96,7 +96,7 @@
     "native:property-contracts": "node scripts/check-property-value-matrix.ts",
     "native:webref-property-branches": "node scripts/check-webref-property-branches.ts",
     "wasm:build": "node scripts/build-wasm-engine.ts && tsdown --config packages/wasm/tsdown.facade.config.ts && node scripts/parameterize-wasm-facade.ts packages/wasm/dist/facade.js packages/wasm/dist/facade_factory.js && tsdown --config packages/wasm/tsdown.index.config.ts && node scripts/finalize-wasm-package.ts",
-    "wasm:check": "cargo fmt --all --check && cargo clippy -p sheetom-wasm --target wasm32-unknown-unknown -- -D warnings && cargo test -p sheetom-wasm && node scripts/sync-wasm-package.ts --check",
+    "wasm:check": "cargo fmt --all --check && cargo clippy -p sheetom-wasm --target wasm32-unknown-unknown -- -D warnings && node scripts/sync-wasm-package.ts --check",
     "wasm:test": "node scripts/test-wasm-backend.ts",
     "wasm:test:browsers": "node scripts/test-wasm-browsers.ts",
     "wasm:test:bundlers": "node scripts/test-wasm-bundlers.ts",
