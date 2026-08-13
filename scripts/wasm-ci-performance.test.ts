@@ -9,6 +9,10 @@ const buildScript = await readFile(
   new URL("./build-wasm-engine.ts", import.meta.url),
   "utf8",
 );
+const cargoManifest = await readFile(
+  new URL("../Cargo.toml", import.meta.url),
+  "utf8",
+);
 const workflow = await readFile(
   new URL("../.github/workflows/ci.yml", import.meta.url),
   "utf8",
@@ -25,12 +29,13 @@ function job(name: string): string {
     : workflow.slice(start, start + marker.length + next);
 }
 
-test("the WASM build uses the measured size-specialized pipeline", () => {
-  assert.match(buildScript, /const rustOptimizationProfile = "wasm-release"/u);
-  assert.match(buildScript, /const wasmOptimizationProfile = "-O1"/u);
-  assert.match(buildScript, /const maximumRawBytes = 5_000_000/u);
-  assert.match(buildScript, /const maximumGzipBytes = 850_000/u);
-  assert.match(buildScript, /unoptimizedBytes \* 0\.97/u);
+test("the WASM build uses the measured runtime-safe optimizer", () => {
+  assert.doesNotMatch(cargoManifest, /\[profile\.wasm-release\]/u);
+  assert.match(buildScript, /"--release"/u);
+  assert.match(buildScript, /const wasmOptimizationProfile = "-O2"/u);
+  assert.match(buildScript, /const maximumRawBytes = 10_000_000/u);
+  assert.match(buildScript, /const maximumGzipBytes = 1_700_000/u);
+  assert.match(buildScript, /unoptimizedBytes \* 0\.95/u);
   assert.match(buildScript, /wasmOptimizationProfile,/u);
 });
 

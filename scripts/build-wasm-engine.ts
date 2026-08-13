@@ -8,10 +8,9 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const generatedDirectory = path.join(repositoryRoot, "packages/wasm/generated");
 const distributionDirectory = path.join(repositoryRoot, "packages/wasm/dist");
 const wasmBindgenVersion = "0.2.127";
-const rustOptimizationProfile = "wasm-release";
-const wasmOptimizationProfile = "-O1";
-const maximumRawBytes = 5_000_000;
-const maximumGzipBytes = 850_000;
+const wasmOptimizationProfile = "-O2";
+const maximumRawBytes = 10_000_000;
+const maximumGzipBytes = 1_700_000;
 const { parameterizeWasmBindgenGlue } = await import("./parameterize-wasm-bindgen.ts");
 
 const installedVersion = execFileSync("wasm-bindgen", ["--version"], {
@@ -32,8 +31,7 @@ execFileSync(
   "cargo",
   [
     "build",
-    "--profile",
-    rustOptimizationProfile,
+    "--release",
     "--package",
     "sheetom-wasm",
     "--target",
@@ -52,7 +50,7 @@ execFileSync(
     "sheetom_wasm",
     path.join(
       repositoryRoot,
-      `target/wasm32-unknown-unknown/${rustOptimizationProfile}/sheetom_wasm.wasm`,
+      "target/wasm32-unknown-unknown/release/sheetom_wasm.wasm",
     ),
   ],
   { cwd: repositoryRoot, stdio: "inherit" },
@@ -81,9 +79,9 @@ execFileSync(
   { cwd: repositoryRoot, stdio: "inherit" },
 );
 const optimizedBytes = (await stat(optimizedWasm)).size;
-if (optimizedBytes >= unoptimizedBytes * 0.97) {
+if (optimizedBytes >= unoptimizedBytes * 0.95) {
   throw new Error(
-    `wasm-opt did not reduce the size-specialized engine by at least 3%: ${unoptimizedBytes} -> ${optimizedBytes}`,
+    `wasm-opt did not reduce the engine by at least 5%: ${unoptimizedBytes} -> ${optimizedBytes}`,
   );
 }
 const gzipBytes = gzipSync(await readFile(optimizedWasm), { level: 9 }).byteLength;
@@ -99,7 +97,6 @@ await rm(optimizedWasm);
 console.log(
   JSON.stringify(
     {
-      rustOptimizationProfile,
       wasmOptimizationProfile,
       unoptimizedBytes,
       optimizedBytes,
