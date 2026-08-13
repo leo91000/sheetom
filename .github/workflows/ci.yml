@@ -96,7 +96,7 @@ jobs:
         with:
           cache-key: linux-x64-release
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry/index
@@ -161,7 +161,7 @@ jobs:
         uses: ./.github/actions/setup-rust-cache
         with:
           cache-key: linux-x64-quality
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry/index
@@ -201,7 +201,7 @@ jobs:
         uses: ./.github/actions/setup-rust-cache
         with:
           cache-key: wasm32-release
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         id: wasm-bindgen-cache
         with:
           path: |
@@ -210,7 +210,7 @@ jobs:
             ~/.cargo/bin/wasm2es6js
           key: wasm-bindgen-${{ runner.os }}-${{ env.WASM_BINDGEN_VERSION }}
       - name: Restore the pinned Playwright browser cohort
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-wasm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -301,7 +301,7 @@ jobs:
         uses: ./.github/actions/setup-rust-cache
         with:
           cache-key: ${{ matrix.target }}-release
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry/index
@@ -348,7 +348,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         id: cross-cache
         with:
           path: ~/.cargo/bin/cross
@@ -356,7 +356,7 @@ jobs:
       - name: Install the pinned cross compiler
         if: steps.cross-cache.outputs.cache-hit != 'true'
         run: cargo install cross --version "$CROSS_VERSION" --locked
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry/index
@@ -389,7 +389,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry/index
@@ -432,7 +432,7 @@ jobs:
         with:
           cache-key: linux-x64-nightly-fuzz
       - id: cargo-fuzz-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-fuzz
           key: cargo-fuzz-${{ runner.os }}-${{ env.CARGO_FUZZ_VERSION }}
