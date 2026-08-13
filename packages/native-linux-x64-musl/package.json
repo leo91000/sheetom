@@ -1,6 +1,6 @@
 {
   "name": "@sheetom/native-linux-x64-musl",
-  "version": "0.1.0-rc.8",
+  "version": "0.1.0",
   "description": "Native SheetOM engine for linux-x64-musl",
   "license": "MIT",
   "repository": {
