@@ -557,11 +557,11 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           if [ "$version" != "0.1.0" ]; then
-            echo "The RC8-to-stable promotion gate does not apply to $version."
+            echo "The RC9-to-stable promotion gate does not apply to $version."
             exit 0
           fi
           mkdir reference-release
-          gh release download v0.1.0-rc.8 --dir reference-release
+          gh release download v0.1.0-rc.9 --dir reference-release
           arguments=(
             "--reference=reference-release"
             "--candidate=package-artifact"

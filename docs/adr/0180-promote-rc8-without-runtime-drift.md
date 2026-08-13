@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: superseded
+superseded_by: ADR-0183
 ---
 
 # ADR 0180: Promote RC8 without runtime drift
