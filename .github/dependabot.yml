@@ -9,6 +9,17 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # TypeDoc does not support TypeScript 7 yet. Keep receiving compatible
+      # TypeScript 6 updates while this integration boundary remains.
+      - dependency-name: typescript
+        versions:
+          - ">=7.0.0"
+      # Keep development typings aligned with the Node 22/24 support matrix.
+      # Remove this boundary when Node 26 becomes a supported runtime.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /
