@@ -333,7 +333,7 @@ jobs:
           RUN_URL: ${{ needs.record-evidence.outputs.validation-run-url }}
           WAIT_OUTCOME: ${{ steps.validation.outcome }}
         run: |
-          conclusion=$(gh run view "$RUN_ID" --json conclusion --jq .conclusion)
+          conclusion=$(gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)
           state=failure
           description="Release validation failed"
           if [ "$WAIT_OUTCOME" = success ] && [ "$conclusion" = success ]; then
