@@ -127,6 +127,18 @@ chromiumTest("Chromium retains pending provenance for non-padding shorthands", (
   );
 });
 
+chromiumTest("Chromium preserves independent substitution longhands", () => {
+  const style = document.createElement("div").style;
+  style.setProperty("align-content", "var(--align, revert-layer)");
+  style.setProperty("justify-content", "var(--justify, revert-layer)");
+
+  expect(style.getPropertyValue("place-content")).toBe("");
+  expect(style.cssText).toBe(
+    "align-content: var(--align, revert-layer); justify-content: var(--justify, revert-layer);",
+  );
+  expect(Array.from(style)).toEqual(["align-content", "justify-content"]);
+});
+
 chromiumTest("Chromium rule WebIDL constructors and cssText setters are inert", () => {
   expect(() => new CSSStyleRule()).toThrow(TypeError);
   const sheet = new CSSStyleSheet();

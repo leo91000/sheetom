@@ -190,3 +190,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0179 | [Record WASM backend release evidence](./0179-record-wasm-backend-release-evidence.md) | accepted |
 | 0180 | [Promote RC8 without runtime drift](./0180-promote-rc8-without-runtime-drift.md) | accepted |
 | 0181 | [Optimize WASM CI without weakening evidence](./0181-optimize-wasm-ci-without-weakening-evidence.md) | accepted |
+| 0182 | [Preserve substitution isolation during shorthand synthesis](./0182-preserve-substitution-isolation-during-shorthand-synthesis.md) | accepted |

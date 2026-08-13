@@ -107,7 +107,12 @@ fn synthesize_shorthand_inner(
     if has_grouped_records && !can_synthesize_static_rule_inset {
         return None;
     }
-    if !safe && records.iter().any(|record| record.pending_substitution()) {
+    // Independently authored pending substitutions must remain independent.
+    // Combining them into a shorthand couples computed-value invalidation when
+    // any substitution makes the combined grammar invalid, including a
+    // CSS-wide keyword beside another component. A genuine shorthand group
+    // returned above retains its original authored semantics.
+    if records.iter().any(|record| record.pending_substitution()) {
         return None;
     }
 

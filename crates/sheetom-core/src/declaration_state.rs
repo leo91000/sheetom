@@ -1480,6 +1480,38 @@ mod tests {
     }
 
     #[test]
+    fn safe_serialization_does_not_couple_independent_substitutions() {
+        let mut state = DeclarationState::new();
+        assert_eq!(
+            state.set_property("align-content", "var(--align, revert-layer)", ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.set_property("justify-content", "var(--justify, revert-layer)", ""),
+            MutationOutcome::Applied
+        );
+
+        assert_eq!(
+            state.serialize_safe(),
+            "align-content: var(--align, revert-layer); justify-content: var(--justify, revert-layer);"
+        );
+
+        let mut shorthand = DeclarationState::new();
+        assert_eq!(
+            shorthand.set_property(
+                "place-content",
+                "var(--align, revert-layer) var(--justify, revert-layer)",
+                ""
+            ),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            shorthand.serialize_safe(),
+            "place-content: var(--align, revert-layer) var(--justify, revert-layer);"
+        );
+    }
+
+    #[test]
     fn custom_functions_are_pending_substitutions_with_atomic_argument_validation() {
         let mut state = DeclarationState::new();
         assert_eq!(
