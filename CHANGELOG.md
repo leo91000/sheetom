@@ -1,5 +1,11 @@
 # sheetom
 
+## 0.1.0-rc.9
+
+### Patch Changes
+
+- 61a0c21: Preserve independently authored longhands during reparsable serialization when shorthand synthesis would couple deferred-substitution invalidation.
+
 ## 0.1.0-rc.8
 
 ### Patch Changes

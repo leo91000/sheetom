@@ -1,6 +1,6 @@
 {
   "name": "@sheetom/native-darwin-arm64",
-  "version": "0.1.0-rc.8",
+  "version": "0.1.0-rc.9",
   "description": "Native SheetOM engine for darwin-arm64",
   "license": "MIT",
   "repository": {
