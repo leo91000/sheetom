@@ -30,7 +30,10 @@ test("the release pull request receives an exact-SHA pending status", () => {
 test("release validation waits for CI and publishes its terminal result", () => {
   const validation = job("release-validation");
   assert.match(validation, /gh run watch "\$RUN_ID"/u);
-  assert.match(validation, /gh run view "\$RUN_ID" --json conclusion/u);
+  assert.match(
+    validation,
+    /gh run view "\$RUN_ID" --repo "\$GITHUB_REPOSITORY" --json conclusion/u,
+  );
   assert.match(validation, /state=success/u);
   assert.match(validation, /state=failure/u);
   assert.match(validation, /context=sheetom\/release-validation/u);
