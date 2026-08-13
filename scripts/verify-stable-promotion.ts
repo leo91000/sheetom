@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 interface ReleaseArtifact {
   name: string;
@@ -97,60 +97,136 @@ function normalizedText(entry: string, bytes: Buffer, engineDigests: readonly st
   return normalized;
 }
 
-function assertPackageCoordinates(
-  reference: ReleaseManifest,
-  candidate: ReleaseManifest,
-): void {
-  assert.equal(reference.schemaVersion, candidate.schemaVersion, "release manifest schema changed");
-  assert.equal(reference.version, referenceVersion, "unexpected reference release");
-  assert.equal(candidate.version, stableVersion, "candidate is not the first stable release");
-  assert.deepEqual(
-    candidate.packages.map(({ name, role, target }) => ({ name, role, target })),
-    reference.packages.map(({ name, role, target }) => ({ name, role, target })),
-    "the stable package cohort differs from RC8",
-  );
+function packageCoordinate({ name, role, target }: ReleaseArtifact): string {
+  return `${role}:${name}:${target ?? ""}`;
 }
 
-function assertTarballPromotion(
+function collectPackageCoordinateMismatches(
+  reference: ReleaseManifest,
+  candidate: ReleaseManifest,
+  mismatches: string[],
+): void {
+  if (reference.schemaVersion !== candidate.schemaVersion) {
+    mismatches.push("release manifest schema changed");
+  }
+  if (reference.version !== referenceVersion) {
+    mismatches.push(`unexpected reference release ${reference.version}`);
+  }
+  if (candidate.version !== stableVersion) {
+    mismatches.push(`candidate ${candidate.version} is not the first stable release`);
+  }
+  const referenceCoordinates = reference.packages.map(packageCoordinate);
+  const candidateCoordinates = candidate.packages.map(packageCoordinate);
+  if (!isDeepStrictEqual(candidateCoordinates, referenceCoordinates)) {
+    mismatches.push(
+      `the stable package cohort differs from RC8: expected ${referenceCoordinates.join(", ")}; ` +
+        `received ${candidateCoordinates.join(", ")}`,
+    );
+  }
+}
+
+function collectTarballPromotionMismatches(
   referenceDirectory: string,
   candidateDirectory: string,
   referenceArtifact: ReleaseArtifact,
   candidateArtifact: ReleaseArtifact,
   engineDigests: readonly string[],
+  mismatches: string[],
 ): void {
   const referenceTarball = path.join(referenceDirectory, referenceArtifact.filename);
   const candidateTarball = path.join(candidateDirectory, candidateArtifact.filename);
-  const referenceEntries = tarEntries(referenceTarball);
-  const candidateEntries = tarEntries(candidateTarball);
-  assert.deepEqual(candidateEntries, referenceEntries, `${candidateArtifact.name} changed package topology`);
+  let referenceEntries: string[];
+  let candidateEntries: string[];
+  try {
+    referenceEntries = tarEntries(referenceTarball);
+  } catch (error) {
+    mismatches.push(`${referenceArtifact.name} reference tarball is unreadable: ${errorMessage(error)}`);
+    return;
+  }
+  try {
+    candidateEntries = tarEntries(candidateTarball);
+  } catch (error) {
+    mismatches.push(`${candidateArtifact.name} candidate tarball is unreadable: ${errorMessage(error)}`);
+    return;
+  }
+  if (!isDeepStrictEqual(candidateEntries, referenceEntries)) {
+    mismatches.push(`${candidateArtifact.name} changed package topology`);
+  }
+  const candidateEntrySet = new Set(candidateEntries);
 
   for (const entry of referenceEntries) {
-    if (entry.endsWith("/")) continue;
-    const referenceBytes = tarEntry(referenceTarball, entry);
-    const candidateBytes = tarEntry(candidateTarball, entry);
+    if (entry.endsWith("/") || !candidateEntrySet.has(entry)) continue;
+    let referenceBytes: Buffer;
+    let candidateBytes: Buffer;
+    try {
+      referenceBytes = tarEntry(referenceTarball, entry);
+      candidateBytes = tarEntry(candidateTarball, entry);
+    } catch (error) {
+      mismatches.push(`${candidateArtifact.name} could not compare ${entry}: ${errorMessage(error)}`);
+      continue;
+    }
     const extension = path.extname(entry);
 
     if (binaryExtensions.has(extension)) {
-      assert.ok(referenceBytes.length > 0, `${referenceArtifact.name} contains an empty ${entry}`);
-      assert.ok(candidateBytes.length > 0, `${candidateArtifact.name} contains an empty ${entry}`);
+      if (referenceBytes.length === 0) {
+        mismatches.push(`${referenceArtifact.name} contains an empty ${entry}`);
+      }
+      if (candidateBytes.length === 0) {
+        mismatches.push(`${candidateArtifact.name} contains an empty ${entry}`);
+      }
       continue;
     }
 
     if (entry === "package/package.json") {
-      assert.deepEqual(
-        normalizeVersions(JSON.parse(candidateBytes.toString("utf8"))),
-        normalizeVersions(JSON.parse(referenceBytes.toString("utf8"))),
-        `${candidateArtifact.name} changed its normalized package manifest`,
-      );
+      try {
+        const candidateManifest = normalizeVersions(JSON.parse(candidateBytes.toString("utf8")));
+        const referenceManifest = normalizeVersions(JSON.parse(referenceBytes.toString("utf8")));
+        if (!isDeepStrictEqual(candidateManifest, referenceManifest)) {
+          mismatches.push(`${candidateArtifact.name} changed its normalized package manifest`);
+        }
+      } catch (error) {
+        mismatches.push(
+          `${candidateArtifact.name} contains an unreadable package manifest: ${errorMessage(error)}`,
+        );
+      }
       continue;
     }
 
-    assert.equal(
-      normalizedText(entry, candidateBytes, engineDigests),
-      normalizedText(entry, referenceBytes, engineDigests),
-      `${candidateArtifact.name} changed ${entry} beyond stable-version metadata`,
-    );
+    try {
+      if (
+        normalizedText(entry, candidateBytes, engineDigests) !==
+        normalizedText(entry, referenceBytes, engineDigests)
+      ) {
+        mismatches.push(
+          `${candidateArtifact.name} changed ${entry} beyond stable-version metadata`,
+        );
+      }
+    } catch (error) {
+      mismatches.push(`${candidateArtifact.name} could not normalize ${entry}: ${errorMessage(error)}`);
+    }
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : `${error}`;
+}
+
+export class StablePromotionError extends AggregateError {
+  readonly mismatches: readonly string[];
+
+  constructor(mismatches: readonly string[]) {
+    const summary = mismatches.map(mismatch => `- ${mismatch}`).join("\n");
+    super(
+      mismatches.map(mismatch => new Error(mismatch)),
+      `Stable promotion verification found ${mismatches.length} mismatch(es):\n${summary}`,
+    );
+    this.name = "StablePromotionError";
+    this.mismatches = mismatches;
+  }
+}
+
+function throwMismatches(mismatches: readonly string[]): void {
+  if (mismatches.length > 0) throw new StablePromotionError(mismatches);
 }
 
 function engineDigest(directory: string, manifest: ReleaseManifest): string | undefined {
@@ -165,25 +241,45 @@ function engineDigest(directory: string, manifest: ReleaseManifest): string | un
   return identity.syntaxEngineSetSha256;
 }
 
-export function assertStableSourcePromotion(baseSha: string, repositoryRoot = process.cwd()): void {
-  const baseManifest = JSON.parse(
-    run("git", ["show", `${baseSha}:package.json`], repositoryRoot).toString("utf8"),
-  ) as { version?: string };
-  assert.equal(baseManifest.version, referenceVersion, "stable promotion must be based on RC8");
+function collectStableSourcePromotionMismatches(
+  baseSha: string,
+  repositoryRoot: string,
+  mismatches: string[],
+): void {
+  try {
+    const baseManifest = JSON.parse(
+      run("git", ["show", `${baseSha}:package.json`], repositoryRoot).toString("utf8"),
+    ) as { version?: string };
+    if (baseManifest.version !== referenceVersion) {
+      mismatches.push(
+        `stable promotion must be based on RC8, received ${baseManifest.version ?? "no version"}`,
+      );
+    }
+  } catch (error) {
+    mismatches.push(`could not inspect stable promotion base ${baseSha}: ${errorMessage(error)}`);
+  }
 
-  const changedFiles = run(
-    "git",
-    ["diff", "--name-only", `${baseSha}...HEAD`],
-    repositoryRoot,
-  ).toString("utf8").split("\n").filter(Boolean);
-  const unexpected = changedFiles.filter(
-    filename => !allowedStablePaths.some(pattern => pattern.test(filename)),
-  );
-  assert.deepEqual(
-    unexpected,
-    [],
-    `stable promotion contains non-release source changes: ${unexpected.join(", ")}`,
-  );
+  try {
+    const changedFiles = run(
+      "git",
+      ["diff", "--name-only", `${baseSha}...HEAD`],
+      repositoryRoot,
+    ).toString("utf8").split("\n").filter(Boolean);
+    const unexpected = changedFiles.filter(
+      filename => !allowedStablePaths.some(pattern => pattern.test(filename)),
+    );
+    if (unexpected.length > 0) {
+      mismatches.push(`stable promotion contains non-release source changes: ${unexpected.join(", ")}`);
+    }
+  } catch (error) {
+    mismatches.push(`could not inspect stable promotion source changes: ${errorMessage(error)}`);
+  }
+}
+
+export function assertStableSourcePromotion(baseSha: string, repositoryRoot = process.cwd()): void {
+  const mismatches: string[] = [];
+  collectStableSourcePromotionMismatches(baseSha, repositoryRoot, mismatches);
+  throwMismatches(mismatches);
 }
 
 export async function verifyStablePromotion({
@@ -195,25 +291,30 @@ export async function verifyStablePromotion({
     readManifest(referenceDirectory),
     readManifest(candidateDirectory),
   ]);
-  assertPackageCoordinates(reference, candidate);
-  if (baseSha) assertStableSourcePromotion(baseSha);
+  const mismatches: string[] = [];
+  collectPackageCoordinateMismatches(reference, candidate, mismatches);
+  if (baseSha) collectStableSourcePromotionMismatches(baseSha, process.cwd(), mismatches);
   const engineDigests = [
     engineDigest(referenceDirectory, reference),
     engineDigest(candidateDirectory, candidate),
   ].filter((digest): digest is string => typeof digest === "string");
 
-  for (let index = 0; index < reference.packages.length; index += 1) {
-    const referenceArtifact = reference.packages[index];
-    const candidateArtifact = candidate.packages[index];
-    assert.ok(referenceArtifact && candidateArtifact, "release package cohort is incomplete");
-    assertTarballPromotion(
+  const candidates = new Map(
+    candidate.packages.map(artifact => [packageCoordinate(artifact), artifact]),
+  );
+  for (const referenceArtifact of reference.packages) {
+    const candidateArtifact = candidates.get(packageCoordinate(referenceArtifact));
+    if (!candidateArtifact) continue;
+    collectTarballPromotionMismatches(
       referenceDirectory,
       candidateDirectory,
       referenceArtifact,
       candidateArtifact,
       engineDigests,
+      mismatches,
     );
   }
+  throwMismatches(mismatches);
 }
 
 function argument(name: string): string | undefined {
@@ -230,10 +331,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         "[--base-sha=<sha>]",
     );
   }
-  await verifyStablePromotion({
-    referenceDirectory: path.resolve(referenceDirectory),
-    candidateDirectory: path.resolve(candidateDirectory),
-    baseSha: argument("base-sha"),
-  });
-  console.log("Verified normalized RC8-to-0.1.0 artifact promotion.");
+  try {
+    await verifyStablePromotion({
+      referenceDirectory: path.resolve(referenceDirectory),
+      candidateDirectory: path.resolve(candidateDirectory),
+      baseSha: argument("base-sha"),
+    });
+    console.log("Verified normalized RC8-to-0.1.0 artifact promotion.");
+  } catch (error) {
+    console.error(errorMessage(error));
+    process.exitCode = 1;
+  }
 }

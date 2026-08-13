@@ -118,6 +118,11 @@ jobs:
       actions: write
       contents: write
       pull-requests: write
+      statuses: write
+    outputs:
+      validation-head-sha: ${{ steps.release-validation.outputs.head_sha }}
+      validation-run-id: ${{ steps.release-validation.outputs.run_id }}
+      validation-run-url: ${{ steps.release-validation.outputs.run_url }}
 
     steps:
       - name: Check out the release pull request
@@ -224,6 +229,7 @@ jobs:
           fi
 
       - name: Start release pull request validation
+        id: release-validation
         env:
           GH_TOKEN: ${{ github.token }}
           HEAD_REF: ${{ needs.changesets.outputs.head-ref }}
@@ -234,7 +240,115 @@ jobs:
             gh pr ready "$RELEASE_PR"
           fi
           base_sha=$(gh pr view "$RELEASE_PR" --json baseRefOid --jq .baseRefOid)
+          head_sha=$(gh pr view "$RELEASE_PR" --json headRefOid --jq .headRefOid)
+          gh run list \
+            --workflow ci.yml \
+            --branch "$HEAD_REF" \
+            --event workflow_dispatch \
+            --limit 20 \
+            --json databaseId \
+            > "$RUNNER_TEMP/release-validation-before.json"
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/statuses/$head_sha" \
+            -f state=pending \
+            -f context=sheetom/release-validation \
+            -f description="Release validation is queued" \
+            -f target_url="https://github.com/$GITHUB_REPOSITORY/actions/workflows/ci.yml"
           gh workflow run ci.yml --ref "$HEAD_REF" -f "base_sha=$base_sha"
+
+          run=''
+          for attempt in $(seq 1 30); do
+            gh run list \
+              --workflow ci.yml \
+              --branch "$HEAD_REF" \
+              --event workflow_dispatch \
+              --limit 20 \
+              --json databaseId,headSha,url \
+              > "$RUNNER_TEMP/release-validation-after.json"
+            run=$(jq -c \
+              --arg head_sha "$head_sha" \
+              --slurpfile before "$RUNNER_TEMP/release-validation-before.json" \
+              '[.[] | select(
+                .headSha == $head_sha and
+                (.databaseId as $id | ($before[0] | map(.databaseId) | index($id) | not))
+              )][0] // empty' \
+              "$RUNNER_TEMP/release-validation-after.json")
+            if [ -n "$run" ]; then break; fi
+            sleep 2
+          done
+          if [ -z "$run" ]; then
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/$GITHUB_REPOSITORY/statuses/$head_sha" \
+              -f state=error \
+              -f context=sheetom/release-validation \
+              -f description="Unable to resolve the release validation run" \
+              -f target_url="https://github.com/$GITHUB_REPOSITORY/actions/workflows/ci.yml"
+            exit 1
+          fi
+
+          run_id=$(jq -r .databaseId <<<"$run")
+          run_url=$(jq -r .url <<<"$run")
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/statuses/$head_sha" \
+            -f state=pending \
+            -f context=sheetom/release-validation \
+            -f description="Release validation is running" \
+            -f target_url="$run_url"
+
+  release-validation:
+    needs: [changesets, record-evidence]
+    if: >-
+      always() &&
+      needs.changesets.outputs.pull-request != '' &&
+      needs.record-evidence.outputs.validation-head-sha != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      actions: read
+      statuses: write
+
+    steps:
+      - name: Wait for the complete release pull request matrix
+        id: validation
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ needs.record-evidence.outputs.validation-run-id }}
+        run: gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
+
+      - name: Publish the release validation status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ needs.record-evidence.outputs.validation-head-sha }}
+          RUN_ID: ${{ needs.record-evidence.outputs.validation-run-id }}
+          RUN_URL: ${{ needs.record-evidence.outputs.validation-run-url }}
+          WAIT_OUTCOME: ${{ steps.validation.outcome }}
+        run: |
+          conclusion=$(gh run view "$RUN_ID" --json conclusion --jq .conclusion)
+          state=failure
+          description="Release validation failed"
+          if [ "$WAIT_OUTCOME" = success ] && [ "$conclusion" = success ]; then
+            state=success
+            description="Release validation passed"
+          fi
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" \
+            -f "state=$state" \
+            -f context=sheetom/release-validation \
+            -f "description=$description" \
+            -f "target_url=$RUN_URL"
+          test "$state" = success
 
   soak-gate:
     needs: changesets

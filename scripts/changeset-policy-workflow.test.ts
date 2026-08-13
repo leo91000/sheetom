@@ -32,3 +32,10 @@ test("the generated Changesets release pull request needs no recursive Changeset
 test("the stable promotion gate checks out its comparison history", () => {
   assert.match(job("package-artifact"), /fetch-depth: 0/u);
 });
+
+test("superseded pull request and main push runs are cancelled", () => {
+  assert.match(
+    workflow,
+    /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \|\| github\.event_name == 'push' \}\}/u,
+  );
+});
