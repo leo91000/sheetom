@@ -40,8 +40,13 @@ test("the WASM build uses the measured runtime-safe optimizer", () => {
 });
 
 test("WASM CI does not repeat host workspace tests", () => {
-  assert.doesNotMatch(packageManifest.scripts["wasm:check"], /cargo test/u);
+  assert.match(packageManifest.scripts["wasm:check"], /cargo test -p sheetom-wasm/u);
   assert.match(packageManifest.scripts["native:core-check"], /cargo test --workspace/u);
+  const wasmQuality = job("wasm-quality");
+  assert.doesNotMatch(wasmQuality, /npm run wasm:check/u);
+  assert.doesNotMatch(wasmQuality, /cargo test/u);
+  assert.match(wasmQuality, /cargo clippy -p sheetom-wasm/u);
+  assert.match(wasmQuality, /node scripts\/sync-wasm-package\.ts --check/u);
 });
 
 test("WASM CI caches the exact Playwright browser cohort", () => {
