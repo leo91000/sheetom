@@ -34,6 +34,38 @@ test("padding expands into indexed longhands and serializes opportunistically", 
   );
 });
 
+test("reparsable serialization preserves independent substitution longhands", () => {
+  const sheet = new CSSStyleSheet();
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty("align-content", "var(--align, revert-layer)");
+  rule.style.setProperty("justify-content", "var(--justify, revert-layer)");
+
+  assert.equal(
+    sheet.serialize(),
+    ".x {\n  align-content: var(--align, revert-layer);\n  justify-content: var(--justify, revert-layer);\n}\n",
+  );
+});
+
+test("reparsable serialization retains an authored pending shorthand", () => {
+  const sheet = new CSSStyleSheet();
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty(
+    "place-content",
+    "var(--align, revert-layer) var(--justify, revert-layer)",
+  );
+
+  assert.equal(
+    sheet.serialize(),
+    ".x {\n  place-content: var(--align, revert-layer) var(--justify, revert-layer);\n}\n",
+  );
+});
+
 test("common four-side shorthands share expanded record behavior", () => {
   const rule = createStyleRule(".x");
   rule.style.setProperty("margin", "1px 2px");
