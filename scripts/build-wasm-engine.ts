@@ -2,11 +2,16 @@ import { execFileSync } from "node:child_process";
 import { copyFile, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const generatedDirectory = path.join(repositoryRoot, "packages/wasm/generated");
 const distributionDirectory = path.join(repositoryRoot, "packages/wasm/dist");
 const wasmBindgenVersion = "0.2.127";
+const rustOptimizationProfile = "wasm-release";
+const wasmOptimizationProfile = "-O1";
+const maximumRawBytes = 5_000_000;
+const maximumGzipBytes = 850_000;
 const { parameterizeWasmBindgenGlue } = await import("./parameterize-wasm-bindgen.ts");
 
 const installedVersion = execFileSync("wasm-bindgen", ["--version"], {
@@ -27,7 +32,8 @@ execFileSync(
   "cargo",
   [
     "build",
-    "--release",
+    "--profile",
+    rustOptimizationProfile,
     "--package",
     "sheetom-wasm",
     "--target",
@@ -46,7 +52,7 @@ execFileSync(
     "sheetom_wasm",
     path.join(
       repositoryRoot,
-      "target/wasm32-unknown-unknown/release/sheetom_wasm.wasm",
+      `target/wasm32-unknown-unknown/${rustOptimizationProfile}/sheetom_wasm.wasm`,
     ),
   ],
   { cwd: repositoryRoot, stdio: "inherit" },
@@ -65,7 +71,7 @@ execFileSync(
   path.join(repositoryRoot, "node_modules", ".bin", "wasm-opt"),
   [
     generatedWasm,
-    "-Oz",
+    wasmOptimizationProfile,
     "--enable-bulk-memory",
     "--enable-nontrapping-float-to-int",
     "--enable-sign-ext",
@@ -75,12 +81,33 @@ execFileSync(
   { cwd: repositoryRoot, stdio: "inherit" },
 );
 const optimizedBytes = (await stat(optimizedWasm)).size;
-if (optimizedBytes >= unoptimizedBytes * 0.95) {
+if (optimizedBytes >= unoptimizedBytes * 0.97) {
   throw new Error(
-    `wasm-opt did not reduce the engine by at least 5%: ${unoptimizedBytes} -> ${optimizedBytes}`,
+    `wasm-opt did not reduce the size-specialized engine by at least 3%: ${unoptimizedBytes} -> ${optimizedBytes}`,
+  );
+}
+const gzipBytes = gzipSync(await readFile(optimizedWasm), { level: 9 }).byteLength;
+if (optimizedBytes > maximumRawBytes || gzipBytes > maximumGzipBytes) {
+  throw new Error(
+    `WebAssembly engine exceeds its size budgets: raw ${optimizedBytes}/${maximumRawBytes}, ` +
+      `gzip ${gzipBytes}/${maximumGzipBytes}`,
   );
 }
 await rm(generatedWasm);
 await copyFile(optimizedWasm, generatedWasm);
 await rm(optimizedWasm);
-console.log(JSON.stringify({ unoptimizedBytes, optimizedBytes }, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      rustOptimizationProfile,
+      wasmOptimizationProfile,
+      unoptimizedBytes,
+      optimizedBytes,
+      gzipBytes,
+      maximumRawBytes,
+      maximumGzipBytes,
+    },
+    null,
+    2,
+  ),
+);
