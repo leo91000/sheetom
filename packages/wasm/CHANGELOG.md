@@ -1,5 +1,11 @@
 # @sheetom/wasm
 
+## 0.1.0-rc.9
+
+### Patch Changes
+
+- aa68057: Use a measured faster Binaryen profile while retaining the established runtime code generation and the complete compatibility, packaging, memory, size, and performance gates.
+
 ## 0.1.0-rc.8
 
 ## 0.1.0-rc.7
