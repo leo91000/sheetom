@@ -135,7 +135,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
-    "@napi-rs/cli": "3.8.3",
+    "@napi-rs/cli": "3.8.5",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@types/css-tree": "^3.2.0",
     "@types/node": "^24.0.0",
