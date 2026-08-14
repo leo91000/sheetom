@@ -38,4 +38,8 @@ test("the shared benchmark harness accepts an explicit WASM backend", async () =
   const harness = await readFile(new URL("./benchmark.ts", import.meta.url), "utf8");
   assert.match(harness, /--wasm-binary/u);
   assert.match(harness, /createSheetOM/u);
+  assert.match(harness, /applyMutations/u);
+  assert.match(harness, /runLargeSerializationWorkload/u);
+  assert.match(harness, /--large-serialization-only/u);
+  assert.match(harness, /process\.resourceUsage\(\)\.maxRSS/u);
 });

@@ -94,6 +94,37 @@ throws `TypeError`. Invalid priorities, unsupported names, invalid grammars,
 and embedded priority tokens are atomic no-ops. Diagnostics are optional and
 never change those return values or mutations.
 
+For compilers that have several mutations for one block, SheetOM adds
+`applyMutations(operations)`. It crosses the engine boundary once while
+executing the same ordered declaration state transitions:
+
+```ts
+const results = rule.style.applyMutations([
+  { kind: "set", property: "padding", value: "8px 16px" },
+  { kind: "set", property: "width", value: "20px; color: red" },
+  { kind: "remove", property: "padding-left" },
+]);
+
+// results[0] => { kind: "set", accepted: true, diagnostic: null }
+// results[1] => { kind: "set", accepted: false, diagnostic: { ... } }
+// results[2] => { kind: "remove", value: "16px" }
+```
+
+Results correspond by index. A set is `accepted: true` when `setProperty`
+would apply it, including an accepted no-op or empty-value removal. Rejections
+are atomic for that operation and return a diagnostic even when the sheet
+diagnostic queue is disabled. When diagnostics are enabled, the same object is
+also queued and can be drained once after the batch. Removes return the prior
+observable value exactly like `removeProperty()`.
+
+The batch itself is ordered, not globally atomic. A Resource Budget error
+throws at the same operation as sequential calls and retains earlier commits.
+The complete operation array is shape-checked before mutation and deliberately
+requires string properties/priorities and string-or-null values rather than
+performing arbitrary WebIDL coercion. Group operations by
+`CSSStyleDeclaration`; do not concatenate them into CSS text, because that
+would change duplicate, priority, invalid-recovery and removal semantics.
+
 Parser support for modern or implementation-dependent grammar is described by
 the release-versioned Value Capability Corpus. SheetOM uses checked-in
 validators synchronously and never launches or contacts a browser at runtime.

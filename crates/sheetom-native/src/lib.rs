@@ -3,6 +3,7 @@
 #[cfg(panic = "abort")]
 compile_error!("sheetom-native must be compiled with panic=unwind");
 
+use napi::bindgen_prelude::Array;
 use napi_derive::napi;
 use sheetom_core::{
     canonicalize_declaration_block_with_limits as canonicalize, inspect_property_with_limits,
@@ -13,7 +14,8 @@ use sheetom_core::{
     parse_rule_tree_with_limits, parse_scope_prelude_with_limits,
     parse_stylesheet_tree_with_limits, scan_top_level_rules_with_limits, serialize_css_identifier,
     serialize_font_family_setter, serialize_parsed_rule_json, serialize_parsed_rules_json,
-    DeclarationContext, DeclarationState, MutationOutcome, ResourceLimits, ENGINE_REVISION,
+    DeclarationContext, DeclarationMutation, DeclarationMutationResult, DeclarationState,
+    MutationOutcome, ResourceLimits, ENGINE_REVISION,
 };
 
 #[napi]
@@ -102,6 +104,60 @@ impl NativeDeclarationState {
     }
 
     #[napi]
+    pub fn apply_mutations(
+        &mut self,
+        kinds: Array,
+        properties: Array,
+        values: Array,
+        priorities: Array,
+        reserved_nesting_depth: Option<u32>,
+    ) -> napi::Result<Vec<String>> {
+        if kinds.len() != properties.len()
+            || kinds.len() != values.len()
+            || kinds.len() != priorities.len()
+        {
+            return Err(napi::Error::from_reason(
+                "SHEETOM_DECLARATION_MUTATION: column lengths must match",
+            ));
+        }
+        let mut mutations = Vec::with_capacity(kinds.len() as usize);
+        for index in 0..kinds.len() {
+            let kind = required_array_value::<u8>(&kinds, index, "operation code")?;
+            let property = required_array_value::<String>(&properties, index, "property")?;
+            match kind {
+                0 => mutations.push(DeclarationMutation::Set {
+                    property,
+                    value: required_array_value::<String>(&values, index, "value")?,
+                    priority: required_array_value::<String>(&priorities, index, "priority")?,
+                }),
+                1 => mutations.push(DeclarationMutation::Remove { property }),
+                kind => {
+                    return Err(napi::Error::from_reason(format!(
+                        "SHEETOM_DECLARATION_MUTATION: unsupported operation code {kind}"
+                    )))
+                }
+            }
+        }
+        self.state
+            .apply_mutations_checked_with_reserved_depth(
+                mutations,
+                reserved_nesting_depth.unwrap_or(0) as usize,
+            )
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|result| match result {
+                        DeclarationMutationResult::Set(outcome) => {
+                            mutation_outcome_name(outcome).to_owned()
+                        }
+                        DeclarationMutationResult::Remove(value) => value,
+                    })
+                    .collect()
+            })
+            .map_err(|error| napi::Error::from_reason(error.to_string()))
+    }
+
+    #[napi]
     pub fn remove_property(&mut self, name: String) -> String {
         self.state.remove_property(&name)
     }
@@ -144,6 +200,18 @@ impl NativeDeclarationState {
     pub fn serialize_formatted(&self, safe: bool, indent: String, separator: String) -> String {
         self.state.serialize_formatted(safe, &indent, &separator)
     }
+}
+
+fn required_array_value<T: napi::bindgen_prelude::FromNapiValue>(
+    array: &Array,
+    index: u32,
+    name: &str,
+) -> napi::Result<T> {
+    array.get(index)?.ok_or_else(|| {
+        napi::Error::from_reason(format!(
+            "SHEETOM_DECLARATION_MUTATION: missing operation {name}"
+        ))
+    })
 }
 
 fn resource_limits(

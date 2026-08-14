@@ -23,6 +23,13 @@ const workloadLimits = {
     secondSerializationMilliseconds: 2_000,
     rssDeltaBytes: 768 * 1024 * 1024,
   },
+  largeSerialization: {
+    serializationMilliseconds: 5_000,
+    secondSerializationMilliseconds: 2_000,
+    rssGrowthBytes: 256 * 1024 * 1024,
+    peakRssBytes: 1_536 * 1024 * 1024,
+    peakRssGrowthBytes: 512 * 1024 * 1024,
+  },
 };
 const failures = [];
 
@@ -53,9 +60,23 @@ compareWorkload(
   candidate.publisher?.results,
   workloadLimits.publisher,
 );
+compareWorkload(
+  "largeSerialization",
+  baseline.largeSerialization?.results,
+  candidate.largeSerialization?.results,
+  workloadLimits.largeSerialization,
+);
 
 console.log(JSON.stringify({
-  baseline: { stress: baseline.results, publisher: baseline.publisher.results },
-  candidate: { stress: candidate.results, publisher: candidate.publisher.results },
+  baseline: {
+    stress: baseline.results,
+    publisher: baseline.publisher.results,
+    largeSerialization: baseline.largeSerialization.results,
+  },
+  candidate: {
+    stress: candidate.results,
+    publisher: candidate.publisher.results,
+    largeSerialization: candidate.largeSerialization.results,
+  },
 }, null, 2));
 if (failures.length > 0) throw new Error(failures.join("\n"));

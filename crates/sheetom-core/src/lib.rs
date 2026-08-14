@@ -34,8 +34,8 @@ pub use counter_style::{
     ParsedCounterStyleDescriptor, ParsedCounterStyleName, COUNTER_STYLE_DESCRIPTORS,
 };
 pub use declaration_state::{
-    DeclarationContext, DeclarationRecord, DeclarationState, MutationOutcome, ParsedDeclaration,
-    PendingSubstitutionGroup,
+    DeclarationContext, DeclarationMutation, DeclarationMutationResult, DeclarationRecord,
+    DeclarationState, MutationOutcome, ParsedDeclaration, PendingSubstitutionGroup,
 };
 #[doc(hidden)]
 pub use declaration_value::{DeclarationValue, DeclarationValueKind};
@@ -95,7 +95,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.76";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.77";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -103,7 +103,7 @@ pub const DEFAULT_MAX_RULES: usize = 1_000_000;
 pub const DEFAULT_MAX_DECLARATIONS_PER_BLOCK: usize = 100_000;
 
 /// Per-sheet limits checked before parser allocation or CSSOM state mutation.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ResourceLimits {
     pub max_stylesheet_bytes: usize,
     pub max_declaration_value_bytes: usize,
@@ -480,7 +480,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.76");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.77");
     }
 
     #[test]

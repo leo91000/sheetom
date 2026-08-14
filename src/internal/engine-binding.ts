@@ -21,6 +21,10 @@ export type EngineMutationOutcome =
   | "invalid-value"
   | "unsupported-shorthand";
 
+export type EngineDeclarationMutation =
+  | { kind: "set"; property: string; value: string; priority: string }
+  | { kind: "remove"; property: string };
+
 export interface EngineDeclarationStateHandle {
   readonly length: number;
   readonly cssText: string;
@@ -33,6 +37,13 @@ export interface EngineDeclarationStateHandle {
     priority: string,
     reservedNestingDepth?: number,
   ): EngineMutationOutcome;
+  applyMutations(
+    kinds: readonly number[],
+    properties: readonly string[],
+    values: readonly string[],
+    priorities: readonly string[],
+    reservedNestingDepth?: number,
+  ): string[];
   removeProperty(name: string): string;
   replaceCssText(source: string, reservedNestingDepth?: number): void;
   serializeFormatted(safe: boolean, indent: string, separator: string): string;

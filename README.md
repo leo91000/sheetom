@@ -64,6 +64,31 @@ Constructed sheets strip `@import` during replacement. `parseStyleSheet()` is a
 SheetOM extension for existing regular stylesheets and preserves valid imports
 without fetching them.
 
+Compilers can apply all known mutations for one rule with one engine crossing
+and still receive one acceptance result per operation:
+
+```ts
+function applyCompilerDeclarations(rule: CSSStyleRule, dynamicWidth: string) {
+  const results = rule.style.applyMutations([
+    { kind: "set", property: "display", value: "grid" },
+    { kind: "set", property: "width", value: dynamicWidth },
+    { kind: "remove", property: "margin-left" },
+  ]);
+
+  for (const result of results) {
+    if (result.kind === "set" && !result.accepted) {
+      console.warn(result.diagnostic);
+    }
+  }
+}
+```
+
+Operations run in order through the same validation and shorthand/longhand
+state machine as individual calls. Group one batch per declaration block;
+never combine values into declaration text. Batch results already include
+rejection diagnostics, so high-volume callers can leave the sheet diagnostic
+queue disabled unless they also need diagnostics from other APIs.
+
 ## Browser recovery, safe output
 
 Browsers accept some CSS using end-of-input recovery and expose the incomplete

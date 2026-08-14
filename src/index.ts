@@ -1,5 +1,6 @@
-import type { SheetOMDiagnosticCode } from "./diagnostics.js";
+import type { SheetOMDiagnostic, SheetOMDiagnosticCode } from "./diagnostics.js";
 import type { CSSStyleDeclarationNamedProperties } from "./generated/css-style-declaration-properties.js";
+import type { EngineDeclarationMutation } from "./internal/engine-binding.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
 import { scanTopLevelRules } from "./internal/css-rule-scanner.js";
 import {
@@ -36,7 +37,7 @@ import {
   type SheetOMResourceBudget,
 } from "./internal/resource-budget.js";
 
-export type { SheetOMDiagnosticCode } from "./diagnostics.js";
+export type { SheetOMDiagnostic, SheetOMDiagnosticCode } from "./diagnostics.js";
 export type { SheetOMResourceBudget } from "./internal/resource-budget.js";
 
 const arrayIndexPattern = /^(0|[1-9]\d*)$/;
@@ -73,16 +74,24 @@ const pageMarginRuleNames = new Set([
   "left-top",
 ]);
 
-/** A structured explanation for an ignored or recovered mutation. */
-export interface SheetOMDiagnostic {
-  code: SheetOMDiagnosticCode;
-  severity: "warning";
-  operation: "setProperty";
-  message: string;
-  property: string;
-  input: string;
-  location: null;
-}
+/** One ordered declaration mutation executed by SheetOM's engine extension. */
+export type CSSDeclarationMutation =
+  | {
+      kind: "set";
+      property: string;
+      value: string | null;
+      priority?: string | null;
+    }
+  | { kind: "remove"; property: string };
+
+/** The result at the matching index of an ordered declaration mutation batch. */
+export type CSSDeclarationMutationResult =
+  | {
+      kind: "set";
+      accepted: boolean;
+      diagnostic: SheetOMDiagnostic | null;
+    }
+  | { kind: "remove"; value: string };
 
 /** Options for a constructed SheetOM stylesheet. */
 export interface CSSStyleSheetOptions {
@@ -1067,10 +1076,10 @@ export class CSSStyleDeclaration {
       code: SheetOMDiagnosticCode,
       property: string,
       input: string,
-    ): void => {
+    ): SheetOMDiagnostic => {
       const priority = code === "INVALID_PRIORITY";
       const unsupportedShorthand = code === "UNSUPPORTED_SHORTHAND_VALUE";
-      (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)({
+      const diagnostic: SheetOMDiagnostic = {
         code,
         severity: "warning",
         operation: "setProperty",
@@ -1082,7 +1091,9 @@ export class CSSStyleDeclaration {
         property,
         input,
         location: null,
-      });
+      };
+      (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)(diagnostic);
+      return diagnostic;
     };
     this.#block = new NativeDeclarationBlock(
       reportDeclarationDiagnostic,
@@ -1153,6 +1164,50 @@ export class CSSStyleDeclaration {
     const stringValue = value === null ? "" : `${value}`;
     const stringPriority = priority === null ? "" : `${priority}`;
     this.#block.setProperty(stringName, stringValue, stringPriority);
+  }
+
+  /** Apply ordered declaration mutations through one engine boundary crossing. */
+  applyMutations(
+    mutations: readonly CSSDeclarationMutation[],
+  ): CSSDeclarationMutationResult[] {
+    requireArguments(arguments.length, 1, "CSSStyleDeclaration", "applyMutations");
+    if (!Array.isArray(mutations)) {
+      throw new TypeError("CSSStyleDeclaration.applyMutations requires an array.");
+    }
+    const normalized: EngineDeclarationMutation[] = [];
+    for (let index = 0; index < mutations.length; index += 1) {
+      const mutation = mutations[index];
+      if (typeof mutation !== "object" || mutation === null) {
+        throw new TypeError(`Declaration mutation at index ${index} must be an object.`);
+      }
+      if (mutation.kind !== "set" && mutation.kind !== "remove") {
+        throw new TypeError(`Declaration mutation at index ${index} has an invalid kind.`);
+      }
+      if (typeof mutation.property !== "string") {
+        throw new TypeError(`Declaration mutation at index ${index} requires a string property.`);
+      }
+      if (mutation.kind === "remove") {
+        normalized.push({ kind: "remove", property: mutation.property });
+        continue;
+      }
+      if (typeof mutation.value !== "string" && mutation.value !== null) {
+        throw new TypeError(`Declaration mutation at index ${index} requires a string or null value.`);
+      }
+      if (
+        mutation.priority !== undefined
+        && mutation.priority !== null
+        && typeof mutation.priority !== "string"
+      ) {
+        throw new TypeError(`Declaration mutation at index ${index} requires a string priority.`);
+      }
+      normalized.push({
+        kind: "set",
+        property: mutation.property,
+        value: mutation.value ?? "",
+        priority: mutation.priority ?? "",
+      });
+    }
+    return this.#block.applyMutations(normalized);
   }
 
   removeProperty(name: string): string {
@@ -1749,10 +1804,6 @@ function attachRuleTree(
   parentStyleSheet: CSSStyleSheet | null,
 ): void {
   ruleTree.attach(rule, parentRule, parentStyleSheet);
-}
-
-function serializeRuleSafe(rule: CSSRule): string {
-  return safeSerializer.serialize(rule);
 }
 
 function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
@@ -2412,7 +2463,7 @@ export class CSSStyleSheet {
 
   /** Serialize current state as reparsable CSS without mutating live objects. */
   serialize(): string {
-    return this.#rules.map(serializeRuleSafe).join("");
+    return safeSerializer.serializeMany(this.#rules);
   }
 
   /** Drain opt-in mutation diagnostics without affecting CSSOM behavior. */

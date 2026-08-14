@@ -22,10 +22,75 @@ use lightningcss::{
     stylesheet::{ParserOptions, PrinterOptions},
     traits::IntoOwned,
 };
+use std::{
+    cell::RefCell,
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
+#[derive(Clone)]
 pub(crate) struct ParsedValue {
     pub(crate) value: DeclarationValue,
     pub(crate) longhands: Option<Vec<DeclarationRecord>>,
+}
+
+const PARSED_VALUE_CACHE_ENTRY_LIMIT: usize = 2_048;
+const PARSED_VALUE_CACHE_KEY_BYTE_LIMIT: usize = 2 * 1024 * 1024;
+const PARSED_VALUE_CACHE_MAX_VALUE_BYTES: usize = 2 * 1024;
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+struct ParsedValueCacheKey {
+    name: Arc<str>,
+    source_name: Arc<str>,
+    value: Arc<str>,
+    important: bool,
+    limits: ResourceLimits,
+}
+
+impl ParsedValueCacheKey {
+    fn byte_len(&self) -> usize {
+        self.name.len() + self.source_name.len() + self.value.len()
+    }
+}
+
+#[derive(Default)]
+struct ParsedValueCache {
+    entries: HashMap<ParsedValueCacheKey, Result<ParsedValue, MutationOutcome>>,
+    insertion_order: VecDeque<ParsedValueCacheKey>,
+    key_bytes: usize,
+}
+
+impl ParsedValueCache {
+    fn get(&self, key: &ParsedValueCacheKey) -> Option<Result<ParsedValue, MutationOutcome>> {
+        self.entries.get(key).cloned()
+    }
+
+    fn insert(&mut self, key: ParsedValueCacheKey, value: Result<ParsedValue, MutationOutcome>) {
+        if self.entries.contains_key(&key) {
+            return;
+        }
+        let key_bytes = key.byte_len();
+        while !self.entries.is_empty()
+            && (self.entries.len() >= PARSED_VALUE_CACHE_ENTRY_LIMIT
+                || self.key_bytes + key_bytes > PARSED_VALUE_CACHE_KEY_BYTE_LIMIT)
+        {
+            let Some(evicted) = self.insertion_order.pop_front() else {
+                break;
+            };
+            self.key_bytes = self.key_bytes.saturating_sub(evicted.byte_len());
+            self.entries.remove(&evicted);
+        }
+        if key_bytes > PARSED_VALUE_CACHE_KEY_BYTE_LIMIT {
+            return;
+        }
+        self.key_bytes += key_bytes;
+        self.insertion_order.push_back(key.clone());
+        self.entries.insert(key, value);
+    }
+}
+
+thread_local! {
+    static PARSED_VALUE_CACHE: RefCell<ParsedValueCache> = RefCell::default();
 }
 
 impl ParsedValue {
@@ -1734,6 +1799,31 @@ pub(crate) fn parse_value_with_limits(
 }
 
 pub(crate) fn parse_value_for_source_with_limits(
+    name: &str,
+    source_name: &str,
+    value: &str,
+    important: bool,
+    limits: ResourceLimits,
+) -> Result<ParsedValue, MutationOutcome> {
+    if name.starts_with("--") || value.len() > PARSED_VALUE_CACHE_MAX_VALUE_BYTES {
+        return parse_value_for_source_uncached(name, source_name, value, important, limits);
+    }
+    let key = ParsedValueCacheKey {
+        name: Arc::from(name),
+        source_name: Arc::from(source_name),
+        value: Arc::from(value),
+        important,
+        limits,
+    };
+    if let Some(parsed) = PARSED_VALUE_CACHE.with(|cache| cache.borrow().get(&key)) {
+        return parsed;
+    }
+    let parsed = parse_value_for_source_uncached(name, source_name, value, important, limits);
+    PARSED_VALUE_CACHE.with(|cache| cache.borrow_mut().insert(key, parsed.clone()));
+    parsed
+}
+
+fn parse_value_for_source_uncached(
     name: &str,
     source_name: &str,
     value: &str,

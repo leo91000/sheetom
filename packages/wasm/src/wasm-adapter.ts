@@ -20,6 +20,13 @@ interface GeneratedDeclarationState {
     priority: string,
     reservedNestingDepth?: number,
   ): string;
+  applyMutations(
+    kinds: readonly number[],
+    properties: readonly string[],
+    values: readonly string[],
+    priorities: readonly string[],
+    reservedNestingDepth?: number,
+  ): string[];
   removeProperty(name: string): string;
   replaceCssText(source: string, reservedNestingDepth?: number): void;
   serializeFormatted(safe: boolean, indent: string, separator: string): string;
@@ -190,6 +197,15 @@ function declarationStateHandle(
         priority,
         reservedNestingDepth,
       ) as EngineMutationOutcome,
+    ),
+    applyMutations: (kinds, properties, values, priorities, reservedNestingDepth) => guard(
+      () => state.applyMutations(
+        kinds,
+        properties,
+        values,
+        priorities,
+        reservedNestingDepth,
+      ),
     ),
     removeProperty: name => guard(() => state.removeProperty(name)),
     replaceCssText: (source, reservedNestingDepth) => guard(

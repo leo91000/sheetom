@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const cargoTargetDirectory = path.resolve(
+  repositoryRoot,
+  process.env.CARGO_TARGET_DIR ?? "target",
+);
 const generatedDirectory = path.join(repositoryRoot, "packages/wasm/generated");
 const distributionDirectory = path.join(repositoryRoot, "packages/wasm/dist");
 const wasmBindgenVersion = "0.2.127";
@@ -49,8 +53,8 @@ execFileSync(
     "--out-name",
     "sheetom_wasm",
     path.join(
-      repositoryRoot,
-      "target/wasm32-unknown-unknown/release/sheetom_wasm.wasm",
+      cargoTargetDirectory,
+      "wasm32-unknown-unknown/release/sheetom_wasm.wasm",
     ),
   ],
   { cwd: repositoryRoot, stdio: "inherit" },
