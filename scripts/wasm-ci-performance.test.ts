@@ -33,6 +33,7 @@ test("the WASM build uses the measured runtime-safe optimizer", () => {
   assert.doesNotMatch(cargoManifest, /\[profile\.wasm-release\]/u);
   assert.match(buildScript, /"--release"/u);
   assert.match(buildScript, /const wasmOptimizationProfile = "-O2"/u);
+  assert.match(buildScript, /process\.env\.CARGO_TARGET_DIR \?\? "target"/u);
   assert.match(buildScript, /const maximumRawBytes = 10_000_000/u);
   assert.match(buildScript, /const maximumGzipBytes = 1_700_000/u);
   assert.match(buildScript, /unoptimizedBytes \* 0\.95/u);

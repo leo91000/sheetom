@@ -1,6 +1,6 @@
 #![deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 
-use js_sys::Error as JsError;
+use js_sys::{Array, Error as JsError};
 use sheetom_core::{
     canonicalize_declaration_block_with_limits as canonicalize, inspect_property_with_limits,
     normalize_media_text_with_limits, normalize_selector_text_with_limits,
@@ -9,8 +9,9 @@ use sheetom_core::{
     parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree_with_limits,
     parse_scope_prelude_with_limits, parse_stylesheet_tree_with_limits,
     scan_top_level_rules_with_limits, serialize_css_identifier, serialize_font_family_setter,
-    serialize_parsed_rule_json, serialize_parsed_rules_json, DeclarationContext, DeclarationState,
-    EngineError, MutationOutcome, ResourceLimits,
+    serialize_parsed_rule_json, serialize_parsed_rules_json, DeclarationContext,
+    DeclarationMutation, DeclarationMutationResult, DeclarationState, EngineError, MutationOutcome,
+    ResourceLimits,
 };
 use wasm_bindgen::prelude::*;
 
@@ -90,6 +91,64 @@ impl WasmDeclarationState {
             )
             .map(|outcome| mutation_outcome_name(outcome).to_owned())
             .map_err(engine_error)
+    }
+
+    #[wasm_bindgen(js_name = applyMutations)]
+    pub fn apply_mutations(
+        &mut self,
+        kinds: Array,
+        properties: Array,
+        values: Array,
+        priorities: Array,
+        reserved_nesting_depth: Option<u32>,
+    ) -> Result<Array, JsValue> {
+        let mutation_count = kinds.length();
+        if properties.length() != mutation_count
+            || values.length() != mutation_count
+            || priorities.length() != mutation_count
+        {
+            return Err(js_error(
+                "SHEETOM_DECLARATION_MUTATION: column lengths must match".to_owned(),
+            ));
+        }
+        let mut native_mutations = Vec::with_capacity(mutation_count as usize);
+        for index in 0..mutation_count {
+            let kind = kinds.get(index).as_f64().ok_or_else(|| {
+                js_error("SHEETOM_DECLARATION_MUTATION: operation code must be a number".to_owned())
+            })?;
+            let property = required_array_string(&properties, index, "property")?;
+            match kind as u8 {
+                0 if kind == 0.0 => native_mutations.push(DeclarationMutation::Set {
+                    property,
+                    value: required_array_string(&values, index, "value")?,
+                    priority: required_array_string(&priorities, index, "priority")?,
+                }),
+                1 if kind == 1.0 => native_mutations.push(DeclarationMutation::Remove { property }),
+                _ => {
+                    return Err(js_error(format!(
+                        "SHEETOM_DECLARATION_MUTATION: unsupported operation code {kind}"
+                    )))
+                }
+            }
+        }
+        let results = self
+            .state
+            .apply_mutations_checked_with_reserved_depth(
+                native_mutations,
+                reserved_nesting_depth.unwrap_or(0) as usize,
+            )
+            .map_err(engine_error)?;
+        let output = Array::new_with_length(results.len() as u32);
+        for (index, result) in results.into_iter().enumerate() {
+            let value = match result {
+                DeclarationMutationResult::Set(outcome) => {
+                    mutation_outcome_name(outcome).to_owned()
+                }
+                DeclarationMutationResult::Remove(value) => value,
+            };
+            output.set(index as u32, JsValue::from_str(&value));
+        }
+        Ok(output)
     }
 
     #[wasm_bindgen(js_name = removeProperty)]
@@ -459,4 +518,12 @@ fn json_error(error: serde_json::Error) -> JsValue {
 
 fn js_error(message: String) -> JsValue {
     JsError::new(&message).into()
+}
+
+fn required_array_string(array: &Array, index: u32, name: &str) -> Result<String, JsValue> {
+    array.get(index).as_string().ok_or_else(|| {
+        js_error(format!(
+            "SHEETOM_DECLARATION_MUTATION: operation {name} must be a string"
+        ))
+    })
 }

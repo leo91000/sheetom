@@ -7,6 +7,7 @@ export declare class NativeDeclarationState {
   getPropertyValue(name: string): string
   getPropertyPriority(name: string): string
   setProperty(name: string, value: string, priority: string, reservedNestingDepth?: number | undefined | null): string
+  applyMutations(kinds: unknown[], properties: unknown[], values: unknown[], priorities: unknown[], reservedNestingDepth?: number | undefined | null): Array<string>
   removeProperty(name: string): string
   serializeLonghands(): string
   replaceCssText(source: string, reservedNestingDepth?: number | undefined | null): void

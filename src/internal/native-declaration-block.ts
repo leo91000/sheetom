@@ -1,5 +1,6 @@
-import type { SheetOMDiagnosticCode } from "../diagnostics.js";
+import type { SheetOMDiagnostic, SheetOMDiagnosticCode } from "../diagnostics.js";
 import {
+  type EngineDeclarationMutation,
   type EngineDeclarationStateHandle,
   type EngineMutationOutcome,
 } from "./engine-binding.js";
@@ -15,7 +16,15 @@ type ReportDeclarationDiagnostic = (
   code: SheetOMDiagnosticCode,
   property: string,
   input: string,
-) => void;
+) => SheetOMDiagnostic;
+
+export type NativeDeclarationMutationResult =
+  | {
+      kind: "set";
+      accepted: boolean;
+      diagnostic: SheetOMDiagnostic | null;
+    }
+  | { kind: "remove"; value: string };
 
 /** Thin JS ownership boundary around the Rust declaration state machine. */
 export class NativeDeclarationBlock {
@@ -72,14 +81,72 @@ export class NativeDeclarationBlock {
       this.#invalidateSerialization();
       return;
     }
+    this.#diagnosticForOutcome(outcome, name, value, priority);
+  }
 
-    const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
-    const [code, input]: [SheetOMDiagnosticCode, string] = outcome === "invalid-priority"
-      ? ["INVALID_PRIORITY", priority]
-      : outcome === "unsupported-shorthand"
-        ? ["UNSUPPORTED_SHORTHAND_VALUE", value]
-        : ["INVALID_PROPERTY_VALUE", value];
-    this.#reportDiagnostic(code, normalizedName, input);
+  applyMutations(
+    mutations: readonly EngineDeclarationMutation[],
+  ): NativeDeclarationMutationResult[] {
+    const kinds: number[] = [];
+    const properties: string[] = [];
+    const values: string[] = [];
+    const priorities: string[] = [];
+    for (const mutation of mutations) {
+      kinds.push(mutation.kind === "set" ? 0 : 1);
+      properties.push(mutation.property);
+      values.push(mutation.kind === "set" ? mutation.value : "");
+      priorities.push(mutation.kind === "set" ? mutation.priority : "");
+    }
+    let outcomes;
+    try {
+      outcomes = this.#state.applyMutations(
+        kinds,
+        properties,
+        values,
+        priorities,
+        this.#reservedNestingDepth(),
+      );
+    } catch (error) {
+      rethrowResourceBudgetError(error);
+      throw error;
+    }
+    if (outcomes.length !== mutations.length) {
+      throw new Error("SheetOM engine returned an incomplete declaration mutation result.");
+    }
+    const results: NativeDeclarationMutationResult[] = [];
+    let mutated = false;
+    for (let index = 0; index < outcomes.length; index += 1) {
+      const mutation = mutations[index];
+      const outcome = outcomes[index];
+      if (!mutation || outcome === undefined) {
+        throw new Error("SheetOM engine returned a mismatched declaration mutation result.");
+      }
+      if (mutation.kind === "remove") {
+        mutated = true;
+        results.push({ kind: "remove", value: outcome });
+        continue;
+      }
+      if (outcome === "applied") {
+        mutated = true;
+        results.push({ kind: "set", accepted: true, diagnostic: null });
+        continue;
+      }
+      if (!isEngineMutationOutcome(outcome)) {
+        throw new Error("SheetOM engine returned an invalid declaration mutation outcome.");
+      }
+      results.push({
+        kind: "set",
+        accepted: false,
+        diagnostic: this.#diagnosticForOutcome(
+          outcome,
+          mutation.property,
+          mutation.value,
+          mutation.priority,
+        ),
+      });
+    }
+    if (mutated) this.#invalidateSerialization();
+    return results;
   }
 
   removeProperty(name: string): string {
@@ -111,6 +178,30 @@ export class NativeDeclarationBlock {
     this.#observableCache = undefined;
     this.#serializationCache.clear();
   }
+
+  #diagnosticForOutcome(
+    outcome: Exclude<EngineMutationOutcome, "applied">,
+    name: string,
+    value: string,
+    priority: string,
+  ): SheetOMDiagnostic {
+    const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
+    const [code, input]: [SheetOMDiagnosticCode, string] = outcome === "invalid-priority"
+      ? ["INVALID_PRIORITY", priority]
+      : outcome === "unsupported-shorthand"
+        ? ["UNSUPPORTED_SHORTHAND_VALUE", value]
+        : ["INVALID_PROPERTY_VALUE", value];
+    return this.#reportDiagnostic(code, normalizedName, input);
+  }
+}
+
+function isEngineMutationOutcome(
+  value: string,
+): value is Exclude<EngineMutationOutcome, "applied"> {
+  return value === "invalid-name"
+    || value === "invalid-priority"
+    || value === "invalid-value"
+    || value === "unsupported-shorthand";
 }
 
 function toUnsignedLong(value: unknown): number {

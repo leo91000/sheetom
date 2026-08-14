@@ -192,3 +192,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0181 | [Optimize WASM CI without weakening evidence](./0181-optimize-wasm-ci-without-weakening-evidence.md) | accepted |
 | 0182 | [Preserve substitution isolation during shorthand synthesis](./0182-preserve-substitution-isolation-during-shorthand-synthesis.md) | accepted |
 | 0183 | [Promote RC9 without runtime drift](./0183-promote-rc9-without-runtime-drift.md) | accepted |
+| 0184 | [Batch ordered declaration mutations without changing CSSOM](./0184-batch-ordered-declaration-mutations-without-changing-cssom.md) | accepted |

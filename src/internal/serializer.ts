@@ -22,10 +22,16 @@ export class Serializer<Node> {
   }
 
   serialize(node: Node): string {
+    return this.serializeMany([node]);
+  }
+
+  serializeMany(nodes: readonly Node[]): string {
     const chunks: string[] = [];
-    const pending: SerializationFrame<Node>[] = [
-      { kind: "node", node, depth: 0, child: false },
-    ];
+    const pending: SerializationFrame<Node>[] = [];
+    for (let index = nodes.length - 1; index >= 0; index -= 1) {
+      const node = nodes[index];
+      if (node) pending.push({ kind: "node", node, depth: 0, child: false });
+    }
     while (pending.length > 0) {
       const frame = pending.pop();
       if (!frame) continue;

@@ -7,6 +7,13 @@ if (rule instanceof SheetOM.CSSStyleRule) {
   rule.style.webkitLineClamp = "2";
   rule.style.cssFloat = "inline-start";
   rule.style.float = "inline-start";
+  const mutations: readonly SheetOM.CSSDeclarationMutation[] = [
+    { kind: "set", property: "color", value: "red" },
+    { kind: "remove", property: "margin" },
+  ];
+  const results: readonly SheetOM.CSSDeclarationMutationResult[] =
+    rule.style.applyMutations(mutations);
+  void results;
 
   // @ts-expect-error Unknown names are not part of the pinned browser contract.
   rule.style.notACssProperty = "invalid";

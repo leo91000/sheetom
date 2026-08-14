@@ -23,7 +23,7 @@ await assert.rejects(
 );
 
 const trappingModule = new WebAssembly.Module(Buffer.from(
-  "AGFzbQEAAAABEANgAX8Bf2ADf39/AGABfwADBAMAAQIFAwEAAQdUBAZtZW1vcnkCAB9fX3diaW5kZ2VuX2FkZF90b19zdGFja19wb2ludGVyAAARX193YmluZGdlbl9leHBvcnQAARFlbmdpbmVBYmlJZGVudGl0eQACCg0DBABBCAsCAAsDAAAL",
+  "AGFzbQEAAAABEANgAX8Bf2ADf39/AGABfwADBAMAAQIFAwEAAQYIAX8BQYCABAsHVQQGbWVtb3J5AgAfX193YmluZGdlbl9hZGRfdG9fc3RhY2tfcG9pbnRlcgAAEl9fd2JpbmRnZW5fZXhwb3J0MwABEWVuZ2luZUFiaUlkZW50aXR5AAIKFAMLACMAIABqJAAjAAsCAAsDAAAL",
   "base64",
 ));
 await assert.rejects(
@@ -59,6 +59,18 @@ for (const api of [fromBytes, fromResponse, fromModule]) {
   const layer = sheet.cssRules[0];
   const rule = layer.cssRules[0];
   rule.style.setProperty("padding", "72px var(--space, var(--space,");
+  const mutationResults = rule.style.applyMutations([
+    { kind: "set", property: "place-content", value: "center space-between" },
+    { kind: "set", property: "align-content", value: "safe center" },
+    { kind: "set", property: "width", value: "20px; color: red" },
+    { kind: "remove", property: "justify-content" },
+  ]);
+  assert.deepEqual(
+    mutationResults.map(result => result.kind === "set" ? result.accepted : result.value),
+    [true, true, false, "space-between"],
+  );
+  assert.equal(rule.style.getPropertyValue("align-content"), "safe center");
+  assert.equal(rule.style.getPropertyValue("justify-content"), "");
   assert.match(sheet.serialize(), /image-set\(/u);
   assert.match(sheet.serialize(), /var\(--space/u);
   assert.equal(sheet.serialize(), sheet.serialize());

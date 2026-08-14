@@ -1,5 +1,5 @@
 {
-  "abiVersion": 1,
+  "abiVersion": 2,
   "sheetomVersion": "0.1.0-rc.9",
-  "syntaxEngineSetSha256": "2af7ec76ba46a3f20f74a90172a708afab5dcb20f45b658a4d975caed76dc855"
+  "syntaxEngineSetSha256": "f703c3c43b4aaa010e25278afba1db19d1d67440f0fb4cb3f510f526c46cbf2c"
 }

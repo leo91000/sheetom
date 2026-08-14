@@ -68,7 +68,25 @@ pub enum MutationOutcome {
     UnsupportedShorthand,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum DeclarationMutation {
+    Set {
+        property: String,
+        value: String,
+        priority: String,
+    },
+    Remove {
+        property: String,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DeclarationMutationResult {
+    Set(MutationOutcome),
+    Remove(String),
+}
+
+#[derive(Clone, Copy, Debug, Default, Hash, PartialEq)]
 pub enum DeclarationContext {
     #[default]
     Style,
@@ -212,79 +230,90 @@ impl DeclarationState {
     ) -> Result<MutationOutcome, EngineError> {
         let parse_limits = self.limits_with_reserved_depth(reserved_depth)?;
         validate_declaration_value_input(value, parse_limits)?;
-        let mut candidate = self.clone();
-        candidate.limits = parse_limits;
-        let outcome = candidate.apply_property(name, value, priority);
-        if outcome != MutationOutcome::Applied {
-            return Ok(outcome);
-        }
-        candidate.validate_record_limit()?;
-        candidate.limits = self.limits;
-        *self = candidate;
-        Ok(outcome)
+        self.apply_property_checked(name, value, priority, parse_limits)
     }
 
-    fn apply_property(&mut self, name: &str, value: &str, priority: &str) -> MutationOutcome {
+    pub fn apply_mutations_checked_with_reserved_depth(
+        &mut self,
+        mutations: Vec<DeclarationMutation>,
+        reserved_depth: usize,
+    ) -> Result<Vec<DeclarationMutationResult>, EngineError> {
+        let mut results = Vec::with_capacity(mutations.len());
+        for mutation in mutations {
+            match mutation {
+                DeclarationMutation::Set {
+                    property,
+                    value,
+                    priority,
+                } => {
+                    let outcome = self.set_property_checked_with_reserved_depth(
+                        &property,
+                        &value,
+                        &priority,
+                        reserved_depth,
+                    )?;
+                    results.push(DeclarationMutationResult::Set(outcome));
+                }
+                DeclarationMutation::Remove { property } => {
+                    results.push(DeclarationMutationResult::Remove(
+                        self.remove_property(&property),
+                    ));
+                }
+            }
+        }
+        Ok(results)
+    }
+
+    fn apply_property_checked(
+        &mut self,
+        name: &str,
+        value: &str,
+        priority: &str,
+        parse_limits: ResourceLimits,
+    ) -> Result<MutationOutcome, EngineError> {
         let source_name = name.to_ascii_lowercase();
         let Some(name) = self.canonical_name(name) else {
-            return MutationOutcome::InvalidName;
+            return Ok(MutationOutcome::InvalidName);
         };
         let priority = priority.to_ascii_lowercase();
         if !matches!(priority.as_str(), "" | "important") {
-            return MutationOutcome::InvalidPriority;
+            return Ok(MutationOutcome::InvalidPriority);
         }
         if value.is_empty() {
             self.remove_property(&name);
-            return MutationOutcome::Applied;
+            return Ok(MutationOutcome::Applied);
         }
         if self.context == DeclarationContext::Function && name == "result" {
-            return MutationOutcome::Applied;
+            return Ok(MutationOutcome::Applied);
         }
 
         let important = priority == "important";
-        let mut parsed = match self.parse_value(&name, &source_name, value, important) {
-            Ok(parsed) => parsed,
-            Err(outcome) => return outcome,
-        };
-
-        if parsed.pending_substitution() {
-            if let Some(longhands) = self.shorthand_longhands(&name) {
-                let group = self.new_pending_group(name, parsed.value.clone());
-                for longhand in longhands {
-                    self.commit(DeclarationRecord {
-                        name: (*longhand).to_owned(),
-                        value: DeclarationValue::deferred(true),
-                        important,
-                        pending_group: Some(group.clone()),
-                        alias_value: None,
-                    });
-                }
-                return MutationOutcome::Applied;
-            }
+        let parsed =
+            match self.parse_value_with_limits(&name, &source_name, value, important, parse_limits)
+            {
+                Ok(parsed) => parsed,
+                Err(outcome) => return Ok(outcome),
+            };
+        let previous_group_id = self.next_pending_group_id;
+        let records = self.records_for_parsed(name, parsed, important, &source_name);
+        let additional_records = records
+            .iter()
+            .filter(|record| self.find(&record.name).is_none())
+            .map(|record| record.name.as_str())
+            .collect::<HashSet<_>>()
+            .len();
+        let projected_len = self.records.len() + additional_records;
+        if projected_len > self.limits.max_declarations_per_block {
+            self.next_pending_group_id = previous_group_id;
+            return Err(EngineError::DeclarationLimitExceeded {
+                actual: projected_len,
+                limit: self.limits.max_declarations_per_block,
+            });
         }
-
-        if let Some(mut longhands) = parsed.longhands.take() {
-            self.attach_static_group(&name, &parsed, &mut longhands);
-            for record in longhands {
-                self.commit(record);
-            }
-            return MutationOutcome::Applied;
+        for record in records {
+            self.commit(record);
         }
-
-        let alias_value = self.alias_value_for_record(&source_name, &name, &parsed.value);
-        let record_value = if alias_value.is_some() {
-            DeclarationValue::deferred(true)
-        } else {
-            parsed.value
-        };
-        self.commit(DeclarationRecord {
-            name,
-            value: record_value,
-            important,
-            pending_group: None,
-            alias_value,
-        });
-        MutationOutcome::Applied
+        Ok(MutationOutcome::Applied)
     }
 
     pub fn replace_declarations(&mut self, declarations: &[ParsedDeclaration]) {
@@ -422,11 +451,7 @@ impl DeclarationState {
     }
 
     pub fn serialize_formatted(&self, safe: bool, indent: &str, separator: &str) -> String {
-        self.serialized_declarations(safe)
-            .into_iter()
-            .map(|declaration| format!("{indent}{declaration}"))
-            .collect::<Vec<_>>()
-            .join(separator)
+        self.serialize_with_format(safe, indent, separator)
     }
 
     fn find(&self, name: &str) -> Option<&DeclarationRecord> {
@@ -454,12 +479,24 @@ impl DeclarationState {
         value: &str,
         important: bool,
     ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
+        self.parse_value_with_limits(name, source_name, value, important, self.limits)
+    }
+
+    fn parse_value_with_limits(
+        &self,
+        name: &str,
+        source_name: &str,
+        value: &str,
+        important: bool,
+        limits: ResourceLimits,
+    ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
         match self.context {
             DeclarationContext::Style => {
-                parse_value_for_source_with_limits(name, source_name, value, important, self.limits)
+                parse_value_for_source_with_limits(name, source_name, value, important, limits)
             }
-            DeclarationContext::FontFace => parse_descriptor_value(name, value, self.limits)
-                .ok_or(MutationOutcome::InvalidValue),
+            DeclarationContext::FontFace => {
+                parse_descriptor_value(name, value, limits).ok_or(MutationOutcome::InvalidValue)
+            }
             DeclarationContext::Function => {
                 parse_function_descriptor_value(name, value).ok_or(MutationOutcome::InvalidValue)
             }
@@ -653,7 +690,22 @@ impl DeclarationState {
     }
 
     fn serialize(&self, safe: bool) -> String {
-        self.serialized_declarations(safe).join(" ")
+        self.serialize_with_format(safe, "", " ")
+    }
+
+    fn serialize_with_format(&self, safe: bool, indent: &str, separator: &str) -> String {
+        let declarations = self.serialized_declarations(safe);
+        let capacity = declarations.iter().map(String::len).sum::<usize>()
+            + declarations.len() * (indent.len() + separator.len());
+        let mut output = String::with_capacity(capacity);
+        for (index, declaration) in declarations.into_iter().enumerate() {
+            if index > 0 {
+                output.push_str(separator);
+            }
+            output.push_str(indent);
+            output.push_str(&declaration);
+        }
+        output
     }
 
     fn serialized_declarations(&self, safe: bool) -> Vec<String> {
@@ -1017,9 +1069,106 @@ fn format_declaration(name: &str, value: &str, important: bool) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{DeclarationContext, DeclarationState, MutationOutcome, ParsedDeclaration};
+    use super::{
+        DeclarationContext, DeclarationMutation, DeclarationMutationResult, DeclarationState,
+        MutationOutcome, ParsedDeclaration,
+    };
     use crate::{DeclarationValueKind, EngineError, ResourceLimits};
     use serde_json::Value;
+
+    #[test]
+    fn ordered_mutation_batches_match_sequential_cssom_state() {
+        let mutations = vec![
+            DeclarationMutation::Set {
+                property: "padding".to_owned(),
+                value: "1px 2px".to_owned(),
+                priority: "important".to_owned(),
+            },
+            DeclarationMutation::Set {
+                property: "padding-left".to_owned(),
+                value: "3px".to_owned(),
+                priority: "important".to_owned(),
+            },
+            DeclarationMutation::Set {
+                property: "width".to_owned(),
+                value: "20px; color: red".to_owned(),
+                priority: String::new(),
+            },
+            DeclarationMutation::Remove {
+                property: "padding-right".to_owned(),
+            },
+        ];
+        let mut batched = DeclarationState::new();
+        let results = batched
+            .apply_mutations_checked_with_reserved_depth(mutations, 0)
+            .unwrap_or_default();
+
+        let mut sequential = DeclarationState::new();
+        sequential.set_property("padding", "1px 2px", "important");
+        sequential.set_property("padding-left", "3px", "important");
+        sequential.set_property("width", "20px; color: red", "");
+        let removed = sequential.remove_property("padding-right");
+
+        assert_eq!(
+            results,
+            vec![
+                DeclarationMutationResult::Set(MutationOutcome::Applied),
+                DeclarationMutationResult::Set(MutationOutcome::Applied),
+                DeclarationMutationResult::Set(MutationOutcome::InvalidValue),
+                DeclarationMutationResult::Remove(removed),
+            ]
+        );
+        assert_eq!(batched, sequential);
+    }
+
+    #[test]
+    fn cached_shorthand_parses_do_not_share_mutable_provenance() {
+        let mut first = DeclarationState::new();
+        let mut second = DeclarationState::new();
+        first.set_property("background", "center / cover no-repeat red", "");
+        second.set_property("background", "center / cover no-repeat red", "");
+
+        first.set_property("background-color", "blue", "");
+
+        assert_eq!(second.get_property_value("background-color"), "red");
+        assert!(!second.get_property_value("background").is_empty());
+        assert_eq!(first.get_property_value("background-color"), "blue");
+    }
+
+    #[test]
+    fn batch_resource_errors_keep_prior_commits_like_sequential_calls() {
+        let mut state = DeclarationState::new_with_context_and_limits(
+            DeclarationContext::Style,
+            ResourceLimits {
+                max_declarations_per_block: 1,
+                ..ResourceLimits::default()
+            },
+        );
+        let result = state.apply_mutations_checked_with_reserved_depth(
+            vec![
+                DeclarationMutation::Set {
+                    property: "width".to_owned(),
+                    value: "1px".to_owned(),
+                    priority: String::new(),
+                },
+                DeclarationMutation::Set {
+                    property: "height".to_owned(),
+                    value: "2px".to_owned(),
+                    priority: String::new(),
+                },
+            ],
+            0,
+        );
+
+        assert!(matches!(
+            result,
+            Err(EngineError::DeclarationLimitExceeded {
+                actual: 2,
+                limit: 1
+            })
+        ));
+        assert_eq!(state.css_text(), "width: 1px;");
+    }
 
     #[test]
     fn every_manifested_longhand_initial_value_has_semantic_state() {
