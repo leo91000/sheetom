@@ -1,5 +1,11 @@
 # sheetom
 
+## 0.1.0-rc.10
+
+### Patch Changes
+
+- 9d92e23: Add ordered declaration mutation batches, bounded shared parse reuse, and lower-peak whole-sheet serialization without changing CSSOM validation semantics.
+
 ## 0.1.0-rc.9
 
 ### Patch Changes

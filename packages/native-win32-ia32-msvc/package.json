@@ -1,6 +1,6 @@
 {
   "name": "@sheetom/native-win32-ia32-msvc",
-  "version": "0.1.0-rc.9",
+  "version": "0.1.0-rc.10",
   "description": "Native SheetOM engine for win32-ia32-msvc",
   "license": "MIT",
   "repository": {

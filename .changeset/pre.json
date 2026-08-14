@@ -24,6 +24,7 @@
     "add-wasm-backend",
     "align-observable-property-matrix",
     "align-public-types",
+    "batch-declaration-mutations",
     "bright-rules-bloom",
     "calm-values-recover",
     "canonicalize-grid-placement",
