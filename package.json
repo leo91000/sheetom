@@ -1,6 +1,6 @@
 {
   "name": "sheetom",
-  "version": "0.1.0-rc.9",
+  "version": "0.1.0-rc.10",
   "description": "A browser-compatible mutable CSSOM for JavaScript runtimes",
   "keywords": [
     "css",
@@ -48,19 +48,19 @@
     "SECURITY.md"
   ],
   "optionalDependencies": {
-    "@sheetom/native-darwin-arm64": "0.1.0-rc.9",
-    "@sheetom/native-darwin-x64": "0.1.0-rc.9",
-    "@sheetom/native-linux-arm-gnueabihf": "0.1.0-rc.9",
-    "@sheetom/native-linux-arm-musleabihf": "0.1.0-rc.9",
-    "@sheetom/native-linux-arm64-gnu": "0.1.0-rc.9",
-    "@sheetom/native-linux-arm64-musl": "0.1.0-rc.9",
-    "@sheetom/native-linux-ppc64-gnu": "0.1.0-rc.9",
-    "@sheetom/native-linux-s390x-gnu": "0.1.0-rc.9",
-    "@sheetom/native-linux-x64-gnu": "0.1.0-rc.9",
-    "@sheetom/native-linux-x64-musl": "0.1.0-rc.9",
-    "@sheetom/native-win32-arm64-msvc": "0.1.0-rc.9",
-    "@sheetom/native-win32-ia32-msvc": "0.1.0-rc.9",
-    "@sheetom/native-win32-x64-msvc": "0.1.0-rc.9"
+    "@sheetom/native-darwin-arm64": "0.1.0-rc.10",
+    "@sheetom/native-darwin-x64": "0.1.0-rc.10",
+    "@sheetom/native-linux-arm-gnueabihf": "0.1.0-rc.10",
+    "@sheetom/native-linux-arm-musleabihf": "0.1.0-rc.10",
+    "@sheetom/native-linux-arm64-gnu": "0.1.0-rc.10",
+    "@sheetom/native-linux-arm64-musl": "0.1.0-rc.10",
+    "@sheetom/native-linux-ppc64-gnu": "0.1.0-rc.10",
+    "@sheetom/native-linux-s390x-gnu": "0.1.0-rc.10",
+    "@sheetom/native-linux-x64-gnu": "0.1.0-rc.10",
+    "@sheetom/native-linux-x64-musl": "0.1.0-rc.10",
+    "@sheetom/native-win32-arm64-msvc": "0.1.0-rc.10",
+    "@sheetom/native-win32-ia32-msvc": "0.1.0-rc.10",
+    "@sheetom/native-win32-x64-msvc": "0.1.0-rc.10"
   },
   "scripts": {
     "build": "tsdown",
