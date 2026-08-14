@@ -296,13 +296,20 @@ async function readPublishedVersion(
   return await response.json() as RegistryVersion;
 }
 
-async function readPackageMetadata(name: string): Promise<PackageMetadata> {
+async function readPackageMetadata(name: string): Promise<PackageMetadata | null> {
   const encodedName = encodeURIComponent(name);
   const response = await fetch(`${registryOrigin}/${encodedName}`);
+  if (response.status === 404) return null;
   if (!response.ok) {
     throw new Error(`npm registry returned ${response.status} while reading package metadata`);
   }
   return await response.json() as PackageMetadata;
+}
+
+export function implementationPackageRequiresBootstrap(
+  packageMetadata: PackageMetadata | null,
+): boolean {
+  return packageMetadata === null;
 }
 
 async function readDistTags(name: string): Promise<Record<string, string>> {
@@ -649,10 +656,15 @@ async function main(): Promise<void> {
     const implementationArtifacts = artifactSet.packages.filter(
       artifact => artifact.role !== "root",
     );
-    const unpublishedImplementations: PackedArtifact[] = [];
+    const implementationsRequiringBootstrap: PackedArtifact[] = [];
     for (const artifact of implementationArtifacts) {
       const published = await readPublishedVersion(artifact.name, artifact.version);
-      if (!published) unpublishedImplementations.push(artifact);
+      if (!published) {
+        const packageMetadata = await readPackageMetadata(artifact.name);
+        if (implementationPackageRequiresBootstrap(packageMetadata)) {
+          implementationsRequiringBootstrap.push(artifact);
+        }
+      }
       if (published && published.dist?.integrity !== artifact.integrity) {
         throw new Error(
           `npm already serves ${artifact.name}@${artifact.version} with a different integrity`,
@@ -660,7 +672,7 @@ async function main(): Promise<void> {
       }
     }
 
-    if (unpublishedImplementations.length > 0 && !bootstrapImplementations) {
+    if (implementationsRequiringBootstrap.length > 0 && !bootstrapImplementations) {
       if (!release?.isDraft) {
         throw new Error(
           `Published GitHub Release ${tag} is missing implementation packages`,
@@ -669,15 +681,22 @@ async function main(): Promise<void> {
       await reportPendingReleaseAction(
         "npm implementation-package bootstrap required",
         `Release ${version} requires the first authenticated publication of:\n` +
-          unpublishedImplementations.map(artifact => `- ${artifact.name}`).join("\n") +
+          implementationsRequiringBootstrap.map(artifact => `- ${artifact.name}`).join("\n") +
           "\nRun the release script with SHEETOM_BOOTSTRAP_IMPLEMENTATIONS=1 against " +
           "this exact artifact set, configure Trusted Publishing, then rerun the workflow.",
       );
       return;
     }
 
+    if (bootstrapImplementations && implementationsRequiringBootstrap.length === 0) {
+      throw new Error(
+        "SHEETOM_BOOTSTRAP_IMPLEMENTATIONS is only valid when an implementation package " +
+          "does not exist in the npm registry",
+      );
+    }
+
     const artifactsToPublish = bootstrapImplementations
-      ? implementationArtifacts
+      ? implementationsRequiringBootstrap
       : artifactSet.packages;
     for (const artifact of artifactsToPublish) {
       await publishPackageArtifact(artifact, npmTag, false);
@@ -686,7 +705,7 @@ async function main(): Promise<void> {
     if (bootstrapImplementations) {
       await reportPendingReleaseAction(
         "npm implementation-package bootstrap complete",
-        `Published ${implementationArtifacts.length} implementation packages for ${version}. ` +
+        `Published ${implementationsRequiringBootstrap.length} implementation packages for ${version}. ` +
           "Configure their GitHub Actions Trusted Publishers, reconcile npm channels, " +
           "and rerun the Release workflow to publish the root package.",
       );
@@ -696,6 +715,9 @@ async function main(): Promise<void> {
     const channelFailures: string[] = [];
     for (const artifact of artifactSet.packages) {
       const packageMetadata = await readPackageMetadata(artifact.name);
+      if (!packageMetadata) {
+        throw new Error(`npm package ${artifact.name} is missing after publication`);
+      }
       const channelAssessment = artifact.role === "native"
         ? assessImplementationPackageChannels(packageMetadata, version)
         : assessReleaseChannels(packageMetadata, version);

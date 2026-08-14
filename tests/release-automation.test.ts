@@ -4,6 +4,7 @@ import {
   assessNpmPublication,
   assessReleaseChannels,
   extractReleaseNotes,
+  implementationPackageRequiresBootstrap,
   npmTagForVersion,
   packMetadataForTarball,
   parsePackResult,
@@ -116,6 +117,13 @@ describe("release automation", () => {
   it("routes prereleases to next and stable releases to latest", () => {
     expect(npmTagForVersion("0.1.0-rc.1")).toBe("next");
     expect(npmTagForVersion("0.1.0")).toBe("latest");
+  });
+
+  it("bootstraps only packages that do not exist in the registry", () => {
+    expect(implementationPackageRequiresBootstrap(null)).toBe(true);
+    expect(implementationPackageRequiresBootstrap({
+      versions: { "0.1.0-rc.9": {} },
+    })).toBe(false);
   });
 
   it("does not republish a version whose dist-tag is visible during registry scanning", () => {
