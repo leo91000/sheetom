@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { CSSStyleRule, CSSStyleSheet } from "../src/index.js";
+import {
+  CSSStyleRule,
+  CSSStyleSheet,
+  parseStyleSheet,
+  SheetOMSerializationError,
+} from "../src/index.js";
 import { chromiumShorthandLonghands } from "../src/chromium-properties.js";
 import { createStyleRule } from "./support/create-style-rule.js";
 
@@ -63,6 +68,121 @@ test("reparsable serialization retains an authored pending shorthand", () => {
   assert.equal(
     sheet.serialize(),
     ".x {\n  place-content: var(--align, revert-layer) var(--justify, revert-layer);\n}\n",
+  );
+});
+
+test("reparsable serialization retains a pending shorthand before equal-priority longhand overrides", () => {
+  const sheet = new CSSStyleSheet();
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+  const font =
+    "var(--zfm-font, normal 700 11px/normal 'Inter', sans-serif)";
+
+  rule.style.setProperty("font", font);
+  rule.style.setProperty("font-size", "10px");
+
+  assert.equal(rule.style.getPropertyValue("font"), "");
+  assert.equal(rule.style.getPropertyValue("font-size"), "10px");
+  const serialized = sheet.serialize();
+  assert.equal(
+    serialized,
+    `.x {\n  font: ${font};\n  font-size: 10px;\n}\n`,
+  );
+  assert.equal(parseStyleSheet(serialized).serialize(), serialized);
+});
+
+test("reparsable serialization recovers pending shorthand states with mixed priorities", () => {
+  const sheet = new CSSStyleSheet({ diagnostics: true });
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty("font", "var(--font)", "important");
+  rule.style.setProperty("font-size", "10px");
+
+  assert.equal(
+    sheet.serialize(),
+    ".x {\n  font: var(--font) !important;\n  font-size: 10px !important;\n}\n",
+  );
+  assert.deepEqual(sheet.takeDiagnostics(), [
+    {
+      code: "UNREPRESENTABLE_PENDING_SHORTHAND",
+      severity: "warning",
+      operation: "serialize",
+      message: "The pending font shorthand required a best-effort recovery during serialization.",
+      property: "font",
+      input: "",
+      location: null,
+      conflictingLonghands: ["font-size"],
+    },
+  ]);
+  assert.equal(sheet.serialize().includes("font-size: 10px !important"), true);
+  assert.equal(sheet.takeDiagnostics().length, 1);
+  assert.throws(
+    () => sheet.serializeStrict(),
+    error => error instanceof SheetOMSerializationError
+      && error.code === "UNREPRESENTABLE_PENDING_SHORTHAND"
+      && error.shorthand === "font"
+      && error.conflictingLonghands.length === 1
+      && error.conflictingLonghands[0] === "font-size",
+  );
+});
+
+test("reparsable serialization preserves an important longhand over a normal pending shorthand", () => {
+  const sheet = new CSSStyleSheet({ diagnostics: true });
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty("font", "var(--font)");
+  rule.style.setProperty("font-size", "10px", "important");
+
+  const serialized =
+    ".x {\n  font: var(--font);\n  font-size: 10px !important;\n}\n";
+  assert.equal(sheet.serialize(), serialized);
+  assert.equal(sheet.serializeStrict(), serialized);
+  assert.deepEqual(sheet.takeDiagnostics(), []);
+});
+
+test("best-effort shorthand recovery stays local and never blocks the stylesheet", () => {
+  const sheet = new CSSStyleSheet({ diagnostics: true });
+  sheet.insertRule(".recovered {}", 0);
+  sheet.insertRule(".unrelated { color: rebeccapurple; }", 1);
+  const recovered = sheet.cssRules[0];
+  assert.ok(recovered instanceof CSSStyleRule);
+
+  recovered.style.setProperty("font", "var(--font)", "important");
+  recovered.style.setProperty("font-size", "10px");
+
+  assert.equal(
+    sheet.serialize(),
+    ".recovered {\n  font: var(--font) !important;\n  font-size: 10px !important;\n}\n.unrelated {\n  color: #639;\n}\n",
+  );
+  assert.equal(sheet.takeDiagnostics().length, 1);
+});
+
+test("best-effort recovery preserves overlapping pending shorthand substitutions", () => {
+  const sheet = new CSSStyleSheet({ diagnostics: true });
+  sheet.insertRule(".x {}");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof CSSStyleRule);
+
+  rule.style.setProperty("border", "var(--border)", "important");
+  rule.style.setProperty("border-top", "var(--top)");
+
+  assert.equal(
+    sheet.serialize(),
+    ".x {\n  border: var(--border) !important;\n  border-top: var(--top) !important;\n}\n",
+  );
+  const diagnostic = sheet.takeDiagnostics()[0];
+  assert.equal(diagnostic?.code, "UNREPRESENTABLE_PENDING_SHORTHAND");
+  assert.equal(diagnostic?.property, "border");
+  assert.deepEqual(
+    diagnostic && "conflictingLonghands" in diagnostic
+      ? diagnostic.conflictingLonghands
+      : [],
+    ["border-top-color", "border-top-style", "border-top-width"],
   );
 });
 

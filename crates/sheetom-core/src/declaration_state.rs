@@ -14,13 +14,17 @@ use crate::{
     validate_declaration_block_input, validate_declaration_value_input, DeclarationValue,
     EngineError, ResourceLimits,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PendingSubstitutionGroup {
     pub(crate) id: u64,
     pub(crate) shorthand: String,
     pub(crate) value: DeclarationValue,
+    pub(crate) important: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,7 +32,7 @@ pub struct DeclarationRecord {
     pub name: String,
     pub value: DeclarationValue,
     pub important: bool,
-    pub pending_group: Option<PendingSubstitutionGroup>,
+    pub pending_group: Option<Arc<PendingSubstitutionGroup>>,
     pub(crate) alias_value: Option<AliasDeclarationValue>,
 }
 
@@ -57,6 +61,12 @@ pub struct ParsedDeclaration {
     pub name: String,
     pub value: String,
     pub important: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SerializationIssue {
+    pub shorthand: String,
+    pub conflicting_longhands: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -100,6 +110,30 @@ pub struct DeclarationState {
     next_pending_group_id: u64,
     context: DeclarationContext,
     limits: ResourceLimits,
+}
+
+#[derive(Clone)]
+struct ShorthandSerializationCandidate {
+    name: String,
+    value: String,
+    important: bool,
+    longhands: &'static [&'static str],
+}
+
+#[derive(Clone)]
+struct PendingShorthandSerializationCandidate {
+    id: u64,
+    anchor: usize,
+    name: String,
+    value: String,
+    important: bool,
+    longhands: &'static [&'static str],
+}
+
+struct PendingShorthandSerializationPlan {
+    candidates: Vec<PendingShorthandSerializationCandidate>,
+    promoted_longhands: HashSet<String>,
+    issues: Vec<SerializationIssue>,
 }
 
 impl DeclarationState {
@@ -443,15 +477,44 @@ impl DeclarationState {
     }
 
     pub fn css_text(&self) -> String {
-        self.serialize(false)
+        self.serialize_observable_with_format("", " ")
     }
 
-    pub fn serialize_safe(&self) -> String {
-        self.serialize(true)
+    pub fn serialize_safe(&self) -> Result<String, EngineError> {
+        self.serialize_safe_with_format("", " ", true)
     }
 
-    pub fn serialize_formatted(&self, safe: bool, indent: &str, separator: &str) -> String {
-        self.serialize_with_format(safe, indent, separator)
+    pub fn serialize_safe_resilient(
+        &self,
+    ) -> Result<(String, Vec<SerializationIssue>), EngineError> {
+        self.serialize_safe_resilient_with_format("", " ")
+    }
+
+    pub fn serialize_formatted(
+        &self,
+        safe: bool,
+        indent: &str,
+        separator: &str,
+    ) -> Result<String, EngineError> {
+        if safe {
+            return self.serialize_safe_with_format(indent, separator, true);
+        }
+        Ok(self.serialize_observable_with_format(indent, separator))
+    }
+
+    pub fn serialize_formatted_resilient(
+        &self,
+        safe: bool,
+        indent: &str,
+        separator: &str,
+    ) -> Result<(String, Vec<SerializationIssue>), EngineError> {
+        if safe {
+            return self.serialize_safe_resilient_with_format(indent, separator);
+        }
+        Ok((
+            self.serialize_observable_with_format(indent, separator),
+            Vec::new(),
+        ))
     }
 
     fn find(&self, name: &str) -> Option<&DeclarationRecord> {
@@ -538,7 +601,7 @@ impl DeclarationState {
     ) -> Vec<DeclarationRecord> {
         if parsed.pending_substitution() {
             if let Some(longhands) = self.shorthand_longhands(&name) {
-                let group = self.new_pending_group(name, parsed.value.clone());
+                let group = self.new_pending_group(name, parsed.value.clone(), important);
                 return longhands
                     .iter()
                     .map(|longhand| DeclarationRecord {
@@ -590,14 +653,16 @@ impl DeclarationState {
         &mut self,
         shorthand: String,
         value: DeclarationValue,
-    ) -> PendingSubstitutionGroup {
+        important: bool,
+    ) -> Arc<PendingSubstitutionGroup> {
         let id = self.next_pending_group_id;
         self.next_pending_group_id = self.next_pending_group_id.wrapping_add(1);
-        PendingSubstitutionGroup {
+        Arc::new(PendingSubstitutionGroup {
             id,
             shorthand,
             value,
-        }
+            important,
+        })
     }
 
     fn attach_static_group(
@@ -646,7 +711,8 @@ impl DeclarationState {
                 )
             },
         );
-        let group = self.new_pending_group(name.to_owned(), group_value);
+        let important = records.first().is_some_and(|record| record.important);
+        let group = self.new_pending_group(name.to_owned(), group_value, important);
         for record in records {
             record.pending_group = Some(group.clone());
         }
@@ -671,30 +737,68 @@ impl DeclarationState {
                 .as_ref()
                 .is_some_and(|group| group.id == group_id)
             {
-                if !record.pending_substitution() {
-                    let observable = if is_gap_rule_longhand(&record.name)
-                        || record.value.observable_survives_group_break()
-                    {
-                        record.observable_value().to_owned()
-                    } else {
-                        materialize_static_observable(
-                            record.observable_value(),
-                            record.safe_value(),
-                        )
-                    };
-                    record.value.replace_observable(observable);
+                // Keep deferred members linked to their authored shorthand. CSSOM getters stop
+                // synthesizing the shorthand as soon as the replacement record lands, while the
+                // reparsable serializer still needs the original pending value to precede an
+                // equal-priority longhand override.
+                if record.pending_substitution() {
+                    continue;
                 }
+                let observable = if is_gap_rule_longhand(&record.name)
+                    || record.value.observable_survives_group_break()
+                {
+                    record.observable_value().to_owned()
+                } else {
+                    materialize_static_observable(record.observable_value(), record.safe_value())
+                };
+                record.value.replace_observable(observable);
                 record.pending_group = None;
             }
         }
     }
 
-    fn serialize(&self, safe: bool) -> String {
-        self.serialize_with_format(safe, "", " ")
+    fn serialize_observable_with_format(&self, indent: &str, separator: &str) -> String {
+        self.format_declarations(
+            self.serialized_declarations(false, &[], &HashSet::new()),
+            indent,
+            separator,
+        )
     }
 
-    fn serialize_with_format(&self, safe: bool, indent: &str, separator: &str) -> String {
-        let declarations = self.serialized_declarations(safe);
+    fn serialize_safe_with_format(
+        &self,
+        indent: &str,
+        separator: &str,
+        strict: bool,
+    ) -> Result<String, EngineError> {
+        let pending = self.pending_shorthand_serialization_plan(strict)?;
+        Ok(self.format_declarations(
+            self.serialized_declarations(true, &pending.candidates, &pending.promoted_longhands),
+            indent,
+            separator,
+        ))
+    }
+
+    fn serialize_safe_resilient_with_format(
+        &self,
+        indent: &str,
+        separator: &str,
+    ) -> Result<(String, Vec<SerializationIssue>), EngineError> {
+        let pending = self.pending_shorthand_serialization_plan(false)?;
+        let output = self.format_declarations(
+            self.serialized_declarations(true, &pending.candidates, &pending.promoted_longhands),
+            indent,
+            separator,
+        );
+        Ok((output, pending.issues))
+    }
+
+    fn format_declarations(
+        &self,
+        declarations: Vec<String>,
+        indent: &str,
+        separator: &str,
+    ) -> String {
         let capacity = declarations.iter().map(String::len).sum::<usize>()
             + declarations.len() * (indent.len() + separator.len());
         let mut output = String::with_capacity(capacity);
@@ -708,7 +812,112 @@ impl DeclarationState {
         output
     }
 
-    fn serialized_declarations(&self, safe: bool) -> Vec<String> {
+    fn pending_shorthand_serialization_plan(
+        &self,
+        strict: bool,
+    ) -> Result<PendingShorthandSerializationPlan, EngineError> {
+        let mut surviving_groups = HashMap::<u64, (Arc<PendingSubstitutionGroup>, usize)>::new();
+        for (index, record) in self.records.iter().enumerate() {
+            let Some(group) = record.pending_group.as_ref() else {
+                continue;
+            };
+            if !record.pending_substitution() {
+                continue;
+            }
+            surviving_groups
+                .entry(group.id)
+                .and_modify(|(_, anchor)| *anchor = (*anchor).min(index))
+                .or_insert_with(|| (Arc::clone(group), index));
+        }
+        if surviving_groups.is_empty() {
+            return Ok(PendingShorthandSerializationPlan {
+                candidates: Vec::new(),
+                promoted_longhands: HashSet::new(),
+                issues: Vec::new(),
+            });
+        }
+
+        let record_indexes_by_name = self
+            .records
+            .iter()
+            .enumerate()
+            .map(|(index, record)| (record.name.as_str(), index))
+            .collect::<HashMap<_, _>>();
+
+        let mut surviving_groups = surviving_groups.into_values().collect::<Vec<_>>();
+        surviving_groups.sort_by_key(|(group, anchor)| (*anchor, group.id));
+
+        let mut candidates = Vec::new();
+        let mut promoted_longhands = HashSet::new();
+        let mut issues = Vec::new();
+        for (group, fallback_anchor) in surviving_groups {
+            let Some(longhands) = style_shorthand_longhands(&group.shorthand) else {
+                return Err(EngineError::Serialize(format!(
+                    "pending shorthand provenance references unsupported property {}",
+                    group.shorthand
+                )));
+            };
+            let surviving_count = longhands
+                .iter()
+                .filter(|longhand| {
+                    record_indexes_by_name
+                        .get(**longhand)
+                        .and_then(|index| self.records[*index].pending_group.as_ref())
+                        .is_some_and(|candidate| candidate.id == group.id)
+                })
+                .count();
+            if surviving_count == longhands.len() {
+                continue;
+            }
+
+            let mut conflicting_longhands = Vec::new();
+            let mut anchor = fallback_anchor;
+            for longhand in longhands {
+                let Some(index) = record_indexes_by_name.get(*longhand).copied() else {
+                    conflicting_longhands.push((*longhand).to_owned());
+                    continue;
+                };
+                anchor = anchor.min(index);
+                if group.important && !self.records[index].important {
+                    conflicting_longhands.push((*longhand).to_owned());
+                    promoted_longhands.insert((*longhand).to_owned());
+                }
+            }
+            if !conflicting_longhands.is_empty() {
+                if strict {
+                    return Err(EngineError::UnrepresentablePendingShorthand {
+                        shorthand: group.shorthand.clone(),
+                        conflicting_longhands,
+                    });
+                }
+                issues.push(SerializationIssue {
+                    shorthand: group.shorthand.clone(),
+                    conflicting_longhands,
+                });
+            }
+            candidates.push(PendingShorthandSerializationCandidate {
+                id: group.id,
+                anchor,
+                name: group.shorthand.clone(),
+                value: group.value.safe_css().to_owned(),
+                important: group.important,
+                longhands,
+            });
+        }
+        candidates.sort_by_key(|candidate| (candidate.anchor, candidate.id));
+        Ok(PendingShorthandSerializationPlan {
+            candidates,
+            promoted_longhands,
+            issues,
+        })
+    }
+
+    fn serialized_declarations(
+        &self,
+        safe: bool,
+        pending_candidates: &[PendingShorthandSerializationCandidate],
+        promoted_longhands: &HashSet<String>,
+    ) -> Vec<String> {
         if matches!(
             self.context,
             DeclarationContext::FontFace | DeclarationContext::Function
@@ -735,14 +944,6 @@ impl DeclarationState {
                 .collect();
         }
 
-        #[derive(Clone)]
-        struct Candidate {
-            name: String,
-            value: String,
-            important: bool,
-            longhands: &'static [&'static str],
-        }
-
         let records_by_name = self
             .records
             .iter()
@@ -762,7 +963,7 @@ impl DeclarationState {
                 }
                 let value = synthesize_shorthand(&self.records, name, safe)?;
                 let important = records_by_name.get(longhands.first()?)?.important;
-                Some(Candidate {
+                Some(ShorthandSerializationCandidate {
                     name: name.to_owned(),
                     value,
                     important,
@@ -795,15 +996,53 @@ impl DeclarationState {
         }
 
         let mut written = HashSet::new();
+        let reconstructed_group_ids = pending_candidates
+            .iter()
+            .map(|candidate| candidate.id)
+            .collect::<HashSet<_>>();
+        let mut pending_candidates_by_anchor = HashMap::<usize, Vec<usize>>::new();
+        for (index, candidate) in pending_candidates.iter().enumerate() {
+            pending_candidates_by_anchor
+                .entry(candidate.anchor)
+                .or_default()
+                .push(index);
+        }
         let mut declarations = Vec::new();
-        for record in &self.records {
-            if let Some(index) = by_longhand.get(record.name.as_str()) {
-                let candidate = &candidates[*index];
-                if written.insert(candidate.name.as_str()) {
+        for (record_index, record) in self.records.iter().enumerate() {
+            if let Some(indexes) = pending_candidates_by_anchor.get(&record_index) {
+                for index in indexes {
+                    let candidate = &pending_candidates[*index];
                     declarations.push(format_declaration(
                         &candidate.name,
                         &candidate.value,
-                        candidate.important,
+                        candidate.important
+                            || candidate
+                                .longhands
+                                .iter()
+                                .any(|longhand| promoted_longhands.contains(*longhand)),
+                    ));
+                }
+            }
+            if record.pending_substitution()
+                && record
+                    .pending_group
+                    .as_ref()
+                    .is_some_and(|group| reconstructed_group_ids.contains(&group.id))
+            {
+                continue;
+            }
+            if let Some(index) = by_longhand.get(record.name.as_str()) {
+                let candidate = &candidates[*index];
+                if written.insert(candidate.name.as_str()) {
+                    let important = candidate.important
+                        || candidate
+                            .longhands
+                            .iter()
+                            .any(|longhand| promoted_longhands.contains(*longhand));
+                    declarations.push(format_declaration(
+                        &candidate.name,
+                        &candidate.value,
+                        important,
                     ));
                 }
                 continue;
@@ -818,7 +1057,11 @@ impl DeclarationState {
             } else {
                 record.observable_value()
             };
-            declarations.push(format_declaration(&name, value, record.important));
+            declarations.push(format_declaration(
+                &name,
+                value,
+                record.important || promoted_longhands.contains(&record.name),
+            ));
         }
         declarations
     }
@@ -1070,11 +1313,13 @@ fn format_declaration(name: &str, value: &str, important: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
+        canonical_style_property_name, shorthand_names, style_shorthand_longhands,
         DeclarationContext, DeclarationMutation, DeclarationMutationResult, DeclarationState,
-        MutationOutcome, ParsedDeclaration,
+        MutationOutcome, ParsedDeclaration, SerializationIssue,
     };
     use crate::{DeclarationValueKind, EngineError, ResourceLimits};
     use serde_json::Value;
+    use std::sync::Arc;
 
     #[test]
     fn ordered_mutation_batches_match_sequential_cssom_state() {
@@ -1564,7 +1809,7 @@ mod tests {
         }
         assert_eq!(state.get_property_value("width"), "calc(3px)");
         assert_eq!(
-            state.serialize_safe(),
+            state.serialize_safe().unwrap(),
             "width: 3px; --theme: var(--fallback, red);"
         );
 
@@ -1623,8 +1868,170 @@ mod tests {
         );
         assert_eq!(equal_priority.get_property_value("padding"), "");
         assert_eq!(
-            equal_priority.serialize(false),
+            equal_priority.css_text(),
             "padding-top: ; padding-right: ; padding-bottom: ; padding-left: 3px;"
+        );
+    }
+
+    #[test]
+    fn safe_serialization_preserves_a_pending_shorthand_before_a_longhand_override() {
+        let mut state = DeclarationState::new();
+        let value = "var(--zfm-font, normal 700 11px/normal 'Inter', sans-serif)";
+        assert_eq!(
+            state.set_property("font", value, ""),
+            MutationOutcome::Applied
+        );
+        assert_eq!(
+            state.set_property("font-size", "10px", ""),
+            MutationOutcome::Applied
+        );
+
+        assert_eq!(state.get_property_value("font"), "");
+        assert_eq!(state.get_property_value("font-size"), "10px");
+        assert_eq!(
+            state.serialize_safe().unwrap(),
+            format!("font: {value}; font-size: 10px;")
+        );
+
+        state.set_property("font-style", "italic", "");
+        assert_eq!(
+            state.serialize_safe().unwrap(),
+            format!("font: {value}; font-style: italic; font-size: 10px;")
+        );
+
+        state.set_property("font", "var(--replacement-font)", "");
+        assert_eq!(
+            state.serialize_safe().unwrap(),
+            "font: var(--replacement-font);"
+        );
+    }
+
+    #[test]
+    fn every_pending_shorthand_preserves_equal_priority_longhand_overrides() {
+        for shorthand in shorthand_names()
+            .filter(|name| canonical_style_property_name(name).as_deref() == Some(*name))
+        {
+            let Some(longhands) = style_shorthand_longhands(shorthand) else {
+                continue;
+            };
+            let Some(overridden) = longhands.first() else {
+                continue;
+            };
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(shorthand, "var(--sheetom-pending)", ""),
+                MutationOutcome::Applied,
+                "{shorthand} pending shorthand"
+            );
+            assert_eq!(
+                state.set_property(overridden, "initial", ""),
+                MutationOutcome::Applied,
+                "{shorthand} override"
+            );
+            assert_eq!(
+                state.serialize_safe().unwrap(),
+                format!("{shorthand}: var(--sheetom-pending); {overridden}: initial;"),
+                "{shorthand} serialization"
+            );
+        }
+    }
+
+    #[test]
+    fn every_pending_shorthand_rejects_mixed_priority_longhand_overrides() {
+        for shorthand in shorthand_names()
+            .filter(|name| canonical_style_property_name(name).as_deref() == Some(*name))
+        {
+            let Some(longhands) = style_shorthand_longhands(shorthand) else {
+                continue;
+            };
+            let Some(overridden) = longhands.first() else {
+                continue;
+            };
+            let mut state = DeclarationState::new();
+            assert_eq!(
+                state.set_property(shorthand, "var(--sheetom-pending)", "important"),
+                MutationOutcome::Applied,
+                "{shorthand} pending shorthand"
+            );
+            assert_eq!(
+                state.set_property(overridden, "initial", ""),
+                MutationOutcome::Applied,
+                "{shorthand} override"
+            );
+            assert_eq!(
+                state.serialize_safe(),
+                Err(EngineError::UnrepresentablePendingShorthand {
+                    shorthand: shorthand.to_owned(),
+                    conflicting_longhands: vec![(*overridden).to_owned()],
+                }),
+                "{shorthand} serialization"
+            );
+            assert_eq!(
+                state.serialize_safe_resilient().unwrap(),
+                (
+                    format!(
+                        "{shorthand}: var(--sheetom-pending) !important; {overridden}: initial !important;"
+                    ),
+                    vec![SerializationIssue {
+                        shorthand: shorthand.to_owned(),
+                        conflicting_longhands: vec![(*overridden).to_owned()],
+                    }]
+                ),
+                "{shorthand} resilient serialization"
+            );
+        }
+    }
+
+    #[test]
+    fn pending_normal_shorthand_and_important_longhand_are_exactly_serializable() {
+        let mut state = DeclarationState::new();
+        state.set_property("font", "var(--font)", "");
+        state.set_property("font-size", "10px", "important");
+
+        let expected = "font: var(--font); font-size: 10px !important;";
+        assert_eq!(state.serialize_safe().unwrap(), expected);
+        assert_eq!(
+            state.serialize_safe_resilient().unwrap(),
+            (expected.to_owned(), Vec::new())
+        );
+    }
+
+    #[test]
+    fn pending_shorthand_provenance_is_shared_and_released_with_its_last_member() {
+        let mut state = DeclarationState::new();
+        state.set_property("font", "var(--first)", "");
+        let first = state.records()[0].pending_group.as_ref().unwrap();
+        let second = state.records()[1].pending_group.as_ref().unwrap();
+        assert!(Arc::ptr_eq(first, second));
+        let previous = Arc::downgrade(first);
+
+        state.set_property("font", "var(--second)", "");
+
+        assert!(previous.upgrade().is_none());
+    }
+
+    #[test]
+    fn safe_serialization_rejects_a_removed_pending_longhand() {
+        let mut state = DeclarationState::new();
+        state.set_property("padding", "var(--padding)", "");
+        state.remove_property("padding-left");
+
+        assert_eq!(
+            state.serialize_safe(),
+            Err(EngineError::UnrepresentablePendingShorthand {
+                shorthand: "padding".to_owned(),
+                conflicting_longhands: vec!["padding-left".to_owned()],
+            })
+        );
+        assert_eq!(
+            state.serialize_safe_resilient().unwrap(),
+            (
+                "padding: var(--padding);".to_owned(),
+                vec![SerializationIssue {
+                    shorthand: "padding".to_owned(),
+                    conflicting_longhands: vec!["padding-left".to_owned()],
+                }]
+            )
         );
     }
 
@@ -1641,7 +2048,7 @@ mod tests {
         );
 
         assert_eq!(
-            state.serialize_safe(),
+            state.serialize_safe().unwrap(),
             "align-content: var(--align, revert-layer); justify-content: var(--justify, revert-layer);"
         );
 
@@ -1655,7 +2062,7 @@ mod tests {
             MutationOutcome::Applied
         );
         assert_eq!(
-            shorthand.serialize_safe(),
+            shorthand.serialize_safe().unwrap(),
             "place-content: var(--align, revert-layer) var(--justify, revert-layer);"
         );
     }
@@ -1822,10 +2229,10 @@ mod tests {
             );
             assert_eq!(state.css_text(), format!("transition: {observable};"));
 
-            let serialized = state.serialize_safe();
+            let serialized = state.serialize_safe().unwrap();
             let mut reparsed = DeclarationState::new();
             reparsed.replace_css_text(&serialized);
-            assert_eq!(reparsed.serialize_safe(), serialized, "{input}");
+            assert_eq!(reparsed.serialize_safe().unwrap(), serialized, "{input}");
         }
     }
 
@@ -1991,10 +2398,14 @@ mod tests {
                 color,
                 "{source} color"
             );
-            let serialized = state.serialize_safe();
+            let serialized = state.serialize_safe().unwrap();
             let mut reparsed = DeclarationState::new();
             reparsed.replace_css_text(&serialized);
-            assert_eq!(reparsed.serialize_safe(), serialized, "{source} reparse");
+            assert_eq!(
+                reparsed.serialize_safe().unwrap(),
+                serialized,
+                "{source} reparse"
+            );
         }
 
         let mut atomic = DeclarationState::new();
@@ -3152,10 +3563,10 @@ mod tests {
             );
 
             let mut reparsed = DeclarationState::new();
-            reparsed.replace_css_text(&state.serialize_safe());
+            reparsed.replace_css_text(&state.serialize_safe().unwrap());
             assert_eq!(
-                reparsed.serialize_safe(),
-                state.serialize_safe(),
+                reparsed.serialize_safe().unwrap(),
+                state.serialize_safe().unwrap(),
                 "{id} round-trip"
             );
         }
@@ -3252,11 +3663,11 @@ mod tests {
                 state.get_property_value(longhand).starts_with("span"),
                 "{property}: {source} longhand"
             );
-            let serialized = state.serialize_safe();
+            let serialized = state.serialize_safe().unwrap();
             let mut reparsed = DeclarationState::new();
             reparsed.replace_css_text(&serialized);
             assert_eq!(
-                reparsed.serialize_safe(),
+                reparsed.serialize_safe().unwrap(),
                 serialized,
                 "{property}: {source}"
             );
@@ -3285,10 +3696,10 @@ mod tests {
                 "{source}"
             );
 
-            let serialized = state.serialize_safe();
+            let serialized = state.serialize_safe().unwrap();
             let mut reparsed = DeclarationState::new();
             reparsed.replace_css_text(&serialized);
-            assert_eq!(reparsed.serialize_safe(), serialized, "{source}");
+            assert_eq!(reparsed.serialize_safe().unwrap(), serialized, "{source}");
         }
     }
 
@@ -3607,7 +4018,7 @@ mod tests {
         );
 
         state.set_property("border", "none", "");
-        assert_eq!(state.serialize_safe(), "border: none;");
+        assert_eq!(state.serialize_safe().unwrap(), "border: none;");
     }
 
     #[test]
@@ -3625,11 +4036,15 @@ mod tests {
                 MutationOutcome::Applied,
                 "{property}"
             );
-            assert_eq!(state.serialize_safe(), expected, "{property}");
+            assert_eq!(state.serialize_safe().unwrap(), expected, "{property}");
 
             let mut reparsed = DeclarationState::new();
-            reparsed.replace_css_text(&state.serialize_safe());
-            assert_eq!(reparsed.serialize_safe(), expected, "{property} reparse");
+            reparsed.replace_css_text(&state.serialize_safe().unwrap());
+            assert_eq!(
+                reparsed.serialize_safe().unwrap(),
+                expected,
+                "{property} reparse"
+            );
         }
     }
 

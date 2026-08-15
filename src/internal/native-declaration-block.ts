@@ -1,4 +1,7 @@
-import type { SheetOMDiagnostic, SheetOMDiagnosticCode } from "../diagnostics.js";
+import type {
+  SheetOMDiagnostic,
+  SheetOMMutationDiagnosticCode,
+} from "../diagnostics.js";
 import {
   type EngineDeclarationMutation,
   type EngineDeclarationStateHandle,
@@ -11,12 +14,28 @@ import {
   rethrowResourceBudgetError,
   type NativeResourceBudget,
 } from "./resource-budget.js";
+import { rethrowSerializationError } from "../serialization-error.js";
 
 type ReportDeclarationDiagnostic = (
-  code: SheetOMDiagnosticCode,
+  code: SheetOMMutationDiagnosticCode,
   property: string,
   input: string,
 ) => SheetOMDiagnostic;
+
+type ReportSerializationDiagnostic = (
+  shorthand: string,
+  conflictingLonghands: readonly string[],
+) => void;
+
+interface RecoveredSerialization {
+  serialized: string;
+  issues: readonly {
+    shorthand: string;
+    conflictingLonghands: readonly string[];
+  }[];
+}
+
+type CachedSerialization = string | RecoveredSerialization;
 
 export type NativeDeclarationMutationResult =
   | {
@@ -30,17 +49,20 @@ export type NativeDeclarationMutationResult =
 export class NativeDeclarationBlock {
   readonly #state: EngineDeclarationStateHandle;
   readonly #reportDiagnostic: ReportDeclarationDiagnostic;
+  readonly #reportSerializationDiagnostic: ReportSerializationDiagnostic;
   readonly #reservedNestingDepth: () => number;
   #observableCache: string | undefined;
-  readonly #serializationCache = new Map<string, string>();
+  readonly #serializationCache = new Map<string, CachedSerialization>();
 
   constructor(
     reportDiagnostic: ReportDeclarationDiagnostic,
+    reportSerializationDiagnostic: ReportSerializationDiagnostic,
     context: "style" | "font-face" | "function" = "style",
     resourceBudget: NativeResourceBudget = defaultResourceBudget,
     reservedNestingDepth: () => number = () => 0,
   ) {
     this.#reportDiagnostic = reportDiagnostic;
+    this.#reportSerializationDiagnostic = reportSerializationDiagnostic;
     this.#reservedNestingDepth = reservedNestingDepth;
     this.#state = engineBinding.createDeclarationState(
       context,
@@ -165,13 +187,32 @@ export class NativeDeclarationBlock {
     this.#invalidateSerialization();
   }
 
-  serialize(safe: boolean, indent: string, separator: string): string {
-    const cacheKey = `${safe ? "1" : "0"}\0${indent}\0${separator}`;
+  serialize(safe: boolean, indent: string, separator: string, strict = false): string {
+    const cacheKey = `${safe ? "1" : "0"}${strict ? "1" : "0"}\0${indent}\0${separator}`;
     const cached = this.#serializationCache.get(cacheKey);
-    if (cached !== undefined) return cached;
-    const serialized = this.#state.serializeFormatted(safe, indent, separator);
-    this.#serializationCache.set(cacheKey, serialized);
-    return serialized;
+    if (cached !== undefined) {
+      if (typeof cached === "string") return cached;
+      this.#reportSerializationIssues(cached.issues);
+      return cached.serialized;
+    }
+    let result: CachedSerialization;
+    try {
+      if (strict) {
+        result = this.#state.serializeFormatted(safe, indent, separator);
+      } else {
+        result = parseResilientSerializationResult(
+          this.#state.serializeFormattedResilient(safe, indent, separator),
+        );
+      }
+    } catch (error) {
+      rethrowResourceBudgetError(error);
+      rethrowSerializationError(error);
+      throw error;
+    }
+    this.#serializationCache.set(cacheKey, result);
+    if (typeof result === "string") return result;
+    this.#reportSerializationIssues(result.issues);
+    return result.serialized;
   }
 
   #invalidateSerialization(): void {
@@ -186,13 +227,40 @@ export class NativeDeclarationBlock {
     priority: string,
   ): SheetOMDiagnostic {
     const normalizedName = name.startsWith("--") ? name : name.toLowerCase();
-    const [code, input]: [SheetOMDiagnosticCode, string] = outcome === "invalid-priority"
+    const [code, input]: [SheetOMMutationDiagnosticCode, string] = outcome === "invalid-priority"
       ? ["INVALID_PRIORITY", priority]
       : outcome === "unsupported-shorthand"
         ? ["UNSUPPORTED_SHORTHAND_VALUE", value]
         : ["INVALID_PROPERTY_VALUE", value];
     return this.#reportDiagnostic(code, normalizedName, input);
   }
+
+  #reportSerializationIssues(issues: RecoveredSerialization["issues"]): void {
+    for (const issue of issues) {
+      this.#reportSerializationDiagnostic(issue.shorthand, issue.conflictingLonghands);
+    }
+  }
+}
+
+function parseResilientSerializationResult(output: readonly string[]): CachedSerialization {
+  const serialized = output[0];
+  if (serialized === undefined || output.length % 2 === 0) {
+    throw new Error("SheetOM engine returned an invalid resilient serialization result.");
+  }
+  if (output.length === 1) return serialized;
+  const issues: RecoveredSerialization["issues"][number][] = [];
+  for (let index = 1; index < output.length; index += 2) {
+    const shorthand = output[index];
+    const conflicts = output[index + 1];
+    if (!shorthand || !conflicts) {
+      throw new Error("SheetOM engine returned an incomplete resilient serialization issue.");
+    }
+    issues.push({
+      shorthand,
+      conflictingLonghands: Object.freeze(conflicts.split(",")),
+    });
+  }
+  return { serialized, issues };
 }
 
 function isEngineMutationOutcome(

@@ -47,6 +47,7 @@ export interface EngineDeclarationStateHandle {
   removeProperty(name: string): string;
   replaceCssText(source: string, reservedNestingDepth?: number): void;
   serializeFormatted(safe: boolean, indent: string, separator: string): string;
+  serializeFormattedResilient(safe: boolean, indent: string, separator: string): string[];
 }
 
 export interface EngineBindingIdentityProvider {

@@ -192,13 +192,42 @@ impl NativeDeclarationState {
     }
 
     #[napi]
-    pub fn serialize_safe(&self) -> String {
-        self.state.serialize_safe()
+    pub fn serialize_safe(&self) -> napi::Result<String> {
+        self.state
+            .serialize_safe()
+            .map_err(|error| napi::Error::from_reason(error.to_string()))
     }
 
     #[napi]
-    pub fn serialize_formatted(&self, safe: bool, indent: String, separator: String) -> String {
-        self.state.serialize_formatted(safe, &indent, &separator)
+    pub fn serialize_formatted(
+        &self,
+        safe: bool,
+        indent: String,
+        separator: String,
+    ) -> napi::Result<String> {
+        self.state
+            .serialize_formatted(safe, &indent, &separator)
+            .map_err(|error| napi::Error::from_reason(error.to_string()))
+    }
+
+    #[napi]
+    pub fn serialize_formatted_resilient(
+        &self,
+        safe: bool,
+        indent: String,
+        separator: String,
+    ) -> napi::Result<Vec<String>> {
+        let (serialized, issues) = self
+            .state
+            .serialize_formatted_resilient(safe, &indent, &separator)
+            .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+        let mut output = Vec::with_capacity(1 + issues.len() * 2);
+        output.push(serialized);
+        for issue in issues {
+            output.push(issue.shorthand);
+            output.push(issue.conflicting_longhands.join(","));
+        }
+        Ok(output)
     }
 }
 

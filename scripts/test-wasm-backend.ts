@@ -74,6 +74,33 @@ for (const api of [fromBytes, fromResponse, fromModule]) {
   assert.match(sheet.serialize(), /image-set\(/u);
   assert.match(sheet.serialize(), /var\(--space/u);
   assert.equal(sheet.serialize(), sheet.serialize());
+
+  const pendingSheet = new api.CSSStyleSheet({ diagnostics: true });
+  pendingSheet.insertRule(".pending {}");
+  const pendingRule = pendingSheet.cssRules[0];
+  pendingRule.style.setProperty("font", "var(--font)", "important");
+  pendingRule.style.setProperty("font-size", "10px");
+  assert.equal(
+    pendingSheet.serialize(),
+    ".pending {\n  font: var(--font) !important;\n  font-size: 10px !important;\n}\n",
+  );
+  assert.deepEqual(
+    pendingSheet.takeDiagnostics().map(diagnostic => ({
+      code: diagnostic.code,
+      property: diagnostic.property,
+      operation: diagnostic.operation,
+    })),
+    [{
+      code: "UNREPRESENTABLE_PENDING_SHORTHAND",
+      property: "font",
+      operation: "serialize",
+    }],
+  );
+  assert.throws(
+    () => pendingSheet.serializeStrict(),
+    error => error instanceof api.SheetOMSerializationError
+      && error.code === "UNREPRESENTABLE_PENDING_SHORTHAND",
+  );
 }
 
 const limitedSheet = new fromBytes.CSSStyleSheet({
