@@ -108,6 +108,7 @@
     "prepare-stable-documentation",
     "preserve-container-preludes",
     "preserve-font-face-math-shape",
+    "preserve-pending-shorthand-overrides",
     "preserve-substitution-isolation",
     "project-layered-shorthand-position",
     "project-observable-declarations",

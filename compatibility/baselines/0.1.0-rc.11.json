@@ -1,0 +1,3386 @@
+{
+  "$schema": "../schemas/compatibility-report.schema.json",
+  "schemaVersion": 7,
+  "packageVersion": "0.1.0-rc.11",
+  "baseline": {
+    "wptCommit": "54f8f933629e7c010ae98a246729af01f8abcda5",
+    "nativeEngine": {
+      "revision": "lightningcss-1.33.0-c6a0c3ce-sheetom.77",
+      "upstream": {
+        "repository": "https://github.com/parcel-bundler/lightningcss",
+        "version": "1.33.0",
+        "commit": "c6a0c3cebf3395635e61075d2c81a96a710d4910"
+      },
+      "cssSyntax": {
+        "repository": "https://github.com/servo/rust-cssparser",
+        "version": "0.37.0",
+        "commit": "4c49486494fb24dc01390e3baca9698ef1744c71"
+      },
+      "sourceManifestSha256": "e213d023223b74ac163e17b3de0c05693f6bac86c99692b70192aa380176e3aa",
+      "sourceFileCount": 320
+    },
+    "runtimes": {
+      "node": "v24.19.0",
+      "bun": "1.3.1",
+      "deno": "2.9.5"
+    },
+    "browsers": {
+      "chromium": "151.0.7922.34 (revision 1234)",
+      "firefox": "153.0 (revision 1538)",
+      "webkit": "26.5 (revision 2336)"
+    }
+  },
+  "summary": {
+    "passed": 7,
+    "divergences": 11,
+    "excluded": 0,
+    "unexplained": 0
+  },
+  "evidence": {
+    "operationFixtures": {
+      "passed": 18,
+      "total": 18,
+      "sha256": "e564cefc786fbd0697f1370b8d5d15afc046f36d8c92eecb2e8abc6106c2018d",
+      "adapters": [
+        {
+          "adapter": "sheetom",
+          "version": "0.1.0-rc.11",
+          "passed": 18,
+          "total": 18,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x;",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: target-text(attr(href url));",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "target-text(attr(href url))"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,;",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "Gotham"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-grammar-branches",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "border-block-color: red blue;",
+                  "length": 2,
+                  "items": [
+                    "border-block-start-color",
+                    "border-block-end-color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "place-content: safe center space-evenly;",
+                  "length": 2,
+                  "items": [
+                    "align-content",
+                    "justify-content"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "transition: opacity 1s, transform 2s linear 1s allow-discrete;",
+                  "length": 5,
+                  "items": [
+                    "transition-behavior",
+                    "transition-duration",
+                    "transition-timing-function",
+                    "transition-delay",
+                    "transition-property"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "view-timeline: --x 10% 20%, --y inline;",
+                  "length": 3,
+                  "items": [
+                    "view-timeline-name",
+                    "view-timeline-axis",
+                    "view-timeline-inset"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "view-timeline: --x 10% 20%, --y inline;",
+                  "length": 3,
+                  "items": [
+                    "view-timeline-name",
+                    "view-timeline-axis",
+                    "view-timeline-inset"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-observable-synthesis",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "animation: 1s ease 0s 1 normal none running foo, 2s linear 0s 1 normal none running bar;",
+                  "length": 11,
+                  "items": [
+                    "animation-duration",
+                    "animation-timing-function",
+                    "animation-delay",
+                    "animation-iteration-count",
+                    "animation-direction",
+                    "animation-fill-mode",
+                    "animation-play-state",
+                    "animation-name",
+                    "animation-timeline",
+                    "animation-range-start",
+                    "animation-range-end"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overscroll-behavior: contain none;",
+                  "length": 2,
+                  "items": [
+                    "overscroll-behavior-x",
+                    "overscroll-behavior-y"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: linear-gradient(red, blue);",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+                  "length": 8,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "adapter": "chromium",
+          "version": "151.0.7922.34",
+          "passed": 18,
+          "total": 18,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x;",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: target-text(attr(href url));",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "target-text(attr(href url))"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,;",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "Gotham"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-grammar-branches",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "border-block-color: red blue;",
+                  "length": 2,
+                  "items": [
+                    "border-block-start-color",
+                    "border-block-end-color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "place-content: safe center space-evenly;",
+                  "length": 2,
+                  "items": [
+                    "align-content",
+                    "justify-content"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "transition: opacity 1s, transform 2s linear 1s allow-discrete;",
+                  "length": 5,
+                  "items": [
+                    "transition-behavior",
+                    "transition-duration",
+                    "transition-timing-function",
+                    "transition-delay",
+                    "transition-property"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "view-timeline: --x 10% 20%, --y inline;",
+                  "length": 3,
+                  "items": [
+                    "view-timeline-name",
+                    "view-timeline-axis",
+                    "view-timeline-inset"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "view-timeline: --x 10% 20%, --y inline;",
+                  "length": 3,
+                  "items": [
+                    "view-timeline-name",
+                    "view-timeline-axis",
+                    "view-timeline-inset"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-observable-synthesis",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "animation: 1s ease 0s 1 normal none running foo, 2s linear 0s 1 normal none running bar;",
+                  "length": 11,
+                  "items": [
+                    "animation-duration",
+                    "animation-timing-function",
+                    "animation-delay",
+                    "animation-iteration-count",
+                    "animation-direction",
+                    "animation-fill-mode",
+                    "animation-play-state",
+                    "animation-name",
+                    "animation-timeline",
+                    "animation-range-start",
+                    "animation-range-end"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overscroll-behavior: contain none;",
+                  "length": 2,
+                  "items": [
+                    "overscroll-behavior-x",
+                    "overscroll-behavior-y"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: linear-gradient(red, blue);",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+                  "length": 8,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "adapter": "firefox",
+          "version": "153.0",
+          "passed": 18,
+          "total": 18,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x);",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x)"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "\"safe\""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello\""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red/*comment*/"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo\\�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,));",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px))"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red/*comment*/)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: \"Gotham\";",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "\"Gotham\""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-grammar-branches",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "border-block-color: red blue;",
+                  "length": 2,
+                  "items": [
+                    "border-block-start-color",
+                    "border-block-end-color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "place-content: safe center space-evenly;",
+                  "length": 2,
+                  "items": [
+                    "align-content",
+                    "justify-content"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "transition: opacity 1s, transform 2s linear 1s allow-discrete;",
+                  "length": 5,
+                  "items": [
+                    "transition-property",
+                    "transition-duration",
+                    "transition-timing-function",
+                    "transition-delay",
+                    "transition-behavior"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "",
+                  "length": 0,
+                  "items": []
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "",
+                  "length": 0,
+                  "items": []
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-observable-synthesis",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "animation: 1s foo, 2s linear bar;",
+                  "length": 8,
+                  "items": [
+                    "animation-name",
+                    "animation-duration",
+                    "animation-timing-function",
+                    "animation-delay",
+                    "animation-iteration-count",
+                    "animation-direction",
+                    "animation-fill-mode",
+                    "animation-play-state"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overscroll-behavior: contain none;",
+                  "length": 2,
+                  "items": [
+                    "overscroll-behavior-x",
+                    "overscroll-behavior-y"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: linear-gradient(red, blue);",
+                  "length": 9,
+                  "items": [
+                    "background-color",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-image",
+                    "background-size",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-color",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-image",
+                    "background-size",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-position: 0% 0%; background-repeat: repeat; background-attachment: scroll; background-image: none; background-size: auto; background-origin: padding-box; background-clip: border-box;",
+                  "length": 8,
+                  "items": [
+                    "background-position-x",
+                    "background-position-y",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-image",
+                    "background-size",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: \"Gotham\";",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,));",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "adapter": "webkit",
+          "version": "26.5",
+          "passed": 18,
+          "total": 18,
+          "observations": [
+            {
+              "fixtureId": "declarations.basic-set-property",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.content-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: var(--x;",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x"
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: \"safe\";",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "content: target-text(attr(href url));",
+                  "length": 1,
+                  "items": [
+                    "content"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "target-text(attr(href url))"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "\"hello\""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "red"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "foo�"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.custom-property-priority-replacement",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--token: red !important;",
+                  "length": 1,
+                  "items": [
+                    "--token"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.escaped-custom-property-name",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;",
+                  "length": 2,
+                  "items": [
+                    "--foo:bar",
+                    "--foo\\:bar"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "red",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                },
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "--foo\\:bar: red; --foo\\\\\\:bar: blue;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.malformed-padding",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "padding: 72px var(--space, var(--space,;",
+                  "length": 4,
+                  "items": [
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-color-canonicalization",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: rgba(1, 2, 3, 0.5);",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "rgba(1, 2, 3, 0.5)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.modern-value-capabilities",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid;",
+                  "length": 1,
+                  "items": [
+                    "grid-template-columns"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "subgrid"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width);",
+                  "length": 2,
+                  "items": [
+                    "grid-template-columns",
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "anchor-size(width)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red);",
+                  "length": 3,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "contrast-color(red)"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "grid-template-columns: subgrid; width: anchor-size(width); color: contrast-color(red); z-index: calc(2);",
+                  "length": 4,
+                  "items": [
+                    "grid-template-columns",
+                    "width",
+                    "color",
+                    "z-index"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "calc(2)"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.pending-substitution-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "calc(var(--x, 1px"
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  }
+                },
+                {
+                  "exception": null,
+                  "return": "var(--x, red"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.quoted-font-family",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "Gotham"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.required-arguments",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                },
+                {
+                  "exception": {
+                    "name": "TypeError"
+                  },
+                  "cssText": ""
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.set-property-multiple-declarations",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: 10px;",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": "10px",
+                  "cssText": "width: 10px;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.setproperty-null-undefined",
+              "operations": [
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: white;"
+                },
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                },
+                {
+                  "exception": null,
+                  "cssText": ""
+                },
+                {},
+                {
+                  "exception": null,
+                  "cssText": "color: red;"
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-grammar-branches",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "border-block-color: red blue;",
+                  "length": 2,
+                  "items": [
+                    "border-block-start-color",
+                    "border-block-end-color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "place-content: safe center space-evenly;",
+                  "length": 2,
+                  "items": [
+                    "align-content",
+                    "justify-content"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "transition: opacity 1s, transform 2s linear 1s allow-discrete;",
+                  "length": 5,
+                  "items": [
+                    "transition-duration",
+                    "transition-timing-function",
+                    "transition-delay",
+                    "transition-behavior",
+                    "transition-property"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "view-timeline: --x 10% 20%, --y inline;",
+                  "length": 3,
+                  "items": [
+                    "view-timeline-name",
+                    "view-timeline-axis",
+                    "view-timeline-inset"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "view-timeline: --x 10% 20%, --y inline;",
+                  "length": 3,
+                  "items": [
+                    "view-timeline-name",
+                    "view-timeline-axis",
+                    "view-timeline-inset"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-observable-synthesis",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "animation: 1s foo, 2s linear bar;",
+                  "length": 11,
+                  "items": [
+                    "animation-duration",
+                    "animation-timing-function",
+                    "animation-delay",
+                    "animation-iteration-count",
+                    "animation-direction",
+                    "animation-fill-mode",
+                    "animation-play-state",
+                    "animation-name",
+                    "animation-timeline",
+                    "animation-range-start",
+                    "animation-range-end"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overscroll-behavior: contain none;",
+                  "length": 2,
+                  "items": [
+                    "overscroll-behavior-x",
+                    "overscroll-behavior-y"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: linear-gradient(red, blue);",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.shorthand-state-sequences",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "background: red;",
+                  "length": 9,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip",
+                    "background-color"
+                  ]
+                },
+                {},
+                {
+                  "exception": null,
+                  "return": "blue",
+                  "cssText": "background-image: none; background-position: 0% 0%; background-size: auto; background-repeat: repeat; background-attachment: scroll; background-origin: padding-box; background-clip: border-box;",
+                  "length": 8,
+                  "items": [
+                    "background-image",
+                    "background-position-x",
+                    "background-position-y",
+                    "background-size",
+                    "background-repeat",
+                    "background-attachment",
+                    "background-origin",
+                    "background-clip"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+                  "length": 2,
+                  "items": [
+                    "overflow-x",
+                    "overflow-y"
+                  ]
+                },
+                {
+                  "exception": null,
+                  "return": ""
+                },
+                {
+                  "exception": null,
+                  "return": "scroll",
+                  "cssText": "overflow-y: hidden;",
+                  "length": 1,
+                  "items": [
+                    "overflow-y"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "declarations.typed-eof-recovery",
+              "operations": [
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "font-family: Gotham;",
+                  "length": 1,
+                  "items": [
+                    "font-family"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red;",
+                  "length": 1,
+                  "items": [
+                    "color"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "width: calc(1px);",
+                  "length": 1,
+                  "items": [
+                    "width"
+                  ]
+                }
+              ]
+            },
+            {
+              "fixtureId": "integration.weweb-authoring-tree",
+              "operations": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": {
+                    "$type": "undefined"
+                  },
+                  "cssText": "color: red; padding: 72px var(--space, var(--space,;",
+                  "length": 5,
+                  "items": [
+                    "color",
+                    "padding-top",
+                    "padding-right",
+                    "padding-bottom",
+                    "padding-left"
+                  ]
+                },
+                {},
+                {},
+                {
+                  "exception": null,
+                  "return": 1
+                },
+                {},
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "exception": null
+                },
+                {
+                  "parentRule": null,
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "layer",
+                  "parentStyleSheet": null
+                },
+                {
+                  "parentRule": "media",
+                  "parentStyleSheet": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "nativeGrammar": {
+      "inventorySha256": "f257d3bf4f9b199028ff7f6eba6ef6aa00e9cedfa7b90b1159add49e922be426",
+      "executionSha256": "b53b066dc2612ff7e18ca0a7bcec8416912a010928e2276f915170f18ec83be8",
+      "shorthandProperties": {
+        "passed": 129,
+        "total": 129
+      },
+      "codecProfiles": 27,
+      "grammarBranches": {
+        "passed": 163,
+        "total": 163,
+        "positive": 116,
+        "negative": 47,
+        "contractsSha256": "429edc8330b5ea4785000dab70a4d56fa9753fe342bed2560a44c1df738385d5",
+        "observationsSha256": "43dbde078d0957cd7f7f51a525f77717d54ed7887ceb2d2cce7ff8adf480800f"
+      },
+      "propertyBranches": {
+        "passed": 14,
+        "total": 14,
+        "positive": 7,
+        "negative": 7
+      },
+      "valueCapabilities": {
+        "passed": 397,
+        "total": 397,
+        "positive": 257,
+        "negative": 140,
+        "sha256": "77e5853ccef0bddafe348a68095bbd18a8c8b5988b0eae26249cc721378ab9ef"
+      },
+      "numberResultMath": {
+        "passed": 860,
+        "total": 860,
+        "positive": 616,
+        "negative": 244,
+        "sha256": "b7a415842d22a95643ef22fdc22cdde2c971ad850fda45f14b02757341580e7b"
+      },
+      "numericProperties": {
+        "passed": 627,
+        "total": 627,
+        "accepted": 309,
+        "rejected": 318,
+        "contractSha256": "4e5c4cee639290b46c85b4cf9b3aa4053b134ad832bb4e13bfe450df80563a78",
+        "observationsSha256": "ed8230d8882b95a08b431476a4fb607ca5ee9a83a5efbca46c1fb8880e06bc46",
+        "executionSha256": "48e12efed5a0505fd57289e9a575f9e2fbe5b9edf802d7d61211be486fdffd55"
+      },
+      "propertyValues": {
+        "passed": 66123,
+        "total": 66123,
+        "properties": 711,
+        "probes": 93,
+        "accepted": 11107,
+        "rejected": 55016,
+        "observationsSha256": "ed8230d8882b95a08b431476a4fb607ca5ee9a83a5efbca46c1fb8880e06bc46",
+        "probesSha256": "b3671bbe1a2017f34de6ffc1b0956541e3610a678d66f9f1d38b96a2343acd4f",
+        "executionSha256": "93f60dd95ca1e8ab868f35d25dd65d4103e2a8a5ff2841081fab66eb09e87048"
+      },
+      "webrefBranches": {
+        "passed": 11590,
+        "total": 11590,
+        "properties": 666,
+        "profiles": 371,
+        "branches": 8369,
+        "accepted": 10158,
+        "rejected": 1432,
+        "corpusSha256": "551d4055ca29cc58136497baecd168240e9d6662d4aab4c0275f236517e183cc",
+        "ratchetSha256": "a11ce9cbc6196d55a1ca18badf54397844a143cb1f5e8e50cdcfd40cabf20d9b",
+        "executionSha256": "135b03997e7b185e3f1cbb3c97a15211bc29091b1af75d27920894357092189c"
+      },
+      "relativeColors": {
+        "passed": 1306,
+        "total": 1306,
+        "positive": 1146,
+        "negative": 160,
+        "sha256": "84e3e27b4d41f477b4eb3a365b3ad5ecb84e0a608bb5416ab284d49a03df992d"
+      },
+      "geometricBranches": {
+        "passed": 317,
+        "total": 317,
+        "reviewed": 61,
+        "generated": 256,
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+        "contractsSha256": "8a95b1407cd648b9bc92744faf15f71bf4136975cb4ae49a4d384003d7608ecc",
+        "generatorSha256": "379568a628da042b1d1641ff42a2cb1daaa309cb8ab4ab52109a7319d7ecdc81",
+        "executionSha256": "dba43e32a0f9ad7be2e5a39caf14c59a8271cead7f1bdb9b8de2a5068d88e3da"
+      }
+    },
+    "processSafety": {
+      "contractSha256": "1e5b8f8f54757a09789431eb21e567d34769b0860505ff2b0322db32897784a8",
+      "executionSha256": "2c79b13acfc26ba3c4ccc8e30f1eb5bd562458b12caa4bdd65c9fdea86fa2069",
+      "native": {
+        "passed": 90,
+        "total": 90
+      },
+      "public": {
+        "passed": 59,
+        "total": 59
+      }
+    },
+    "wasmBackend": {
+      "schemaVersion": 1,
+      "backend": "wasm",
+      "browsers": [
+        {
+          "browser": "chromium",
+          "version": "151.0.7922.34",
+          "mainThread": true,
+          "worker": true,
+          "streaming": true,
+          "bufferedFallback": true,
+          "independentInstances": true
+        },
+        {
+          "browser": "firefox",
+          "version": "153.0",
+          "mainThread": true,
+          "worker": true,
+          "streaming": true,
+          "bufferedFallback": true,
+          "independentInstances": true
+        },
+        {
+          "browser": "webkit",
+          "version": "26.5",
+          "mainThread": true,
+          "worker": true,
+          "streaming": true,
+          "bufferedFallback": true,
+          "independentInstances": true
+        }
+      ],
+      "bundlers": [
+        {
+          "bundler": "esbuild",
+          "browser": "chromium",
+          "version": "151.0.7922.34",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "esbuild",
+          "browser": "firefox",
+          "version": "153.0",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "esbuild",
+          "browser": "webkit",
+          "version": "26.5",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "rollup",
+          "browser": "chromium",
+          "version": "151.0.7922.34",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "rollup",
+          "browser": "firefox",
+          "version": "153.0",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "rollup",
+          "browser": "webkit",
+          "version": "26.5",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "vite",
+          "browser": "chromium",
+          "version": "151.0.7922.34",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "vite",
+          "browser": "firefox",
+          "version": "153.0",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "vite",
+          "browser": "webkit",
+          "version": "26.5",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "webpack",
+          "browser": "chromium",
+          "version": "151.0.7922.34",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "webpack",
+          "browser": "firefox",
+          "version": "153.0",
+          "mainThread": true,
+          "worker": true
+        },
+        {
+          "bundler": "webpack",
+          "browser": "webkit",
+          "version": "26.5",
+          "mainThread": true,
+          "worker": true
+        }
+      ],
+      "performance": [
+        {
+          "browser": "chromium",
+          "version": "151.0.7922.34",
+          "initializationMilliseconds": 60.100000000034925,
+          "totalMilliseconds": 1486.5999999999767,
+          "parseMilliseconds": 907,
+          "mutationMilliseconds": 29.599999999976717,
+          "serializationMilliseconds": 541,
+          "secondSerializationMilliseconds": 8.700000000011642,
+          "stylesheetCount": 21,
+          "ruleCount": 11000,
+          "mutationCount": 3300
+        },
+        {
+          "browser": "firefox",
+          "version": "153.0",
+          "initializationMilliseconds": 353,
+          "totalMilliseconds": 9164,
+          "parseMilliseconds": 4358,
+          "mutationMilliseconds": 39,
+          "serializationMilliseconds": 4748,
+          "secondSerializationMilliseconds": 18,
+          "stylesheetCount": 21,
+          "ruleCount": 11000,
+          "mutationCount": 3300
+        },
+        {
+          "browser": "webkit",
+          "version": "26.5",
+          "initializationMilliseconds": 138,
+          "totalMilliseconds": 1563,
+          "parseMilliseconds": 967,
+          "mutationMilliseconds": 27,
+          "serializationMilliseconds": 556,
+          "secondSerializationMilliseconds": 13,
+          "stylesheetCount": 21,
+          "ruleCount": 11000,
+          "mutationCount": 3300
+        }
+      ],
+      "memory": {
+        "schemaVersion": 1,
+        "cycles": 36,
+        "rssGrowth": 31363072,
+        "secondCycleExternalGrowth": 1310732,
+        "secondCycleHeapGrowth": 433008
+      },
+      "reports": {
+        "directSha256": "1bef8879d3507c4d608dccb24f0fe508c70ff2b36929e132874d5d089bf92176",
+        "bundlersSha256": "aafabe75602288a4c03617e5df1709ab6230a431d6b7495546698a33077d8421",
+        "performanceSha256": "726e21a140915587e1470e51187bcd49828bb8234572a2f2bf67ce5b098e9249",
+        "memorySha256": "c819508035f6a61244f7fff7755e63fcc89149776af4f7079b54df92dcb2f410"
+      },
+      "contractSha256": "34b8e75c23c2b7a9dc3f6135cb3fb1918c2804b9f46a7555fd6dc1b9a8e62e2f",
+      "executionSha256": "82fa6bd5f9db8915b17c4cefe27ec2f668fe250cb2be9aa6b0f28ec534e7112b"
+    },
+    "nativeWpt": [
+      {
+        "engine": "chrome",
+        "version": "151.0.7922.108",
+        "sha256": "553c913ed88ac16c61ad32ee63e5475d3ecaafec95082263d9f5cb14134e89dd",
+        "passed": 4,
+        "total": 4
+      },
+      {
+        "engine": "firefox",
+        "version": "153.0.4",
+        "sha256": "5ef1118a71ae20b540755e14ffb5dddf22789450e535806b325d4403a4c40d4a",
+        "passed": 4,
+        "total": 4
+      }
+    ]
+  },
+  "resolutions": [
+    {
+      "fixtureId": "declarations.basic-set-property",
+      "decision": "shared",
+      "rationale": "The observable declaration state is shared by the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.malformed-padding",
+      "decision": "chromium-fallback",
+      "rationale": "CSS Syntax accepts the EOF-recovered value; Chromium preserves the unclosed observable spelling while Firefox materializes closing parentheses."
+    },
+    {
+      "fixtureId": "declarations.modern-color-canonicalization",
+      "decision": "shared",
+      "rationale": "The pinned browser engines expose modern rgb syntax through the shared legacy rgba serialization in CSSStyleDeclaration."
+    },
+    {
+      "fixtureId": "declarations.typed-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Typed property values expose the Chromium/WebKit canonical serialization after CSS Syntax EOF recovery; Firefox retains quotes around the recovered font-family string."
+    },
+    {
+      "fixtureId": "declarations.quoted-font-family",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and WebKit remove unnecessary quotes around a simple font-family while Firefox retains them; SheetOM follows the measured Chromium fallback."
+    },
+    {
+      "fixtureId": "declarations.custom-property-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains unclosed custom-property token structures, removes EOF comments, and replaces an escaped EOF with U+FFFD."
+    },
+    {
+      "fixtureId": "declarations.custom-property-priority-replacement",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium and Firefox replace the existing custom-property priority when setProperty is called without a priority, while WebKit retains !important; SheetOM follows the measured Chromium fallback."
+    },
+    {
+      "fixtureId": "declarations.pending-substitution-eof-recovery",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the unclosed pending-substitution spelling while applying lexical EOF recovery such as comment removal."
+    },
+    {
+      "fixtureId": "declarations.setproperty-null-undefined",
+      "decision": "shared",
+      "rationale": "The four adapted WPT subtests define the shared null and undefined conversion behavior."
+    },
+    {
+      "fixtureId": "declarations.required-arguments",
+      "decision": "shared",
+      "rationale": "Required WebIDL arguments throw TypeError before string conversion in the pinned browser engines."
+    },
+    {
+      "fixtureId": "declarations.set-property-multiple-declarations",
+      "decision": "shared",
+      "rationale": "A setProperty value is parsed independently and cannot escape into another declaration; invalid input leaves the previous declaration unchanged."
+    },
+    {
+      "fixtureId": "declarations.escaped-custom-property-name",
+      "decision": "shared",
+      "rationale": "Custom-property method arguments retain their logical names and cssText escapes those names only when serializing CSS syntax."
+    },
+    {
+      "fixtureId": "integration.weweb-authoring-tree",
+      "decision": "chromium-fallback",
+      "rationale": "The standard rule-tree operations and detachment identity are shared; the recovered padding spelling follows the existing Chromium fallback resolution."
+    },
+    {
+      "fixtureId": "declarations.shorthand-state-sequences",
+      "decision": "chromium-fallback",
+      "rationale": "Engines share expanded longhand ownership and prevent state resurrection, but background record order and omitted-component spelling diverge; SheetOM follows the pinned Chromium observation."
+    },
+    {
+      "fixtureId": "declarations.modern-value-capabilities",
+      "decision": "shared",
+      "rationale": "The pinned Chromium and Firefox engines accept the measured subgrid, anchor-size, contrast-color, and integer calc families with the same observable declaration state."
+    },
+    {
+      "fixtureId": "declarations.content-value-capabilities",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium retains the incomplete pending-substitution spelling and supports target-text with a typed attr source while Firefox differs; both reject the measured leader and URL target-text cases."
+    },
+    {
+      "fixtureId": "declarations.shorthand-grammar-branches",
+      "decision": "chromium-fallback",
+      "rationale": "The reviewed branches follow pinned Chromium where newer timelines are not shared across engines."
+    },
+    {
+      "fixtureId": "declarations.shorthand-observable-synthesis",
+      "decision": "chromium-fallback",
+      "rationale": "Chromium exposes expanded animation defaults and a different longhand order from Firefox and WebKit; SheetOM follows the pinned Chromium observable synthesis while preserving equivalent longhand semantics."
+    }
+  ]
+}
