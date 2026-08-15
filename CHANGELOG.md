@@ -1,5 +1,11 @@
 # sheetom
 
+## 0.1.0-rc.11
+
+### Patch Changes
+
+- 9791b89: Preserve authored pending shorthands after longhand mutations, add resilient best-effort serialization diagnostics for states CSS text cannot represent exactly, and expose `serializeStrict()` for exact-only callers.
+
 ## 0.1.0-rc.10
 
 ### Patch Changes

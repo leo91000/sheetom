@@ -1,5 +1,7 @@
 # @sheetom/native-win32-arm64-msvc
 
+## 0.1.0-rc.11
+
 ## 0.1.0-rc.10
 
 ## 0.1.0-rc.9
