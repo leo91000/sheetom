@@ -42,13 +42,17 @@ readable and mutable. Assigning any `CSSRule.cssText` is a successful no-op.
 
 `serialize()` is the SheetOM extension that emits reparsable CSS from current
 state. This can differ deliberately from browser-facing `cssText` when CSS
-Syntax end-of-input recovery preserved malformed source text.
+Syntax end-of-input recovery preserved malformed source text. It remains
+resilient when CSS text cannot exactly encode an imperative pending-shorthand
+state and emits an opt-in `UNREPRESENTABLE_PENDING_SHORTHAND` diagnostic.
+`serializeStrict()` throws `SheetOMSerializationError` for that state instead.
 
 | Surface | Contract |
 | --- | --- |
 | `CSSStyleDeclaration.cssText` | Browser-compatible observable declarations, including recovery quirks. |
 | `CSSRule.cssText` | Browser-compatible observable text for the current rule. |
 | `CSSStyleSheet.serialize()` | Deterministic Reparsable Stylesheet Serialization with repairs confined to their declaration or rule. |
+| `CSSStyleSheet.serializeStrict()` | Exact-only reparsable serialization; rejects states CSS text cannot faithfully represent. |
 
 “Reparsable” guarantees syntactic reparse, no declaration/rule leakage, and
 preservation of SheetOM’s valid semantic state. It is not URL sanitization,
@@ -182,11 +186,12 @@ read-only until a standards-defined mutable interface is implemented.
 
 Required WebIDL arguments throw `TypeError`. Parse and hierarchy failures use
 `DOMException` names matching browser APIs. `takeDiagnostics()` drains
-SheetOM-only warnings when diagnostics were enabled; otherwise it returns an
-empty array. `SheetOMDiagnostic.code` is the exported
-`SheetOMDiagnosticCode` string union. The optional queue retains each complete
-input string until it is drained; callers handling untrusted or unusually large
-inputs should disable diagnostics or drain the queue promptly.
+SheetOM-only mutation and serialization warnings when diagnostics were enabled;
+otherwise it returns an empty array. `SheetOMDiagnostic.code` is the exported
+`SheetOMDiagnosticCode` string union. Serialization recovery diagnostics expose
+`conflictingLonghands`; mutation diagnostics retain their complete input string
+until drained. Callers handling untrusted or unusually large inputs should
+disable diagnostics or drain the queue promptly.
 
 SheetOM does not implement DOM association, style-sheet collections, cascade,
 selector matching, resolved/computed values, layout, fetching, or sanitizing.

@@ -52,12 +52,14 @@ test("diagnostic codes expose a stable public string union", () => {
     "INVALID_PRIORITY",
     "INVALID_PROPERTY_VALUE",
     "UNSUPPORTED_SHORTHAND_VALUE",
+    "UNREPRESENTABLE_PENDING_SHORTHAND",
   ];
 
   assert.deepEqual(codes, [
     "INVALID_PRIORITY",
     "INVALID_PROPERTY_VALUE",
     "UNSUPPORTED_SHORTHAND_VALUE",
+    "UNREPRESENTABLE_PENDING_SHORTHAND",
   ]);
 });
 

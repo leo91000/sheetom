@@ -1,4 +1,7 @@
-import type { SheetOMDiagnostic, SheetOMDiagnosticCode } from "./diagnostics.js";
+import type {
+  SheetOMDiagnostic,
+  SheetOMMutationDiagnosticCode,
+} from "./diagnostics.js";
 import type { CSSStyleDeclarationNamedProperties } from "./generated/css-style-declaration-properties.js";
 import type { EngineDeclarationMutation } from "./internal/engine-binding.js";
 import { NativeDeclarationBlock } from "./internal/native-declaration-block.js";
@@ -37,8 +40,19 @@ import {
   type SheetOMResourceBudget,
 } from "./internal/resource-budget.js";
 
-export type { SheetOMDiagnostic, SheetOMDiagnosticCode } from "./diagnostics.js";
+export type {
+  SheetOMDiagnostic,
+  SheetOMDiagnosticCode,
+  SheetOMMutationDiagnostic,
+  SheetOMMutationDiagnosticCode,
+  SheetOMSerializationDiagnostic,
+  SheetOMSerializationDiagnosticCode,
+} from "./diagnostics.js";
 export type { SheetOMResourceBudget } from "./internal/resource-budget.js";
+export {
+  SheetOMSerializationError,
+  type SheetOMSerializationErrorCode,
+} from "./serialization-error.js";
 
 const arrayIndexPattern = /^(0|[1-9]\d*)$/;
 const regularSheetMetadata = new WeakMap<
@@ -124,7 +138,8 @@ const ruleTree = new RuleTree<CSSRule, CSSStyleSheet>(
   },
   rule => rule.parentStyleSheet,
 );
-const safeSerializer = new Serializer<CSSRule>(describeRuleSafe);
+const safeSerializer = new Serializer<CSSRule>(rule => describeRuleSafe(rule, false));
+const strictSerializer = new Serializer<CSSRule>(rule => describeRuleSafe(rule, true));
 let activeConstructionResourceBudget = defaultResourceBudget;
 
 function constructWithResourceBudget<T>(
@@ -1073,7 +1088,7 @@ export class CSSStyleDeclaration {
     this.parentRule = parentRule;
     lockOwnProperties(this, "parentRule");
     const reportDeclarationDiagnostic = (
-      code: SheetOMDiagnosticCode,
+      code: SheetOMMutationDiagnosticCode,
       property: string,
       input: string,
     ): SheetOMDiagnostic => {
@@ -1095,8 +1110,25 @@ export class CSSStyleDeclaration {
       (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)(diagnostic);
       return diagnostic;
     };
+    const reportSerializationDiagnostic = (
+      shorthand: string,
+      conflictingLonghands: readonly string[],
+    ): void => {
+      const diagnostic: SheetOMDiagnostic = {
+        code: "UNREPRESENTABLE_PENDING_SHORTHAND",
+        severity: "warning",
+        operation: "serialize",
+        message: `The pending ${shorthand} shorthand required a best-effort recovery during serialization.`,
+        property: shorthand,
+        input: "",
+        location: null,
+        conflictingLonghands: Object.freeze([...conflictingLonghands]),
+      };
+      (ruleDiagnostics.get(this.parentRule) ?? ignoreDiagnostic)(diagnostic);
+    };
     this.#block = new NativeDeclarationBlock(
       reportDeclarationDiagnostic,
+      reportSerializationDiagnostic,
       parentRule instanceof CSSFontFaceRule
         ? "font-face"
         : parentRule instanceof CSSFunctionDeclarations
@@ -1216,8 +1248,8 @@ export class CSSStyleDeclaration {
   }
 
   /** @internal */
-  serializeSafe(indent: string): string {
-    return this.#block.serialize(true, indent, "\n");
+  serializeSafe(indent: string, strict = false): string {
+    return this.#block.serialize(true, indent, "\n", strict);
   }
 }
 
@@ -1806,17 +1838,17 @@ function attachRuleTree(
   ruleTree.attach(rule, parentRule, parentStyleSheet);
 }
 
-function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
+function describeRuleSafe(rule: CSSRule, strict: boolean): RuleSerializationPlan<CSSRule> {
   if (rule instanceof CSSStyleRule) {
     return {
       kind: "block",
       header: rule.selectorText,
-      declarations: rule.style.serializeSafe("  "),
+      declarations: rule.style.serializeSafe("  ", strict),
       children: ruleTree.children(rule),
     };
   }
   if (rule instanceof CSSNestedDeclarations || rule instanceof CSSFunctionDeclarations) {
-    return { kind: "declarations", declarations: rule.style.serializeSafe("") };
+    return { kind: "declarations", declarations: rule.style.serializeSafe("", strict) };
   }
   if (
     rule instanceof CSSFontFaceRule ||
@@ -1829,7 +1861,7 @@ function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
     return {
       kind: "block",
       header,
-      declarations: rule.style.serializeSafe("  "),
+      declarations: rule.style.serializeSafe("  ", strict),
     };
   }
   if (rule instanceof CSSKeyframesRule) {
@@ -1844,7 +1876,7 @@ function describeRuleSafe(rule: CSSRule): RuleSerializationPlan<CSSRule> {
     return {
       kind: "block",
       header: `@page${selector}`,
-      declarations: rule.style.serializeSafe("  "),
+      declarations: rule.style.serializeSafe("  ", strict),
       children: ruleTree.children(rule),
     };
   }
@@ -2466,7 +2498,12 @@ export class CSSStyleSheet {
     return safeSerializer.serializeMany(this.#rules);
   }
 
-  /** Drain opt-in mutation diagnostics without affecting CSSOM behavior. */
+  /** Serialize current state only when its CSS semantics can be preserved exactly. */
+  serializeStrict(): string {
+    return strictSerializer.serializeMany(this.#rules);
+  }
+
+  /** Drain opt-in mutation and serialization diagnostics without affecting CSSOM behavior. */
   takeDiagnostics(): SheetOMDiagnostic[] {
     if (!this.#diagnostics) return [];
     return this.#diagnostics.splice(0);

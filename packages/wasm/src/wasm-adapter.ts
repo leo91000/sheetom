@@ -30,6 +30,7 @@ interface GeneratedDeclarationState {
   removeProperty(name: string): string;
   replaceCssText(source: string, reservedNestingDepth?: number): void;
   serializeFormatted(safe: boolean, indent: string, separator: string): string;
+  serializeFormattedResilient(safe: boolean, indent: string, separator: string): string[];
   free(): void;
 }
 
@@ -213,6 +214,9 @@ function declarationStateHandle(
     ),
     serializeFormatted: (safe, indent, separator) => guard(
       () => state.serializeFormatted(safe, indent, separator),
+    ),
+    serializeFormattedResilient: (safe, indent, separator) => guard(
+      () => state.serializeFormattedResilient(safe, indent, separator),
     ),
   };
 }

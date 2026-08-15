@@ -15,6 +15,7 @@ export declare class NativeDeclarationState {
   get cssText(): string
   serializeSafe(): string
   serializeFormatted(safe: boolean, indent: string, separator: string): string
+  serializeFormattedResilient(safe: boolean, indent: string, separator: string): Array<string>
 }
 
 /**

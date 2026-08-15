@@ -119,6 +119,13 @@ sheet.serialize();
 | `style.cssText` | Browser-compatible declaration text, including measured recovery quirks. |
 | `rule.cssText` | Browser-compatible text for the current rule. |
 | `sheet.serialize()` | Deterministic, reparsable CSS for a complete stylesheet. |
+| `sheet.serializeStrict()` | Exact-only output that rejects CSSOM states CSS text cannot represent faithfully. |
+
+Pending-substitution shorthands survive later longhand edits in reparsable
+output. If an imperative priority combination cannot be represented exactly,
+`serialize()` emits a local best-effort result and an opt-in structured
+diagnostic rather than blocking the whole stylesheet. Use `serializeStrict()`
+when approximation is unacceptable.
 
 Invalid property values and priorities are atomic no-ops: the previous state
 survives unchanged. Static shorthands are stored as canonical longhands, so

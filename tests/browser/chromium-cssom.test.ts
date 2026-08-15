@@ -139,6 +139,40 @@ chromiumTest("Chromium preserves independent substitution longhands", () => {
   expect(Array.from(style)).toEqual(["align-content", "justify-content"]);
 });
 
+chromiumTest("Chromium exposes a pending shorthand state that CSS text cannot round-trip", () => {
+  const live = document.createElement("div");
+  live.style.setProperty("--font", "normal 700 11px/normal sans-serif");
+  live.style.setProperty("font", "var(--font)", "important");
+  live.style.setProperty("font-size", "10px");
+  document.body.append(live);
+
+  const nativeText = document.createElement("div");
+  nativeText.style.cssText = live.style.cssText;
+  document.body.append(nativeText);
+  const authoredPriorities = document.createElement("div");
+  authoredPriorities.style.cssText =
+    "--font: normal 700 11px/normal sans-serif; font: var(--font) !important; font-size: 10px;";
+  document.body.append(authoredPriorities);
+  const promotedOverride = document.createElement("div");
+  promotedOverride.style.cssText =
+    "--font: normal 700 11px/normal sans-serif; font: var(--font) !important; font-size: 10px !important;";
+  document.body.append(promotedOverride);
+
+  expect(getComputedStyle(live).fontSize).toBe("10px");
+  expect(getComputedStyle(live).fontWeight).toBe("700");
+  expect(getComputedStyle(nativeText).fontSize).toBe("10px");
+  expect(getComputedStyle(nativeText).fontWeight).toBe("400");
+  expect(getComputedStyle(authoredPriorities).fontSize).toBe("11px");
+  expect(getComputedStyle(authoredPriorities).fontWeight).toBe("700");
+  expect(getComputedStyle(promotedOverride).fontSize).toBe("10px");
+  expect(getComputedStyle(promotedOverride).fontWeight).toBe("700");
+
+  live.remove();
+  nativeText.remove();
+  authoredPriorities.remove();
+  promotedOverride.remove();
+});
+
 chromiumTest("Chromium rule WebIDL constructors and cssText setters are inert", () => {
   expect(() => new CSSStyleRule()).toThrow(TypeError);
   const sheet = new CSSStyleSheet();

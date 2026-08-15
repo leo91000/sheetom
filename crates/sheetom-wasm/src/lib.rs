@@ -176,8 +176,35 @@ impl WasmDeclarationState {
     }
 
     #[wasm_bindgen(js_name = serializeFormatted)]
-    pub fn serialize_formatted(&self, safe: bool, indent: String, separator: String) -> String {
-        self.state.serialize_formatted(safe, &indent, &separator)
+    pub fn serialize_formatted(
+        &self,
+        safe: bool,
+        indent: String,
+        separator: String,
+    ) -> Result<String, JsValue> {
+        self.state
+            .serialize_formatted(safe, &indent, &separator)
+            .map_err(engine_error)
+    }
+
+    #[wasm_bindgen(js_name = serializeFormattedResilient)]
+    pub fn serialize_formatted_resilient(
+        &self,
+        safe: bool,
+        indent: String,
+        separator: String,
+    ) -> Result<Array, JsValue> {
+        let (serialized, issues) = self
+            .state
+            .serialize_formatted_resilient(safe, &indent, &separator)
+            .map_err(engine_error)?;
+        let output = Array::new();
+        output.push(&JsValue::from_str(&serialized));
+        for issue in issues {
+            output.push(&JsValue::from_str(&issue.shorthand));
+            output.push(&JsValue::from_str(&issue.conflicting_longhands.join(",")));
+        }
+        Ok(output)
     }
 }
 

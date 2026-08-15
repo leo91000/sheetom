@@ -193,3 +193,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0182 | [Preserve substitution isolation during shorthand synthesis](./0182-preserve-substitution-isolation-during-shorthand-synthesis.md) | accepted |
 | 0183 | [Promote RC9 without runtime drift](./0183-promote-rc9-without-runtime-drift.md) | accepted |
 | 0184 | [Batch ordered declaration mutations without changing CSSOM](./0184-batch-ordered-declaration-mutations-without-changing-cssom.md) | accepted |
+| 0185 | [Preserve pending shorthand semantics during serialization](./0185-preserve-pending-shorthand-semantics.md) | accepted |

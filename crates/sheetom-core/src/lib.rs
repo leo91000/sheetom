@@ -36,6 +36,7 @@ pub use counter_style::{
 pub use declaration_state::{
     DeclarationContext, DeclarationMutation, DeclarationMutationResult, DeclarationRecord,
     DeclarationState, MutationOutcome, ParsedDeclaration, PendingSubstitutionGroup,
+    SerializationIssue,
 };
 #[doc(hidden)]
 pub use declaration_value::{DeclarationValue, DeclarationValueKind};
@@ -126,12 +127,28 @@ impl Default for ResourceLimits {
 
 #[derive(Debug, PartialEq)]
 pub enum EngineError {
-    InputLimitExceeded { actual: usize, limit: usize },
-    DeclarationLimitExceeded { actual: usize, limit: usize },
-    RuleLimitExceeded { actual: usize, limit: usize },
-    NestingLimitExceeded { actual: usize, limit: usize },
+    InputLimitExceeded {
+        actual: usize,
+        limit: usize,
+    },
+    DeclarationLimitExceeded {
+        actual: usize,
+        limit: usize,
+    },
+    RuleLimitExceeded {
+        actual: usize,
+        limit: usize,
+    },
+    NestingLimitExceeded {
+        actual: usize,
+        limit: usize,
+    },
     Parse(String),
     Serialize(String),
+    UnrepresentablePendingShorthand {
+        shorthand: String,
+        conflicting_longhands: Vec<String>,
+    },
     UnexpectedPanic,
 }
 
@@ -170,6 +187,14 @@ impl Display for EngineError {
             ),
             Self::Parse(message) => write!(formatter, "SHEETOM_PARSE_ERROR: {message}"),
             Self::Serialize(message) => write!(formatter, "SHEETOM_SERIALIZE_ERROR: {message}"),
+            Self::UnrepresentablePendingShorthand {
+                shorthand,
+                conflicting_longhands,
+            } => write!(
+                formatter,
+                "SHEETOM_UNREPRESENTABLE_PENDING_SHORTHAND: shorthand={shorthand}; conflicting={}",
+                conflicting_longhands.join(",")
+            ),
             Self::UnexpectedPanic => formatter.write_str(
                 "SHEETOM_NATIVE_PANIC: the CSS engine aborted the current operation safely",
             ),
