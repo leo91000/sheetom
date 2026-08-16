@@ -31,8 +31,8 @@ jobs:
       contents: write
       pull-requests: write
     outputs:
-      has-changesets: ${{ steps.changesets.outputs.hasChangesets }}
-      pull-request: ${{ steps.changesets.outputs.pullRequestNumber }}
+      has-changesets: ${{ steps.changesets.outputs.has-changesets }}
+      pull-request: ${{ steps.changesets.outputs.pr-number }}
       head-ref: ${{ steps.release-pr.outputs.head_ref }}
       head-sha: ${{ steps.release-pr.outputs.head_sha }}
       version-changed: ${{ steps.release-version.outputs.version_changed }}
@@ -61,20 +61,21 @@ jobs:
         id: changesets
         uses: changesets/action@198f833dd7d863100ea6e28967bc9a9fdefadb0a # v2.1.0
         with:
-          version: node scripts/version-release.ts
-          commit: "chore: version packages"
-          title: "chore: release packages"
-          commitMode: github-api
-          createGithubReleases: false
-          prDraft: create
-          branch: main
+          github-token: ${{ github.token }}
+          version-script: node scripts/version-release.ts
+          commit-message: "chore: version packages"
+          pr-title: "chore: release packages"
+          create-github-releases: false
+          push-git-tags: false
+          pr-draft: create
+          pr-base-branch: main
 
       - name: Normalize the release pull request
         id: release-pr
-        if: steps.changesets.outputs.pullRequestNumber != ''
+        if: steps.changesets.outputs.pr-number != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
+          RELEASE_PR: ${{ steps.changesets.outputs.pr-number }}
         run: |
           gh pr edit "$RELEASE_PR" --body ""
           echo "head_ref=$(gh pr view "$RELEASE_PR" --json headRefName --jq .headRefName)" >> "$GITHUB_OUTPUT"

@@ -27,6 +27,22 @@ test("the release pull request receives an exact-SHA pending status", () => {
   assert.match(evidence, /\.headSha == \$head_sha/u);
 });
 
+test("the release workflow uses the Changesets v2 action interface", () => {
+  const changesets = job("changesets");
+  assert.match(changesets, /outputs\.has-changesets/u);
+  assert.match(changesets, /outputs\.pr-number/u);
+  assert.match(changesets, /github-token: \$\{\{ github\.token \}\}/u);
+  assert.match(changesets, /version-script: node scripts\/version-release\.ts/u);
+  assert.match(changesets, /commit-message: "chore: version packages"/u);
+  assert.match(changesets, /pr-title: "chore: release packages"/u);
+  assert.match(changesets, /create-github-releases: false/u);
+  assert.match(changesets, /push-git-tags: false/u);
+  assert.match(changesets, /pr-draft: create/u);
+  assert.match(changesets, /pr-base-branch: main/u);
+  assert.doesNotMatch(changesets, /pullRequestNumber|hasChangesets/u);
+  assert.doesNotMatch(changesets, /^\s+(version|commit|title|branch|commitMode):/mu);
+});
+
 test("release validation waits for CI and publishes its terminal result", () => {
   const validation = job("release-validation");
   assert.match(validation, /gh run watch "\$RUN_ID"/u);
