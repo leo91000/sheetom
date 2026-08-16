@@ -137,7 +137,7 @@
     "@changesets/cli": "^3.0.0",
     "@napi-rs/cli": "3.8.3",
     "@rollup/plugin-node-resolve": "16.0.3",
-    "@types/css-tree": "^2.3.10",
+    "@types/css-tree": "^3.2.0",
     "@types/node": "^24.0.0",
     "@vitest/browser-playwright": "^4.1.10",
     "@webref/css": "8.7.1",
