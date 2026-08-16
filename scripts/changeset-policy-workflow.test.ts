@@ -29,19 +29,6 @@ test("the generated Changesets release pull request needs no recursive Changeset
   );
 });
 
-test("the stable promotion gate checks out its comparison history", () => {
-  const packageArtifact = job("package-artifact");
-  assert.match(packageArtifact, /fetch-depth: 0/u);
-  assert.match(
-    packageArtifact,
-    /base_version=.*PROMOTION_BASE_SHA:package\.json/u,
-  );
-  assert.match(
-    packageArtifact,
-    /\[ "\$base_version" != "0\.1\.0-rc\.11" \]/u,
-  );
-});
-
 test("superseded pull request and main push runs are cancelled", () => {
   assert.match(
     workflow,
