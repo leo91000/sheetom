@@ -178,7 +178,7 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0167 | [Own scalar and composite CSSOM projections](./0167-own-scalar-and-composite-cssom-projections.md) | accepted |
 | 0168 | [Close the indexed declaration state](./0168-close-the-indexed-declaration-state.md) | accepted |
 | 0169 | [Ratchet the Webref CSSOM surface to zero](./0169-ratchet-the-webref-cssom-surface-to-zero.md) | accepted |
-| 0170 | [Move the seven-night soak to the first stable release](./0170-move-the-seven-night-soak-to-the-first-stable-release.md) | accepted |
+| 0170 | [Move the seven-night soak to the first stable release](./0170-move-the-seven-night-soak-to-the-first-stable-release.md) | superseded by ADR-0186 |
 | 0171 | [Distribute native bindings through platform packages](./0171-distribute-native-bindings-through-platform-packages.md) | accepted |
 | 0172 | [Expose WebAssembly as an explicit backend](./0172-expose-webassembly-as-an-explicit-backend.md) | accepted |
 | 0173 | [Bootstrap new artifacts before OIDC releases](./0173-bootstrap-new-artifacts-before-oidc-releases.md) | accepted |
@@ -191,6 +191,7 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0180 | [Promote RC8 without runtime drift](./0180-promote-rc8-without-runtime-drift.md) | superseded |
 | 0181 | [Optimize WASM CI without weakening evidence](./0181-optimize-wasm-ci-without-weakening-evidence.md) | accepted |
 | 0182 | [Preserve substitution isolation during shorthand synthesis](./0182-preserve-substitution-isolation-during-shorthand-synthesis.md) | accepted |
-| 0183 | [Promote RC9 without runtime drift](./0183-promote-rc9-without-runtime-drift.md) | accepted |
+| 0183 | [Promote RC9 without runtime drift](./0183-promote-rc9-without-runtime-drift.md) | superseded by ADR-0186 |
 | 0184 | [Batch ordered declaration mutations without changing CSSOM](./0184-batch-ordered-declaration-mutations-without-changing-cssom.md) | accepted |
 | 0185 | [Preserve pending shorthand semantics during serialization](./0185-preserve-pending-shorthand-semantics.md) | accepted |
+| 0186 | [Promote RC11 without a calendar soak](./0186-promote-rc11-without-a-calendar-soak.md) | accepted |

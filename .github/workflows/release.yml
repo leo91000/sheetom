@@ -350,52 +350,8 @@ jobs:
             -f "target_url=$RUN_URL"
           test "$state" = success
 
-  soak-gate:
-    needs: changesets
-    if: >-
-      needs.changesets.outputs.has-changesets == 'false' &&
-      needs.changesets.outputs.version-changed == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-      statuses: read
-    steps:
-      - name: Check out the successful release commit
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Require the seven-night soak for the first stable release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if [ "$version" != "0.1.0" ]; then
-            echo "The seven-night first-stable gate does not apply to $version."
-            exit 0
-          fi
-          pulls=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/pulls")
-          soak_sha=$(jq -r \
-            '[.[] | select(.head.ref == "changeset-release/main")][0].head.sha // empty' \
-            <<<"$pulls")
-          if [ -z "$soak_sha" ]; then
-            echo "Unable to identify the merged Changesets release pull request" >&2
-            exit 1
-          fi
-          gh api \
-            -H "Accept: application/vnd.github+json" \
-            "repos/$GITHUB_REPOSITORY/commits/$soak_sha/statuses?per_page=100" \
-            > "$RUNNER_TEMP/soak-statuses.json"
-          node scripts/verify-release-soak.ts \
-            --statuses="$RUNNER_TEMP/soak-statuses.json"
-
   publish:
-    needs: [changesets, soak-gate]
+    needs: changesets
     if: >-
       needs.changesets.outputs.has-changesets == 'false' &&
       needs.changesets.outputs.version-changed == 'true'

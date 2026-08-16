@@ -47,7 +47,7 @@ test("accepts artifacts that differ only by the stable version", async () => {
     const reference = path.join(root, "reference");
     const candidate = path.join(root, "candidate");
     await Promise.all([mkdir(reference), mkdir(candidate)]);
-    await createArtifactSet(reference, "0.1.0-rc.9");
+    await createArtifactSet(reference, "0.1.0-rc.11");
     await createArtifactSet(candidate, "0.1.0");
     await verifyStablePromotion({ referenceDirectory: reference, candidateDirectory: candidate });
   } finally {
@@ -61,7 +61,7 @@ test("rejects runtime changes hidden in a stable promotion", async () => {
     const reference = path.join(root, "reference");
     const candidate = path.join(root, "candidate");
     await Promise.all([mkdir(reference), mkdir(candidate)]);
-    await createArtifactSet(reference, "0.1.0-rc.9");
+    await createArtifactSet(reference, "0.1.0-rc.11");
     await createArtifactSet(candidate, "0.1.0", "changed runtime");
     await assert.rejects(
       verifyStablePromotion({ referenceDirectory: reference, candidateDirectory: candidate }),
@@ -78,7 +78,7 @@ test("reports every artifact divergence in one verification run", async () => {
     const reference = path.join(root, "reference");
     const candidate = path.join(root, "candidate");
     await Promise.all([mkdir(reference), mkdir(candidate)]);
-    await createArtifactSet(reference, "0.1.0-rc.9");
+    await createArtifactSet(reference, "0.1.0-rc.11");
     await createArtifactSet(candidate, "0.1.0", "changed runtime", "changed manifest");
     await assert.rejects(
       verifyStablePromotion({ referenceDirectory: reference, candidateDirectory: candidate }),

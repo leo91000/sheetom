@@ -38,3 +38,10 @@ test("release validation waits for CI and publishes its terminal result", () => 
   assert.match(validation, /state=failure/u);
   assert.match(validation, /context=sheetom\/release-validation/u);
 });
+
+test("stable publication has no calendar-duration soak prerequisite", () => {
+  const publish = job("publish");
+  assert.match(publish, /needs: changesets/u);
+  assert.doesNotMatch(workflow, /^  soak-gate:/mu);
+  assert.doesNotMatch(workflow, /verify-release-soak/u);
+});

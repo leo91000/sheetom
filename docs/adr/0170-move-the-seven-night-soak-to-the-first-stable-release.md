@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0186
 ---
 
 # Move the seven-night soak to the first stable release

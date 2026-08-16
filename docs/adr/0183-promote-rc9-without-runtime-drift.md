@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0186
 ---
 
 # Promote RC9 without runtime drift
