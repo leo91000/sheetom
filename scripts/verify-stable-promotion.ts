@@ -24,7 +24,7 @@ interface PromotionOptions {
   baseSha?: string;
 }
 
-const referenceVersion = "0.1.0-rc.9";
+const referenceVersion = "0.1.0-rc.11";
 const stableVersion = "0.1.0";
 const binaryExtensions = new Set([".node", ".wasm"]);
 
@@ -119,7 +119,7 @@ function collectPackageCoordinateMismatches(
   const candidateCoordinates = candidate.packages.map(packageCoordinate);
   if (!isDeepStrictEqual(candidateCoordinates, referenceCoordinates)) {
     mismatches.push(
-      `the stable package cohort differs from RC9: expected ${referenceCoordinates.join(", ")}; ` +
+      `the stable package cohort differs from RC11: expected ${referenceCoordinates.join(", ")}; ` +
         `received ${candidateCoordinates.join(", ")}`,
     );
   }
@@ -252,7 +252,7 @@ function collectStableSourcePromotionMismatches(
     ) as { version?: string };
     if (baseManifest.version !== referenceVersion) {
       mismatches.push(
-        `stable promotion must be based on RC9, received ${baseManifest.version ?? "no version"}`,
+        `stable promotion must be based on RC11, received ${baseManifest.version ?? "no version"}`,
       );
     }
   } catch (error) {
@@ -337,7 +337,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       candidateDirectory: path.resolve(candidateDirectory),
       baseSha: argument("base-sha"),
     });
-    console.log("Verified normalized RC9-to-0.1.0 artifact promotion.");
+    console.log("Verified normalized RC11-to-0.1.0 artifact promotion.");
   } catch (error) {
     console.error(errorMessage(error));
     process.exitCode = 1;

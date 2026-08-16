@@ -30,7 +30,7 @@ Deprecate replaced prereleases of `@sheetom/wasm` and every native package as th
 
 ## Stable releases
 
-Exit Changesets prerelease mode in a reviewed change, then follow the same release-PR and CI flow. Leave the generated `0.1.0` release pull request unchanged while the First Stable Soak workflow records seven consecutive nightly full-CI successes on its exact SHA. Any update resets the evidence; manual runs are diagnostic and do not count. Merge only after all seven dated statuses are present. The publication places the stable version under `latest`. Before the GitHub Release can become public, authenticate with npm, remove `next`, and deprecate every replaced prerelease:
+Exit Changesets prerelease mode in a reviewed change, then follow the same release-PR and CI flow. Leave the generated `0.1.0` release pull request unchanged while its complete CI matrix runs on the final evidence commit. Merge after that validation succeeds. The publication places the stable version under `latest`. Before the GitHub Release can become public, authenticate with npm, remove `next`, and deprecate every replaced prerelease:
 
 ```sh
 npm login --auth-type=web
