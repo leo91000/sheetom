@@ -760,11 +760,7 @@ impl DeclarationState {
     }
 
     fn serialize_observable_with_format(&self, indent: &str, separator: &str) -> String {
-        self.format_declarations(
-            self.serialized_declarations(false, &[], &HashSet::new()),
-            indent,
-            separator,
-        )
+        self.serialize_declarations_with_format(false, &[], &HashSet::new(), indent, separator)
     }
 
     fn serialize_safe_with_format(
@@ -774,8 +770,10 @@ impl DeclarationState {
         strict: bool,
     ) -> Result<String, EngineError> {
         let pending = self.pending_shorthand_serialization_plan(strict)?;
-        Ok(self.format_declarations(
-            self.serialized_declarations(true, &pending.candidates, &pending.promoted_longhands),
+        Ok(self.serialize_declarations_with_format(
+            true,
+            &pending.candidates,
+            &pending.promoted_longhands,
             indent,
             separator,
         ))
@@ -787,31 +785,14 @@ impl DeclarationState {
         separator: &str,
     ) -> Result<(String, Vec<SerializationIssue>), EngineError> {
         let pending = self.pending_shorthand_serialization_plan(false)?;
-        let output = self.format_declarations(
-            self.serialized_declarations(true, &pending.candidates, &pending.promoted_longhands),
+        let output = self.serialize_declarations_with_format(
+            true,
+            &pending.candidates,
+            &pending.promoted_longhands,
             indent,
             separator,
         );
         Ok((output, pending.issues))
-    }
-
-    fn format_declarations(
-        &self,
-        declarations: Vec<String>,
-        indent: &str,
-        separator: &str,
-    ) -> String {
-        let capacity = declarations.iter().map(String::len).sum::<usize>()
-            + declarations.len() * (indent.len() + separator.len());
-        let mut output = String::with_capacity(capacity);
-        for (index, declaration) in declarations.into_iter().enumerate() {
-            if index > 0 {
-                output.push_str(separator);
-            }
-            output.push_str(indent);
-            output.push_str(&declaration);
-        }
-        output
     }
 
     fn pending_shorthand_serialization_plan(
@@ -914,36 +895,58 @@ impl DeclarationState {
         })
     }
 
-    fn serialized_declarations(
+    fn serialize_declarations_with_format(
         &self,
         safe: bool,
         pending_candidates: &[PendingShorthandSerializationCandidate],
         promoted_longhands: &HashSet<String>,
-    ) -> Vec<String> {
+        indent: &str,
+        separator: &str,
+    ) -> String {
+        let estimated_declaration_bytes = self
+            .records
+            .iter()
+            .map(|record| {
+                record.name.len()
+                    + if safe {
+                        record.safe_value().len()
+                    } else {
+                        record.observable_value().len()
+                    }
+                    + if record.important { 14 } else { 3 }
+                    + indent.len()
+                    + separator.len()
+            })
+            .sum();
+        let mut output = String::with_capacity(estimated_declaration_bytes);
+        let mut first = true;
         if matches!(
             self.context,
             DeclarationContext::FontFace | DeclarationContext::Function
         ) {
-            return self
-                .records
-                .iter()
-                .map(|record| {
-                    let name = if record.name.starts_with("--") {
-                        serialize_identifier(&record.name)
-                    } else {
-                        record.name.clone()
-                    };
-                    let value = if safe
-                        || self.context == DeclarationContext::FontFace
-                            && record.name == "font-variant"
-                    {
-                        record.safe_value()
-                    } else {
-                        record.observable_value()
-                    };
-                    format_declaration(&name, value, record.important)
-                })
-                .collect();
+            for record in &self.records {
+                let value = if safe
+                    || self.context == DeclarationContext::FontFace && record.name == "font-variant"
+                {
+                    record.safe_value()
+                } else {
+                    record.observable_value()
+                };
+                let serialized_name = record
+                    .name
+                    .starts_with("--")
+                    .then(|| serialize_identifier(&record.name));
+                append_declaration(
+                    &mut output,
+                    &mut first,
+                    indent,
+                    separator,
+                    serialized_name.as_deref().unwrap_or(&record.name),
+                    value,
+                    record.important,
+                );
+            }
+            return output;
         }
 
         let records_by_name = self
@@ -1009,12 +1012,15 @@ impl DeclarationState {
                 .or_default()
                 .push(index);
         }
-        let mut declarations = Vec::new();
         for (record_index, record) in self.records.iter().enumerate() {
             if let Some(indexes) = pending_candidates_by_anchor.get(&record_index) {
                 for index in indexes {
                     let candidate = &pending_candidates[*index];
-                    declarations.push(format_declaration(
+                    append_declaration(
+                        &mut output,
+                        &mut first,
+                        indent,
+                        separator,
                         &candidate.name,
                         &candidate.value,
                         candidate.important
@@ -1022,7 +1028,7 @@ impl DeclarationState {
                                 .longhands
                                 .iter()
                                 .any(|longhand| promoted_longhands.contains(*longhand)),
-                    ));
+                    );
                 }
             }
             if record.pending_substitution()
@@ -1041,31 +1047,39 @@ impl DeclarationState {
                             .longhands
                             .iter()
                             .any(|longhand| promoted_longhands.contains(*longhand));
-                    declarations.push(format_declaration(
+                    append_declaration(
+                        &mut output,
+                        &mut first,
+                        indent,
+                        separator,
                         &candidate.name,
                         &candidate.value,
                         important,
-                    ));
+                    );
                 }
                 continue;
             }
-            let name = if record.name.starts_with("--") {
-                serialize_identifier(&record.name)
-            } else {
-                record.name.clone()
-            };
             let value = if safe {
                 record.safe_value()
             } else {
                 record.observable_value()
             };
-            declarations.push(format_declaration(
-                &name,
+            let important = record.important || promoted_longhands.contains(&record.name);
+            let serialized_name = record
+                .name
+                .starts_with("--")
+                .then(|| serialize_identifier(&record.name));
+            append_declaration(
+                &mut output,
+                &mut first,
+                indent,
+                separator,
+                serialized_name.as_deref().unwrap_or(&record.name),
                 value,
-                record.important || promoted_longhands.contains(&record.name),
-            ));
+                important,
+            );
         }
-        declarations
+        output
     }
 }
 
@@ -1307,9 +1321,27 @@ fn requires_observable_shorthand_synthesis(name: &str, observable: &str) -> bool
             .is_some_and(|components| components.len() > 1)
 }
 
-fn format_declaration(name: &str, value: &str, important: bool) -> String {
-    let priority = if important { " !important" } else { "" };
-    format!("{name}: {value}{priority};")
+fn append_declaration(
+    output: &mut String,
+    first: &mut bool,
+    indent: &str,
+    separator: &str,
+    name: &str,
+    value: &str,
+    important: bool,
+) {
+    if !*first {
+        output.push_str(separator);
+    }
+    *first = false;
+    output.push_str(indent);
+    output.push_str(name);
+    output.push_str(": ");
+    output.push_str(value);
+    if important {
+        output.push_str(" !important");
+    }
+    output.push(';');
 }
 
 #[cfg(test)]
