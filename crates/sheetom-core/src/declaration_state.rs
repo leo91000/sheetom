@@ -523,7 +523,9 @@ impl DeclarationState {
 
     fn canonical_name(&self, name: &str) -> Option<String> {
         match self.context {
-            DeclarationContext::Style => canonical_style_property_name(name),
+            DeclarationContext::Style => {
+                canonical_style_property_name(name).map(|name| name.into_owned())
+            }
             DeclarationContext::FontFace => canonical_descriptor_name(name),
             DeclarationContext::Function => canonical_function_descriptor_name(name),
         }
