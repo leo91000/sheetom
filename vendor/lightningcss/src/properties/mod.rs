@@ -777,6 +777,9 @@ macro_rules! define_properties {
       }
 
       /// Serializes the value of a CSS property without its name or `!important` flag.
+      // Keep this generic serializer behind one call seam. Inlining it into string callers
+      // duplicates the full Property ToCss graph in WebAssembly.
+      #[inline(never)]
       pub fn value_to_css<W>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError> where W: std::fmt::Write {
         use Property::*;
 
