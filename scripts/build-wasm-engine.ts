@@ -13,8 +13,8 @@ const generatedDirectory = path.join(repositoryRoot, "packages/wasm/generated");
 const distributionDirectory = path.join(repositoryRoot, "packages/wasm/dist");
 const wasmBindgenVersion = "0.2.127";
 const wasmOptimizationProfile = "-O2";
-const maximumRawBytes = 5_700_000;
-const maximumGzipBytes = 1_550_000;
+const maximumRawBytes = 5_000_000;
+const maximumGzipBytes = 1_400_000;
 const { parameterizeWasmBindgenGlue } = await import("./parameterize-wasm-bindgen.ts");
 
 const installedVersion = execFileSync("wasm-bindgen", ["--version"], {
