@@ -1,7 +1,7 @@
 use crate::function_rule::{canonical_function_descriptor_name, parse_function_descriptor_value};
 use crate::{
     catalog::{
-        canonical_property_name as canonical_style_property_name,
+        ascii_lowercase, canonical_property_name as canonical_style_property_name,
         property_alias_defers_pending_value, property_alias_hides_value,
         property_alias_observable_value, shorthand_longhands as style_shorthand_longhands,
         shorthand_names,
@@ -15,6 +15,7 @@ use crate::{
     EngineError, ResourceLimits,
 };
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
@@ -177,7 +178,7 @@ impl DeclarationState {
     pub fn get_property_value(&self, name: &str) -> String {
         let hides_semantic_value =
             self.context == DeclarationContext::Style && property_alias_hides_value(name);
-        let queried_name = name.to_ascii_lowercase();
+        let queried_name = ascii_lowercase(name);
         let Some(name) = self.canonical_name(name) else {
             return String::new();
         };
@@ -305,12 +306,11 @@ impl DeclarationState {
         priority: &str,
         parse_limits: ResourceLimits,
     ) -> Result<MutationOutcome, EngineError> {
-        let source_name = name.to_ascii_lowercase();
+        let source_name = ascii_lowercase(name);
         let Some(name) = self.canonical_name(name) else {
             return Ok(MutationOutcome::InvalidName);
         };
-        let priority = priority.to_ascii_lowercase();
-        if !matches!(priority.as_str(), "" | "important") {
+        if !priority.is_empty() && !priority.eq_ignore_ascii_case("important") {
             return Ok(MutationOutcome::InvalidPriority);
         }
         if value.is_empty() {
@@ -321,7 +321,7 @@ impl DeclarationState {
             return Ok(MutationOutcome::Applied);
         }
 
-        let important = priority == "important";
+        let important = !priority.is_empty();
         let parsed =
             match self.parse_value_with_limits(&name, &source_name, value, important, parse_limits)
             {
@@ -329,7 +329,7 @@ impl DeclarationState {
                 Err(outcome) => return Ok(outcome),
             };
         let previous_group_id = self.next_pending_group_id;
-        let records = self.records_for_parsed(name, parsed, important, &source_name);
+        let records = self.records_for_parsed(name.into_owned(), parsed, important, &source_name);
         let additional_records = records
             .iter()
             .filter(|record| self.find(&record.name).is_none())
@@ -360,7 +360,7 @@ impl DeclarationState {
             let Some(name) = self.canonical_name(&declaration.name) else {
                 continue;
             };
-            let source_name = declaration.name.to_ascii_lowercase();
+            let source_name = ascii_lowercase(&declaration.name);
             let Ok(parsed) = self.parse_value(
                 &name,
                 &source_name,
@@ -369,8 +369,12 @@ impl DeclarationState {
             ) else {
                 continue;
             };
-            let records =
-                self.records_for_parsed(name, parsed, declaration.important, &source_name);
+            let records = self.records_for_parsed(
+                name.into_owned(),
+                parsed,
+                declaration.important,
+                &source_name,
+            );
             for (sub_index, record) in records.into_iter().enumerate() {
                 if winners
                     .get(&record.name)
@@ -521,13 +525,13 @@ impl DeclarationState {
         self.records.iter().find(|record| record.name == name)
     }
 
-    fn canonical_name(&self, name: &str) -> Option<String> {
+    fn canonical_name<'a>(&self, name: &'a str) -> Option<Cow<'a, str>> {
         match self.context {
-            DeclarationContext::Style => {
-                canonical_style_property_name(name).map(|name| name.into_owned())
+            DeclarationContext::Style => canonical_style_property_name(name),
+            DeclarationContext::FontFace => canonical_descriptor_name(name).map(Cow::Owned),
+            DeclarationContext::Function => {
+                canonical_function_descriptor_name(name).map(Cow::Owned)
             }
-            DeclarationContext::FontFace => canonical_descriptor_name(name),
-            DeclarationContext::Function => canonical_function_descriptor_name(name),
         }
     }
 
@@ -1476,11 +1480,13 @@ mod tests {
             MutationOutcome::Applied
         );
         assert_eq!(
-            state.set_property("WIDTH", "10px", "important"),
+            state.set_property("WIDTH", "10px", "IMPORTANT"),
             MutationOutcome::Applied
         );
         assert_eq!(state.item(0), "color");
         assert_eq!(state.item(1), "width");
+        assert_eq!(state.get_property_value("WIDTH"), "10px");
+        assert_eq!(state.get_property_priority("WIDTH"), "important");
 
         state.set_property("color", "blue", "important");
         assert_eq!(state.item(0), "color");

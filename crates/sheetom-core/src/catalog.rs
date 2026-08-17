@@ -73,17 +73,20 @@ impl PropertyGrammar<'_> {
     }
 }
 
+pub(crate) fn ascii_lowercase(value: &str) -> Cow<'_, str> {
+    if value.bytes().any(|byte| byte.is_ascii_uppercase()) {
+        Cow::Owned(value.to_ascii_lowercase())
+    } else {
+        Cow::Borrowed(value)
+    }
+}
+
 pub(crate) fn canonical_property_name(name: &str) -> Option<Cow<'_, str>> {
     if name.starts_with("--") {
         return (name.len() > 2).then_some(Cow::Borrowed(name));
     }
 
-    let had_ascii_uppercase = name.bytes().any(|byte| byte.is_ascii_uppercase());
-    let lower = if had_ascii_uppercase {
-        Cow::Owned(name.to_ascii_lowercase())
-    } else {
-        Cow::Borrowed(name)
-    };
+    let lower = ascii_lowercase(name);
     if lower == "grid-gap" {
         return Some(Cow::Borrowed("gap"));
     }
@@ -96,7 +99,7 @@ pub(crate) fn canonical_property_name(name: &str) -> Option<Cow<'_, str>> {
         let prefixed_longhands = shorthand_longhands(&lower);
         let unprefixed_longhands = shorthand_longhands(unprefixed);
         if prefixed_longhands.is_some() && prefixed_longhands == unprefixed_longhands {
-            return Some(if had_ascii_uppercase {
+            return Some(if matches!(lower, Cow::Owned(_)) {
                 Cow::Owned(unprefixed.to_owned())
             } else {
                 Cow::Borrowed(name.strip_prefix("-webkit-").unwrap_or(name))
