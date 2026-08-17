@@ -302,7 +302,7 @@ pub fn parse_standard_semantic_property_with_limits(
 }
 
 fn parse_standard_value(
-    grammar: &crate::catalog::PropertyGrammar,
+    grammar: &crate::catalog::PropertyGrammar<'_>,
     authored_name: &str,
     source: &str,
 ) -> Result<Property<'static>, EngineError> {
@@ -326,7 +326,7 @@ fn parse_standard_value(
 }
 
 fn unsupported_grammar_error(
-    grammar: &crate::catalog::PropertyGrammar,
+    grammar: &crate::catalog::PropertyGrammar<'_>,
     source: &str,
 ) -> EngineError {
     let requirement = if grammar.extensions().is_empty() {

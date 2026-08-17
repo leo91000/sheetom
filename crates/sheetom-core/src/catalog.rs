@@ -1,4 +1,5 @@
 use lightningcss::properties::PropertyId;
+use std::borrow::Cow;
 
 use crate::{
     browser_longhand::has_browser_longhand_grammar, geometric_value::has_geometric_property_grammar,
@@ -40,20 +41,20 @@ pub(crate) enum PropertyGrammarOwner {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct PropertyGrammar {
-    canonical_name: String,
-    parser_name: String,
+pub(crate) struct PropertyGrammar<'a> {
+    canonical_name: Cow<'a, str>,
+    parser_name: Option<&'static str>,
     owner: PropertyGrammarOwner,
     extensions: &'static [PropertyGrammarExtension],
 }
 
-impl PropertyGrammar {
+impl PropertyGrammar<'_> {
     pub(crate) fn canonical_name(&self) -> &str {
         &self.canonical_name
     }
 
     pub(crate) fn parser_name(&self) -> &str {
-        &self.parser_name
+        self.parser_name.unwrap_or(&self.canonical_name)
     }
 
     pub(crate) fn owner(&self) -> PropertyGrammarOwner {
@@ -72,25 +73,34 @@ impl PropertyGrammar {
     }
 }
 
-pub(crate) fn canonical_property_name(name: &str) -> Option<String> {
+pub(crate) fn canonical_property_name(name: &str) -> Option<Cow<'_, str>> {
     if name.starts_with("--") {
-        return (name.len() > 2).then(|| name.to_owned());
+        return (name.len() > 2).then_some(Cow::Borrowed(name));
     }
 
-    let lower = name.to_ascii_lowercase();
+    let had_ascii_uppercase = name.bytes().any(|byte| byte.is_ascii_uppercase());
+    let lower = if had_ascii_uppercase {
+        Cow::Owned(name.to_ascii_lowercase())
+    } else {
+        Cow::Borrowed(name)
+    };
     if lower == "grid-gap" {
-        return Some("gap".to_owned());
+        return Some(Cow::Borrowed("gap"));
     }
     if let Ok(index) =
-        generated::PROPERTY_ALIASES.binary_search_by_key(&lower.as_str(), |(alias, _)| *alias)
+        generated::PROPERTY_ALIASES.binary_search_by_key(&lower.as_ref(), |(alias, _)| *alias)
     {
-        return Some(generated::PROPERTY_ALIASES[index].1.to_owned());
+        return Some(Cow::Borrowed(generated::PROPERTY_ALIASES[index].1));
     }
     if let Some(unprefixed) = lower.strip_prefix("-webkit-") {
         let prefixed_longhands = shorthand_longhands(&lower);
         let unprefixed_longhands = shorthand_longhands(unprefixed);
         if prefixed_longhands.is_some() && prefixed_longhands == unprefixed_longhands {
-            return Some(unprefixed.to_owned());
+            return Some(if had_ascii_uppercase {
+                Cow::Owned(unprefixed.to_owned())
+            } else {
+                Cow::Borrowed(name.strip_prefix("-webkit-").unwrap_or(name))
+            });
         }
     }
     if lower.starts_with("-webkit-") {
@@ -104,12 +114,12 @@ pub(crate) fn canonical_property_name(name: &str) -> Option<String> {
                             && *candidate_longhands == longhands
                     })
             {
-                return Some((*canonical).to_owned());
+                return Some(Cow::Borrowed(canonical));
             }
         }
     }
     generated::SUPPORTED_PROPERTIES
-        .binary_search(&lower.as_str())
+        .binary_search(&lower.as_ref())
         .is_ok()
         .then_some(lower)
 }
@@ -156,29 +166,28 @@ pub(crate) fn property_alias_observable_value<'a>(
     }
 }
 
-pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar> {
+pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar<'_>> {
     let canonical_name = canonical_property_name(name)?;
     if canonical_name.starts_with("--") {
         return Some(PropertyGrammar {
-            parser_name: canonical_name.clone(),
+            parser_name: None,
             canonical_name,
             owner: PropertyGrammarOwner::CustomTokenStream,
             extensions: &[],
         });
     }
 
-    let alias_parser_name = sheetom_parser_property_name(&canonical_name);
-    let parser_name = alias_parser_name.unwrap_or(&canonical_name).to_owned();
+    let parser_name = sheetom_parser_property_name(&canonical_name);
     let extensions = if name.eq_ignore_ascii_case("-webkit-perspective") {
         &[PropertyGrammarExtension::WebkitPerspective][..]
     } else {
         property_grammar_extensions(&canonical_name)
     };
     let lightning_supports_property = !matches!(
-        PropertyId::from(parser_name.as_str()),
+        PropertyId::from(parser_name.unwrap_or(&canonical_name)),
         PropertyId::Custom(_)
     );
-    let owner = if alias_parser_name.is_some() {
+    let owner = if parser_name.is_some() {
         PropertyGrammarOwner::SheetomAlias
     } else if lightning_supports_property {
         PropertyGrammarOwner::Lightning
@@ -296,6 +305,7 @@ mod tests {
         sheetom_parser_property_name, shorthand_longhands, PropertyGrammarExtension,
         PropertyGrammarOwner, CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
     };
+    use std::borrow::Cow;
 
     #[test]
     fn catalog_is_pinned_to_the_chromium_manifest() {
@@ -331,6 +341,22 @@ mod tests {
             canonical_property_name("-webkit-border-after").as_deref(),
             Some("border-block-end")
         );
+    }
+
+    #[test]
+    fn borrows_canonical_property_names_when_normalization_is_unnecessary() {
+        assert!(matches!(
+            canonical_property_name("width"),
+            Some(Cow::Borrowed("width"))
+        ));
+        assert!(matches!(
+            canonical_property_name("word-wrap"),
+            Some(Cow::Borrowed("overflow-wrap"))
+        ));
+        assert!(matches!(
+            canonical_property_name("WIDTH"),
+            Some(Cow::Owned(name)) if name == "width"
+        ));
     }
 
     #[test]
