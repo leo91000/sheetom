@@ -128,109 +128,7 @@ impl<V: ToCss + std::ops::Mul<f32, Output = V> + TrySign + Clone + std::fmt::Deb
   where
     W: std::fmt::Write,
   {
-    match self {
-      MathFunction::Calc(calc) => {
-        dest.write_str("calc(")?;
-        calc.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Min(args) => {
-        dest.write_str("min(")?;
-        let mut first = true;
-        for arg in args {
-          if first {
-            first = false;
-          } else {
-            dest.delim(',', false)?;
-          }
-          arg.to_css(dest)?;
-        }
-        dest.write_char(')')
-      }
-      MathFunction::Max(args) => {
-        dest.write_str("max(")?;
-        let mut first = true;
-        for arg in args {
-          if first {
-            first = false;
-          } else {
-            dest.delim(',', false)?;
-          }
-          arg.to_css(dest)?;
-        }
-        dest.write_char(')')
-      }
-      MathFunction::Clamp(a, b, c) => {
-        // If clamp() is unsupported by targets, output min()/max()
-        if should_compile!(dest.targets.current, ClampFunction) {
-          dest.write_str("max(")?;
-          a.to_css(dest)?;
-          dest.delim(',', false)?;
-          dest.write_str("min(")?;
-          b.to_css(dest)?;
-          dest.delim(',', false)?;
-          c.to_css(dest)?;
-          dest.write_str("))")?;
-          return Ok(());
-        }
-
-        dest.write_str("clamp(")?;
-        a.to_css(dest)?;
-        dest.delim(',', false)?;
-        b.to_css(dest)?;
-        dest.delim(',', false)?;
-        c.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Round(strategy, a, b) => {
-        dest.write_str("round(")?;
-        if *strategy != RoundingStrategy::default() {
-          strategy.to_css(dest)?;
-          dest.delim(',', false)?;
-        }
-        a.to_css(dest)?;
-        dest.delim(',', false)?;
-        b.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Rem(a, b) => {
-        dest.write_str("rem(")?;
-        a.to_css(dest)?;
-        dest.delim(',', false)?;
-        b.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Mod(a, b) => {
-        dest.write_str("mod(")?;
-        a.to_css(dest)?;
-        dest.delim(',', false)?;
-        b.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Abs(v) => {
-        dest.write_str("abs(")?;
-        v.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Sign(v) => {
-        dest.write_str("sign(")?;
-        v.to_css(dest)?;
-        dest.write_char(')')
-      }
-      MathFunction::Hypot(args) => {
-        dest.write_str("hypot(")?;
-        let mut first = true;
-        for arg in args {
-          if first {
-            first = false;
-          } else {
-            dest.delim(',', false)?;
-          }
-          arg.to_css(dest)?;
-        }
-        dest.write_char(')')
-      }
-    }
+    serialize_math_function(self, dest)
   }
 }
 
@@ -269,6 +167,163 @@ pub enum Calc<V> {
   /// A math function, such as `calc()`, `min()`, or `max()`.
   #[cfg_attr(feature = "visitor", skip_type)]
   Function(Box<MathFunction<V>>),
+}
+
+// Math-function dispatch is independent of V and otherwise gets inlined into every Calc<V>
+// serializer. Keep common calc arithmetic typed and erase only this less-common dispatcher.
+#[derive(Clone, Copy)]
+enum MathSerializeKind {
+  Calc,
+  Min(usize),
+  Max(usize),
+  Clamp,
+  Round(RoundingStrategy),
+  Rem,
+  Mod,
+  Abs,
+  Sign,
+  Hypot(usize),
+}
+
+trait MathSerializeOps<W: std::fmt::Write> {
+  fn kind(&self) -> MathSerializeKind;
+  fn write_argument(&self, index: usize, dest: &mut Printer<W>) -> Result<(), PrinterError>;
+}
+
+impl<V, W> MathSerializeOps<W> for MathFunction<V>
+where
+  V: ToCss + std::ops::Mul<f32, Output = V> + TrySign + Clone + std::fmt::Debug,
+  W: std::fmt::Write,
+{
+  fn kind(&self) -> MathSerializeKind {
+    match self {
+      MathFunction::Calc(_) => MathSerializeKind::Calc,
+      MathFunction::Min(values) => MathSerializeKind::Min(values.len()),
+      MathFunction::Max(values) => MathSerializeKind::Max(values.len()),
+      MathFunction::Clamp(..) => MathSerializeKind::Clamp,
+      MathFunction::Round(strategy, ..) => MathSerializeKind::Round(*strategy),
+      MathFunction::Rem(..) => MathSerializeKind::Rem,
+      MathFunction::Mod(..) => MathSerializeKind::Mod,
+      MathFunction::Abs(_) => MathSerializeKind::Abs,
+      MathFunction::Sign(_) => MathSerializeKind::Sign,
+      MathFunction::Hypot(values) => MathSerializeKind::Hypot(values.len()),
+    }
+  }
+
+  fn write_argument(&self, index: usize, dest: &mut Printer<W>) -> Result<(), PrinterError> {
+    let value = match self {
+      MathFunction::Calc(value) | MathFunction::Abs(value) | MathFunction::Sign(value) => match index {
+        0 => value,
+        _ => unreachable!(),
+      },
+      MathFunction::Min(values) | MathFunction::Max(values) | MathFunction::Hypot(values) => &values[index],
+      MathFunction::Clamp(min, center, max) => match index {
+        0 => min,
+        1 => center,
+        2 => max,
+        _ => unreachable!(),
+      },
+      MathFunction::Round(_, value, step)
+      | MathFunction::Rem(value, step)
+      | MathFunction::Mod(value, step) => match index {
+        0 => value,
+        1 => step,
+        _ => unreachable!(),
+      },
+    };
+    value.to_css(dest)
+  }
+}
+
+fn serialize_math_arguments<W: std::fmt::Write>(
+  function: &dyn MathSerializeOps<W>,
+  count: usize,
+  dest: &mut Printer<W>,
+) -> Result<(), PrinterError> {
+  for index in 0..count {
+    if index > 0 {
+      dest.delim(',', false)?;
+    }
+    function.write_argument(index, dest)?;
+  }
+  Ok(())
+}
+
+// WASM prioritizes one shared body for download and code memory. Native builds instead let LLVM
+// devirtualize this adapter back into direct calls, preserving the hot serialization path.
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+#[cfg_attr(not(target_arch = "wasm32"), inline(always))]
+fn serialize_math_function<W: std::fmt::Write>(
+  function: &dyn MathSerializeOps<W>,
+  dest: &mut Printer<W>,
+) -> Result<(), PrinterError> {
+  match function.kind() {
+    MathSerializeKind::Calc => {
+      dest.write_str("calc(")?;
+      function.write_argument(0, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Min(count) => {
+      dest.write_str("min(")?;
+      serialize_math_arguments(function, count, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Max(count) => {
+      dest.write_str("max(")?;
+      serialize_math_arguments(function, count, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Clamp => {
+      if should_compile!(dest.targets.current, ClampFunction) {
+        dest.write_str("max(")?;
+        function.write_argument(0, dest)?;
+        dest.delim(',', false)?;
+        dest.write_str("min(")?;
+        function.write_argument(1, dest)?;
+        dest.delim(',', false)?;
+        function.write_argument(2, dest)?;
+        return dest.write_str("))")
+      }
+
+      dest.write_str("clamp(")?;
+      serialize_math_arguments(function, 3, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Round(strategy) => {
+      dest.write_str("round(")?;
+      if strategy != RoundingStrategy::default() {
+        strategy.to_css(dest)?;
+        dest.delim(',', false)?;
+      }
+      serialize_math_arguments(function, 2, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Rem => {
+      dest.write_str("rem(")?;
+      serialize_math_arguments(function, 2, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Mod => {
+      dest.write_str("mod(")?;
+      serialize_math_arguments(function, 2, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Abs => {
+      dest.write_str("abs(")?;
+      function.write_argument(0, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Sign => {
+      dest.write_str("sign(")?;
+      function.write_argument(0, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::Hypot(count) => {
+      dest.write_str("hypot(")?;
+      serialize_math_arguments(function, count, dest)?;
+      dest.write_char(')')
+    }
+  }
 }
 
 // Erase the callback type before recursive parsing so each value type produces one parser body,
