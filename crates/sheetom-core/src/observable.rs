@@ -443,34 +443,37 @@ fn serialize_cursor_observable(canonical: &str) -> String {
     let Some(layers) = split_top_level_delimiter(canonical, b',') else {
         return canonical.to_owned();
     };
-    layers
-        .into_iter()
-        .map(|layer| {
-            let Some(mut components) = crate::syntax::split_top_level_whitespace(layer) else {
-                return layer.to_owned();
-            };
-            if components.len() < 3 {
-                return layer.to_owned();
-            }
-            let x_index = components.len() - 2;
-            let y_index = components.len() - 1;
-            let (Ok(x), Ok(y)) = (
-                components[x_index].parse::<f64>(),
-                components[y_index].parse::<f64>(),
-            ) else {
-                return layer.to_owned();
-            };
-            if !x.is_finite() || !y.is_finite() {
-                return layer.to_owned();
-            }
-            let x = serialize_finite_number(x.trunc());
-            let y = serialize_finite_number(y.trunc());
-            components[x_index] = &x;
-            components[y_index] = &y;
-            components.join(" ")
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
+    let mut serialized = String::new();
+    for layer in layers {
+        let layer = serialize_cursor_layer(layer);
+        push_delimited(&mut serialized, ", ", &layer);
+    }
+    serialized
+}
+
+fn serialize_cursor_layer(layer: &str) -> String {
+    let Some(mut components) = crate::syntax::split_top_level_whitespace(layer) else {
+        return layer.to_owned();
+    };
+    if components.len() < 3 {
+        return layer.to_owned();
+    }
+    let x_index = components.len() - 2;
+    let y_index = components.len() - 1;
+    let (Ok(x), Ok(y)) = (
+        components[x_index].parse::<f64>(),
+        components[y_index].parse::<f64>(),
+    ) else {
+        return layer.to_owned();
+    };
+    if !x.is_finite() || !y.is_finite() {
+        return layer.to_owned();
+    }
+    let x = serialize_finite_number(x.trunc());
+    let y = serialize_finite_number(y.trunc());
+    components[x_index] = &x;
+    components[y_index] = &y;
+    components.join(" ")
 }
 
 fn serialize_compressible_pair(
@@ -534,34 +537,36 @@ fn serialize_text_shadow(input: &str, canonical: &str) -> String {
     let Some(layers) = split_top_level_delimiter(input, b',') else {
         return canonical.to_owned();
     };
-    layers
-        .into_iter()
-        .map(|layer| {
-            let components = crate::syntax::split_top_level_whitespace(layer)?;
-            let color_index = components
-                .iter()
-                .position(|component| semantic_accepts("color", component));
-            let mut output = Vec::with_capacity(components.len());
-            if let Some(index) = color_index {
-                output.push(
-                    project_observable_value("color", components[index])
-                        .unwrap_or_else(|| components[index].to_owned()),
-                );
-            }
-            for (index, component) in components.into_iter().enumerate() {
-                if Some(index) == color_index {
-                    continue;
-                }
-                output.push(
-                    project_observable_value("margin-left", component)
-                        .unwrap_or_else(|| component.to_owned()),
-                );
-            }
-            Some(output.join(" "))
-        })
-        .collect::<Option<Vec<_>>>()
-        .map(|layers| layers.join(", "))
-        .unwrap_or_else(|| canonical.to_owned())
+    let mut serialized = String::new();
+    for layer in layers {
+        let Some(layer) = serialize_text_shadow_layer(layer) else {
+            return canonical.to_owned();
+        };
+        push_delimited(&mut serialized, ", ", &layer);
+    }
+    serialized
+}
+
+fn serialize_text_shadow_layer(layer: &str) -> Option<String> {
+    let components = crate::syntax::split_top_level_whitespace(layer)?;
+    let color_index = components
+        .iter()
+        .position(|component| semantic_accepts("color", component));
+    let mut serialized = String::new();
+    if let Some(index) = color_index {
+        let color = project_observable_value("color", components[index])
+            .unwrap_or_else(|| components[index].to_owned());
+        push_delimited(&mut serialized, " ", &color);
+    }
+    for (index, component) in components.into_iter().enumerate() {
+        if Some(index) == color_index {
+            continue;
+        }
+        let component = project_observable_value("margin-left", component)
+            .unwrap_or_else(|| component.to_owned());
+        push_delimited(&mut serialized, " ", &component);
+    }
+    Some(serialized)
 }
 
 fn serialize_text_emphasis_style(input: &str, canonical: &str) -> String {
@@ -655,7 +660,7 @@ fn serialize_transform_origin(input: &str, canonical: &str) -> String {
     let authored = crate::syntax::split_top_level_whitespace(input).unwrap_or_default();
     let canonical =
         crate::syntax::split_top_level_whitespace(canonical).unwrap_or_else(|| vec![canonical]);
-    let mut output = Vec::with_capacity(canonical.len());
+    let mut output = String::new();
 
     for (index, component) in canonical.into_iter().enumerate() {
         let authored_component = authored.get(index).copied().unwrap_or_default();
@@ -665,13 +670,13 @@ fn serialize_transform_origin(input: &str, canonical: &str) -> String {
             canonicalize_leading_decimal(component)
         };
         if starts_math_function(authored_component) && !starts_math_function(&component) {
-            output.push(format!("calc({component})"));
+            push_delimited(&mut output, " ", &format!("calc({component})"));
         } else {
-            output.push(component);
+            push_delimited(&mut output, " ", &component);
         }
     }
 
-    output.join(" ")
+    output
 }
 
 fn serialize_border_image_slice_observable(input: &str, canonical: &str) -> String {
@@ -743,14 +748,14 @@ fn compress_four_components(values: &[String]) -> String {
 
 fn serialize_color_pair(input: &str) -> Option<String> {
     let components = crate::syntax::split_top_level_whitespace(input)?;
-    if components.len() != 2 {
+    let [first, second] = components.as_slice() else {
         return None;
-    }
-    components
-        .into_iter()
-        .map(|component| project_observable_value("color", component))
-        .collect::<Option<Vec<_>>>()
-        .map(|values| values.join(" "))
+    };
+    Some(format!(
+        "{} {}",
+        project_observable_value("color", first)?,
+        project_observable_value("color", second)?
+    ))
 }
 
 fn serialize_aspect_ratio(input: &str, canonical: &str) -> String {
@@ -941,15 +946,14 @@ fn serialize_font_family(
         return quote_css_string(value);
     }
 
-    split_top_level_delimiter(safe_value, b',')
-        .map(|families| {
-            families
-                .into_iter()
-                .map(serialize_font_family_member)
-                .collect::<Vec<_>>()
-                .join(", ")
-        })
-        .unwrap_or_else(|| safe_value.to_owned())
+    let Some(families) = split_top_level_delimiter(safe_value, b',') else {
+        return safe_value.to_owned();
+    };
+    let mut serialized = String::new();
+    for family in families {
+        push_delimited(&mut serialized, ", ", &serialize_font_family_member(family));
+    }
+    serialized
 }
 
 fn serialize_font_family_member(value: &str) -> String {
@@ -1038,11 +1042,19 @@ fn semantic_accepts(name: &str, value: &str) -> bool {
 }
 
 fn serialize_plain_time_list(input: &str) -> Option<String> {
-    split_top_level_delimiter(input, b',')?
-        .into_iter()
-        .map(|value| serialize_plain_time(value.trim()))
-        .collect::<Option<Vec<_>>>()
-        .map(|values| values.join(", "))
+    let values = split_top_level_delimiter(input, b',')?;
+    let mut serialized = String::new();
+    for value in values {
+        push_delimited(&mut serialized, ", ", &serialize_plain_time(value.trim())?);
+    }
+    Some(serialized)
+}
+
+fn push_delimited(output: &mut String, separator: &str, value: &str) {
+    if !output.is_empty() {
+        output.push_str(separator);
+    }
+    output.push_str(value);
 }
 
 fn serialize_plain_time(input: &str) -> Option<String> {
