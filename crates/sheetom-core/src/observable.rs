@@ -153,22 +153,27 @@ fn serialize_gradient_observable(input: &str) -> String {
 
 fn canonicalize_unquoted_urls(input: &str) -> String {
     let mut tokenizer = TokenizerWithSpans::new(input);
-    let mut replacements = Vec::new();
+    let mut output = String::with_capacity(input.len());
+    let mut cursor = 0;
     while let Ok(token) = tokenizer.next_token() {
         let Token::UnquotedUrl(value) = token.token else {
             continue;
         };
-        let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
-        replacements.push((
-            token.start.byte_index(),
-            token.end.byte_index(),
-            format!("url(\"{escaped}\")"),
-        ));
+        let start = token.start.byte_index();
+        let end = token.end.byte_index();
+        let Some(prefix) = input.get(cursor..start) else {
+            return input.to_owned();
+        };
+        output.push_str(prefix);
+        output.push_str("url(\"");
+        push_escaped_css_string(&mut output, &value);
+        output.push_str("\")");
+        cursor = end;
     }
-    let mut output = input.to_owned();
-    for (start, end, replacement) in replacements.into_iter().rev() {
-        output.replace_range(start..end, &replacement);
-    }
+    let Some(suffix) = input.get(cursor..) else {
+        return input.to_owned();
+    };
+    output.push_str(suffix);
     output
 }
 
@@ -973,19 +978,23 @@ fn serialize_font_family_member(value: &str) -> String {
 fn quote_css_string(value: &str) -> String {
     let mut quoted = String::with_capacity(value.len() + 2);
     quoted.push('"');
+    push_escaped_css_string(&mut quoted, value);
+    quoted.push('"');
+    quoted
+}
+
+fn push_escaped_css_string(output: &mut String, value: &str) {
     let mut cursor = 0;
     for (index, byte) in value.bytes().enumerate() {
         if !matches!(byte, b'\\' | b'"') {
             continue;
         }
-        quoted.push_str(&value[cursor..index]);
-        quoted.push('\\');
-        quoted.push(char::from(byte));
+        output.push_str(&value[cursor..index]);
+        output.push('\\');
+        output.push(char::from(byte));
         cursor = index + 1;
     }
-    quoted.push_str(&value[cursor..]);
-    quoted.push('"');
-    quoted
+    output.push_str(&value[cursor..]);
 }
 
 fn is_identifier(value: &str) -> bool {
