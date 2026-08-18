@@ -1206,14 +1206,13 @@ fn parse_recovered_rule_tree_noniterative(
             .ok_or_else(|| EngineError::Parse("invalid @function prelude".to_owned()))?;
         return parse_function_rule(prelude, body, depth);
     }
-    let strict = parse_rule_tree_active(source).ok();
-    if let Some(parsed) = strict.as_ref() {
+    let mut strict = parse_rule_tree_active(source).ok();
+    if let Some(mut parsed) = strict.take() {
         if parsed.kind == "property" {
-            let mut parsed = parsed.clone();
             preserve_property_descriptor_values(&mut parsed, body);
             return Ok(parsed);
         }
-        if is_single_child_group(parsed) {
+        if is_single_child_group(&parsed) {
             if let Some(recovered) = recover_single_child_group_chain(parsed.clone(), source, depth)
             {
                 return recovered;
@@ -1236,15 +1235,22 @@ fn parse_recovered_rule_tree_noniterative(
                 | "keyframes"
         );
         if !recover_from_source {
-            let mut parsed = parsed.clone();
             preserve_source_prelude(&mut parsed, header);
             preserve_source_text(&mut parsed, source);
             return Ok(parsed);
         }
+        strict = Some(parsed);
     }
 
-    let probe_source = format!("{header}{{}}");
-    let mut probe = parse_rule_tree_active(&probe_source)?;
+    let mut probe = if let Some(mut parsed) = strict {
+        parsed.declarations.clear();
+        parsed.children.clear();
+        parsed.css_text.clear();
+        parsed
+    } else {
+        let probe_source = format!("{header}{{}}");
+        parse_rule_tree_active(&probe_source)?
+    };
     preserve_source_prelude(&mut probe, header);
     recover_block_rule(probe, body, depth)
 }
