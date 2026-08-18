@@ -7,6 +7,7 @@ use crate::{
 };
 use cssparser::{Parser, ParserInput, Token};
 use serde::Serialize;
+use std::fmt::Write;
 
 pub const COUNTER_STYLE_DESCRIPTORS: &[&str] = &[
     "system",
@@ -133,7 +134,7 @@ fn canonical_additive_symbols(value: &str) -> Option<String> {
         if !canonical.is_empty() {
             canonical.push_str(", ");
         }
-        canonical.push_str(&format!("{weight} {symbol}"));
+        write!(&mut canonical, "{weight} {symbol}").ok()?;
     }
     Some(canonical)
 }
@@ -170,11 +171,9 @@ fn canonical_range(value: &str) -> Option<String> {
         if !canonical.is_empty() {
             canonical.push_str(", ");
         }
-        canonical.push_str(&format!(
-            "{} {}",
-            canonical_range_bound(start?),
-            canonical_range_bound(end?)
-        ));
+        append_range_bound(&mut canonical, start.as_ref()?)?;
+        canonical.push(' ');
+        append_range_bound(&mut canonical, end.as_ref()?)?;
     }
     Some(canonical)
 }
@@ -185,11 +184,12 @@ enum RangeBound {
     Integer(i32),
 }
 
-fn canonical_range_bound(bound: RangeBound) -> String {
+fn append_range_bound(output: &mut String, bound: &RangeBound) -> Option<()> {
     match bound {
-        RangeBound::NegativeInfinity | RangeBound::PositiveInfinity => "infinite".to_owned(),
-        RangeBound::Integer(value) => value.to_string(),
+        RangeBound::NegativeInfinity | RangeBound::PositiveInfinity => output.push_str("infinite"),
+        RangeBound::Integer(value) => write!(output, "{value}").ok()?,
     }
+    Some(())
 }
 
 fn parse_range_bound(value: &str, start: bool) -> Option<RangeBound> {
