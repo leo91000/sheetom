@@ -1256,18 +1256,18 @@ fn materialize_static_observable(observable: &str, safe: &str) -> String {
     if observable_parts.len() != safe_parts.len() {
         return safe.to_owned();
     }
-    observable_parts
-        .iter()
-        .zip(safe_parts)
-        .map(|(observable, safe)| {
-            if *observable == "initial" {
-                "initial"
-            } else {
-                safe
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
+    let mut materialized = String::with_capacity(safe.len());
+    for (observable, safe) in observable_parts.iter().zip(safe_parts) {
+        if !materialized.is_empty() {
+            materialized.push_str(", ");
+        }
+        materialized.push_str(if *observable == "initial" {
+            "initial"
+        } else {
+            safe
+        });
+    }
+    materialized
 }
 
 fn normalize_rgb_function_spacing(value: String) -> String {
