@@ -423,11 +423,13 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::AutoLength(None) => Ok("auto".to_owned()),
             BrowserLonghandValue::AutoLength(Some(value)) => serialize_zero_length(value),
             BrowserLonghandValue::ColumnCount(value) => value.canonical_value(),
-            BrowserLonghandValue::HyphenateLimitChars(values) => values
-                .iter()
-                .map(HyphenateLimitCharsComponent::canonical_value)
-                .collect::<Result<Vec<_>, EngineError>>()
-                .map(|values| values.join(" ")),
+            BrowserLonghandValue::HyphenateLimitChars(values) => {
+                let mut output = String::new();
+                for value in values {
+                    push_delimited(&mut output, " ", &value.canonical_value()?);
+                }
+                Ok(output)
+            }
             BrowserLonghandValue::ContainIntrinsic(value) => value.canonical_value(),
             BrowserLonghandValue::DashedIdentList(DashedIdentListValue::None) => {
                 Ok("none".to_owned())
@@ -438,31 +440,35 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::DashedIdentList(DashedIdentListValue::Names(values)) => {
                 serialize_comma_separated(values)
             }
-            BrowserLonghandValue::TimelineNameList(values) => Ok(values
-                .iter()
-                .map(|value| match value {
-                    KeywordOrDashedIdentValue::Keyword(keyword) => Ok((*keyword).to_owned()),
-                    KeywordOrDashedIdentValue::Name(name) => serialize_typed(name),
-                })
-                .collect::<Result<Vec<_>, EngineError>>()?
-                .join(", ")),
+            BrowserLonghandValue::TimelineNameList(values) => {
+                let mut output = String::new();
+                for value in values {
+                    let value = match value {
+                        KeywordOrDashedIdentValue::Keyword(keyword) => (*keyword).to_owned(),
+                        KeywordOrDashedIdentValue::Name(name) => serialize_typed(name)?,
+                    };
+                    push_delimited(&mut output, ", ", &value);
+                }
+                Ok(output)
+            }
             BrowserLonghandValue::TimeOrNormal(None) => Ok("normal".to_owned()),
             BrowserLonghandValue::TimeOrNormal(Some(value)) => serialize_typed(value),
             BrowserLonghandValue::ViewTimelineInset(values) => {
-                let mut entries = Vec::with_capacity(values.len());
+                let mut output = String::new();
                 for value in values {
-                    let mut components = Vec::with_capacity(value.values.len());
+                    let mut entry = String::new();
                     for component in &value.values {
-                        components.push(match component {
+                        let component = match component {
                             ViewTimelineInsetComponent::Auto => "auto".to_owned(),
                             ViewTimelineInsetComponent::LengthPercentage(value) => {
                                 serialize_typed(value)?
                             }
-                        });
+                        };
+                        push_delimited(&mut entry, " ", &component);
                     }
-                    entries.push(components.join(" "));
+                    push_delimited(&mut output, ", ", &entry);
                 }
-                Ok(entries.join(", "))
+                Ok(output)
             }
             BrowserLonghandValue::CornerShape(value) => value.canonical_value(),
             BrowserLonghandValue::ColorScheme(ColorSchemeValue::Normal) => Ok("normal".to_owned()),
@@ -475,16 +481,16 @@ impl BrowserLonghandValue {
             }
             BrowserLonghandValue::FontFeatureSettings(None) => Ok("normal".to_owned()),
             BrowserLonghandValue::FontFeatureSettings(Some(values)) => {
-                let mut output = Vec::with_capacity(values.len());
+                let mut output = String::new();
                 for value in values {
                     let mut setting = serialize_typed(&value.tag)?;
                     if value.value != 1 {
                         setting.push(' ');
                         setting.push_str(&value.value.to_string());
                     }
-                    output.push(setting);
+                    push_delimited(&mut output, ", ", &setting);
                 }
-                Ok(output.join(", "))
+                Ok(output)
             }
             BrowserLonghandValue::FontLanguageOverride(None) => Ok("normal".to_owned()),
             BrowserLonghandValue::FontLanguageOverride(Some(value)) => serialize_typed(value),
@@ -493,37 +499,41 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::FontVariantKeywords(values) => Ok(values.join(" ")),
             BrowserLonghandValue::FontVariationSettings(None) => Ok("normal".to_owned()),
             BrowserLonghandValue::FontVariationSettings(Some(values)) => {
-                let mut output = Vec::with_capacity(values.len());
+                let mut output = String::new();
                 for value in values {
                     let mut setting = serialize_typed(&value.tag)?;
                     setting.push(' ');
                     let number = serialize_typed(&value.value)?;
                     if value.calculation {
-                        setting.push_str(&format!("calc({number})"));
+                        setting.push_str("calc(");
+                        setting.push_str(&number);
+                        setting.push(')');
                     } else {
                         setting.push_str(&number);
                     }
-                    output.push(setting);
+                    push_delimited(&mut output, ", ", &setting);
                 }
-                Ok(output.join(", "))
+                Ok(output)
             }
             BrowserLonghandValue::MathDepth(value) => value.canonical_value(),
             BrowserLonghandValue::InitialLetter(value) => value.canonical_value(),
             BrowserLonghandValue::PositionTryFallbacks(None) => Ok("none".to_owned()),
             BrowserLonghandValue::PositionTryFallbacks(Some(values)) => {
-                let mut output = Vec::with_capacity(values.len());
+                let mut output = String::new();
                 for value in values {
-                    let mut components = Vec::with_capacity(value.tactics.len() + 1);
+                    let mut entry = String::new();
                     if let Some(name) = &value.name {
-                        components.push(serialize_typed(name)?);
+                        push_delimited(&mut entry, " ", &serialize_typed(name)?);
                     }
                     if let Some(area) = &value.area {
-                        components.push(area.canonical_value());
+                        push_delimited(&mut entry, " ", &area.canonical_value());
                     }
-                    components.extend(value.tactics.iter().map(|value| (*value).to_owned()));
-                    output.push(components.join(" "));
+                    for tactic in &value.tactics {
+                        push_delimited(&mut entry, " ", tactic);
+                    }
+                    push_delimited(&mut output, ", ", &entry);
                 }
-                Ok(output.join(", "))
+                Ok(output)
             }
             BrowserLonghandValue::TextBoxEdge(value) => value.canonical_value(),
             BrowserLonghandValue::TextFit(value) => value.canonical_value(),
@@ -531,27 +541,31 @@ impl BrowserLonghandValue {
                 serialize_timeline_range_starts(values)
             }
             BrowserLonghandValue::TimelineRangeEnd(values) => serialize_timeline_range_ends(values),
-            BrowserLonghandValue::TimelineTriggerName(values) => values
-                .iter()
-                .map(|value| match value {
-                    Some(value) => serialize_typed(value),
-                    None => Ok("none".to_owned()),
-                })
-                .collect::<Result<Vec<_>, _>>()
-                .map(|values| values.join(", ")),
+            BrowserLonghandValue::TimelineTriggerName(values) => {
+                let mut output = String::new();
+                for value in values {
+                    let value = match value {
+                        Some(value) => serialize_typed(value)?,
+                        None => "none".to_owned(),
+                    };
+                    push_delimited(&mut output, ", ", &value);
+                }
+                Ok(output)
+            }
             BrowserLonghandValue::TimelineTriggerSource(values) => {
                 serialize_comma_separated(values)
             }
             BrowserLonghandValue::KeywordList(values) => Ok(values.join(", ")),
             BrowserLonghandValue::AnimationIterationCount(values) => {
-                let mut output = Vec::with_capacity(values.len());
+                let mut output = String::new();
                 for value in values {
-                    output.push(match value {
+                    let value = match value {
                         AnimationIterationCountValue::Infinite => "infinite".to_owned(),
                         AnimationIterationCountValue::Number(value) => serialize_typed(value)?,
-                    });
+                    };
+                    push_delimited(&mut output, ", ", &value);
                 }
-                Ok(output.join(", "))
+                Ok(output)
             }
             BrowserLonghandValue::OffsetPath(value) => value.canonical_value(),
             BrowserLonghandValue::AxisPosition(value) => serialize_zero_length_percentage(value),
@@ -674,9 +688,9 @@ impl BrowserLonghandValue {
             BrowserLonghandValue::Clip(value) => value.canonical_value(),
             BrowserLonghandValue::DynamicRangeLimit(value) => value.canonical_value(),
             BrowserLonghandValue::AnimationTrigger(values) => {
-                let mut serialized = Vec::with_capacity(values.len());
+                let mut serialized = String::new();
                 for value in values {
-                    serialized.push(match value {
+                    let value = match value {
                         AnimationTriggerValue::None => "none".to_owned(),
                         AnimationTriggerValue::Attachment { name, enter, exit } => {
                             let mut value = format!("{} {enter}", serialize_typed(name)?);
@@ -686,9 +700,10 @@ impl BrowserLonghandValue {
                             }
                             value
                         }
-                    });
+                    };
+                    push_delimited(&mut serialized, ", ", &value);
                 }
-                Ok(serialized.join(", "))
+                Ok(serialized)
             }
             BrowserLonghandValue::PositionArea(value) => Ok(value.canonical_value()),
         }
@@ -3729,10 +3744,7 @@ fn serialize_position_component<T: ToCss>(value: &T) -> Result<String, EngineErr
 fn serialize_comma_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
     let mut serialized = String::new();
     for value in values {
-        if !serialized.is_empty() {
-            serialized.push_str(", ");
-        }
-        serialized.push_str(&serialize_typed(value)?);
+        push_delimited(&mut serialized, ", ", &serialize_typed(value)?);
     }
     Ok(serialized)
 }
@@ -3740,10 +3752,7 @@ fn serialize_comma_separated<T: ToCss>(values: &[T]) -> Result<String, EngineErr
 fn serialize_space_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
     let mut serialized = String::new();
     for value in values {
-        if !serialized.is_empty() {
-            serialized.push(' ');
-        }
-        serialized.push_str(&serialize_typed(value)?);
+        push_delimited(&mut serialized, " ", &serialize_typed(value)?);
     }
     Ok(serialized)
 }
@@ -3753,13 +3762,10 @@ fn serialize_timeline_range_starts(
 ) -> Result<String, EngineError> {
     let mut serialized = String::new();
     for value in values {
-        if !serialized.is_empty() {
-            serialized.push_str(", ");
-        }
         match value {
-            TimelineRangeStartValue::Auto => serialized.push_str("auto"),
+            TimelineRangeStartValue::Auto => push_delimited(&mut serialized, ", ", "auto"),
             TimelineRangeStartValue::Range(value) => {
-                serialized.push_str(&serialize_typed(value)?);
+                push_delimited(&mut serialized, ", ", &serialize_typed(value)?);
             }
         }
     }
@@ -3769,17 +3775,21 @@ fn serialize_timeline_range_starts(
 fn serialize_timeline_range_ends(values: &[TimelineRangeEndValue]) -> Result<String, EngineError> {
     let mut serialized = String::new();
     for value in values {
-        if !serialized.is_empty() {
-            serialized.push_str(", ");
-        }
         match value {
-            TimelineRangeEndValue::Auto => serialized.push_str("auto"),
+            TimelineRangeEndValue::Auto => push_delimited(&mut serialized, ", ", "auto"),
             TimelineRangeEndValue::Range(value) => {
-                serialized.push_str(&serialize_typed(value)?);
+                push_delimited(&mut serialized, ", ", &serialize_typed(value)?);
             }
         }
     }
     Ok(serialized)
+}
+
+fn push_delimited(output: &mut String, separator: &str, value: &str) {
+    if !output.is_empty() {
+        output.push_str(separator);
+    }
+    output.push_str(value);
 }
 
 fn serialize_typed<T: ToCss>(value: &T) -> Result<String, EngineError> {
