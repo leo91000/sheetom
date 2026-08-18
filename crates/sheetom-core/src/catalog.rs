@@ -282,10 +282,17 @@ pub(crate) fn observed_shorthand_longhands(name: &str) -> Option<&'static [&'sta
     Some(generated::OBSERVED_SHORTHAND_LONGHANDS[index].1)
 }
 
+#[cfg(test)]
 pub(crate) fn shorthand_names() -> impl Iterator<Item = &'static str> {
     generated::SHORTHAND_LONGHANDS
         .iter()
         .map(|(shorthand, _)| *shorthand)
+}
+
+pub(crate) fn canonical_shorthand_names() -> impl Iterator<Item = &'static str> {
+    generated::CANONICAL_SHORTHAND_INDEXES
+        .iter()
+        .map(|index| generated::SHORTHAND_LONGHANDS[*index as usize].0)
 }
 
 pub(crate) fn is_shorthand_longhand(name: &str) -> bool {
@@ -310,9 +317,10 @@ pub(crate) fn initial_longhand_values() -> impl Iterator<Item = (&'static str, &
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_property_name, initial_longhand_value, is_shorthand_longhand, property_grammar,
-        sheetom_parser_property_name, shorthand_longhands, PropertyGrammarExtension,
-        PropertyGrammarOwner, CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
+        canonical_property_name, canonical_shorthand_names, initial_longhand_value,
+        is_shorthand_longhand, property_grammar, sheetom_parser_property_name, shorthand_longhands,
+        PropertyGrammarExtension, PropertyGrammarOwner, CHROMIUM_BASELINE,
+        INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
     };
     use std::borrow::Cow;
 
@@ -337,6 +345,17 @@ mod tests {
                 .any(|(_, longhands)| longhands.contains(name));
             assert_eq!(is_shorthand_longhand(name), expected, "{name}");
         }
+    }
+
+    #[test]
+    fn canonical_shorthand_indexes_match_property_canonicalization() {
+        let generated = canonical_shorthand_names().collect::<Vec<_>>();
+        let expected = super::generated::SHORTHAND_LONGHANDS
+            .iter()
+            .map(|(name, _)| *name)
+            .filter(|name| canonical_property_name(name).as_deref() == Some(*name))
+            .collect::<Vec<_>>();
+        assert_eq!(generated, expected);
     }
 
     #[test]

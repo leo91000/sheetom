@@ -67,6 +67,35 @@ const shorthands = Object.entries(chromiumShorthandLonghands)
   .sort(([left], [right]) => left.localeCompare(right));
 const declaredShorthands = Object.entries(chromiumShorthandLonghands)
   .sort(([left], [right]) => left.localeCompare(right));
+if (declaredShorthands.length > 256) {
+  throw new Error("The canonical shorthand index requires more than one byte");
+}
+const sameLonghands = (left, right) =>
+  left !== undefined &&
+  right !== undefined &&
+  left.length === right.length &&
+  left.every((longhand, index) => longhand === right[index]);
+const canonicalShorthandIndexes = declaredShorthands.flatMap(
+  ([shorthand, longhands], index) => {
+    if (shorthand === "grid-gap" || Object.hasOwn(chromiumPropertyAliases, shorthand)) {
+      return [];
+    }
+    if (shorthand.startsWith("-webkit-")) {
+      const unprefixed = shorthand.slice("-webkit-".length);
+      if (sameLonghands(longhands, chromiumShorthandLonghands[unprefixed])) {
+        return [];
+      }
+      const canonicalEquivalent = declaredShorthands.some(
+        ([candidate, candidateLonghands]) =>
+          !candidate.startsWith("-") &&
+          candidate !== shorthand &&
+          sameLonghands(longhands, candidateLonghands),
+      );
+      if (canonicalEquivalent) return [];
+    }
+    return [index];
+  },
+);
 const shorthandLonghandNames = new Set(
   declaredShorthands.flatMap(([, longhands]) => longhands),
 );
@@ -158,6 +187,10 @@ const lines = [
   "",
   "pub static SHORTHAND_LONGHAND_BITS: &[u8] = &[",
   ...shorthandLonghandBits.map(bits => `    ${bits},`),
+  "];",
+  "",
+  "pub static CANONICAL_SHORTHAND_INDEXES: &[u8] = &[",
+  ...canonicalShorthandIndexes.map(index => `    ${index},`),
   "];",
   "",
   "pub static OBSERVED_SHORTHAND_LONGHANDS: &[(&str, &[&str])] = &[",
