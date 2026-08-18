@@ -131,6 +131,7 @@ export interface FunctionParameter {
 type ReportDiagnostic = (diagnostic: SheetOMDiagnostic) => void;
 
 const ignoreDiagnostic: ReportDiagnostic = () => {};
+const normalizedSelectorText = Symbol("normalizedSelectorText");
 const ruleDiagnostics = new WeakMap<CSSRule, ReportDiagnostic>();
 const ruleTree = new RuleTree<CSSRule, CSSStyleSheet>(
   (rule, parentRule, parentStyleSheet) => {
@@ -1767,13 +1768,17 @@ export class CSSStyleRule extends CSSGroupingRule {
   readonly style: CSSStyleDeclaration;
   #selectorText: string;
 
-  private constructor(selectorText: string) {
+  private constructor(
+    selectorText: string,
+    normalized?: typeof normalizedSelectorText,
+  ) {
     super(CSSRule.STYLE_RULE);
-    this.#selectorText = normalizeSelectorText(
-      `${selectorText}`,
-      currentConstructionResourceBudget(),
-    )
-      ?? `${selectorText}`;
+    this.#selectorText = normalized === normalizedSelectorText
+      ? selectorText
+      : normalizeSelectorText(
+        `${selectorText}`,
+        currentConstructionResourceBudget(),
+      ) ?? `${selectorText}`;
     this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this]);
     lockOwnProperties(this, "style");
   }
@@ -2056,7 +2061,10 @@ function createRuleShellFromNative(
   let rule: CSSRule;
   switch (description.kind) {
     case "style": {
-      const style = constructWebIDL<CSSStyleRule>(CSSStyleRule, [description.prelude]);
+      const style = constructWebIDL<CSSStyleRule>(CSSStyleRule, [
+        description.prelude,
+        normalizedSelectorText,
+      ]);
       style.style.cssText = description.declarations;
       rule = style;
       break;
