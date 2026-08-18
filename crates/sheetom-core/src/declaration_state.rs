@@ -1065,6 +1065,46 @@ impl DeclarationState {
             )
         });
 
+        if candidates.len() == 1 && pending_candidates.is_empty() {
+            let candidate = &candidates[0];
+            let mut written = false;
+            for record in &self.records {
+                if candidate.longhands.contains(&record.name.as_str()) {
+                    if !written {
+                        append_declaration(
+                            &mut output,
+                            &mut first,
+                            indent,
+                            separator,
+                            &candidate.name,
+                            &candidate.value,
+                            candidate.important
+                                || candidate
+                                    .longhands
+                                    .iter()
+                                    .any(|longhand| promoted_longhands.contains(*longhand)),
+                        );
+                        written = true;
+                    }
+                    continue;
+                }
+                append_declaration(
+                    &mut output,
+                    &mut first,
+                    indent,
+                    separator,
+                    &record.name,
+                    if safe {
+                        record.safe_value()
+                    } else {
+                        record.observable_value()
+                    },
+                    record.important || promoted_longhands.contains(&record.name),
+                );
+            }
+            return output;
+        }
+
         let mut claimed = HashSet::new();
         let mut by_longhand = HashMap::new();
         for (index, candidate) in candidates.iter().enumerate() {
