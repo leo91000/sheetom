@@ -729,7 +729,7 @@ impl DeclarationState {
         } else {
             parsed.safe_value().to_owned()
         };
-        let safe_value = normalize_rgb_function_spacing(&safe_value);
+        let safe_value = normalize_rgb_function_spacing(safe_value);
         let group_value = parsed.value.semantic_value().map_or_else(
             || parsed.value.clone(),
             |semantic| {
@@ -1270,31 +1270,40 @@ fn materialize_static_observable(observable: &str, safe: &str) -> String {
         .join(", ")
 }
 
-fn normalize_rgb_function_spacing(value: &str) -> String {
-    let lower = value.to_ascii_lowercase();
-    let function = if lower.starts_with("rgb(") {
+fn normalize_rgb_function_spacing(value: String) -> String {
+    let function = if value
+        .get(..4)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("rgb("))
+    {
         "rgb"
-    } else if lower.starts_with("rgba(") {
+    } else if value
+        .get(..5)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("rgba("))
+    {
         "rgba"
     } else {
-        return value.to_owned();
+        return value;
     };
     let Some(body) = value
         .get(function.len() + 1..)
         .and_then(|body| body.strip_suffix(')'))
     else {
-        return value.to_owned();
+        return value;
     };
     if !body.contains(',') {
-        return value.to_owned();
+        return value;
     }
-    format!(
-        "{function}({})",
-        body.split(',')
-            .map(str::trim)
-            .collect::<Vec<_>>()
-            .join(", ")
-    )
+    let mut normalized = String::with_capacity(value.len());
+    normalized.push_str(function);
+    normalized.push('(');
+    for (index, channel) in body.split(',').enumerate() {
+        if index > 0 {
+            normalized.push_str(", ");
+        }
+        normalized.push_str(channel.trim());
+    }
+    normalized.push(')');
+    normalized
 }
 
 fn requires_default_shorthand_synthesis(name: &str, observable: &str) -> bool {
