@@ -1756,23 +1756,30 @@ fn serialize_webkit_gradient(
     let segments = split_top_level_delimiter(body, b',')
         .ok_or_else(|| EngineError::Serialize("legacy gradient items are invalid".to_owned()))?;
     let mut stop_index = 0usize;
-    let mut output_segments = Vec::with_capacity(segments.len());
+    let mut output = String::with_capacity(serialized.len());
+    output.push_str(&serialized[..=open]);
+    let mut first_segment = true;
     for segment in segments {
+        if first_segment {
+            first_segment = false;
+        } else {
+            output.push_str(", ");
+        }
         let trimmed = segment.trim();
         let Some(open) = trimmed.find('(') else {
-            output_segments.push(trimmed.to_owned());
+            output.push_str(trimmed);
             continue;
         };
         let function = trimmed[..open].trim();
         if !matches_ignore_ascii_case(function, &["from", "to", "color-stop"]) {
-            output_segments.push(trimmed.to_owned());
+            output.push_str(trimmed);
             continue;
         }
         let authored_stop = authored.stops.get(stop_index).ok_or_else(|| {
             EngineError::Serialize("legacy gradient lost authored color provenance".to_owned())
         })?;
         stop_index += 1;
-        let replacement = if function.eq_ignore_ascii_case("color-stop") {
+        if function.eq_ignore_ascii_case("color-stop") {
             let close = trimmed.rfind(')').ok_or_else(|| {
                 EngineError::Serialize("legacy gradient stop is unclosed".to_owned())
             })?;
@@ -1787,26 +1794,29 @@ fn serialize_webkit_gradient(
                     "legacy gradient stop has invalid cardinality".to_owned(),
                 ));
             };
-            format!("color-stop({}, {})", position.trim(), authored_stop.source)
+            output.push_str("color-stop(");
+            output.push_str(position.trim());
+            output.push_str(", ");
+            output.push_str(&authored_stop.source);
+            output.push(')');
         } else {
-            format!(
-                "{}({})",
-                function.to_ascii_lowercase(),
-                authored_stop.source
-            )
-        };
-        output_segments.push(replacement);
+            output.push_str(if function.eq_ignore_ascii_case("from") {
+                "from"
+            } else {
+                "to"
+            });
+            output.push('(');
+            output.push_str(&authored_stop.source);
+            output.push(')');
+        }
     }
     if stop_index != authored.stops.len() {
         return Err(EngineError::Serialize(
             "legacy gradient has unmatched authored color stops".to_owned(),
         ));
     }
-    Ok(format!(
-        "{}({})",
-        &serialized[..open],
-        output_segments.join(", ")
-    ))
+    output.push(')');
+    Ok(output)
 }
 
 fn append_linear_gradient(
@@ -1829,19 +1839,17 @@ fn append_linear_gradient(
             serialize_typed(horizontal)?
         )),
     };
-    let mut header = Vec::new();
+    let mut has_header = false;
     if let Some(direction) = direction {
-        header.push(direction);
+        append_gradient_header(output, &mut has_header, &direction);
     }
     if let Some(interpolation) = authored.interpolation {
-        header.push(interpolation.canonical_value());
+        append_gradient_header(output, &mut has_header, &interpolation.canonical_value());
     }
-    if !header.is_empty() {
-        output.push_str(&header.join(" "));
+    if has_header {
         output.push_str(", ");
     }
-    output.push_str(&serialize_gradient_items(&gradient.items, authored)?);
-    Ok(())
+    append_gradient_items(&gradient.items, authored, output)
 }
 
 fn append_radial_gradient(
@@ -1851,23 +1859,26 @@ fn append_radial_gradient(
 ) -> Result<(), EngineError> {
     let default_shape = lightningcss::values::gradient::EndingShape::default();
     let has_shape = gradient.shape != default_shape;
-    let mut header = Vec::new();
+    let mut has_header = false;
     if has_shape {
-        header.push(serialize_typed(&gradient.shape)?);
+        append_gradient_header(output, &mut has_header, &serialize_typed(&gradient.shape)?);
     }
     let position = authored.position.as_ref().unwrap_or(&gradient.position);
     if !position.is_center() {
-        header.push(format!("at {}", serialize_position(position)?));
+        if has_header {
+            output.push(' ');
+        }
+        output.push_str("at ");
+        output.push_str(&serialize_position(position)?);
+        has_header = true;
     }
     if let Some(interpolation) = authored.interpolation {
-        header.push(interpolation.canonical_value());
+        append_gradient_header(output, &mut has_header, &interpolation.canonical_value());
     }
-    if !header.is_empty() {
-        output.push_str(&header.join(" "));
+    if has_header {
         output.push_str(", ");
     }
-    output.push_str(&serialize_gradient_items(&gradient.items, authored)?);
-    Ok(())
+    append_gradient_items(&gradient.items, authored, output)
 }
 
 fn append_conic_gradient(
@@ -1876,23 +1887,36 @@ fn append_conic_gradient(
     output: &mut String,
 ) -> Result<(), EngineError> {
     let has_angle = gradient.angle.to_degrees() != 0.0;
-    let mut header = Vec::new();
+    let mut has_header = false;
     if has_angle {
-        header.push(format!("from {}", serialize_typed(&gradient.angle)?));
+        output.push_str("from ");
+        output.push_str(&serialize_typed(&gradient.angle)?);
+        has_header = true;
     }
     let position = authored.position.as_ref().unwrap_or(&gradient.position);
     if !position.is_center() {
-        header.push(format!("at {}", serialize_position(position)?));
+        if has_header {
+            output.push(' ');
+        }
+        output.push_str("at ");
+        output.push_str(&serialize_position(position)?);
+        has_header = true;
     }
     if let Some(interpolation) = authored.interpolation {
-        header.push(interpolation.canonical_value());
+        append_gradient_header(output, &mut has_header, &interpolation.canonical_value());
     }
-    if !header.is_empty() {
-        output.push_str(&header.join(" "));
+    if has_header {
         output.push_str(", ");
     }
-    output.push_str(&serialize_gradient_items(&gradient.items, authored)?);
-    Ok(())
+    append_gradient_items(&gradient.items, authored, output)
+}
+
+fn append_gradient_header(output: &mut String, has_header: &mut bool, value: &str) {
+    if *has_header {
+        output.push(' ');
+    }
+    output.push_str(value);
+    *has_header = true;
 }
 
 impl GradientInterpolation {
@@ -1927,45 +1951,50 @@ impl GradientPosition for lightningcss::values::angle::AnglePercentage {
     }
 }
 
-fn serialize_gradient_items<D: GradientPosition>(
+fn append_gradient_items<D: GradientPosition>(
     items: &[GradientItem<D>],
     authored: &AuthoredGradient,
-) -> Result<String, EngineError> {
-    let expanded_sources = authored
-        .stops
-        .iter()
-        .flat_map(|stop| std::iter::repeat_n(stop, stop.occurrences))
-        .collect::<Vec<_>>();
-    let mut color_index = 0usize;
-    let mut values = Vec::with_capacity(items.len());
+    output: &mut String,
+) -> Result<(), EngineError> {
+    let mut source_index = 0usize;
+    let mut source_occurrence = 0usize;
+    let mut first_item = true;
     for item in items {
+        if first_item {
+            first_item = false;
+        } else {
+            output.push_str(", ");
+        }
         match item {
-            GradientItem::Hint(value) => values.push(value.observable_value()?),
+            GradientItem::Hint(value) => output.push_str(&value.observable_value()?),
             GradientItem::ColorStop(stop) => {
-                let authored = expanded_sources.get(color_index).ok_or_else(|| {
+                let authored_stop = authored.stops.get(source_index).ok_or_else(|| {
                     EngineError::Serialize("gradient lost authored color provenance".to_owned())
                 })?;
-                if authored.color != stop.color {
+                if authored_stop.color != stop.color {
                     return Err(EngineError::Serialize(
                         "gradient color provenance does not match its semantic value".to_owned(),
                     ));
                 }
-                color_index += 1;
-                let mut value = authored.source.clone();
-                if let Some(position) = &stop.position {
-                    value.push(' ');
-                    value.push_str(&position.observable_value()?);
+                source_occurrence += 1;
+                if source_occurrence == authored_stop.occurrences {
+                    source_index += 1;
+                    source_occurrence = 0;
                 }
-                values.push(value);
+                output.push_str(&authored_stop.source);
+                if let Some(position) = &stop.position {
+                    output.push(' ');
+                    output.push_str(&position.observable_value()?);
+                }
             }
         }
     }
-    if color_index != expanded_sources.len() {
+    if source_index != authored.stops.len() || source_occurrence != 0 {
         return Err(EngineError::Serialize(
             "gradient retained unused authored color provenance".to_owned(),
         ));
     }
-    Ok(values.join(", "))
+    Ok(())
 }
 
 impl BorderShapeValue {
