@@ -6,6 +6,7 @@ use lightningcss::{
     traits::{Parse, ToCss},
     values::color::CssColor,
 };
+use std::fmt::Write;
 
 use crate::{observable::project_observable_value, EngineError};
 
@@ -557,7 +558,9 @@ fn push_separator(output: &mut String, separator: &str) {
 fn push_repeat_count(output: &mut String, count: &RepeatCount) {
     match count {
         RepeatCount::Auto => output.push_str("auto"),
-        RepeatCount::Integer(value) => output.push_str(&value.to_string()),
+        RepeatCount::Integer(value) => {
+            let _ = write!(output, "{value}");
+        }
     }
 }
 
