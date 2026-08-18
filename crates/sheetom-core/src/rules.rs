@@ -2311,7 +2311,10 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
     let parsed = match rule {
         CssRule::Style(rule) => ParsedRule {
             kind: "style".to_owned(),
-            prelude: serialize(&rule.selectors)?,
+            prelude: rule
+                .selectors
+                .to_css_string(PrinterOptions::default())
+                .map_err(|error| EngineError::Serialize(error.to_string()))?,
             declarations: serialize(&rule.declarations)?,
             children: convert_rule_list(&rule.rules, count)?,
             css_text,
