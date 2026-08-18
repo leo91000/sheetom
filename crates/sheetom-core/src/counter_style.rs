@@ -82,7 +82,7 @@ pub fn parse_counter_style_descriptors(source: &str) -> Vec<ParsedCounterStyleDe
         .filter(|declaration| !declaration.important)
         .filter_map(|declaration| {
             let name = declaration.name.to_ascii_lowercase();
-            let value = parse_counter_style_descriptor(&name, &declaration.value)?;
+            let value = parse_counter_style_descriptor(&name, declaration.value)?;
             Some(ParsedCounterStyleDescriptor { name, value })
         })
         .collect()
