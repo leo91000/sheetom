@@ -1812,7 +1812,7 @@ fn preserve_property_descriptor_values(rule: &mut ParsedRule, body: &str) {
             .iter()
             .rev()
             .find(|declaration| declaration.name.eq_ignore_ascii_case(name))
-            .map(|declaration| trim_css_whitespace(&declaration.value))
+            .map(|declaration| trim_css_whitespace(declaration.value))
     };
     let Some(syntax) = last_value("syntax") else {
         return;
@@ -2008,7 +2008,7 @@ fn parse_font_feature_entries(source: &str) -> Option<Vec<ParsedRule>> {
         if declaration.important {
             return None;
         }
-        let components = split_top_level_whitespace(&declaration.value)?;
+        let components = split_top_level_whitespace(declaration.value)?;
         if components.is_empty() {
             return None;
         }
@@ -2022,7 +2022,7 @@ fn parse_font_feature_entries(source: &str) -> Option<Vec<ParsedRule>> {
         }
         let entry = ParsedRule {
             kind: "font-feature-entry".to_owned(),
-            prelude: declaration.name.clone(),
+            prelude: declaration.name.to_string(),
             declarations: values.join(" "),
             children: Vec::new(),
             css_text: serialize_identifier(&declaration.name),

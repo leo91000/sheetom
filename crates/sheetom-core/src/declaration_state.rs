@@ -64,6 +64,13 @@ pub struct ParsedDeclaration {
     pub important: bool,
 }
 
+#[derive(Clone, Copy)]
+struct DeclarationInput<'a> {
+    name: &'a str,
+    value: &'a str,
+    important: bool,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct SerializationIssue {
     pub shorthand: String,
@@ -351,20 +358,32 @@ impl DeclarationState {
     }
 
     pub fn replace_declarations(&mut self, declarations: &[ParsedDeclaration]) {
+        let declarations = declarations
+            .iter()
+            .map(|declaration| DeclarationInput {
+                name: &declaration.name,
+                value: &declaration.value,
+                important: declaration.important,
+            })
+            .collect::<Vec<_>>();
+        self.replace_declaration_inputs(&declarations);
+    }
+
+    fn replace_declaration_inputs(&mut self, declarations: &[DeclarationInput<'_>]) {
         let mut winners = HashMap::<String, (DeclarationRecord, usize, usize)>::new();
 
         for (source_index, declaration) in declarations.iter().enumerate() {
             if self.context == DeclarationContext::Function && declaration.important {
                 continue;
             }
-            let Some(name) = self.canonical_name(&declaration.name) else {
+            let Some(name) = self.canonical_name(declaration.name) else {
                 continue;
             };
-            let source_name = ascii_lowercase(&declaration.name);
+            let source_name = ascii_lowercase(declaration.name);
             let Ok(parsed) = self.parse_value(
                 &name,
                 &source_name,
-                &declaration.value,
+                declaration.value,
                 declaration.important,
             ) else {
                 continue;
@@ -408,20 +427,21 @@ impl DeclarationState {
     ) -> Result<(), EngineError> {
         let parse_limits = self.limits_with_reserved_depth(reserved_depth)?;
         validate_declaration_block_input(source, parse_limits)?;
-        let declarations = parse_declaration_list(source)
-            .into_iter()
-            .map(|declaration| ParsedDeclaration {
-                name: declaration.name,
+        let source_declarations = parse_declaration_list(source);
+        for declaration in &source_declarations {
+            validate_declaration_value_input(declaration.value, parse_limits)?;
+        }
+        let declarations = source_declarations
+            .iter()
+            .map(|declaration| DeclarationInput {
+                name: &declaration.name,
                 value: declaration.value,
                 important: declaration.important,
             })
             .collect::<Vec<_>>();
-        for declaration in &declarations {
-            validate_declaration_value_input(&declaration.value, parse_limits)?;
-        }
         let mut candidate = self.clone();
         candidate.limits = parse_limits;
-        candidate.replace_declarations(&declarations);
+        candidate.replace_declaration_inputs(&declarations);
         candidate.validate_record_limit()?;
         candidate.limits = self.limits;
         *self = candidate;

@@ -261,7 +261,7 @@ fn valid_substitution_function(name: &str, arguments: &str) -> bool {
     }
 }
 
-pub(crate) fn parse_declaration_list(source: &str) -> Vec<SourceDeclaration> {
+pub(crate) fn parse_declaration_list(source: &str) -> Vec<SourceDeclaration<'_>> {
     declaration_segments(source)
         .into_iter()
         .filter_map(parse_declaration)
@@ -323,23 +323,28 @@ fn declaration_segments(source: &str) -> Vec<&str> {
     segments
 }
 
-fn parse_declaration(source: &str) -> Option<SourceDeclaration> {
+fn parse_declaration(source: &str) -> Option<SourceDeclaration<'_>> {
     let colon = first_top_level_colon(source)?;
     let name = parse_identifier(&source[..colon])?;
     let (value, important) = split_priority(&source[colon + 1..]);
     Some(SourceDeclaration {
         name,
-        value: value.to_owned(),
+        value,
         important,
     })
 }
 
-fn parse_identifier(source: &str) -> Option<String> {
+fn parse_identifier(source: &str) -> Option<Cow<'_, str>> {
+    let source = trim_css_whitespace(source);
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     let identifier = parser.expect_ident_cloned().ok()?;
     parser.expect_exhausted().ok()?;
-    Some(identifier.as_ref().to_owned())
+    Some(if identifier.as_ref() == source {
+        Cow::Borrowed(source)
+    } else {
+        Cow::Owned(identifier.as_ref().to_owned())
+    })
 }
 
 fn first_top_level_colon(source: &str) -> Option<usize> {
@@ -673,6 +678,7 @@ mod tests {
         analyze_substitutions, parse_declaration_list, serialize_identifier,
         split_top_level_delimiter_allow_empty,
     };
+    use std::borrow::Cow;
 
     #[test]
     fn preserves_optional_empty_delimiter_sections_without_splitting_functions() {
@@ -763,8 +769,10 @@ mod tests {
         );
         assert_eq!(declarations.len(), 3);
         assert_eq!(declarations[0].name, "--foo:bar");
+        assert!(matches!(declarations[0].name, Cow::Owned(_)));
         assert_eq!(declarations[0].value, "red");
         assert!(!declarations[0].important);
+        assert!(matches!(declarations[1].name, Cow::Borrowed("width")));
         assert_eq!(declarations[1].value, "calc(1px; 2px)");
         assert_eq!(declarations[2].value, "blue");
         assert!(declarations[2].important);
@@ -783,10 +791,11 @@ mod tests {
     }
 }
 use cssparser::{ParseError, Parser, ParserInput, Token};
+use std::borrow::Cow;
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct SourceDeclaration {
-    pub(crate) name: String,
-    pub(crate) value: String,
+pub(crate) struct SourceDeclaration<'a> {
+    pub(crate) name: Cow<'a, str>,
+    pub(crate) value: &'a str,
     pub(crate) important: bool,
 }
