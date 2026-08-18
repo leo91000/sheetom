@@ -34,11 +34,14 @@ after state construction from 324,599,808 to 276,049,920 bytes and median peak
 RSS after serialization from 353,361,920 to 304,533,504 bytes.
 
 A clean artifact comparison increased the native addon by 4,096 bytes and the
-optimized WebAssembly engine by 357 raw bytes and 62 gzip bytes. Five interleaved
-native samples put the small stress-workload mutation median about 10% slower,
-while Publisher mutation was about 13% faster; the repository's official
-performance comparator passed. The size and microbenchmark tradeoffs are
-accepted for the substantially lower peak-memory requirement.
+optimized WebAssembly engine by 357 raw bytes and 62 gzip bytes. A follow-up of
+30 isolated, interleaved native runs at the exact base, compaction-only, and
+final revisions measured stress-workload mutation medians of 7.328, 7.384, and
+7.327 milliseconds respectively. The earlier five-sample result that appeared
+about 10% slower was not reproducible; this roughly seven-millisecond one-shot
+phase is sensitive to scheduler and runtime noise. The repository's official
+performance comparator passed. The small artifact-size tradeoff is accepted for
+the substantially lower peak-memory requirement.
 
 ## Consequences
 
