@@ -3727,43 +3727,59 @@ fn serialize_position_component<T: ToCss>(value: &T) -> Result<String, EngineErr
 }
 
 fn serialize_comma_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
-    let mut serialized = Vec::with_capacity(values.len());
+    let mut serialized = String::new();
     for value in values {
-        serialized.push(serialize_typed(value)?);
+        if !serialized.is_empty() {
+            serialized.push_str(", ");
+        }
+        serialized.push_str(&serialize_typed(value)?);
     }
-    Ok(serialized.join(", "))
+    Ok(serialized)
 }
 
 fn serialize_space_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
-    let mut serialized = Vec::with_capacity(values.len());
+    let mut serialized = String::new();
     for value in values {
-        serialized.push(serialize_typed(value)?);
+        if !serialized.is_empty() {
+            serialized.push(' ');
+        }
+        serialized.push_str(&serialize_typed(value)?);
     }
-    Ok(serialized.join(" "))
+    Ok(serialized)
 }
 
 fn serialize_timeline_range_starts(
     values: &[TimelineRangeStartValue],
 ) -> Result<String, EngineError> {
-    values
-        .iter()
-        .map(|value| match value {
-            TimelineRangeStartValue::Auto => Ok("auto".to_owned()),
-            TimelineRangeStartValue::Range(value) => serialize_typed(value),
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .map(|values| values.join(", "))
+    let mut serialized = String::new();
+    for value in values {
+        if !serialized.is_empty() {
+            serialized.push_str(", ");
+        }
+        match value {
+            TimelineRangeStartValue::Auto => serialized.push_str("auto"),
+            TimelineRangeStartValue::Range(value) => {
+                serialized.push_str(&serialize_typed(value)?);
+            }
+        }
+    }
+    Ok(serialized)
 }
 
 fn serialize_timeline_range_ends(values: &[TimelineRangeEndValue]) -> Result<String, EngineError> {
-    values
-        .iter()
-        .map(|value| match value {
-            TimelineRangeEndValue::Auto => Ok("auto".to_owned()),
-            TimelineRangeEndValue::Range(value) => serialize_typed(value),
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .map(|values| values.join(", "))
+    let mut serialized = String::new();
+    for value in values {
+        if !serialized.is_empty() {
+            serialized.push_str(", ");
+        }
+        match value {
+            TimelineRangeEndValue::Auto => serialized.push_str("auto"),
+            TimelineRangeEndValue::Range(value) => {
+                serialized.push_str(&serialize_typed(value)?);
+            }
+        }
+    }
+    Ok(serialized)
 }
 
 fn serialize_typed<T: ToCss>(value: &T) -> Result<String, EngineError> {
