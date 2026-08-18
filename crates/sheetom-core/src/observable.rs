@@ -971,7 +971,21 @@ fn serialize_font_family_member(value: &str) -> String {
 }
 
 fn quote_css_string(value: &str) -> String {
-    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
+    let mut quoted = String::with_capacity(value.len() + 2);
+    quoted.push('"');
+    let mut cursor = 0;
+    for (index, byte) in value.bytes().enumerate() {
+        if !matches!(byte, b'\\' | b'"') {
+            continue;
+        }
+        quoted.push_str(&value[cursor..index]);
+        quoted.push('\\');
+        quoted.push(char::from(byte));
+        cursor = index + 1;
+    }
+    quoted.push_str(&value[cursor..]);
+    quoted.push('"');
+    quoted
 }
 
 fn is_identifier(value: &str) -> bool {
@@ -1479,7 +1493,7 @@ fn starts_math_function(value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::project_declaration;
+    use super::{project_declaration, quote_css_string};
     use crate::parse_semantic_property;
 
     fn observable(name: &str, input: &str) -> String {
@@ -1728,6 +1742,7 @@ mod tests {
         ] {
             assert_eq!(observable("font-family", input), expected, "{input}");
         }
+        assert_eq!(quote_css_string("A\\B\"é"), "\"A\\\\B\\\"é\"");
     }
 
     #[test]
