@@ -11,8 +11,6 @@
 use crate::error::PrinterErrorKind;
 use crate::properties::css_modules::{Composes, Specifier};
 use crate::selector::SelectorList;
-use data_encoding::{Encoding, Specification};
-use lazy_static::lazy_static;
 use pathdiff::diff_paths;
 #[cfg(any(feature = "serde", feature = "nodejs"))]
 use serde::Serialize;
@@ -257,16 +255,6 @@ pub type CssModuleExports = HashMap<String, CssModuleExport>;
 
 /// A map of placeholders to references.
 pub type CssModuleReferences = HashMap<String, CssModuleReference>;
-
-lazy_static! {
-  static ref ENCODER: Encoding = {
-    let mut spec = Specification::new();
-    spec
-      .symbols
-      .push_str("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-");
-    spec.encoding().unwrap()
-  };
-}
 
 pub(crate) struct CssModule<'a, 'c> {
   pub config: &'a Config,
@@ -538,12 +526,40 @@ impl<'a, 'c> CssModule<'a, 'c> {
 pub(crate) fn hash(s: &str, at_start: bool) -> String {
   let mut hasher = DefaultHasher::new();
   s.hash(&mut hasher);
-  let hash = hasher.finish() as u32;
+  let bytes = (hasher.finish() as u32).to_le_bytes();
+  const SYMBOLS: &[u8; 64] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-";
+  let indexes = [
+    bytes[0] >> 2,
+    ((bytes[0] & 0x03) << 4) | (bytes[1] >> 4),
+    ((bytes[1] & 0x0f) << 2) | (bytes[2] >> 6),
+    bytes[2] & 0x3f,
+    bytes[3] >> 2,
+    (bytes[3] & 0x03) << 4,
+  ];
+  let starts_with_digit = matches!(SYMBOLS[indexes[0] as usize], b'0'..=b'9');
+  let mut encoded = String::with_capacity(indexes.len() + usize::from(at_start && starts_with_digit));
+  if at_start && starts_with_digit {
+    encoded.push('_');
+  }
+  for index in indexes {
+    encoded.push(SYMBOLS[index as usize] as char);
+  }
+  encoded
+}
 
-  let hash = ENCODER.encode(&hash.to_le_bytes());
-  if at_start && matches!(hash.as_bytes()[0], b'0'..=b'9') {
-    format!("_{}", hash)
-  } else {
-    hash
+#[cfg(test)]
+mod tests {
+  use super::hash;
+
+  #[test]
+  fn encodes_css_module_hashes_with_the_pinned_alphabet() {
+    assert_eq!(hash("", false), "8Z4fiW");
+    assert_eq!(hash("", true), "_8Z4fiW");
+    assert_eq!(hash("a", false), "9_NWPa");
+    assert_eq!(hash("style.css", false), "fz3d1W");
+    assert_eq!(hash("hello world", false), "Z9E_Ma");
+    assert_eq!(hash("--custom-property", false), "NllnEq");
+    assert_eq!(hash("test.css_./img12x.png", false), "hXFI8W");
+    assert_eq!(hash("test.css_./img21x.png", false), "5TkpBa");
   }
 }

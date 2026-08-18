@@ -579,12 +579,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "data-encoding"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
-
-[[package]]
 name = "data-url"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -956,12 +950,10 @@ dependencies = [
  "cssparser",
  "cssparser-color",
  "dashmap",
- "data-encoding",
  "indexmap 2.7.0",
  "indoc",
  "itertools 0.10.5",
  "jemallocator",
- "lazy_static",
  "lightningcss-derive",
  "parcel_selectors",
  "parcel_sourcemap",
