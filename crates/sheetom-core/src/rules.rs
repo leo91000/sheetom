@@ -1219,7 +1219,6 @@ fn parse_recovered_rule_tree_noniterative(
                 return recovered;
             }
         }
-        let raw_items = scan_recovered_block_items(body).len();
         let recover_from_source = matches!(
             parsed.kind.as_str(),
             "style"
@@ -1236,17 +1235,7 @@ fn parse_recovered_rule_tree_noniterative(
                 | "starting-style"
                 | "keyframes"
         );
-        let child_count_matches = !matches!(
-            parsed.kind.as_str(),
-            "media"
-                | "supports"
-                | "container"
-                | "layer-block"
-                | "scope"
-                | "starting-style"
-                | "keyframes"
-        ) || parsed.children.len() == raw_items;
-        if !recover_from_source && child_count_matches {
+        if !recover_from_source {
             let mut parsed = parsed.clone();
             preserve_source_prelude(&mut parsed, header);
             preserve_source_text(&mut parsed, source);
