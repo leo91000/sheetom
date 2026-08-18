@@ -69,8 +69,6 @@ itertools = "0.10.1"
 smallvec = { version = "1.7.0", features = ["union"] }
 bitflags = "2.2.1"
 parcel_sourcemap = { version = "2.1.1", features = ["json"], optional = true }
-data-encoding = "2.3.2"
-lazy_static = "1.4.0"
 const-str = "1.1.0"
 pathdiff = "0.2.1"
 pastey = "0.1.0"
