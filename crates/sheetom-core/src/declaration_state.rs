@@ -2,9 +2,9 @@ use crate::function_rule::{canonical_function_descriptor_name, parse_function_de
 use crate::{
     catalog::{
         ascii_lowercase, canonical_property_name as canonical_style_property_name,
-        is_shorthand_longhand, property_alias_defers_pending_value, property_alias_hides_value,
-        property_alias_observable_value, shorthand_longhands as style_shorthand_longhands,
-        shorthand_names,
+        canonical_shorthand_names, is_shorthand_longhand, property_alias_defers_pending_value,
+        property_alias_hides_value, property_alias_observable_value,
+        shorthand_longhands as style_shorthand_longhands,
     },
     font_face::{canonical_descriptor_name, parse_descriptor_value},
     shorthand::{
@@ -1017,11 +1017,8 @@ impl DeclarationState {
             .iter()
             .map(|record| (record.name.as_str(), record))
             .collect::<HashMap<_, _>>();
-        let mut candidates = shorthand_names()
+        let mut candidates = canonical_shorthand_names()
             .filter_map(|name| {
-                if canonical_style_property_name(name).as_deref() != Some(name) {
-                    return None;
-                }
                 let longhands = style_shorthand_longhands(name)?;
                 if longhands
                     .iter()
@@ -1419,10 +1416,11 @@ fn append_declaration(
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_style_property_name, shorthand_names, style_shorthand_longhands,
-        DeclarationContext, DeclarationMutation, DeclarationMutationResult, DeclarationState,
-        MutationOutcome, ParsedDeclaration, SerializationIssue,
+        canonical_style_property_name, style_shorthand_longhands, DeclarationContext,
+        DeclarationMutation, DeclarationMutationResult, DeclarationState, MutationOutcome,
+        ParsedDeclaration, SerializationIssue,
     };
+    use crate::catalog::shorthand_names;
     use crate::{DeclarationValueKind, EngineError, ResourceLimits};
     use serde_json::Value;
     use std::sync::Arc;
