@@ -1324,23 +1324,42 @@ fn serialize_rgb_color(value: &str) -> Option<String> {
     let (channels, slash_alpha) = body.split_once('/').map_or((body, None), |(left, right)| {
         (left.trim(), Some(right.trim()))
     });
-    let mut parts = if channels.contains(',') {
-        channels.split(',').map(str::trim).collect::<Vec<_>>()
-    } else {
-        channels.split_ascii_whitespace().collect::<Vec<_>>()
+    let mut parts = [None; 4];
+    let mut part_count = 0;
+    let mut push_part = |part| {
+        let Some(slot) = parts.get_mut(part_count) else {
+            return false;
+        };
+        *slot = Some(part);
+        part_count += 1;
+        true
     };
-    let alpha = if parts.len() == 4 {
-        parts.pop()
+    if channels.contains(',') {
+        for part in channels.split(',').map(str::trim) {
+            if !push_part(part) {
+                return None;
+            }
+        }
+    } else {
+        for part in channels.split_ascii_whitespace() {
+            if !push_part(part) {
+                return None;
+            }
+        }
+    }
+    let alpha = if part_count == 4 {
+        parts[3]
     } else {
         slash_alpha
     };
-    if parts.len() != 3 {
+    if part_count != 3 && part_count != 4 {
         return None;
     }
-    let channels = parts
-        .into_iter()
-        .map(parse_color_channel)
-        .collect::<Option<Vec<_>>>()?;
+    let channels = [
+        parse_color_channel(parts[0]?)?,
+        parse_color_channel(parts[1]?)?,
+        parse_color_channel(parts[2]?)?,
+    ];
     if let Some(alpha) = alpha {
         return Some(format!(
             "rgba({}, {}, {}, {})",
