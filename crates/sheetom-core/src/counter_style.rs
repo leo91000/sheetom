@@ -121,7 +121,7 @@ fn canonical_symbols(value: &str) -> Option<String> {
 fn canonical_additive_symbols(value: &str) -> Option<String> {
     let entries = split_top_level_delimiter(value, b',')?;
     let mut previous = None;
-    let mut canonical = Vec::with_capacity(entries.len());
+    let mut canonical = String::with_capacity(value.len());
     for entry in entries {
         let components = split_top_level_whitespace(entry)?;
         let (weight, symbol) = parse_weight_and_symbol(&components)?;
@@ -129,9 +129,12 @@ fn canonical_additive_symbols(value: &str) -> Option<String> {
             return None;
         }
         previous = Some(weight);
-        canonical.push(format!("{weight} {symbol}"));
+        if !canonical.is_empty() {
+            canonical.push_str(", ");
+        }
+        canonical.push_str(&format!("{weight} {symbol}"));
     }
-    Some(canonical.join(", "))
+    Some(canonical)
 }
 
 fn canonical_symbol_count(value: &str, minimum: usize, maximum: usize) -> Option<String> {
@@ -146,7 +149,7 @@ fn canonical_range(value: &str) -> Option<String> {
         return Some("auto".to_owned());
     }
     let entries = split_top_level_delimiter(value, b',')?;
-    let mut canonical = Vec::with_capacity(entries.len());
+    let mut canonical = String::with_capacity(value.len());
     for entry in entries {
         let components = split_top_level_whitespace(entry)?;
         let [start, end] = components.as_slice() else {
@@ -163,13 +166,16 @@ fn canonical_range(value: &str) -> Option<String> {
         if !valid {
             return None;
         }
-        canonical.push(format!(
+        if !canonical.is_empty() {
+            canonical.push_str(", ");
+        }
+        canonical.push_str(&format!(
             "{} {}",
             canonical_range_bound(start?),
             canonical_range_bound(end?)
         ));
     }
-    Some(canonical.join(", "))
+    Some(canonical)
 }
 
 enum RangeBound {
