@@ -271,15 +271,13 @@ where
     let mut dest = String::with_capacity(1);
     let project_root = options.project_root.clone();
     let mut printer = Printer::new(&mut dest, options);
+    printer.sources = Some(&self.sources);
 
     #[cfg(feature = "sourcemap")]
     {
-      printer.sources = Some(&self.sources);
-    }
-
-    #[cfg(feature = "sourcemap")]
-    if printer.source_map.is_some() {
-      printer.source_maps = self.sources.iter().enumerate().map(|(i, _)| self.source_map(i)).collect();
+      if printer.source_map.is_some() {
+        printer.source_maps = self.sources.iter().enumerate().map(|(i, _)| self.source_map(i)).collect();
+      }
     }
 
     for comment in &self.license_comments {
