@@ -359,21 +359,20 @@ impl DeclarationState {
     }
 
     pub fn replace_declarations(&mut self, declarations: &[ParsedDeclaration]) {
-        let declarations = declarations
-            .iter()
-            .map(|declaration| DeclarationInput {
-                name: &declaration.name,
-                value: &declaration.value,
-                important: declaration.important,
-            })
-            .collect::<Vec<_>>();
-        self.replace_declaration_inputs(&declarations);
+        self.replace_declaration_inputs(declarations.iter().map(|declaration| DeclarationInput {
+            name: &declaration.name,
+            value: &declaration.value,
+            important: declaration.important,
+        }));
     }
 
-    fn replace_declaration_inputs(&mut self, declarations: &[DeclarationInput<'_>]) {
+    fn replace_declaration_inputs<'a>(
+        &mut self,
+        declarations: impl IntoIterator<Item = DeclarationInput<'a>>,
+    ) {
         let mut winners = HashMap::<String, (DeclarationRecord, usize, usize)>::new();
 
-        for (source_index, declaration) in declarations.iter().enumerate() {
+        for (source_index, declaration) in declarations.into_iter().enumerate() {
             if self.context == DeclarationContext::Function && declaration.important {
                 continue;
             }
@@ -438,11 +437,10 @@ impl DeclarationState {
                 name: &declaration.name,
                 value: declaration.value,
                 important: declaration.important,
-            })
-            .collect::<Vec<_>>();
+            });
         let mut candidate = self.clone();
         candidate.limits = parse_limits;
-        candidate.replace_declaration_inputs(&declarations);
+        candidate.replace_declaration_inputs(declarations);
         candidate.validate_record_limit()?;
         candidate.limits = self.limits;
         *self = candidate;
