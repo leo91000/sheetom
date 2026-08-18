@@ -1291,25 +1291,54 @@ fn canonicalize_color_identifiers(value: &str) -> String {
 
 fn serialize_hex_color(value: &str) -> Option<String> {
     let hex = value.strip_prefix('#')?;
-    let expanded = match hex.len() {
-        3 | 4 => hex
-            .chars()
-            .flat_map(|character| [character, character])
-            .collect(),
-        6 | 8 => hex.to_owned(),
+    let bytes = hex.as_bytes();
+    let (red, green, blue, alpha) = match bytes {
+        [red, green, blue] => (
+            parse_hex_digit(*red)? * 17,
+            parse_hex_digit(*green)? * 17,
+            parse_hex_digit(*blue)? * 17,
+            None,
+        ),
+        [red, green, blue, alpha] => (
+            parse_hex_digit(*red)? * 17,
+            parse_hex_digit(*green)? * 17,
+            parse_hex_digit(*blue)? * 17,
+            Some(parse_hex_digit(*alpha)? * 17),
+        ),
+        [red_high, red_low, green_high, green_low, blue_high, blue_low] => (
+            parse_hex_byte(*red_high, *red_low)?,
+            parse_hex_byte(*green_high, *green_low)?,
+            parse_hex_byte(*blue_high, *blue_low)?,
+            None,
+        ),
+        [red_high, red_low, green_high, green_low, blue_high, blue_low, alpha_high, alpha_low] => (
+            parse_hex_byte(*red_high, *red_low)?,
+            parse_hex_byte(*green_high, *green_low)?,
+            parse_hex_byte(*blue_high, *blue_low)?,
+            Some(parse_hex_byte(*alpha_high, *alpha_low)?),
+        ),
         _ => return None,
     };
-    let red = u8::from_str_radix(&expanded[0..2], 16).ok()?;
-    let green = u8::from_str_radix(&expanded[2..4], 16).ok()?;
-    let blue = u8::from_str_radix(&expanded[4..6], 16).ok()?;
-    if expanded.len() == 6 {
+    let Some(alpha) = alpha else {
         return Some(format!("rgb({red}, {green}, {blue})"));
-    }
-    let alpha = u8::from_str_radix(&expanded[6..8], 16).ok()?;
+    };
     Some(format!(
         "rgba({red}, {green}, {blue}, {})",
         format_number(f64::from(alpha) / 255.0)
     ))
+}
+
+fn parse_hex_byte(high: u8, low: u8) -> Option<u8> {
+    Some((parse_hex_digit(high)? << 4) | parse_hex_digit(low)?)
+}
+
+fn parse_hex_digit(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
 }
 
 fn serialize_rgb_color(value: &str) -> Option<String> {
