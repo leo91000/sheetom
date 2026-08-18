@@ -1355,11 +1355,12 @@ enum BrowserLonghandGrammar {
 
 macro_rules! define_browser_longhand_registry {
     ($( $grammar:expr => [$( $property:literal ),+ $(,)?] ),+ $(,)?) => {
+        static BROWSER_LONGHAND_GRAMMARS: phf::Map<&'static str, BrowserLonghandGrammar> = phf::phf_map! {
+            $( $( $property => $grammar, )+ )+
+        };
+
         fn grammar(property_name: &str) -> Option<BrowserLonghandGrammar> {
-            match property_name {
-                $( $( $property )|+ => Some($grammar), )+
-                _ => None,
-            }
+            BROWSER_LONGHAND_GRAMMARS.get(property_name).copied()
         }
 
         pub(crate) fn has_browser_longhand_grammar(property_name: &str) -> bool {
