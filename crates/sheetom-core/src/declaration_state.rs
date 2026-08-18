@@ -1065,12 +1065,34 @@ impl DeclarationState {
             )
         });
 
-        if candidates.len() == 1 && pending_candidates.is_empty() {
-            let candidate = &candidates[0];
-            let mut written = false;
+        if !candidates.is_empty() && candidates.len() <= 4 && pending_candidates.is_empty() {
+            let mut selected = [false; 4];
+            for (index, candidate) in candidates.iter().enumerate() {
+                let overlaps =
+                    selected[..index]
+                        .iter()
+                        .enumerate()
+                        .any(|(selected_index, selected)| {
+                            *selected
+                                && candidates[selected_index]
+                                    .longhands
+                                    .iter()
+                                    .any(|longhand| candidate.longhands.contains(longhand))
+                        });
+                selected[index] = !overlaps;
+            }
+            let mut written = [false; 4];
             for record in &self.records {
-                if candidate.longhands.contains(&record.name.as_str()) {
-                    if !written {
+                let candidate_index =
+                    candidates
+                        .iter()
+                        .enumerate()
+                        .position(|(index, candidate)| {
+                            selected[index] && candidate.longhands.contains(&record.name.as_str())
+                        });
+                if let Some(index) = candidate_index {
+                    if !written[index] {
+                        let candidate = &candidates[index];
                         append_declaration(
                             &mut output,
                             &mut first,
@@ -1084,7 +1106,7 @@ impl DeclarationState {
                                     .iter()
                                     .any(|longhand| promoted_longhands.contains(*longhand)),
                         );
-                        written = true;
+                        written[index] = true;
                     }
                     continue;
                 }
