@@ -437,14 +437,15 @@ fn synthesize_parallel_lists(
             "gap-rule longhand list structures differ".to_owned(),
         ));
     }
-    let mut items = Vec::with_capacity(widths.items.len());
+    let mut serialized = String::new();
     for ((width, style), color) in widths.items.iter().zip(&styles.items).zip(&colors.items) {
+        push_separator(&mut serialized, ", ");
         match (width, style, color) {
             (
                 RepeatedItem::Value(width),
                 RepeatedItem::Value(style),
                 RepeatedItem::Value(color),
-            ) => items.push(synthesize_gap_rule_item(width, style, color)),
+            ) => serialized.push_str(&synthesize_gap_rule_item(width, style, color)),
             (
                 RepeatedItem::Repeat {
                     count: width_count,
@@ -463,18 +464,17 @@ fn synthesize_parallel_lists(
                 && widths.len() == styles.len()
                 && widths.len() == colors.len() =>
             {
-                let count = match width_count {
-                    RepeatCount::Auto => "auto".to_owned(),
-                    RepeatCount::Integer(value) => value.to_string(),
-                };
-                let values = widths
-                    .iter()
-                    .zip(styles)
-                    .zip(colors)
-                    .map(|((width, style), color)| synthesize_gap_rule_item(width, style, color))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                items.push(format!("repeat({count}, {values})"));
+                serialized.push_str("repeat(");
+                push_repeat_count(&mut serialized, width_count);
+                serialized.push_str(", ");
+                let value_start = serialized.len();
+                for ((width, style), color) in widths.iter().zip(styles).zip(colors) {
+                    if serialized.len() != value_start {
+                        serialized.push_str(", ");
+                    }
+                    serialized.push_str(&synthesize_gap_rule_item(width, style, color));
+                }
+                serialized.push(')');
             }
             _ => {
                 return Err(EngineError::Serialize(
@@ -483,7 +483,7 @@ fn synthesize_parallel_lists(
             }
         }
     }
-    Ok(items.join(", "))
+    Ok(serialized)
 }
 
 fn synthesize_gap_rule_item(
@@ -525,25 +525,40 @@ fn serialize_repeated_list<T, F>(
 where
     F: Fn(&T) -> Result<String, EngineError>,
 {
-    let mut serialized = Vec::with_capacity(list.items.len());
+    let mut serialized = String::new();
     for item in &list.items {
+        push_separator(&mut serialized, ", ");
         match item {
-            RepeatedItem::Value(value) => serialized.push(serialize_value(value)?),
+            RepeatedItem::Value(value) => serialized.push_str(&serialize_value(value)?),
             RepeatedItem::Repeat { count, values } => {
-                let count = match count {
-                    RepeatCount::Auto => "auto".to_owned(),
-                    RepeatCount::Integer(value) => value.to_string(),
-                };
-                let values = values
-                    .iter()
-                    .map(&serialize_value)
-                    .collect::<Result<Vec<_>, _>>()?
-                    .join(", ");
-                serialized.push(format!("repeat({count}, {values})"));
+                serialized.push_str("repeat(");
+                push_repeat_count(&mut serialized, count);
+                serialized.push_str(", ");
+                let value_start = serialized.len();
+                for value in values {
+                    if serialized.len() != value_start {
+                        serialized.push_str(", ");
+                    }
+                    serialized.push_str(&serialize_value(value)?);
+                }
+                serialized.push(')');
             }
         }
     }
-    Ok(serialized.join(", "))
+    Ok(serialized)
+}
+
+fn push_separator(output: &mut String, separator: &str) {
+    if !output.is_empty() {
+        output.push_str(separator);
+    }
+}
+
+fn push_repeat_count(output: &mut String, count: &RepeatCount) {
+    match count {
+        RepeatCount::Auto => output.push_str("auto"),
+        RepeatCount::Integer(value) => output.push_str(&value.to_string()),
+    }
 }
 
 fn serialize_typed<T: ToCss>(value: &T) -> Result<String, EngineError> {
