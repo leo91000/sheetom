@@ -289,10 +289,11 @@ pub(crate) fn shorthand_names() -> impl Iterator<Item = &'static str> {
         .map(|(shorthand, _)| *shorthand)
 }
 
-pub(crate) fn canonical_shorthand_names() -> impl Iterator<Item = &'static str> {
+pub(crate) fn canonical_shorthands() -> impl Iterator<Item = (&'static str, &'static [&'static str])>
+{
     generated::CANONICAL_SHORTHAND_INDEXES
         .iter()
-        .map(|index| generated::SHORTHAND_LONGHANDS[*index as usize].0)
+        .map(|index| generated::SHORTHAND_LONGHANDS[*index as usize])
 }
 
 pub(crate) fn is_shorthand_longhand(name: &str) -> bool {
@@ -317,7 +318,7 @@ pub(crate) fn initial_longhand_values() -> impl Iterator<Item = (&'static str, &
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_property_name, canonical_shorthand_names, initial_longhand_value,
+        canonical_property_name, canonical_shorthands, initial_longhand_value,
         is_shorthand_longhand, property_grammar, sheetom_parser_property_name, shorthand_longhands,
         PropertyGrammarExtension, PropertyGrammarOwner, CHROMIUM_BASELINE,
         INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
@@ -349,7 +350,9 @@ mod tests {
 
     #[test]
     fn canonical_shorthand_indexes_match_property_canonicalization() {
-        let generated = canonical_shorthand_names().collect::<Vec<_>>();
+        let generated = canonical_shorthands()
+            .map(|(name, _)| name)
+            .collect::<Vec<_>>();
         let expected = super::generated::SHORTHAND_LONGHANDS
             .iter()
             .map(|(name, _)| *name)

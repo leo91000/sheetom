@@ -2,7 +2,7 @@ use crate::function_rule::{canonical_function_descriptor_name, parse_function_de
 use crate::{
     catalog::{
         ascii_lowercase, canonical_property_name as canonical_style_property_name,
-        canonical_shorthand_names, is_shorthand_longhand, property_alias_defers_pending_value,
+        canonical_shorthands, is_shorthand_longhand, property_alias_defers_pending_value,
         property_alias_hides_value, property_alias_observable_value,
         shorthand_longhands as style_shorthand_longhands,
     },
@@ -1017,9 +1017,8 @@ impl DeclarationState {
             .iter()
             .map(|record| (record.name.as_str(), record))
             .collect::<HashMap<_, _>>();
-        let mut candidates = canonical_shorthand_names()
-            .filter_map(|name| {
-                let longhands = style_shorthand_longhands(name)?;
+        let mut candidates = canonical_shorthands()
+            .filter_map(|(name, longhands)| {
                 if longhands
                     .iter()
                     .any(|longhand| !records_by_name.contains_key(longhand))
