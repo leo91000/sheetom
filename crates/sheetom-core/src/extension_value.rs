@@ -502,28 +502,20 @@ impl CrossDimensionCalculationValue {
             return None;
         };
         let groups = split_top_level_delimiter(source, b',')?;
-        let mut authored_components = Vec::with_capacity(values.len());
-        for group in groups {
-            authored_components.extend(split_top_level_whitespace(group)?);
-        }
-        if authored_components.len() != values.len() {
-            return None;
-        }
-
+        let mut value_index = 0;
         let mut observable = String::new();
-        for (value, authored) in values.iter().zip(authored_components) {
-            let canonical = value.canonical_value().ok()?;
-            if !is_leading_math_function(authored) {
-                push_delimited(&mut observable, ", ", &canonical);
-                continue;
-            }
-            if is_leading_math_function(&canonical) {
-                push_delimited(&mut observable, ", ", &canonical);
-            } else {
-                push_delimited(&mut observable, ", ", &format!("calc({canonical})"));
+        for group in groups {
+            for authored in split_top_level_whitespace(group)? {
+                let canonical = values.get(value_index)?.canonical_value().ok()?;
+                value_index += 1;
+                if !is_leading_math_function(authored) || is_leading_math_function(&canonical) {
+                    push_delimited(&mut observable, ", ", &canonical);
+                } else {
+                    push_delimited(&mut observable, ", ", &format!("calc({canonical})"));
+                }
             }
         }
-        Some(observable)
+        (value_index == values.len()).then_some(observable)
     }
 }
 
