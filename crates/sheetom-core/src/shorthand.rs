@@ -2102,7 +2102,7 @@ fn parse_value_for_source_uncached(
             "grid-auto-columns",
             "grid-auto-rows",
         ];
-        longhands.sort_by_key(|record| {
+        longhands.sort_unstable_by_key(|record| {
             GRID_AUTO_FLOW_ORDER
                 .iter()
                 .position(|name| *name == record.name)
