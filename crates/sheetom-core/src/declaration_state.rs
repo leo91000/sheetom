@@ -438,8 +438,12 @@ impl DeclarationState {
                 value: declaration.value,
                 important: declaration.important,
             });
-        let mut candidate = self.clone();
-        candidate.limits = parse_limits;
+        let mut candidate = Self {
+            records: Vec::new(),
+            next_pending_group_id: self.next_pending_group_id,
+            context: self.context,
+            limits: parse_limits,
+        };
         candidate.replace_declaration_inputs(declarations);
         candidate.validate_record_limit()?;
         candidate.limits = self.limits;
