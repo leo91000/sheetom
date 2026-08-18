@@ -440,7 +440,15 @@ fn split_priority(source: &str) -> (&str, bool) {
     let Some(bang) = bang else {
         return (trim_css_whitespace(source), false);
     };
-    let priority = remove_comments(&source[bang + 1..]);
+    let priority = &source[bang + 1..];
+    if !priority.contains("/*") {
+        return if trim_css_whitespace(priority).eq_ignore_ascii_case("important") {
+            (trim_css_whitespace(&source[..bang]), true)
+        } else {
+            (trim_css_whitespace(source), false)
+        };
+    }
+    let priority = remove_comments(priority);
     if trim_css_whitespace(&priority).eq_ignore_ascii_case("important") {
         (trim_css_whitespace(&source[..bang]), true)
     } else {
