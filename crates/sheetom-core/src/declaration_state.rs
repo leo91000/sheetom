@@ -129,6 +129,32 @@ struct ShorthandSerializationCandidate {
     longhands: &'static [&'static str],
 }
 
+enum DeclarationRecordLookup<'a> {
+    Linear(&'a [DeclarationRecord]),
+    Indexed(HashMap<&'a str, &'a DeclarationRecord>),
+}
+
+impl<'a> DeclarationRecordLookup<'a> {
+    fn new(records: &'a [DeclarationRecord]) -> Self {
+        if records.len() <= 8 {
+            return Self::Linear(records);
+        }
+        Self::Indexed(
+            records
+                .iter()
+                .map(|record| (record.name.as_str(), record))
+                .collect(),
+        )
+    }
+
+    fn get(&self, name: &str) -> Option<&'a DeclarationRecord> {
+        match self {
+            Self::Linear(records) => records.iter().find(|record| record.name == name),
+            Self::Indexed(records) => records.get(name).copied(),
+        }
+    }
+}
+
 #[derive(Clone)]
 struct PendingShorthandSerializationCandidate {
     id: u64,
@@ -1012,16 +1038,12 @@ impl DeclarationState {
             return output;
         }
 
-        let records_by_name = self
-            .records
-            .iter()
-            .map(|record| (record.name.as_str(), record))
-            .collect::<HashMap<_, _>>();
+        let records_by_name = DeclarationRecordLookup::new(&self.records);
         let mut candidates = canonical_shorthands()
             .filter_map(|(name, longhands)| {
                 if longhands
                     .iter()
-                    .any(|longhand| !records_by_name.contains_key(longhand))
+                    .any(|longhand| records_by_name.get(longhand).is_none())
                 {
                     return None;
                 }
