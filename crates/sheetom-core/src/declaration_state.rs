@@ -406,7 +406,7 @@ impl DeclarationState {
         }
 
         let mut records = winners.into_values().collect::<Vec<_>>();
-        records.sort_by_key(|(record, source_index, sub_index)| {
+        records.sort_unstable_by_key(|(record, source_index, sub_index)| {
             (record.important, *source_index, *sub_index)
         });
         self.records = records.into_iter().map(|(record, _, _)| record).collect();
@@ -855,7 +855,7 @@ impl DeclarationState {
             .collect::<HashMap<_, _>>();
 
         let mut surviving_groups = surviving_groups.into_values().collect::<Vec<_>>();
-        surviving_groups.sort_by_key(|(group, anchor)| (*anchor, group.id));
+        surviving_groups.sort_unstable_by_key(|(group, anchor)| (*anchor, group.id));
 
         let mut candidates = Vec::new();
         let mut promoted_longhands = HashSet::new();
@@ -914,7 +914,7 @@ impl DeclarationState {
                 longhands,
             });
         }
-        candidates.sort_by_key(|candidate| (candidate.anchor, candidate.id));
+        candidates.sort_unstable_by_key(|candidate| (candidate.anchor, candidate.id));
         Ok(PendingShorthandSerializationPlan {
             candidates,
             promoted_longhands,
