@@ -256,8 +256,7 @@ fn replace_gradient_color_tokens(input: &str) -> String {
                 }
             }
             Token::Hash(value) | Token::IDHash(value) => {
-                let source = format!("#{value}");
-                if let Some(color) = serialize_hex_color(&source) {
+                if let Some(color) = serialize_hex_digits(&value) {
                     replacements.push((token.start.byte_index(), token.end.byte_index(), color));
                 }
             }
@@ -1320,6 +1319,10 @@ fn canonicalize_color_identifiers(value: &str) -> String {
 
 fn serialize_hex_color(value: &str) -> Option<String> {
     let hex = value.strip_prefix('#')?;
+    serialize_hex_digits(hex)
+}
+
+fn serialize_hex_digits(hex: &str) -> Option<String> {
     let bytes = hex.as_bytes();
     let (red, green, blue, alpha) = match bytes {
         [red, green, blue] => (
