@@ -60,14 +60,21 @@ export class NativeDeclarationBlock {
     context: "style" | "font-face" | "function" = "style",
     resourceBudget: NativeResourceBudget = defaultResourceBudget,
     reservedNestingDepth: () => number = () => 0,
+    initialCssText?: string,
   ) {
     this.#reportDiagnostic = reportDiagnostic;
     this.#reportSerializationDiagnostic = reportSerializationDiagnostic;
     this.#reservedNestingDepth = reservedNestingDepth;
-    this.#state = engineBinding.createDeclarationState(
-      context,
-      ...nativeBudgetArguments(resourceBudget),
-    );
+    try {
+      this.#state = engineBinding.createDeclarationState(
+        context,
+        ...nativeBudgetArguments(resourceBudget),
+        initialCssText,
+      );
+    } catch (error) {
+      rethrowResourceBudgetError(error);
+      throw error;
+    }
   }
 
   get cssText(): string {

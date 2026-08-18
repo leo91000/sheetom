@@ -60,7 +60,7 @@ interface WasmGlueModule {
   serializeIdentifierValue(value: string): string;
   WasmDeclarationState: new (
     context: "style" | "font-face" | "function",
-    ...budget: BudgetArguments
+    ...arguments_: [...BudgetArguments, initialCssText?: string]
   ) => GeneratedDeclarationState;
 }
 
@@ -150,8 +150,8 @@ export async function initializeWasmEngineBinding(
     ),
     serializeIdentifierValue: value => guard(() => glue.serializeIdentifierValue(value)),
     serializeFontFamilyValue: value => guard(() => glue.serializeFontFamilyValue(value)),
-    createDeclarationState: (context = "style", ...budget) => {
-      const state = guard(() => new glue.WasmDeclarationState(context, ...budget));
+    createDeclarationState: (context = "style", ...arguments_) => {
+      const state = guard(() => new glue.WasmDeclarationState(context, ...arguments_));
       const handle = declarationStateHandle(state, guard);
       finalizer.register(handle, state);
       return handle;
