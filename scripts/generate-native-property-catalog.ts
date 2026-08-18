@@ -67,6 +67,17 @@ const shorthands = Object.entries(chromiumShorthandLonghands)
   .sort(([left], [right]) => left.localeCompare(right));
 const declaredShorthands = Object.entries(chromiumShorthandLonghands)
   .sort(([left], [right]) => left.localeCompare(right));
+const shorthandLonghandNames = new Set(
+  declaredShorthands.flatMap(([, longhands]) => longhands),
+);
+const shorthandLonghandBits = Array(Math.ceil(properties.length / 8)).fill(0);
+for (const longhand of shorthandLonghandNames) {
+  const index = properties.indexOf(longhand);
+  if (index === -1) {
+    throw new Error(`Unknown shorthand longhand ${longhand}`);
+  }
+  shorthandLonghandBits[index >> 3] |= 1 << (index & 7);
+}
 const initialLonghandValues = new Map();
 for (const shorthandCase of capabilities.cases) {
   for (const longhand of shorthandCase.chromium.longhands) {
@@ -143,6 +154,10 @@ const lines = [
     ...longhands.map(longhand => `        ${rustString(longhand)},`),
     "    ]),",
   ]),
+  "];",
+  "",
+  "pub static SHORTHAND_LONGHAND_BITS: &[u8] = &[",
+  ...shorthandLonghandBits.map(bits => `    ${bits},`),
   "];",
   "",
   "pub static OBSERVED_SHORTHAND_LONGHANDS: &[(&str, &[&str])] = &[",

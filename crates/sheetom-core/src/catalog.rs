@@ -288,6 +288,13 @@ pub(crate) fn shorthand_names() -> impl Iterator<Item = &'static str> {
         .map(|(shorthand, _)| *shorthand)
 }
 
+pub(crate) fn is_shorthand_longhand(name: &str) -> bool {
+    let Ok(index) = generated::SUPPORTED_PROPERTIES.binary_search(&name) else {
+        return false;
+    };
+    generated::SHORTHAND_LONGHAND_BITS[index >> 3] & (1 << (index & 7)) != 0
+}
+
 pub(crate) fn initial_longhand_value(name: &str) -> Option<&'static str> {
     let index = generated::INITIAL_LONGHAND_VALUES
         .binary_search_by_key(&name, |(longhand, _)| *longhand)
@@ -303,7 +310,7 @@ pub(crate) fn initial_longhand_values() -> impl Iterator<Item = (&'static str, &
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_property_name, initial_longhand_value, property_grammar,
+        canonical_property_name, initial_longhand_value, is_shorthand_longhand, property_grammar,
         sheetom_parser_property_name, shorthand_longhands, PropertyGrammarExtension,
         PropertyGrammarOwner, CHROMIUM_BASELINE, INITIAL_VALUES_SOURCE_SHA256, SOURCE_SHA256,
     };
@@ -320,6 +327,16 @@ mod tests {
             INITIAL_VALUES_SOURCE_SHA256,
             "9effd1fbe4220206d95b664a58906759d0ee62d420ec6ff85244939b9dc79a33"
         );
+    }
+
+    #[test]
+    fn shorthand_longhand_bitset_matches_the_generated_catalog() {
+        for name in super::generated::SUPPORTED_PROPERTIES {
+            let expected = super::generated::SHORTHAND_LONGHANDS
+                .iter()
+                .any(|(_, longhands)| longhands.contains(name));
+            assert_eq!(is_shorthand_longhand(name), expected, "{name}");
+        }
     }
 
     #[test]
