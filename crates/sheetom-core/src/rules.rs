@@ -28,6 +28,28 @@ thread_local! {
 }
 
 const LARGE_STACK_DEPTH_THRESHOLD: usize = 256;
+const RESERVED_FONT_FAMILY_NAMES: &[&str] = &[
+    "initial",
+    "inherit",
+    "unset",
+    "default",
+    "revert",
+    "revert-layer",
+    "revert-rule",
+    "serif",
+    "sans-serif",
+    "cursive",
+    "fantasy",
+    "monospace",
+    "system-ui",
+    "emoji",
+    "math",
+    "fangsong",
+    "ui-serif",
+    "ui-sans-serif",
+    "ui-monospace",
+    "ui-rounded",
+];
 
 fn current_resource_limits() -> ResourceLimits {
     ACTIVE_RESOURCE_LIMITS.with(Cell::get)
@@ -419,29 +441,9 @@ pub fn serialize_font_family_setter(value: &str) -> String {
 
 fn valid_unquoted_font_family(value: &str) -> bool {
     if value.starts_with("--")
-        || matches!(
-            value.to_ascii_lowercase().as_str(),
-            "initial"
-                | "inherit"
-                | "unset"
-                | "default"
-                | "revert"
-                | "revert-layer"
-                | "revert-rule"
-                | "serif"
-                | "sans-serif"
-                | "cursive"
-                | "fantasy"
-                | "monospace"
-                | "system-ui"
-                | "emoji"
-                | "math"
-                | "fangsong"
-                | "ui-serif"
-                | "ui-sans-serif"
-                | "ui-monospace"
-                | "ui-rounded"
-        )
+        || RESERVED_FONT_FAMILY_NAMES
+            .iter()
+            .any(|name| value.eq_ignore_ascii_case(name))
     {
         return false;
     }
@@ -451,12 +453,19 @@ fn valid_unquoted_font_family(value: &str) -> bool {
 }
 
 fn container_query_start(source: &str) -> usize {
-    let lower = source.to_ascii_lowercase();
-    if source.starts_with('(') || lower.starts_with("style(") || lower.starts_with("scroll-state(")
+    if source.starts_with('(')
+        || starts_with_ignore_ascii_case(source, "style(")
+        || starts_with_ignore_ascii_case(source, "scroll-state(")
     {
         return 0;
     }
     source.find(is_css_whitespace).unwrap_or(source.len())
+}
+
+fn starts_with_ignore_ascii_case(source: &str, prefix: &str) -> bool {
+    source
+        .get(..prefix.len())
+        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(prefix))
 }
 
 fn consume_parenthesized(source: &str) -> Option<(&str, &str)> {
@@ -1873,10 +1882,10 @@ fn preserve_source_prelude(rule: &mut ParsedRule, header: &str) {
         "page" => "@page",
         "position-try" => "@position-try",
         "keyframes" => {
-            if trim_start_css_whitespace(header)
-                .to_ascii_lowercase()
-                .starts_with("@-webkit-keyframes")
-            {
+            if starts_with_ignore_ascii_case(
+                trim_start_css_whitespace(header),
+                "@-webkit-keyframes",
+            ) {
                 "@-webkit-keyframes"
             } else {
                 "@keyframes"
