@@ -30,6 +30,7 @@ impl WasmDeclarationState {
         max_nesting_depth: Option<u32>,
         max_rules: Option<u32>,
         max_declarations_per_block: Option<u32>,
+        initial_css_text: Option<String>,
     ) -> Result<Self, JsValue> {
         let context = match context.as_deref() {
             None | Some("style") => DeclarationContext::Style,
@@ -41,18 +42,22 @@ impl WasmDeclarationState {
                 )))
             }
         };
-        Ok(Self {
-            state: DeclarationState::new_with_context_and_limits(
-                context,
-                resource_limits(
-                    max_stylesheet_bytes,
-                    max_declaration_value_bytes,
-                    max_nesting_depth,
-                    max_rules,
-                    max_declarations_per_block,
-                ),
+        let mut state = DeclarationState::new_with_context_and_limits(
+            context,
+            resource_limits(
+                max_stylesheet_bytes,
+                max_declaration_value_bytes,
+                max_nesting_depth,
+                max_rules,
+                max_declarations_per_block,
             ),
-        })
+        );
+        if let Some(source) = initial_css_text {
+            state
+                .replace_css_text_checked(&source)
+                .map_err(engine_error)?;
+        }
+        Ok(Self { state })
     }
 
     #[wasm_bindgen(getter)]

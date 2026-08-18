@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const ENGINE_ABI_VERSION = 3;
+export const ENGINE_ABI_VERSION = 4;
 
 const syntaxEnginePaths = [
   ".cargo/config.toml",

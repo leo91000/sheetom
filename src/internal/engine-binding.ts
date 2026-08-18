@@ -1,6 +1,10 @@
 import generatedEngineAbiIdentity from "../../engine-abi.json" with { type: "json" };
 
 type EngineBudgetArguments = [number, number, number, number, number];
+type EngineDeclarationStateArguments = [
+  ...EngineBudgetArguments,
+  initialCssText?: string,
+];
 
 export interface EngineAbiIdentity {
   abiVersion: number;
@@ -71,7 +75,7 @@ export interface EngineBinding extends EngineBindingIdentityProvider {
   serializeFontFamilyValue(value: string): string;
   createDeclarationState(
     context?: "style" | "font-face" | "function",
-    ...budget: EngineBudgetArguments
+    ...arguments_: EngineDeclarationStateArguments
   ): EngineDeclarationStateHandle;
   parseRecoveredRuleTreeJson(source: string, ...budget: EngineBudgetArguments): string;
   parseRecoveredSingleRuleTreeJson(source: string, ...budget: EngineBudgetArguments): string;

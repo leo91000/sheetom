@@ -11,7 +11,7 @@ import {
 interface NativeAddonBinding extends Omit<EngineBinding, "createDeclarationState"> {
   NativeDeclarationState: new (
     context?: "style" | "font-face" | "function",
-    ...budget: [number, number, number, number, number]
+    ...arguments_: [number, number, number, number, number, string?]
   ) => EngineDeclarationStateHandle;
 }
 
@@ -25,9 +25,9 @@ function loadBinding(): EngineBinding {
   validateEngineBindingIdentity(addon);
   return {
     ...addon,
-    createDeclarationState: (context, ...budget) => new addon.NativeDeclarationState(
+    createDeclarationState: (context, ...arguments_) => new addon.NativeDeclarationState(
       context,
-      ...budget,
+      ...arguments_,
     ),
   };
 }

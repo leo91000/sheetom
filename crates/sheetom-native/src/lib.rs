@@ -41,6 +41,7 @@ impl NativeDeclarationState {
         max_nesting_depth: Option<u32>,
         max_rules: Option<u32>,
         max_declarations_per_block: Option<u32>,
+        initial_css_text: Option<String>,
     ) -> napi::Result<Self> {
         let context = match context.as_deref() {
             None | Some("style") => DeclarationContext::Style,
@@ -59,9 +60,13 @@ impl NativeDeclarationState {
             max_rules,
             max_declarations_per_block,
         );
-        Ok(Self {
-            state: DeclarationState::new_with_context_and_limits(context, limits),
-        })
+        let mut state = DeclarationState::new_with_context_and_limits(context, limits);
+        if let Some(source) = initial_css_text {
+            state
+                .replace_css_text_checked(&source)
+                .map_err(|error| napi::Error::from_reason(error.to_string()))?;
+        }
+        Ok(Self { state })
     }
 
     #[napi(getter)]
