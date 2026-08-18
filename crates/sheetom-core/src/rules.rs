@@ -159,7 +159,7 @@ fn serialize_parsed_rule_forest_json(
     rules: &[ParsedRule],
     include_root_array: bool,
 ) -> Result<String, EngineError> {
-    let mut output = String::new();
+    let mut output = Vec::new();
     let mut pending = if include_root_array {
         vec![RuleJsonWork::Rules { rules, index: 0 }]
     } else {
@@ -174,13 +174,13 @@ fn serialize_parsed_rule_forest_json(
     while let Some(work) = pending.pop() {
         match work {
             RuleJsonWork::Rule(rule) => {
-                output.push_str("{\"kind\":");
+                output.extend_from_slice(b"{\"kind\":");
                 push_json_string(&mut output, &rule.kind)?;
-                output.push_str(",\"prelude\":");
+                output.extend_from_slice(b",\"prelude\":");
                 push_json_string(&mut output, &rule.prelude)?;
-                output.push_str(",\"declarations\":");
+                output.extend_from_slice(b",\"declarations\":");
                 push_json_string(&mut output, &rule.declarations)?;
-                output.push_str(",\"children\":");
+                output.extend_from_slice(b",\"children\":");
                 pending.push(RuleJsonWork::RuleSuffix(rule));
                 pending.push(RuleJsonWork::Rules {
                     rules: &rule.children,
@@ -188,20 +188,20 @@ fn serialize_parsed_rule_forest_json(
                 });
             }
             RuleJsonWork::RuleSuffix(rule) => {
-                output.push_str(",\"cssText\":");
+                output.extend_from_slice(b",\"cssText\":");
                 push_json_string(&mut output, &rule.css_text)?;
-                output.push('}');
+                output.push(b'}');
             }
             RuleJsonWork::Rules { rules, index } => {
                 if index == 0 {
-                    output.push('[');
+                    output.push(b'[');
                 }
                 if index == rules.len() {
-                    output.push(']');
+                    output.push(b']');
                     continue;
                 }
                 if index > 0 {
-                    output.push(',');
+                    output.push(b',');
                 }
                 pending.push(RuleJsonWork::Rules {
                     rules,
@@ -211,14 +211,11 @@ fn serialize_parsed_rule_forest_json(
             }
         }
     }
-    Ok(output)
+    String::from_utf8(output).map_err(|error| EngineError::Serialize(error.to_string()))
 }
 
-fn push_json_string(output: &mut String, value: &str) -> Result<(), EngineError> {
-    let encoded =
-        serde_json::to_string(value).map_err(|error| EngineError::Serialize(error.to_string()))?;
-    output.push_str(&encoded);
-    Ok(())
+fn push_json_string(output: &mut Vec<u8>, value: &str) -> Result<(), EngineError> {
+    serde_json::to_writer(output, value).map_err(|error| EngineError::Serialize(error.to_string()))
 }
 
 impl Drop for ParsedRule {
