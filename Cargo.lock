@@ -685,6 +685,7 @@ dependencies = [
  "lightningcss",
  "serde",
  "serde_json",
+ "smallvec",
  "svgtypes",
 ]
 
