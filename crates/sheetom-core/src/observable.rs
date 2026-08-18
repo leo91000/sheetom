@@ -525,10 +525,9 @@ fn is_zero_angle(value: &str) -> bool {
         .unwrap_or(value.len());
     let (number, unit) = value.split_at(unit_start);
     number.parse::<f64>().is_ok_and(|number| number == 0.0)
-        && matches!(
-            unit.to_ascii_lowercase().as_str(),
-            "deg" | "grad" | "rad" | "turn"
-        )
+        && ["deg", "grad", "rad", "turn"]
+            .iter()
+            .any(|candidate| unit.eq_ignore_ascii_case(candidate))
 }
 
 fn serialize_text_shadow(input: &str, canonical: &str) -> String {
@@ -767,8 +766,8 @@ fn serialize_aspect_ratio(input: &str, canonical: &str) -> String {
 }
 
 fn starts_image_set_function(value: &str) -> bool {
-    let lower = value.to_ascii_lowercase();
-    lower.starts_with("image-set(") || lower.starts_with("-webkit-image-set(")
+    starts_with_ignore_ascii_case(value, "image-set(")
+        || starts_with_ignore_ascii_case(value, "-webkit-image-set(")
 }
 
 fn serialize_shorthand_observable(name: &str, input: &str, canonical: &str) -> String {
@@ -862,7 +861,7 @@ fn serialize_default_observable(
     if !recovered.recovered {
         return canonicalize_leading_decimal(canonical);
     }
-    if closed.to_ascii_lowercase().starts_with("url(") || input.starts_with(['\'', '"']) {
+    if starts_with_ignore_ascii_case(closed, "url(") || input.starts_with(['\'', '"']) {
         return canonical.to_owned();
     }
     if input.contains("/*") {
@@ -972,22 +971,23 @@ fn is_identifier(value: &str) -> bool {
 }
 
 fn is_generic_font_family(value: &str) -> bool {
-    matches!(
-        value.to_ascii_lowercase().as_str(),
-        "serif"
-            | "sans-serif"
-            | "monospace"
-            | "cursive"
-            | "fantasy"
-            | "system-ui"
-            | "ui-serif"
-            | "ui-sans-serif"
-            | "ui-monospace"
-            | "ui-rounded"
-            | "math"
-            | "fangsong"
-            | "emoji"
-    )
+    [
+        "serif",
+        "sans-serif",
+        "monospace",
+        "cursive",
+        "fantasy",
+        "system-ui",
+        "ui-serif",
+        "ui-sans-serif",
+        "ui-monospace",
+        "ui-rounded",
+        "math",
+        "fangsong",
+        "emoji",
+    ]
+    .iter()
+    .any(|candidate| value.eq_ignore_ascii_case(candidate))
 }
 
 fn serialize_color(value: &str, safe_value: &str) -> String {
@@ -1008,13 +1008,13 @@ fn serialize_color(value: &str, safe_value: &str) -> String {
     }
     if ["hsl(", "hsla(", "hwb("]
         .iter()
-        .any(|prefix| value.to_ascii_lowercase().starts_with(prefix))
+        .any(|prefix| starts_with_ignore_ascii_case(value, prefix))
     {
         return serialize_hex_color(safe_value).unwrap_or_else(|| value.to_owned());
     }
     if ["lab(", "lch(", "oklab(", "oklch(", "color("]
         .iter()
-        .any(|prefix| value.to_ascii_lowercase().starts_with(prefix))
+        .any(|prefix| starts_with_ignore_ascii_case(value, prefix))
     {
         return canonicalize_modern_color(safe_value);
     }
@@ -1048,17 +1048,17 @@ fn serialize_plain_time_list(input: &str) -> Option<String> {
 fn serialize_plain_time(input: &str) -> Option<String> {
     let unit_start = input.find(|character: char| character.is_ascii_alphabetic())?;
     let (number, unit) = input.split_at(unit_start);
-    if !matches!(unit.to_ascii_lowercase().as_str(), "s" | "ms") {
+    let unit = if unit.eq_ignore_ascii_case("s") {
+        "s"
+    } else if unit.eq_ignore_ascii_case("ms") {
+        "ms"
+    } else {
         return None;
-    }
+    };
     let number = number.parse::<f64>().ok()?;
-    number.is_finite().then(|| {
-        format!(
-            "{}{}",
-            serialize_finite_number(number),
-            unit.to_ascii_lowercase()
-        )
-    })
+    number
+        .is_finite()
+        .then(|| format!("{}{unit}", serialize_finite_number(number)))
 }
 
 fn serialize_dimensionless_zero(name: &str, input: &str) -> Option<String> {
@@ -1139,15 +1139,17 @@ fn replace_one_pixel_with_zero(input: &str) -> Option<String> {
 }
 
 fn canonicalize_modern_color(input: &str) -> String {
-    let lower = input.to_ascii_lowercase();
-    let (scale_lightness, unscale_lightness) =
-        if lower.starts_with("oklab(") || lower.starts_with("oklch(") {
-            (true, false)
-        } else if lower.starts_with("lab(") || lower.starts_with("lch(") {
-            (false, true)
-        } else {
-            (false, false)
-        };
+    let (scale_lightness, unscale_lightness) = if starts_with_ignore_ascii_case(input, "oklab(")
+        || starts_with_ignore_ascii_case(input, "oklch(")
+    {
+        (true, false)
+    } else if starts_with_ignore_ascii_case(input, "lab(")
+        || starts_with_ignore_ascii_case(input, "lch(")
+    {
+        (false, true)
+    } else {
+        (false, false)
+    };
     let mut tokenizer = TokenizerWithSpans::new(input);
     let mut depth = 0usize;
     let mut first_component = true;
@@ -1300,8 +1302,10 @@ fn serialize_hex_color(value: &str) -> Option<String> {
 
 fn serialize_rgb_color(value: &str) -> Option<String> {
     let open = value.find('(')?;
-    let function = value[..open].trim().to_ascii_lowercase();
-    if !matches!(function.as_str(), "rgb" | "rgba") || !value.ends_with(')') {
+    let function = value[..open].trim();
+    if !(function.eq_ignore_ascii_case("rgb") || function.eq_ignore_ascii_case("rgba"))
+        || !value.ends_with(')')
+    {
         return None;
     }
     let body = value[open + 1..value.len() - 1].trim();
@@ -1338,6 +1342,12 @@ fn serialize_rgb_color(value: &str) -> Option<String> {
         "rgb({}, {}, {})",
         channels[0], channels[1], channels[2]
     ))
+}
+
+fn starts_with_ignore_ascii_case(value: &str, prefix: &str) -> bool {
+    value
+        .get(..prefix.len())
+        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(prefix))
 }
 
 fn parse_color_channel(value: &str) -> Option<u8> {
