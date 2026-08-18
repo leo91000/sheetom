@@ -421,22 +421,25 @@ fn parse_scope_prelude_active(source: &str) -> Result<ParsedScopePrelude, Engine
 }
 
 pub fn serialize_font_family_setter(value: &str) -> String {
-    value
-        .split(',')
-        .map(trim_css_whitespace)
-        .filter(|family| !family.is_empty())
-        .map(|family| {
-            if valid_unquoted_font_family(family) {
-                return serialize_identifier(family);
-            }
-            let mut serialized = String::new();
-            if serialize_string(family, &mut serialized).is_err() {
-                return "\"\"".to_owned();
-            }
-            serialized
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
+    let mut serialized = String::with_capacity(value.len());
+    for family in value.split(',').map(trim_css_whitespace) {
+        if family.is_empty() {
+            continue;
+        }
+        if !serialized.is_empty() {
+            serialized.push_str(", ");
+        }
+        if valid_unquoted_font_family(family) {
+            serialized.push_str(&serialize_identifier(family));
+            continue;
+        }
+        let start = serialized.len();
+        if serialize_string(family, &mut serialized).is_err() {
+            serialized.truncate(start);
+            serialized.push_str("\"\"");
+        }
+    }
+    serialized
 }
 
 fn valid_unquoted_font_family(value: &str) -> bool {
