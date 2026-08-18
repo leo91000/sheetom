@@ -24,7 +24,8 @@ use lightningcss::{
 };
 use std::{
     cell::RefCell,
-    collections::{HashMap, VecDeque},
+    collections::{hash_map::RandomState, HashMap, VecDeque},
+    hash::{BuildHasher, Hash, Hasher},
     sync::Arc,
 };
 
@@ -53,20 +54,68 @@ impl ParsedValueCacheKey {
     }
 }
 
+struct ParsedValueCacheEntry {
+    key: ParsedValueCacheKey,
+    value: Result<ParsedValue, MutationOutcome>,
+}
+
 #[derive(Default)]
 struct ParsedValueCache {
-    entries: HashMap<ParsedValueCacheKey, Result<ParsedValue, MutationOutcome>>,
-    insertion_order: VecDeque<ParsedValueCacheKey>,
+    entries: HashMap<u64, ParsedValueCacheEntry>,
+    insertion_order: VecDeque<u64>,
+    hash_builder: RandomState,
     key_bytes: usize,
 }
 
 impl ParsedValueCache {
-    fn get(&self, key: &ParsedValueCacheKey) -> Option<Result<ParsedValue, MutationOutcome>> {
-        self.entries.get(key).cloned()
+    fn key_hash(
+        &self,
+        name: &str,
+        source_name: &str,
+        value: &str,
+        important: bool,
+        limits: ResourceLimits,
+    ) -> u64 {
+        let mut hasher = self.hash_builder.build_hasher();
+        name.hash(&mut hasher);
+        source_name.hash(&mut hasher);
+        value.hash(&mut hasher);
+        important.hash(&mut hasher);
+        limits.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    fn get(
+        &self,
+        name: &str,
+        source_name: &str,
+        value: &str,
+        important: bool,
+        limits: ResourceLimits,
+    ) -> Option<Result<ParsedValue, MutationOutcome>> {
+        let hash = self.key_hash(name, source_name, value, important, limits);
+        self.entries
+            .get(&hash)
+            .filter(|entry| {
+                entry.key.name.as_ref() == name
+                    && entry.key.source_name.as_ref() == source_name
+                    && entry.key.value.as_ref() == value
+                    && entry.key.important == important
+                    && entry.key.limits == limits
+            })
+            .map(|entry| entry.value.clone())
     }
 
     fn insert(&mut self, key: ParsedValueCacheKey, value: Result<ParsedValue, MutationOutcome>) {
-        if self.entries.contains_key(&key) {
+        let hash = self.key_hash(
+            &key.name,
+            &key.source_name,
+            &key.value,
+            key.important,
+            key.limits,
+        );
+        if self.entries.contains_key(&hash) {
+            // Keep hash collisions as cache misses rather than returning the wrong value.
             return;
         }
         let key_bytes = key.byte_len();
@@ -74,18 +123,20 @@ impl ParsedValueCache {
             && (self.entries.len() >= PARSED_VALUE_CACHE_ENTRY_LIMIT
                 || self.key_bytes + key_bytes > PARSED_VALUE_CACHE_KEY_BYTE_LIMIT)
         {
-            let Some(evicted) = self.insertion_order.pop_front() else {
+            let Some(evicted_hash) = self.insertion_order.pop_front() else {
                 break;
             };
-            self.key_bytes = self.key_bytes.saturating_sub(evicted.byte_len());
-            self.entries.remove(&evicted);
+            if let Some(evicted) = self.entries.remove(&evicted_hash) {
+                self.key_bytes = self.key_bytes.saturating_sub(evicted.key.byte_len());
+            }
         }
         if key_bytes > PARSED_VALUE_CACHE_KEY_BYTE_LIMIT {
             return;
         }
         self.key_bytes += key_bytes;
-        self.insertion_order.push_back(key.clone());
-        self.entries.insert(key, value);
+        self.insertion_order.push_back(hash);
+        self.entries
+            .insert(hash, ParsedValueCacheEntry { key, value });
     }
 }
 
@@ -1808,6 +1859,14 @@ pub(crate) fn parse_value_for_source_with_limits(
     if name.starts_with("--") || value.len() > PARSED_VALUE_CACHE_MAX_VALUE_BYTES {
         return parse_value_for_source_uncached(name, source_name, value, important, limits);
     }
+    if let Some(parsed) = PARSED_VALUE_CACHE.with(|cache| {
+        cache
+            .borrow()
+            .get(name, source_name, value, important, limits)
+    }) {
+        return parsed;
+    }
+    let parsed = parse_value_for_source_uncached(name, source_name, value, important, limits);
     let key = ParsedValueCacheKey {
         name: Arc::from(name),
         source_name: Arc::from(source_name),
@@ -1815,10 +1874,6 @@ pub(crate) fn parse_value_for_source_with_limits(
         important,
         limits,
     };
-    if let Some(parsed) = PARSED_VALUE_CACHE.with(|cache| cache.borrow().get(&key)) {
-        return parsed;
-    }
-    let parsed = parse_value_for_source_uncached(name, source_name, value, important, limits);
     PARSED_VALUE_CACHE.with(|cache| cache.borrow_mut().insert(key, parsed.clone()));
     parsed
 }
