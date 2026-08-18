@@ -715,9 +715,9 @@ impl ClipValue {
         match self {
             ClipValue::Auto => Ok("auto".to_owned()),
             ClipValue::Rect(components) => {
-                let mut values = Vec::with_capacity(components.len());
+                let mut output = "rect(".to_owned();
                 for component in components {
-                    values.push(match component {
+                    let value = match component {
                         ClipComponent::Auto => "auto".to_owned(),
                         ClipComponent::Length {
                             value,
@@ -731,9 +731,14 @@ impl ClipValue {
                             }
                             serialized
                         }
-                    });
+                    };
+                    if output.len() > "rect(".len() {
+                        output.push_str(", ");
+                    }
+                    output.push_str(&value);
                 }
-                Ok(format!("rect({})", values.join(", ")))
+                output.push(')');
+                Ok(output)
             }
         }
     }
@@ -744,15 +749,22 @@ impl DynamicRangeLimitValue {
         match self {
             DynamicRangeLimitValue::Keyword(value) => Ok((*value).to_owned()),
             DynamicRangeLimitValue::Mix(entries) => {
-                let mut values = Vec::with_capacity(entries.len());
+                let mut output = "dynamic-range-limit-mix(".to_owned();
                 for entry in entries {
                     let mut percentage = serialize_typed(&entry.percentage)?;
                     if entry.authored_calculation && !percentage.contains('(') {
                         percentage = format!("calc({percentage})");
                     }
-                    values.push(format!("{} {percentage}", entry.limit.canonical_value()?));
+                    let mut value = entry.limit.canonical_value()?;
+                    value.push(' ');
+                    value.push_str(&percentage);
+                    if output.len() > "dynamic-range-limit-mix(".len() {
+                        output.push_str(", ");
+                    }
+                    output.push_str(&value);
                 }
-                Ok(format!("dynamic-range-limit-mix({})", values.join(", ")))
+                output.push(')');
+                Ok(output)
             }
         }
     }
@@ -792,21 +804,23 @@ impl OffsetPathValue {
                 contain,
                 position,
             }) => {
-                let mut components = vec![serialize_typed(angle)?];
+                let mut output = "ray(".to_owned();
+                output.push_str(&serialize_typed(angle)?);
                 if let Some(size) = size.filter(|size| *size != "closest-side") {
-                    components.push((*size).to_owned());
+                    output.push(' ');
+                    output.push_str(size);
                 }
                 if *contain {
-                    components.push("contain".to_owned());
+                    output.push_str(" contain");
                 }
                 if let Some(position) = position {
-                    components.push(format!(
-                        "at {} {}",
-                        serialize_position_component(&position.x)?,
-                        serialize_position_component(&position.y)?,
-                    ));
+                    output.push_str(" at ");
+                    output.push_str(&serialize_position_component(&position.x)?);
+                    output.push(' ');
+                    output.push_str(&serialize_position_component(&position.y)?);
                 }
-                format!("ray({})", components.join(" "))
+                output.push(')');
+                output
             }
         };
         if let Some(coord_box) = self
@@ -870,8 +884,7 @@ impl FontVariantAlternatesValue {
         if !self.historical_forms && self.functions.is_empty() {
             return Ok("normal".to_owned());
         }
-        let mut output =
-            Vec::with_capacity(self.functions.len() + usize::from(self.historical_forms));
+        let mut output = String::new();
         for name in [
             "stylistic",
             "historical-forms",
@@ -883,16 +896,17 @@ impl FontVariantAlternatesValue {
         ] {
             if name == "historical-forms" {
                 if self.historical_forms {
-                    output.push(name.to_owned());
+                    push_delimited(&mut output, " ", name);
                 }
                 continue;
             }
             if let Some(function) = self.functions.iter().find(|function| function.name == name) {
                 let values = serialize_comma_separated(&function.values)?;
-                output.push(format!("{}({values})", function.name));
+                let value = format!("{}({values})", function.name);
+                push_delimited(&mut output, " ", &value);
             }
         }
-        Ok(output.join(" "))
+        Ok(output)
     }
 }
 
