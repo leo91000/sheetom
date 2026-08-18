@@ -1816,9 +1816,10 @@ fn preserve_property_descriptor_values(rule: &mut ParsedRule, body: &str) {
     let Some(inherits) = last_value("inherits") else {
         return;
     };
+    let inherits = inherits.to_ascii_lowercase();
     let mut descriptors = vec![
         format!("syntax: {syntax};"),
-        format!("inherits: {};", inherits.to_ascii_lowercase()),
+        format!("inherits: {inherits};"),
     ];
     if let Some(initial_value) = last_value("initial-value") {
         descriptors.push(format!("initial-value: {initial_value};"));
@@ -1826,14 +1827,15 @@ fn preserve_property_descriptor_values(rule: &mut ParsedRule, body: &str) {
     let syntax_value = parse_css_string(syntax).unwrap_or_default();
     rule.children = vec![
         property_descriptor("syntax", &syntax_value),
-        property_descriptor("inherits", &inherits.to_ascii_lowercase()),
+        property_descriptor("inherits", &inherits),
     ];
     if let Some(initial_value) = last_value("initial-value") {
         rule.children
             .push(property_descriptor("initial-value", initial_value));
     }
-    rule.declarations = descriptors.join(" ");
-    rule.css_text = format!("@property {} {{ {} }}", rule.prelude, descriptors.join(" "));
+    let declarations = descriptors.join(" ");
+    rule.css_text = format!("@property {} {{ {declarations} }}", rule.prelude);
+    rule.declarations = declarations;
 }
 
 fn property_descriptor(name: &str, value: &str) -> ParsedRule {
@@ -2552,15 +2554,16 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
                 children.push(property_descriptor(name, &value));
             }
             let name = serialize(&rule.name)?;
-            let contents = if descriptors.is_empty() {
+            let declarations = descriptors.join(" ");
+            let contents = if declarations.is_empty() {
                 String::new()
             } else {
-                format!(" {}", descriptors.join(" "))
+                format!(" {declarations}")
             };
             ParsedRule {
                 kind: "font-palette-values".to_owned(),
                 prelude: name.clone(),
-                declarations: descriptors.join(" "),
+                declarations,
                 children,
                 css_text: format!("@font-palette-values {name} {{{contents} }}"),
             }
@@ -2602,15 +2605,16 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
                         .map(|name| metadata_item("view-transition-type", name)),
                 );
             }
-            let contents = if descriptors.is_empty() {
+            let declarations = descriptors.join(" ");
+            let contents = if declarations.is_empty() {
                 String::new()
             } else {
-                format!(" {}", descriptors.join(" "))
+                format!(" {declarations}")
             };
             ParsedRule {
                 kind: "view-transition".to_owned(),
                 prelude: String::new(),
-                declarations: descriptors.join(" "),
+                declarations,
                 children,
                 css_text: format!("@view-transition {{{contents} }}"),
             }
@@ -2632,12 +2636,13 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
                 children.push(property_descriptor("initial-value", &initial_value));
             }
             let declarations = descriptors.join(" ");
+            let css_text = format!("@property {name} {{ {declarations} }}");
             ParsedRule {
                 kind: "property".to_owned(),
                 prelude: name.clone(),
                 declarations,
                 children,
-                css_text: format!("@property {name} {{ {} }}", descriptors.join(" ")),
+                css_text,
             }
         }
         CssRule::NestedDeclarations(rule) => ParsedRule {
