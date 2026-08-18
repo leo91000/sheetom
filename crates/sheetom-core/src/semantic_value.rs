@@ -85,6 +85,7 @@ impl SemanticDeclaration {
             SemanticPropertyValue::Standard(_)
                 | SemanticPropertyValue::Extension(_)
                 | SemanticPropertyValue::FontFaceDescriptor(_)
+                | SemanticPropertyValue::CustomTokenStream
         ) {
             return;
         }
