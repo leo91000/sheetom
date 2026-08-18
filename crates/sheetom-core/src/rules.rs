@@ -1213,8 +1213,11 @@ fn parse_recovered_rule_tree_noniterative(
             preserve_property_descriptor_values(&mut parsed, body);
             return Ok(parsed);
         }
-        if let Some(recovered) = recover_single_child_group_chain(parsed.clone(), source, depth) {
-            return recovered;
+        if is_single_child_group(parsed) {
+            if let Some(recovered) = recover_single_child_group_chain(parsed.clone(), source, depth)
+            {
+                return recovered;
+            }
         }
         let raw_items = scan_recovered_block_items(body).len();
         let recover_from_source = matches!(
