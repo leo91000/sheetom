@@ -463,32 +463,47 @@ fn remove_comments(source: &str) -> String {
 }
 
 pub(crate) fn serialize_identifier(value: &str) -> String {
-    let characters = value.chars().collect::<Vec<_>>();
-    let mut result = String::new();
-    for (index, character) in characters.iter().copied().enumerate() {
+    let mut result = String::with_capacity(value.len());
+    append_serialized_identifier(&mut result, value);
+    result
+}
+
+pub(crate) fn append_serialized_identifier(output: &mut String, value: &str) {
+    let bytes = value.as_bytes();
+    if !bytes.is_empty()
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+        && !bytes[0].is_ascii_digit()
+        && !(bytes[0] == b'-' && (bytes.len() == 1 || bytes.get(1).is_some_and(u8::is_ascii_digit)))
+    {
+        output.push_str(value);
+        return;
+    }
+
+    for (index, character) in value.chars().enumerate() {
         let code_point = character as u32;
         if code_point == 0 {
-            result.push('\u{fffd}');
+            output.push('\u{fffd}');
         } else if (1..=31).contains(&code_point)
             || code_point == 127
             || (character.is_ascii_digit()
-                && (index == 0 || (index == 1 && characters.first() == Some(&'-'))))
+                && (index == 0 || (index == 1 && value.starts_with('-'))))
         {
-            result.push_str(&format!("\\{code_point:x} "));
-        } else if index == 0 && character == '-' && characters.len() == 1 {
-            result.push_str("\\-");
+            write!(output, "\\{code_point:x} ").expect("writing to a String cannot fail");
+        } else if index == 0 && character == '-' && value.len() == 1 {
+            output.push_str("\\-");
         } else if code_point >= 128
             || character == '-'
             || character == '_'
             || character.is_ascii_alphanumeric()
         {
-            result.push(character);
+            output.push(character);
         } else {
-            result.push('\\');
-            result.push(character);
+            output.push('\\');
+            output.push(character);
         }
     }
-    result
 }
 
 pub(crate) fn split_top_level_whitespace(value: &str) -> Option<Vec<&str>> {
@@ -788,10 +803,14 @@ mod tests {
         assert_eq!(serialize_identifier("--foo:bar"), "--foo\\:bar");
         assert_eq!(serialize_identifier("-- x"), "--\\ x");
         assert_eq!(serialize_identifier("--é"), "--é");
+        assert_eq!(serialize_identifier("12px"), "\\31 2px");
+        assert_eq!(serialize_identifier("-1px"), "-\\31 px");
+        assert_eq!(serialize_identifier("-"), "\\-");
+        assert_eq!(serialize_identifier("a\u{7f}b"), "a\\7f b");
     }
 }
 use cssparser::{ParseError, Parser, ParserInput, Token};
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Write as _};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SourceDeclaration<'a> {

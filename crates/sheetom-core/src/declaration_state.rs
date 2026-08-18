@@ -10,7 +10,7 @@ use crate::{
     shorthand::{
         parse_value_for_source_with_limits, synthesize_authored_shorthand, synthesize_shorthand,
     },
-    syntax::{parse_declaration_list, serialize_identifier},
+    syntax::{append_serialized_identifier, parse_declaration_list},
     validate_declaration_block_input, validate_declaration_value_input, DeclarationValue,
     EngineError, ResourceLimits,
 };
@@ -957,16 +957,12 @@ impl DeclarationState {
                 } else {
                     record.observable_value()
                 };
-                let serialized_name = record
-                    .name
-                    .starts_with("--")
-                    .then(|| serialize_identifier(&record.name));
                 append_declaration(
                     &mut output,
                     &mut first,
                     indent,
                     separator,
-                    serialized_name.as_deref().unwrap_or(&record.name),
+                    &record.name,
                     value,
                     record.important,
                 );
@@ -1090,16 +1086,12 @@ impl DeclarationState {
                 record.observable_value()
             };
             let important = record.important || promoted_longhands.contains(&record.name);
-            let serialized_name = record
-                .name
-                .starts_with("--")
-                .then(|| serialize_identifier(&record.name));
             append_declaration(
                 &mut output,
                 &mut first,
                 indent,
                 separator,
-                serialized_name.as_deref().unwrap_or(&record.name),
+                &record.name,
                 value,
                 important,
             );
@@ -1360,7 +1352,11 @@ fn append_declaration(
     }
     *first = false;
     output.push_str(indent);
-    output.push_str(name);
+    if name.starts_with("--") {
+        append_serialized_identifier(output, name);
+    } else {
+        output.push_str(name);
+    }
     output.push_str(": ");
     output.push_str(value);
     if important {
