@@ -509,8 +509,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -549,27 +547,6 @@ jobs:
           cp wasm-package/*.tgz package-artifact/
           npm pack --pack-destination package-artifact
           npm run release:manifest -- package-artifact
-
-      - name: Verify the first stable artifact promotion
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PROMOTION_BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if [ "$version" != "0.1.0" ]; then
-            echo "The RC11-to-stable promotion gate does not apply to $version."
-            exit 0
-          fi
-          mkdir reference-release
-          gh release download v0.1.0-rc.11 --dir reference-release
-          arguments=(
-            "--reference=reference-release"
-            "--candidate=package-artifact"
-          )
-          if [ -n "$PROMOTION_BASE_SHA" ]; then
-            arguments+=("--base-sha=$PROMOTION_BASE_SHA")
-          fi
-          node scripts/verify-stable-promotion.ts "${arguments[@]}"
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v7
