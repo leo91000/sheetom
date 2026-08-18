@@ -195,3 +195,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0184 | [Batch ordered declaration mutations without changing CSSOM](./0184-batch-ordered-declaration-mutations-without-changing-cssom.md) | accepted |
 | 0185 | [Preserve pending shorthand semantics during serialization](./0185-preserve-pending-shorthand-semantics.md) | accepted |
 | 0186 | [Promote RC11 without a calendar soak](./0186-promote-rc11-without-a-calendar-soak.md) | accepted |
+| 0187 | [Compact redundant semantic value storage](./0187-compact-redundant-semantic-value-storage.md) | accepted |

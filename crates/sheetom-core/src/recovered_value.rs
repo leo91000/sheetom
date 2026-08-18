@@ -146,6 +146,10 @@ impl RecoveredValue {
         &self.source
     }
 
+    pub(crate) fn shared_source(&self) -> Arc<str> {
+        Arc::clone(&self.source)
+    }
+
     pub fn values(&self) -> &[RecoveredComponentValue] {
         &self.values
     }
