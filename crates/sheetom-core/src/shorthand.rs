@@ -26,7 +26,6 @@ use std::{
     cell::RefCell,
     collections::{hash_map::RandomState, HashMap, VecDeque},
     hash::{BuildHasher, Hash, Hasher},
-    sync::Arc,
 };
 
 #[derive(Clone)]
@@ -39,18 +38,22 @@ const PARSED_VALUE_CACHE_ENTRY_LIMIT: usize = 2_048;
 const PARSED_VALUE_CACHE_KEY_BYTE_LIMIT: usize = 2 * 1024 * 1024;
 const PARSED_VALUE_CACHE_MAX_VALUE_BYTES: usize = 2 * 1024;
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Debug)]
 struct ParsedValueCacheKey {
-    name: Arc<str>,
-    source_name: Arc<str>,
-    value: Arc<str>,
+    name: Box<str>,
+    source_name: Option<Box<str>>,
+    value: Box<str>,
     important: bool,
     limits: ResourceLimits,
 }
 
 impl ParsedValueCacheKey {
+    fn source_name(&self) -> &str {
+        self.source_name.as_deref().unwrap_or(&self.name)
+    }
+
     fn byte_len(&self) -> usize {
-        self.name.len() + self.source_name.len() + self.value.len()
+        self.name.len() + self.source_name().len() + self.value.len()
     }
 }
 
@@ -98,7 +101,7 @@ impl ParsedValueCache {
             .get(&hash)
             .filter(|entry| {
                 entry.key.name.as_ref() == name
-                    && entry.key.source_name.as_ref() == source_name
+                    && entry.key.source_name() == source_name
                     && entry.key.value.as_ref() == value
                     && entry.key.important == important
                     && entry.key.limits == limits
@@ -109,7 +112,7 @@ impl ParsedValueCache {
     fn insert(&mut self, key: ParsedValueCacheKey, value: Result<ParsedValue, MutationOutcome>) {
         let hash = self.key_hash(
             &key.name,
-            &key.source_name,
+            key.source_name(),
             &key.value,
             key.important,
             key.limits,
@@ -1867,10 +1870,15 @@ pub(crate) fn parse_value_for_source_with_limits(
         return parsed;
     }
     let parsed = parse_value_for_source_uncached(name, source_name, value, important, limits);
+    let source_name = if name == source_name {
+        None
+    } else {
+        Some(source_name.into())
+    };
     let key = ParsedValueCacheKey {
-        name: Arc::from(name),
-        source_name: Arc::from(source_name),
-        value: Arc::from(value),
+        name: name.into(),
+        source_name,
+        value: value.into(),
         important,
         limits,
     };
