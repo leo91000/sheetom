@@ -351,33 +351,26 @@ fn serialize_typed_observable(
     canonical: &str,
     recovered: &RecoveredObservableText,
 ) -> String {
-    if name == "font-family" {
-        return serialize_font_family(
-            input,
-            canonical,
-            recovered.single_string.as_deref(),
-            recovered.recovered,
-        );
-    }
-    if name == "text-emphasis-style" {
-        return serialize_text_emphasis_style(input, canonical);
-    }
-    if name == "text-emphasis-position" {
-        return serialize_text_emphasis_position(input, canonical);
-    }
-    if matches!(name, "view-timeline-inset" | "scroll-snap-align") {
-        if let Some(value) = serialize_compressible_pair(name, input, recovered) {
-            return value;
+    match name {
+        "font-family" => {
+            return serialize_font_family(
+                input,
+                canonical,
+                recovered.single_string.as_deref(),
+                recovered.recovered,
+            );
         }
-    }
-    if name == "overflow-clip-margin" {
-        return serialize_overflow_clip_margin(canonical);
-    }
-    if name == "font-style" {
-        return serialize_font_style(input, canonical);
-    }
-    if name == "text-shadow" {
-        return serialize_text_shadow(input, canonical);
+        "text-emphasis-style" => return serialize_text_emphasis_style(input, canonical),
+        "text-emphasis-position" => return serialize_text_emphasis_position(input, canonical),
+        "view-timeline-inset" | "scroll-snap-align" => {
+            if let Some(value) = serialize_compressible_pair(name, input, recovered) {
+                return value;
+            }
+        }
+        "overflow-clip-margin" => return serialize_overflow_clip_margin(canonical),
+        "font-style" => return serialize_font_style(input, canonical),
+        "text-shadow" => return serialize_text_shadow(input, canonical),
+        _ => {}
     }
     if is_single_color_property(name) {
         return serialize_color(closed, canonical);
@@ -394,41 +387,41 @@ fn serialize_typed_observable(
     if let Some(value) = serialize_dimensionless_zero(name, input) {
         return value;
     }
-    if name == "transform-origin" {
-        return serialize_transform_origin(input, canonical);
-    }
-    if name == "border-image-slice" {
-        return serialize_border_image_slice_observable(input, canonical);
-    }
-    if is_position_pair_property(name) {
-        return serialize_position_pair(input, canonical);
-    }
-    if name == "scrollbar-color" {
-        return serialize_color_pair(input).unwrap_or_else(|| canonical.to_owned());
-    }
-    if name == "aspect-ratio" {
-        return serialize_aspect_ratio(input, canonical);
-    }
-    if name == "cursor" {
-        return serialize_cursor_observable(canonical);
+    match name {
+        "transform-origin" => return serialize_transform_origin(input, canonical),
+        "border-image-slice" => {
+            return serialize_border_image_slice_observable(input, canonical);
+        }
+        "scrollbar-color" => {
+            return serialize_color_pair(input).unwrap_or_else(|| canonical.to_owned());
+        }
+        "aspect-ratio" => return serialize_aspect_ratio(input, canonical),
+        "cursor" => return serialize_cursor_observable(canonical),
+        _ if is_position_pair_property(name) => {
+            return serialize_position_pair(input, canonical);
+        }
+        _ => {}
     }
     if shorthand_longhands(name).is_some_and(|longhands| longhands.len() > 1)
         && !recovered.recovered
     {
         return serialize_shorthand_observable(name, input, canonical);
     }
-    if name == "z-index" {
-        if let Some(value) = serialize_integer_calculation(closed) {
-            return value;
-        }
-    }
-    if name == "object-position" {
-        if starts_math_function(input) && !starts_math_function(canonical) {
-            if let Some((first, rest)) = canonical.split_once(' ') {
-                return format!("calc({first}) {rest}");
+    match name {
+        "z-index" => {
+            if let Some(value) = serialize_integer_calculation(closed) {
+                return value;
             }
         }
-        return canonicalize_leading_decimal(canonical);
+        "object-position" => {
+            if starts_math_function(input) && !starts_math_function(canonical) {
+                if let Some((first, rest)) = canonical.split_once(' ') {
+                    return format!("calc({first}) {rest}");
+                }
+            }
+            return canonicalize_leading_decimal(canonical);
+        }
+        _ => {}
     }
     if starts_math_function(closed) {
         let value = canonicalize_leading_decimal(canonical);
