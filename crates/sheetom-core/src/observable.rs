@@ -670,7 +670,13 @@ fn serialize_transform_origin(input: &str, canonical: &str) -> String {
             canonicalize_leading_decimal(component)
         };
         if starts_math_function(authored_component) && !starts_math_function(&component) {
-            push_delimited(&mut output, " ", &format!("calc({component})"));
+            output.reserve(usize::from(!output.is_empty()) + "calc()".len() + component.len());
+            if !output.is_empty() {
+                output.push(' ');
+            }
+            output.push_str("calc(");
+            output.push_str(&component);
+            output.push(')');
         } else {
             push_delimited(&mut output, " ", &component);
         }
