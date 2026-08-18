@@ -169,4 +169,24 @@ mod tests {
         assert_eq!(value.safe_css(), "#fff");
         assert_eq!(value.observable_css(), "white");
     }
+
+    #[test]
+    fn explicit_custom_token_streams_compact_recovery() {
+        let semantic = parse_semantic_property("--payload", "\"value\"").unwrap();
+        let value = DeclarationValue::semantic(semantic).unwrap();
+
+        assert!(value.semantic_value().unwrap().recovered().is_compacted());
+        assert_eq!(value.safe_css(), "\"value\"");
+        assert_eq!(value.observable_css(), "\"value\"");
+    }
+
+    #[test]
+    fn custom_token_streams_keep_required_recovery_evidence() {
+        let semantic = parse_semantic_property("--payload", "\"value").unwrap();
+        let value = DeclarationValue::semantic(semantic).unwrap();
+
+        assert!(!value.semantic_value().unwrap().recovered().is_compacted());
+        assert_eq!(value.safe_css(), "\"value\"");
+        assert_eq!(value.observable_css(), "\"value");
+    }
 }
