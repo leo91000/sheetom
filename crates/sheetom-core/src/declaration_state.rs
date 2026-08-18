@@ -2,7 +2,7 @@ use crate::function_rule::{canonical_function_descriptor_name, parse_function_de
 use crate::{
     catalog::{
         ascii_lowercase, canonical_property_name as canonical_style_property_name,
-        property_alias_defers_pending_value, property_alias_hides_value,
+        is_shorthand_longhand, property_alias_defers_pending_value, property_alias_hides_value,
         property_alias_observable_value, shorthand_longhands as style_shorthand_longhands,
         shorthand_names,
     },
@@ -987,7 +987,13 @@ impl DeclarationState {
             return output;
         }
 
-        if self.records.len() <= 1 && pending_candidates.is_empty() {
+        if pending_candidates.is_empty()
+            && (self.records.len() <= 1
+                || self
+                    .records
+                    .iter()
+                    .all(|record| !is_shorthand_longhand(&record.name)))
+        {
             for record in &self.records {
                 append_declaration(
                     &mut output,
