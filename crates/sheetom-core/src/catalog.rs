@@ -128,45 +128,44 @@ pub(crate) fn canonical_property_name(name: &str) -> Option<Cow<'_, str>> {
 }
 
 pub(crate) fn property_alias_hides_value(name: &str) -> bool {
-    matches!(
-        name.to_ascii_lowercase().as_str(),
-        "-webkit-column-break-after"
-            | "-webkit-column-break-before"
-            | "-webkit-column-break-inside"
-    )
+    name.eq_ignore_ascii_case("-webkit-column-break-after")
+        || name.eq_ignore_ascii_case("-webkit-column-break-before")
+        || name.eq_ignore_ascii_case("-webkit-column-break-inside")
 }
 
 pub(crate) fn property_alias_defers_pending_value(name: &str) -> bool {
     property_alias_hides_value(name)
-        || matches!(
-            name.to_ascii_lowercase().as_str(),
-            "page-break-after" | "page-break-before" | "page-break-inside"
-        )
+        || name.eq_ignore_ascii_case("page-break-after")
+        || name.eq_ignore_ascii_case("page-break-before")
+        || name.eq_ignore_ascii_case("page-break-inside")
 }
 
 pub(crate) fn property_alias_observable_value<'a>(
     name: &str,
     canonical_value: &'a str,
 ) -> Option<Option<&'a str>> {
-    let lower = name.to_ascii_lowercase();
     let supported_css_wide = matches!(
         canonical_value,
         "initial" | "inherit" | "unset" | "revert" | "revert-layer" | "revert-rule"
     );
-    match lower.as_str() {
-        "page-break-before" | "page-break-after" => Some(match canonical_value {
+    if name.eq_ignore_ascii_case("page-break-before")
+        || name.eq_ignore_ascii_case("page-break-after")
+    {
+        return Some(match canonical_value {
             "page" => Some("always"),
             "auto" | "avoid" | "left" | "right" => Some(canonical_value),
             _ if supported_css_wide => Some(canonical_value),
             _ => None,
-        }),
-        "page-break-inside" => Some(match canonical_value {
+        });
+    }
+    if name.eq_ignore_ascii_case("page-break-inside") {
+        return Some(match canonical_value {
             "auto" | "avoid" => Some(canonical_value),
             _ if supported_css_wide => Some(canonical_value),
             _ => None,
-        }),
-        _ => None,
+        });
     }
+    None
 }
 
 pub(crate) fn property_grammar(name: &str) -> Option<PropertyGrammar<'_>> {
