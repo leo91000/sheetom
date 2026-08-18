@@ -49,6 +49,11 @@ impl DeclarationValue {
         observable: String,
     ) -> Self {
         declaration.compact_recovery();
+        let canonical = if canonical.as_str() == declaration.recovered().source() {
+            declaration.recovered().shared_source()
+        } else {
+            Arc::from(canonical)
+        };
         Self::with_storage(
             DeclarationValueStorage::Semantic(Arc::new(declaration)),
             canonical,
@@ -57,11 +62,8 @@ impl DeclarationValue {
     }
 
     pub(crate) fn css_wide(keyword: String) -> Self {
-        Self::with_storage(
-            DeclarationValueStorage::CssWideKeyword,
-            keyword.clone(),
-            keyword,
-        )
+        let canonical = Arc::from(keyword.as_str());
+        Self::with_storage(DeclarationValueStorage::CssWideKeyword, canonical, keyword)
     }
 
     pub(crate) fn deferred(pending_substitution: bool) -> Self {
@@ -77,10 +79,9 @@ impl DeclarationValue {
 
     fn with_storage(
         storage: DeclarationValueStorage,
-        canonical: String,
+        canonical: Arc<str>,
         observable: String,
     ) -> Self {
-        let canonical: Arc<str> = Arc::from(canonical);
         let observable_override =
             (observable.as_str() != canonical.as_ref()).then(|| Arc::<str>::from(observable));
         Self {
@@ -147,6 +148,7 @@ impl DeclarationValue {
 mod tests {
     use super::DeclarationValue;
     use crate::{parse_semantic_property, SemanticPropertyValue};
+    use std::sync::Arc;
 
     #[test]
     fn semantic_value_is_the_owned_authority_for_both_projections() {
@@ -188,5 +190,14 @@ mod tests {
         assert!(!value.semantic_value().unwrap().recovered().is_compacted());
         assert_eq!(value.safe_css(), "\"value\"");
         assert_eq!(value.observable_css(), "\"value");
+    }
+
+    #[test]
+    fn canonical_text_shares_identical_recovered_source_storage() {
+        let semantic = parse_semantic_property("--payload", "\"value\"").unwrap();
+        let value = DeclarationValue::semantic(semantic).unwrap();
+        let recovered_source = value.semantic_value().unwrap().recovered().shared_source();
+
+        assert!(Arc::ptr_eq(&value.canonical, &recovered_source));
     }
 }
