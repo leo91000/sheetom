@@ -2087,31 +2087,45 @@ impl EllipseShape {
 
 impl PolygonShape {
     fn canonical_value(&self) -> Result<String, EngineError> {
-        let mut values = Vec::with_capacity(self.points.len());
-        for point in &self.points {
-            values.push(point.canonical_value()?);
-        }
-        let prefix = if self.fill_rule == FillRule::Evenodd {
-            "evenodd, "
+        let mut output = if self.fill_rule == FillRule::Evenodd {
+            "polygon(evenodd, ".to_owned()
         } else {
-            ""
+            "polygon(".to_owned()
         };
-        Ok(format!("polygon({prefix}{})", values.join(", ")))
+        output.reserve(self.points.len() * 16);
+        let mut first = true;
+        for point in &self.points {
+            if first {
+                first = false;
+            } else {
+                output.push_str(", ");
+            }
+            output.push_str(&point.canonical_value()?);
+        }
+        output.push(')');
+        Ok(output)
     }
 }
 
 impl RectShape {
     fn canonical_value(&self) -> Result<String, EngineError> {
-        let mut values = Vec::with_capacity(4);
+        let mut output = String::with_capacity(64);
+        output.push_str("rect(");
+        let mut first = true;
         for side in &self.sides {
-            values.push(match side {
-                RectSide::Auto => "auto".to_owned(),
-                RectSide::Length(value) => value.canonical_value()?,
-            });
+            if first {
+                first = false;
+            } else {
+                output.push(' ');
+            }
+            match side {
+                RectSide::Auto => output.push_str("auto"),
+                RectSide::Length(value) => output.push_str(&value.canonical_value()?),
+            }
         }
-        let mut body = values.join(" ");
-        append_radii(&mut body, &self.radii)?;
-        Ok(format!("rect({body})"))
+        append_radii(&mut output, &self.radii)?;
+        output.push(')');
+        Ok(output)
     }
 }
 
@@ -2164,15 +2178,17 @@ impl ShapeCommand {
             Self::Hline(endpoint) => Ok(format!("hline {}", endpoint.canonical_value()?)),
             Self::Vline(endpoint) => Ok(format!("vline {}", endpoint.canonical_value()?)),
             Self::Curve { endpoint, controls } => {
-                let values = controls
-                    .iter()
-                    .map(|value| value.canonical_value(endpoint.is_relative()))
-                    .collect::<Result<Vec<_>, _>>()?;
-                Ok(format!(
-                    "curve {} with {}",
-                    endpoint.canonical_value()?,
-                    values.join(" / ")
-                ))
+                let mut output = format!("curve {} with ", endpoint.canonical_value()?);
+                let mut first = true;
+                for value in controls {
+                    if first {
+                        first = false;
+                    } else {
+                        output.push_str(" / ");
+                    }
+                    output.push_str(&value.canonical_value(endpoint.is_relative())?);
+                }
+                Ok(output)
             }
             Self::Smooth { endpoint, control } => {
                 let mut output = format!("smooth {}", endpoint.canonical_value()?);
@@ -2333,11 +2349,14 @@ impl CoordinatePair {
 
 impl SvgPathData {
     fn canonical_data(&self) -> String {
-        self.commands
-            .iter()
-            .map(SvgPathCommand::canonical_value)
-            .collect::<Vec<_>>()
-            .join(" ")
+        let mut output = String::with_capacity(self.commands.len() * 16);
+        for command in &self.commands {
+            if !output.is_empty() {
+                output.push(' ');
+            }
+            output.push_str(&command.canonical_value());
+        }
+        output
     }
 
     pub(crate) fn css_string(&self) -> Result<String, EngineError> {
@@ -2408,12 +2427,13 @@ impl SvgPathCommand {
 
 fn svg_command(absolute: bool, upper: char, lower: char, values: &[f64]) -> String {
     let command = if absolute { upper } else { lower };
-    let values = values
-        .iter()
-        .map(|value| svg_number(*value))
-        .collect::<Vec<_>>()
-        .join(" ");
-    format!("{command} {values}")
+    let mut output = String::with_capacity(values.len() * 8 + 1);
+    output.push(command);
+    for value in values {
+        output.push(' ');
+        output.push_str(&svg_number(*value));
+    }
+    output
 }
 
 fn svg_number(value: f64) -> String {
@@ -2473,11 +2493,14 @@ fn serialize_four(values: &[ShapeLength; 4]) -> Result<String, EngineError> {
     } else {
         4
     };
-    let mut output = Vec::with_capacity(length);
+    let mut output = String::with_capacity(length * 8);
     for value in values.iter().take(length) {
-        output.push(value.canonical_value()?);
+        if !output.is_empty() {
+            output.push(' ');
+        }
+        output.push_str(&value.canonical_value()?);
     }
-    Ok(output.join(" "))
+    Ok(output)
 }
 
 fn serialize_position(position: &Position) -> Result<String, EngineError> {
