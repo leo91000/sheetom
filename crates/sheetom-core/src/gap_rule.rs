@@ -492,20 +492,23 @@ fn synthesize_gap_rule_item(
     style: &Authored<LineStyle>,
     color: &Authored<CssColor>,
 ) -> String {
-    let mut components = Vec::with_capacity(3);
+    let mut serialized =
+        String::with_capacity(width.source.len() + style.source.len() + color.source.len() + 2);
     if width.value != BorderSideWidth::default() {
-        components.push(width.source.as_str());
+        serialized.push_str(&width.source);
     }
     if style.value != LineStyle::default() {
-        components.push(style.source.as_str());
+        push_separator(&mut serialized, " ");
+        serialized.push_str(&style.source);
     }
     if color.value != CssColor::current_color() {
-        components.push(color.source.as_str());
+        push_separator(&mut serialized, " ");
+        serialized.push_str(&color.source);
     }
-    if components.is_empty() {
+    if serialized.is_empty() {
         return "medium".to_owned();
     }
-    components.join(" ")
+    serialized
 }
 
 fn parse_entire<'i, T>(source: &'i str) -> Result<T, EngineError>
