@@ -212,7 +212,14 @@ impl<'a> LayeredShorthandProjection<'a> {
 fn serialize_layers(
     layers: impl Iterator<Item = Result<String, EngineError>>,
 ) -> Result<String, EngineError> {
-    Ok(layers.collect::<Result<Vec<_>, _>>()?.join(", "))
+    let mut serialized = String::new();
+    for (index, layer) in layers.enumerate() {
+        if index > 0 {
+            serialized.push_str(", ");
+        }
+        serialized.push_str(&layer?);
+    }
+    Ok(serialized)
 }
 
 fn serialize_typed(value: &impl ToCss) -> Result<String, EngineError> {
