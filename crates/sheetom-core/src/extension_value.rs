@@ -440,11 +440,11 @@ impl CrossDimensionCalculationValue {
             }
             CrossDimensionCalculationValue::Auto => Ok("auto".to_owned()),
             CrossDimensionCalculationValue::CommaList(values) => {
-                let mut serialized = Vec::with_capacity(values.len());
+                let mut serialized = String::new();
                 for value in values {
-                    serialized.push(value.canonical_value()?);
+                    push_delimited(&mut serialized, ", ", &value.canonical_value()?);
                 }
-                Ok(serialized.join(", "))
+                Ok(serialized)
             }
             CrossDimensionCalculationValue::FourSideList(values) => {
                 let mut serialized = Vec::with_capacity(values.len());
@@ -454,11 +454,11 @@ impl CrossDimensionCalculationValue {
                 Ok(compress_four_side_components(&serialized))
             }
             CrossDimensionCalculationValue::SpaceList(values) => {
-                let mut serialized = Vec::with_capacity(values.len());
+                let mut serialized = String::new();
                 for value in values {
-                    serialized.push(value.canonical_value()?);
+                    push_delimited(&mut serialized, " ", &value.canonical_value()?);
                 }
-                Ok(serialized.join(" "))
+                Ok(serialized)
             }
             CrossDimensionCalculationValue::LengthNumber(value) => serialize_calculation(value),
             CrossDimensionCalculationValue::LengthOrNumber(value) => serialize_calculation(value),
@@ -511,20 +511,20 @@ impl CrossDimensionCalculationValue {
             return None;
         }
 
-        let mut observable = Vec::with_capacity(values.len());
+        let mut observable = String::new();
         for (value, authored) in values.iter().zip(authored_components) {
             let canonical = value.canonical_value().ok()?;
             if leading_math_function(authored).is_none() {
-                observable.push(canonical);
+                push_delimited(&mut observable, ", ", &canonical);
                 continue;
             }
             if leading_math_function(&canonical).is_some() {
-                observable.push(canonical);
+                push_delimited(&mut observable, ", ", &canonical);
             } else {
-                observable.push(format!("calc({canonical})"));
+                push_delimited(&mut observable, ", ", &format!("calc({canonical})"));
             }
         }
-        Some(observable.join(", "))
+        Some(observable)
     }
 }
 
@@ -1087,11 +1087,18 @@ fn parse_webkit_box_reflect_direction<'i, 't>(
 }
 
 fn serialize_space_separated<T: ToCss>(values: &[T]) -> Result<String, EngineError> {
-    let mut serialized = Vec::with_capacity(values.len());
+    let mut serialized = String::new();
     for value in values {
-        serialized.push(serialize_typed(value)?);
+        push_delimited(&mut serialized, " ", &serialize_typed(value)?);
     }
-    Ok(serialized.join(" "))
+    Ok(serialized)
+}
+
+fn push_delimited(output: &mut String, separator: &str, value: &str) {
+    if !output.is_empty() {
+        output.push_str(separator);
+    }
+    output.push_str(value);
 }
 
 pub(crate) fn parse_preferred_extension_value(
