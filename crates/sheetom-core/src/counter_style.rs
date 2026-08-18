@@ -93,10 +93,11 @@ fn canonical_system(value: &str) -> Option<String> {
     match components.as_slice() {
         [keyword] if keyword.eq_ignore_ascii_case("fixed") => Some("fixed 1".to_owned()),
         [keyword]
-            if matches!(
-                keyword.to_ascii_lowercase().as_str(),
-                "cyclic" | "numeric" | "alphabetic" | "symbolic" | "additive"
-            ) =>
+            if keyword.eq_ignore_ascii_case("cyclic")
+                || keyword.eq_ignore_ascii_case("numeric")
+                || keyword.eq_ignore_ascii_case("alphabetic")
+                || keyword.eq_ignore_ascii_case("symbolic")
+                || keyword.eq_ignore_ascii_case("additive") =>
         {
             Some(keyword.to_ascii_lowercase())
         }
@@ -242,7 +243,7 @@ fn valid_symbol(value: &str) -> bool {
 
 fn valid_custom_ident(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
-    if is_css_wide_keyword(&lower) || matches!(lower.as_str(), "default" | "none") {
+    if is_css_wide_keyword_lowercase(&lower) || matches!(lower.as_str(), "default" | "none") {
         return false;
     }
     let mut input = ParserInput::new(value);
@@ -251,8 +252,12 @@ fn valid_custom_ident(value: &str) -> bool {
 }
 
 fn is_css_wide_keyword(value: &str) -> bool {
+    is_css_wide_keyword_lowercase(&value.trim().to_ascii_lowercase())
+}
+
+fn is_css_wide_keyword_lowercase(value: &str) -> bool {
     matches!(
-        value.trim().to_ascii_lowercase().as_str(),
+        value,
         "initial" | "inherit" | "unset" | "revert" | "revert-layer" | "revert-rule"
     )
 }
