@@ -394,8 +394,7 @@ impl WebkitPerspectiveValue {
 
     pub(crate) fn observable_value(&self) -> Result<String, EngineError> {
         let canonical = self.canonical_value()?;
-        if matches!(self, Self::LengthCalculation(_)) && leading_math_function(&canonical).is_none()
-        {
+        if matches!(self, Self::LengthCalculation(_)) && !is_leading_math_function(&canonical) {
             return Ok(format!("calc({canonical})"));
         }
         Ok(canonical)
@@ -514,11 +513,11 @@ impl CrossDimensionCalculationValue {
         let mut observable = String::new();
         for (value, authored) in values.iter().zip(authored_components) {
             let canonical = value.canonical_value().ok()?;
-            if leading_math_function(authored).is_none() {
+            if !is_leading_math_function(authored) {
                 push_delimited(&mut observable, ", ", &canonical);
                 continue;
             }
-            if leading_math_function(&canonical).is_some() {
+            if is_leading_math_function(&canonical) {
                 push_delimited(&mut observable, ", ", &canonical);
             } else {
                 push_delimited(&mut observable, ", ", &format!("calc({canonical})"));
@@ -528,20 +527,19 @@ impl CrossDimensionCalculationValue {
     }
 }
 
-fn leading_math_function(source: &str) -> Option<String> {
+fn is_leading_math_function(source: &str) -> bool {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
-    let function = match parser.next().ok()? {
-        Token::Function(function) => function,
-        _ => return None,
+    let function = match parser.next() {
+        Ok(Token::Function(function)) => function,
+        _ => return false,
     };
     [
         "calc", "min", "max", "clamp", "round", "rem", "mod", "abs", "sign", "hypot", "sin", "cos",
         "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "log", "exp",
     ]
     .iter()
-    .find(|candidate| function.eq_ignore_ascii_case(candidate))
-    .map(|candidate| (*candidate).to_owned())
+    .any(|candidate| function.eq_ignore_ascii_case(candidate))
 }
 
 pub(crate) fn is_numeric_extension_candidate(source: &str) -> bool {
@@ -552,7 +550,7 @@ pub(crate) fn is_numeric_extension_candidate(source: &str) -> bool {
     let mut parser = Parser::new(&mut input);
     match parser.next().ok() {
         Some(Token::Number { .. } | Token::Percentage { .. } | Token::Dimension { .. }) => true,
-        Some(Token::Function(_)) => leading_math_function(source).is_some(),
+        Some(Token::Function(_)) => is_leading_math_function(source),
         _ => false,
     }
 }
@@ -1280,7 +1278,7 @@ fn extension_identifier_is(source: &str, expected: &str) -> bool {
 fn parse_webkit_perspective(source: &str) -> Result<SemanticExtensionValue, EngineError> {
     let value = if source.eq_ignore_ascii_case("none") {
         WebkitPerspectiveValue::None
-    } else if leading_math_function(source).is_none() {
+    } else if !is_leading_math_function(source) {
         if let Ok(value) = parse_entire(source, CSSNumber::parse) {
             if value < 0.0 {
                 return Err(invalid_numeric_value());
@@ -1462,7 +1460,7 @@ fn parse_length_percentage_number_calculation(
     source: &str,
 ) -> Result<SemanticExtensionValue, EngineError> {
     let profile = number_percentage_profile(property_name);
-    if leading_math_function(source).is_none() {
+    if !is_leading_math_function(source) {
         if let Ok(value) = parse_entire(source, CSSNumber::parse) {
             validate_direct_number(profile.range, value)?;
             return Ok(SemanticExtensionValue::CrossDimensionCalculation(
@@ -1506,7 +1504,7 @@ fn parse_dimension_number_scalar(
     source: &str,
 ) -> Result<CrossDimensionCalculationValue, EngineError> {
     let profile = dimension_number_profile(property_name);
-    if leading_math_function(source).is_none() {
+    if !is_leading_math_function(source) {
         if let Ok(value) = parse_entire(source, CSSNumber::parse) {
             if profile.non_negative && value < 0.0 {
                 return Err(invalid_numeric_value());
@@ -1618,7 +1616,7 @@ fn parse_length_percentage_or_number_calculation(
 
 fn parse_integer_calculation(source: &str) -> Result<SemanticExtensionValue, EngineError> {
     let number = parse_entire(source, CSSNumber::parse)?;
-    if leading_math_function(source).is_none() && number.fract() != 0.0 {
+    if !is_leading_math_function(source) && number.fract() != 0.0 {
         return Err(invalid_numeric_value());
     }
     Ok(SemanticExtensionValue::IntegerCalculation(
@@ -1868,7 +1866,7 @@ where
     Calc<T>: ToCss,
 {
     let serialized = serialize_typed(value)?;
-    if leading_math_function(&serialized).is_some() {
+    if is_leading_math_function(&serialized) {
         return Ok(serialized);
     }
     Ok(format!("calc({serialized})"))
