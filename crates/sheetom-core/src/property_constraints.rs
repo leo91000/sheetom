@@ -305,25 +305,27 @@ fn invalid<T>(name: &str, value: &str) -> Result<T, EngineError> {
 }
 
 fn valid_appearance(value: &str) -> bool {
-    matches!(
-        value.to_ascii_lowercase().as_str(),
-        "none"
-            | "auto"
-            | "base-select"
-            | "textfield"
-            | "menulist-button"
-            | "button"
-            | "checkbox"
-            | "listbox"
-            | "menulist"
-            | "meter"
-            | "progress-bar"
-            | "push-button"
-            | "radio"
-            | "searchfield"
-            | "slider-horizontal"
-            | "square-button"
-            | "textarea"
+    matches_ascii_case(
+        value,
+        &[
+            "none",
+            "auto",
+            "base-select",
+            "textfield",
+            "menulist-button",
+            "button",
+            "checkbox",
+            "listbox",
+            "menulist",
+            "meter",
+            "progress-bar",
+            "push-button",
+            "radio",
+            "searchfield",
+            "slider-horizontal",
+            "square-button",
+            "textarea",
+        ],
     )
 }
 
