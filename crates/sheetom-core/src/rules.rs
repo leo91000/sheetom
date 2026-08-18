@@ -505,25 +505,21 @@ fn format_condition_text(source: &str) -> String {
     let mut escaped = false;
     let mut comment = false;
     let mut pending_space = false;
-    let characters = source.chars().collect::<Vec<_>>();
-    let mut index = 0usize;
-    while index < characters.len() {
-        let character = characters[index];
-        let next = characters.get(index + 1).copied();
+    let mut characters = source.chars().peekable();
+    while let Some(character) = characters.next() {
+        let next = characters.peek().copied();
         if comment {
             if character == '*' && next == Some('/') {
                 comment = false;
                 pending_space = true;
-                index += 2;
+                characters.next();
                 continue;
             }
-            index += 1;
             continue;
         }
         if escaped {
             output.push(character);
             escaped = false;
-            index += 1;
             continue;
         }
         if let Some(active_quote) = quote {
@@ -533,24 +529,21 @@ fn format_condition_text(source: &str) -> String {
             } else if character == active_quote {
                 quote = None;
             }
-            index += 1;
             continue;
         }
         if character == '/' && next == Some('*') {
             comment = true;
-            index += 2;
+            characters.next();
             continue;
         }
         if matches!(character, '\'' | '"') {
             push_pending_space(&mut output, &mut pending_space);
             quote = Some(character);
             output.push(character);
-            index += 1;
             continue;
         }
         if is_css_whitespace(character) {
             pending_space = true;
-            index += 1;
             continue;
         }
         match character {
@@ -577,7 +570,7 @@ fn format_condition_text(source: &str) -> String {
                 output.push(character);
                 if matches!(next, Some('=')) && character != '=' {
                     output.push('=');
-                    index += 1;
+                    characters.next();
                 }
                 pending_space = true;
             }
@@ -586,7 +579,6 @@ fn format_condition_text(source: &str) -> String {
                 output.push(character);
             }
         }
-        index += 1;
     }
     trim_css_whitespace(&output).to_owned()
 }
