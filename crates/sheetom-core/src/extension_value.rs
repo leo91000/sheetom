@@ -613,17 +613,18 @@ impl OffsetRotateValue {
     }
 
     fn canonical_value(&self) -> Result<String, EngineError> {
-        let mut components = Vec::with_capacity(2);
-        if let Some(direction) = self.direction {
-            components.push(match direction {
-                OffsetRotateDirection::Auto => "auto".to_owned(),
-                OffsetRotateDirection::Reverse => "reverse".to_owned(),
-            });
+        let direction = self.direction.map(|direction| match direction {
+            OffsetRotateDirection::Auto => "auto",
+            OffsetRotateDirection::Reverse => "reverse",
+        });
+        match (direction, &self.angle) {
+            (Some(direction), Some(angle)) => {
+                Ok(format!("{direction} {}", serialize_typed(angle)?))
+            }
+            (Some(direction), None) => Ok(direction.to_owned()),
+            (None, Some(angle)) => serialize_typed(angle),
+            (None, None) => Ok(String::new()),
         }
-        if let Some(angle) = &self.angle {
-            components.push(serialize_typed(angle)?);
-        }
-        Ok(components.join(" "))
     }
 }
 
