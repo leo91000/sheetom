@@ -14,6 +14,7 @@ use crate::{
     validate_declaration_block_input, validate_declaration_value_input, DeclarationValue,
     EngineError, ResourceLimits,
 };
+use smallvec::{smallvec, SmallVec};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -624,7 +625,7 @@ impl DeclarationState {
         mut parsed: crate::shorthand::ParsedValue,
         important: bool,
         source_name: &str,
-    ) -> Vec<DeclarationRecord> {
+    ) -> SmallVec<[DeclarationRecord; 1]> {
         if parsed.pending_substitution() {
             if let Some(longhands) = self.shorthand_longhands(&name) {
                 let group = self.new_pending_group(name, parsed.value.clone(), important);
@@ -642,7 +643,7 @@ impl DeclarationState {
         }
         if let Some(mut longhands) = parsed.longhands.take() {
             self.attach_static_group(&name, &parsed, &mut longhands);
-            return longhands;
+            return longhands.into();
         }
         let alias_value = self.alias_value_for_record(source_name, &name, &parsed.value);
         let value = if alias_value.is_some() {
@@ -650,7 +651,7 @@ impl DeclarationState {
         } else {
             parsed.value
         };
-        vec![DeclarationRecord {
+        smallvec![DeclarationRecord {
             name,
             value,
             important,
