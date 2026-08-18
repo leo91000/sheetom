@@ -493,14 +493,29 @@ impl DeclarationState {
     }
 
     pub fn serialize_longhands(&self) -> String {
-        self.records
+        let capacity = self
+            .records
             .iter()
             .map(|record| {
-                let suffix = if record.important { " !important" } else { "" };
-                format!("{}: {}{};", record.name, record.safe_value(), suffix)
+                record.name.len()
+                    + record.safe_value().len()
+                    + if record.important { 14 } else { 3 }
             })
-            .collect::<Vec<_>>()
-            .join(" ")
+            .sum();
+        let mut output = String::with_capacity(capacity);
+        for (index, record) in self.records.iter().enumerate() {
+            if index > 0 {
+                output.push(' ');
+            }
+            output.push_str(&record.name);
+            output.push_str(": ");
+            output.push_str(record.safe_value());
+            if record.important {
+                output.push_str(" !important");
+            }
+            output.push(';');
+        }
+        output
     }
 
     pub fn css_text(&self) -> String {
