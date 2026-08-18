@@ -972,6 +972,25 @@ impl DeclarationState {
             return output;
         }
 
+        if self.records.len() <= 1 && pending_candidates.is_empty() {
+            for record in &self.records {
+                append_declaration(
+                    &mut output,
+                    &mut first,
+                    indent,
+                    separator,
+                    &record.name,
+                    if safe {
+                        record.safe_value()
+                    } else {
+                        record.observable_value()
+                    },
+                    record.important || promoted_longhands.contains(&record.name),
+                );
+            }
+            return output;
+        }
+
         let records_by_name = self
             .records
             .iter()
