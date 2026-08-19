@@ -1,6 +1,6 @@
 {
   "name": "@sheetom/native-linux-arm-gnueabihf",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Native SheetOM engine for linux-arm-gnueabihf",
   "license": "MIT",
   "repository": {
