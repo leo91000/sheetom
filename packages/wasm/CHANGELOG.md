@@ -1,5 +1,12 @@
 # @sheetom/wasm
 
+## 0.1.1
+
+### Patch Changes
+
+- f744336: Reduce CSS parsing overhead and the WebAssembly download size by sharing calc serialization and removing redundant allocation and reparsing paths.
+- 10896ad: Reduce peak memory for large stylesheets by compacting explicit custom-property recovery state and sharing identical semantic text storage.
+
 ## 0.1.0
 
 ### Patch Changes
