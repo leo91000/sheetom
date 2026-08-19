@@ -164,7 +164,7 @@ jobs:
           npm run build
 
       - name: Install differential browser engines
-        run: npx playwright install --with-deps chromium firefox webkit
+        uses: ./.github/actions/install-playwright
 
       - name: Download stable Chrome evidence
         uses: actions/download-artifact@v8

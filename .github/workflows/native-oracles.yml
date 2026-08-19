@@ -56,7 +56,7 @@ jobs:
       - run: npm run wasm:build
       - run: npm run wasm:test
       - run: npm run wasm:test:memory -- --output "$RUNNER_TEMP/wasm-memory.json"
-      - run: npx playwright install --with-deps chromium firefox webkit
+      - uses: ./.github/actions/install-playwright
       - run: npm run wasm:test:browsers -- --output "$RUNNER_TEMP/wasm-direct.json"
       - run: npm run wasm:test:bundlers -- --output "$RUNNER_TEMP/wasm-bundlers.json"
       - run: npm run wasm:test:performance -- --output "$RUNNER_TEMP/wasm-performance.json"
