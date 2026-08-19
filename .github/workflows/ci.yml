@@ -231,7 +231,7 @@ jobs:
       - run: npm run wasm:test
       - run: npm run wasm:test:memory -- --output "$RUNNER_TEMP/wasm-memory.json"
       - name: Install browser engines
-        run: npx playwright install --with-deps chromium firefox webkit
+        uses: ./.github/actions/install-playwright
       - name: Exercise direct HTTP and worker initialization
         run: npm run wasm:test:browsers -- --output "$RUNNER_TEMP/wasm-direct.json"
       - name: Exercise Vite, esbuild, Rollup, and Webpack consumers
@@ -489,7 +489,7 @@ jobs:
           cache-key: linux-x64-release
 
       - name: Install browser engines
-        run: npx playwright install --with-deps chromium firefox webkit
+        uses: ./.github/actions/install-playwright
 
       - name: Test browser adapters
         run: npm run test:browser:matrix
