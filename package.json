@@ -140,20 +140,20 @@
     "@types/css-tree": "^3.2.0",
     "@types/node": "^24.0.0",
     "@vitest/browser-playwright": "^4.1.10",
-    "@webref/css": "8.7.1",
+    "@webref/css": "8.7.3",
     "ajv": "^8.20.0",
     "binaryen": "132.0.0",
     "css-tree": "3.2.1",
     "esbuild": "0.28.2",
     "fast-check": "^4.9.0",
     "playwright": "^1.62.1",
-    "rollup": "4.62.4",
+    "rollup": "4.63.0",
     "tsdown": "^0.22.14",
     "typedoc": "^0.28.20",
     "typescript": "^6.0.3",
-    "vite": "8.2.1",
+    "vite": "8.2.2",
     "vitest": "^4.1.10",
-    "webpack": "5.109.2"
+    "webpack": "5.110.0"
   },
   "engines": {
     "node": ">=22"
