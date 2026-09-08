@@ -262,7 +262,14 @@ fn selector_supported(source: &str) -> bool {
 
 fn selector_supported_shallow(source: &str) -> bool {
     let source = format!("{source} {{}}");
-    let Ok(sheet) = StyleSheet::parse(&source, ParserOptions::default()) else {
+    let Ok(sheet) = StyleSheet::parse(
+        &source,
+        ParserOptions {
+            namespace_prefixes: Some(Vec::new()),
+            strict_selector_lists: true,
+            ..ParserOptions::default()
+        },
+    ) else {
         return false;
     };
     let [CssRule::Style(rule)] = sheet.rules.0.as_slice() else {

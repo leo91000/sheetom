@@ -28,3 +28,15 @@ and reparsing. Two existing interpolation minifier expectations now remove
 unnecessary comma whitespace because the values are parsed rather than retained
 as unparsed token lists. Public observable serialization is tested separately
 against the pinned browser through the SheetOM facade.
+
+Selector parsing also exposes opt-in namespace-prefix validation and strict
+`:is()`/`:where()` lists for CSSOM setters and `CSS.supports()`, respectively.
+The default compiler still retains unresolved prefixes. An opt-in printer flag
+preserves authored `:is()` wrappers instead of simplifying them. The selector
+module tests cover unknown attribute/type prefixes, forgiving-list recovery,
+strict capability checks, and unchanged compiler defaults.
+The nested `selectors` parser keeps separate recovery policies for `:is()`/
+`:where()`, `:has()`, and `:nth-child(... of ...)`; CSSOM rejects an invalid
+branch in the latter two while compiler defaults stay unchanged. Animation's
+authoring serializer also retains duration, easing, and other settings when
+its name is `none`, so a later longhand edit does not lose those settings.

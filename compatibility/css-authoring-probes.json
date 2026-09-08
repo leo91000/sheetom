@@ -1623,6 +1623,84 @@
       "kind": "declaration",
       "property": "transition",
       "value": "1s linear(0 0% 20% 30%,1)"
+    },
+    {
+      "id": "selector.attribute-unknown-namespace",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[missing|attr]"
+    },
+    {
+      "id": "selector.attribute-any-namespace",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[*|attr]"
+    },
+    {
+      "id": "selector.attribute-empty-namespace",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[|attr]"
+    },
+    {
+      "id": "selector.is-single",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is(.valid)"
+    },
+    {
+      "id": "selector.is-unknown-type-namespace",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is(missing|a, .valid)"
+    },
+    {
+      "id": "selector.where-unknown-type-namespace",
+      "root": "css.selectors.where",
+      "kind": "selector",
+      "value": ":where(missing|a, .valid)"
+    },
+    {
+      "id": "selector.is-unknown-attribute-namespace",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is([missing|attr], .valid)"
+    },
+    {
+      "id": "selector.is-empty-after-namespace-recovery",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is([missing|attr])"
+    },
+    {
+      "id": "selector.where-nested-namespace-recovery",
+      "root": "css.selectors.where",
+      "kind": "selector",
+      "value": ":where(:not([missing|attr]), .valid)"
+    },
+    {
+      "id": "selector.not-unknown-attribute-namespace",
+      "root": "css.selectors.not",
+      "kind": "selector",
+      "value": ":not([missing|attr], .valid)"
+    },
+    {
+      "id": "selector.has-unknown-attribute-namespace",
+      "root": "css.selectors.has",
+      "kind": "selector",
+      "value": ":has([missing|attr], .valid)"
+    },
+    {
+      "id": "selector.nth-child-unknown-attribute-namespace",
+      "root": "css.selectors.nth-child",
+      "kind": "selector",
+      "value": ":nth-child(2n of [missing|attr], .valid)"
+    },
+    {
+      "id": "rule.namespace-attribute-and-forgiving-lists",
+      "root": "css.at-rules.namespace",
+      "kind": "rule",
+      "value": "@namespace svg url(\"urn:svg\"); [svg|attr] { color: red; } @media all { :is([missing|attr], [svg|attr]) { color: blue; } }"
     }
   ]
 }

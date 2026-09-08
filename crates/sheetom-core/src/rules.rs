@@ -296,33 +296,30 @@ fn normalize_selector_in_context(source: &str, namespaces: &str) -> Result<Strin
     let rule_source = format!("{namespaces}{source}{{}} ");
     with_internal_wrapper_budget(source, &rule_source, || {
         run_parser_operation(&rule_source, || {
-            let sheet = StyleSheet::parse(&rule_source, ParserOptions::default())
+            let namespace_sheet = StyleSheet::parse(namespaces, ParserOptions::default())
                 .map_err(|error| EngineError::Parse(error.to_string()))?;
-            let Some(CssRule::Style(rule)) = sheet.rules.0.last() else {
-                return Err(EngineError::Parse("invalid selector list".to_owned()));
-            };
-            let prefixes = sheet
+            let prefixes = namespace_sheet
                 .rules
                 .0
                 .iter()
                 .filter_map(|rule| match rule {
                     CssRule::Namespace(rule) => {
-                        rule.prefix.as_ref().map(|prefix| prefix.0.as_ref())
+                        rule.prefix.as_ref().map(|prefix| prefix.0.to_string())
                     }
                     _ => None,
                 })
                 .collect::<Vec<_>>();
-            if !crate::selector_cssom::all_components(
-                &rule.selectors,
-                |component| match component {
-                    lightningcss::selector::Component::Namespace(prefix, _) => {
-                        prefixes.contains(&prefix.0.as_ref())
-                    }
-                    _ => true,
+            let sheet = StyleSheet::parse(
+                &rule_source,
+                ParserOptions {
+                    namespace_prefixes: Some(prefixes),
+                    ..ParserOptions::default()
                 },
-            ) {
-                return Err(EngineError::Parse("unknown selector namespace".to_owned()));
-            }
+            )
+            .map_err(|error| EngineError::Parse(error.to_string()))?;
+            let Some(CssRule::Style(rule)) = sheet.rules.0.last() else {
+                return Err(EngineError::Parse("invalid selector list".to_owned()));
+            };
             let default_namespace = sheet
                 .rules
                 .0
@@ -330,7 +327,10 @@ fn normalize_selector_in_context(source: &str, namespaces: &str) -> Result<Strin
                 .any(|rule| matches!(rule, CssRule::Namespace(rule) if rule.prefix.is_none()));
             let serialized = rule
                 .selectors
-                .to_css_string(PrinterOptions::default())
+                .to_css_string(PrinterOptions {
+                    preserve_selector_wrappers: true,
+                    ..PrinterOptions::default()
+                })
                 .map_err(|error| EngineError::Serialize(error.to_string()))?;
             Ok(crate::selector_cssom::serialize(
                 &serialized,
@@ -2379,7 +2379,10 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
             prelude: crate::selector_cssom::serialize(
                 &rule
                     .selectors
-                    .to_css_string(PrinterOptions::default())
+                    .to_css_string(PrinterOptions {
+                        preserve_selector_wrappers: true,
+                        ..PrinterOptions::default()
+                    })
                     .map_err(|error| EngineError::Serialize(error.to_string()))?,
                 true,
             ),

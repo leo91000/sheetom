@@ -1926,7 +1926,6 @@ export class CSSFontFeatureValuesRule extends CSSRule {
 export class CSSStyleRule extends CSSGroupingRule {
   readonly style: CSSStyleDeclaration;
   #selectorText: string;
-  #selectorCache: { namespaces: string; value: string } | undefined;
 
   #namespaces(): string {
     return namespaceText(this.parentStyleSheet);
@@ -1949,12 +1948,7 @@ export class CSSStyleRule extends CSSGroupingRule {
   }
 
   get selectorText(): string {
-    if (!this.#selectorText.includes("|")) return this.#selectorText;
-    const namespaces = this.#namespaces();
-    if (this.#selectorCache?.namespaces !== namespaces) {
-      this.#selectorCache = { namespaces, value: normalizeNativeSelector(this.#selectorText, ruleResourceBudgets.get(this) ?? defaultResourceBudget, namespaces) ?? this.#selectorText };
-    }
-    return this.#selectorCache.value;
+    return this.#selectorText;
   }
 
   set selectorText(value: string) {
@@ -1965,7 +1959,6 @@ export class CSSStyleRule extends CSSGroupingRule {
     );
     if (normalized === null) return;
     this.#selectorText = normalized;
-    this.#selectorCache = undefined;
   }
 
   override get cssText(): string {
@@ -2513,9 +2506,13 @@ function parseStrictRule(
       : null);
   if (!description || (description.kind === "import" && !preserveImports)) return null;
   if (!isMixinContextAllowed(description.kind, parentRule)) return null;
-  const validSelector = (rule: NativeRuleDescription): boolean => rule.kind !== "style"
-    || !rule.prelude.includes("|")
-    || normalizeNativeSelector(rule.prelude, resourceBudget, namespaces) !== null;
+  const validSelector = (rule: NativeRuleDescription): boolean => {
+    if (rule.kind !== "style" || !rule.prelude.includes("|")) return true;
+    const normalized = normalizeNativeSelector(rule.prelude, resourceBudget, namespaces);
+    if (normalized === null) return false;
+    rule.prelude = normalized;
+    return true;
+  };
   if (!validSelector(description)) return null;
   const pending = [description];
   while (pending.length) {

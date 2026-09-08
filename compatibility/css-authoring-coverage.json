@@ -393,7 +393,8 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "rule.namespace"
+        "rule.namespace",
+        "rule.namespace-attribute-and-forgiving-lists"
       ]
     },
     {
@@ -4448,7 +4449,10 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.attribute"
+        "selector.attribute",
+        "selector.attribute-unknown-namespace",
+        "selector.attribute-any-namespace",
+        "selector.attribute-empty-namespace"
       ]
     },
     {
@@ -4678,7 +4682,8 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.has"
+        "selector.has",
+        "selector.has-unknown-attribute-namespace"
       ]
     },
     {
@@ -4768,7 +4773,11 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.is"
+        "selector.is",
+        "selector.is-single",
+        "selector.is-unknown-type-namespace",
+        "selector.is-unknown-attribute-namespace",
+        "selector.is-empty-after-namespace-recovery"
       ]
     },
     {
@@ -4868,7 +4877,8 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.not"
+        "selector.not",
+        "selector.not-unknown-attribute-namespace"
       ]
     },
     {
@@ -4878,7 +4888,8 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.nth-child"
+        "selector.nth-child",
+        "selector.nth-child-unknown-attribute-namespace"
       ]
     },
     {
@@ -5218,7 +5229,9 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.where"
+        "selector.where",
+        "selector.where-unknown-type-namespace",
+        "selector.where-nested-namespace-recovery"
       ]
     },
     {

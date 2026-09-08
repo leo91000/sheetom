@@ -293,6 +293,16 @@ pub trait Parser<'i> {
     ParseErrorRecovery::IgnoreInvalidSelector
   }
 
+  /// Error recovery for a relative selector list in :has().
+  fn has_error_recovery(&self) -> ParseErrorRecovery {
+    self.is_and_where_error_recovery()
+  }
+
+  /// Error recovery for the selector list after `of` in :nth-child().
+  fn nth_of_error_recovery(&self) -> ParseErrorRecovery {
+    ParseErrorRecovery::IgnoreInvalidSelector
+  }
+
   /// Whether the given function name is an alias for the `:is()` function.
   fn parse_any_prefix(&self, _name: &str) -> Option<<Self::Impl as SelectorImpl<'i>>::VendorPrefix> {
     None
@@ -2843,7 +2853,7 @@ where
     parser,
     input,
     &mut child_state,
-    parser.is_and_where_error_recovery(),
+    parser.has_error_recovery(),
     NestingRequirement::None,
   )?;
   if child_state.contains(SelectorParsingState::AFTER_NESTING) {
@@ -2931,7 +2941,7 @@ where
     parser,
     input,
     &mut child_state,
-    ParseErrorRecovery::IgnoreInvalidSelector,
+    parser.nth_of_error_recovery(),
     NestingRequirement::None,
   )?;
   Ok(Component::NthOf(NthOfSelectorData::new(

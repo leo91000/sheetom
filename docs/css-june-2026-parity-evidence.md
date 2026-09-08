@@ -42,7 +42,12 @@ npm run wasm:test:performance
 `check-css-authoring-target.ts` compares native and WASM snapshots with Chromium
 151.0.7922.34, including declaration order, values, priority, selector state,
 rejected-mutation atomicity, parentage, live lists, and safe serialization
-reparsing. Its report is `target/css-authoring-target-report.json`.
+reparsing. Reparse checks also compare rule topology, selector/descriptor state,
+declaration names/order and priorities, and independently canonicalized longhand
+values. This permits equivalent scalar spellings while detecting dropped rules,
+declarations, or shorthand settings; it does not rely solely on serializing the
+already-reparsed sheet. Deliberately corrupted copies exercise these assertions.
+Its report is `target/css-authoring-target-report.json`.
 `test-modern-css-backends.ts` executes the same mixin and CSS namespace unit
 contracts through both packaged facades, in separate subprocesses, and probes
 nested conditions, selectors, and mixin bodies at depths 256, 1024, and 4000.
@@ -61,6 +66,17 @@ namespace insertion/deletion rejects changes while ordinary rules exist.
 Late namespace declarations are discarded, including their bindings, following
 the pinned Chromium recovery behavior. The browser differential suite covers
 both undeclared prefixes and late declarations.
+Attribute prefixes receive the same validation as type-selector prefixes.
+`:is()` and `:where()` discard invalid namespace branches while `:not()`,
+`:has()`, and `:nth-child(... of ...)` reject an invalid list. Capability checks
+reject invalid branches even in forgiving lists. Parsed selectors retain their
+normalized namespace state when detached. Authored `:is()` wrappers remain
+observable, including when recovery leaves one or zero branches.
+
+The stronger round-trip check exposed inactive animation settings being dropped
+by the compiler serializer when the animation name was `none`. Authoring output
+now preserves those settings; changing `animation-name` after reparse retains the
+original duration and easing. Compiler serialization defaults remain unchanged.
 
 ## Experimental mixin resolution
 
@@ -127,10 +143,10 @@ for every possible CSS string. Exact execution outcomes belong to the generated
 reports and the current change's validation record, not the immutable 0.1.1
 release baseline.
 
-## Validation record — 2026-09-08
+## Initial PR validation record — 2026-09-08
 
-Validated locally on Linux x64 with Node 26.8.1 and engine ABI 5. The final
-native/WASM syntax-engine hash is
+Validated locally on Linux x64 with Node 26.8.1 and engine ABI 5. The initial PR's
+native/WASM syntax-engine hash was
 `7d2977632974a2f86edbafb58fbd71174a3edd76283fdd234e6e835a9fb756ce`.
 
 | Gate | Result |
@@ -153,3 +169,22 @@ gates passed earlier on the same syntax-engine hash. WebKit used an existing
 local compatibility-library bundle through a temporary launch override; no
 repository or global browser workaround was added. The minor Changeset parses
 successfully; this record does not assert a commit, release, or deployment.
+
+## Namespace and round-trip follow-up — 2026-09-08
+
+Revision `.79` retains ABI 5 and has syntax-engine hash
+`0cdb7affa3110506b1e8c759d5fb9cef1e46f0baaab6e9767768d83d456cdd5c`.
+The repository check passes with 288 unit tests. Formatting/Clippy, 237 core
+tests, and the normal vendor gate pass, including 185 Lightning CSS tests.
+Both backends pass 259 browser probes, 11,881 supports checks, 264 escape checks,
+17 shared contracts, and the depth 256/1024/4000 cases. The Webref corpus passes
+11,590 checks per backend with zero mismatches. Native browser differentials
+and WASM main-thread/worker checks in Chromium, Firefox, and WebKit also pass.
+The WASM binary remains within budget at 4,486,081 bytes raw / 1,320,359 gzip.
+
+An additional standalone `parcel_selectors` test run reports 6 passing tests and
+one failure in the dummy parser's `foo::details-content` fixture. The identical
+failure was reproduced using the untouched selector sources from parent commit
+`e1e9726`; it is outside the normal vendor gate and is not introduced by this
+follow-up. The actual Lightning CSS parser's namespace tests pass. This extra
+suite limitation remains explicit rather than being counted as a green result.

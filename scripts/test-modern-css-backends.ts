@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { transform } from "esbuild";
+import * as roundtrip from "./css-authoring-roundtrip.ts";
 
 const backend = process.argv.find(argument => argument.startsWith("--backend="))?.slice(10);
 if (!backend) {
@@ -18,13 +19,14 @@ if (!backend) {
   // Only the test registration and module imports are substituted; assertions
   // remain shared so backend tests cannot silently omit new regression cases.
   let checks = 0;
-  for (const filename of ["mixin-rules", "css-namespace", "selector-text"]) {
+  for (const filename of ["mixin-rules", "css-namespace", "selector-text", "modern-css-roundtrip"]) {
     const source = await readFile(new URL(`../tests/${filename}.test.ts`, import.meta.url), "utf8");
     const { code } = await transform(source, { loader: "ts", format: "cjs", target: "es2022" });
     const require = name => {
       if (name === "node:assert/strict") return assert;
       if (name === "vitest") return { test: (_name, run) => { run(); checks++; } };
       if (name === "../src/index.js") return api;
+      if (name === "../scripts/css-authoring-roundtrip.ts") return roundtrip;
       throw new Error(`Unexpected contract dependency: ${name}`);
     };
     new Function("require", "module", "exports", code)(require, { exports: {} }, {});

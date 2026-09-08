@@ -369,6 +369,26 @@ impl<'a, 'i> parcel_selectors::parser::Parser<'i> for SelectorParser<'a, 'i> {
     true
   }
 
+  fn is_and_where_error_recovery(&self) -> parcel_selectors::parser::ParseErrorRecovery {
+    if self.options.strict_selector_lists {
+      parcel_selectors::parser::ParseErrorRecovery::DiscardList
+    } else {
+      parcel_selectors::parser::ParseErrorRecovery::IgnoreInvalidSelector
+    }
+  }
+
+  fn has_error_recovery(&self) -> parcel_selectors::parser::ParseErrorRecovery {
+    if self.options.namespace_prefixes.is_some() || self.options.strict_selector_lists {
+      parcel_selectors::parser::ParseErrorRecovery::DiscardList
+    } else {
+      self.is_and_where_error_recovery()
+    }
+  }
+
+  fn nth_of_error_recovery(&self) -> parcel_selectors::parser::ParseErrorRecovery {
+    self.has_error_recovery()
+  }
+
   #[inline]
   fn parse_part(&self) -> bool {
     true
@@ -379,6 +399,11 @@ impl<'a, 'i> parcel_selectors::parser::Parser<'i> for SelectorParser<'a, 'i> {
   }
 
   fn namespace_for_prefix(&self, prefix: &Ident<'i>) -> Option<CowArcStr<'i>> {
+    if let Some(prefixes) = &self.options.namespace_prefixes {
+      if !prefixes.iter().any(|allowed| allowed == prefix.0.as_ref()) {
+        return None;
+      }
+    }
     Some(prefix.0.clone())
   }
 
@@ -1655,7 +1680,7 @@ where
         Component::Where(..) => dest.write_str(":where(")?,
         Component::Is(ref selectors) => {
           // If there's only one simple selector, serialize it directly.
-          if should_unwrap_is(selectors) {
+          if !dest.preserve_selector_wrappers && should_unwrap_is(selectors) {
             serialize_selector(selectors.first().unwrap(), dest, context, false)?;
             return Ok(());
           }
@@ -2344,5 +2369,49 @@ impl<'i> ParseWithOptions<'i> for SelectorList<'i> {
       parcel_selectors::parser::ParseErrorRecovery::DiscardList,
       parcel_selectors::parser::NestingRequirement::None,
     )
+  }
+}
+
+#[cfg(test)]
+mod sheetom_namespace_tests {
+  use super::*;
+
+  #[test]
+  fn cssom_namespaces_recover_only_in_forgiving_lists() {
+    for (source, expected) in [
+      ("[missing|attr]", None),
+      ("[svg|attr]", Some("[svg|attr]")),
+      ("[*|attr]", Some("[*|attr]")),
+      (":is(missing|a, .valid)", Some(":is(.valid)")),
+      (":where([missing|attr], .valid)", Some(":where(.valid)")),
+      (":is([missing|attr])", Some(":is()")),
+      (":not(missing|a, .valid)", None),
+      (":has([missing|attr], .valid)", None),
+      (":nth-child(2n of [missing|attr], .valid)", None),
+    ] {
+      let parsed = SelectorList::parse_string_with_options(source, ParserOptions {
+        namespace_prefixes: Some(vec!["svg".to_owned()]),
+        ..ParserOptions::default()
+      });
+      match expected {
+        Some(expected) => assert_eq!(parsed.unwrap().to_css_string(PrinterOptions {
+          preserve_selector_wrappers: true,
+          ..PrinterOptions::default()
+        }).unwrap(), expected, "{source}"),
+        None => assert!(parsed.is_err(), "{source}"),
+      }
+    }
+  }
+
+  #[test]
+  fn supports_rejects_invalid_branches_and_compiler_defaults_preserve_prefixes() {
+    for source in ["[missing|attr]", ":is([missing|attr], .valid)", ":where(missing|a, .valid)"] {
+      assert!(SelectorList::parse_string_with_options(source, ParserOptions {
+        namespace_prefixes: Some(Vec::new()),
+        strict_selector_lists: true,
+        ..ParserOptions::default()
+      }).is_err(), "{source}");
+      assert!(SelectorList::parse_string_with_options(source, ParserOptions::default()).is_ok(), "{source}");
+    }
   }
 }

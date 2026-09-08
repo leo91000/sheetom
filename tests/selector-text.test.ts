@@ -76,3 +76,46 @@ test("namespace rule parsing and mutation reject unknown prefixes atomically", (
   }
   assert.equal(constructed.cssRules.length, 3);
 });
+
+test("attribute namespaces and forgiving selector lists use the owning sheet context", () => {
+  for (const [selector, expected] of [
+    ["[missing|attr]", null], ["[svg|attr]", "[svg|attr]"],
+    ["[*|attr]", "[*|attr]"], ["[|attr]", "[attr]"],
+    [":is(missing|a, .valid)", ":is(.valid)"],
+    [":where(missing|a, .valid)", ":where(.valid)"],
+    [":is([missing|attr], .valid)", ":is(.valid)"],
+    [":is([missing|attr])", ":is()"],
+    [":where(:not([missing|attr]), [svg|attr])", ":where([svg|attr])"],
+    [":not(missing|a, .valid)", null],
+    [":has([missing|attr], .valid)", null],
+    [":nth-child(2n of [missing|attr], .valid)", null],
+  ] as const) {
+    const source = '@namespace svg url("urn:svg");';
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(`${source} .initial { color: red; }`);
+    const rule = sheet.cssRules[1]; assert.ok(rule instanceof CSSStyleRule);
+    rule.selectorText = selector;
+    assert.equal(rule.selectorText, expected ?? ".initial", selector);
+    if (expected === null) {
+      assert.throws(() => sheet.insertRule(`${selector} {}`, 2), { name: "SyntaxError" }, selector);
+    } else {
+      sheet.insertRule(`${selector} {}`, 2);
+      const inserted = sheet.cssRules[2]; assert.ok(inserted instanceof CSSStyleRule);
+      assert.equal(inserted.selectorText, expected, selector);
+      sheet.deleteRule(2);
+      assert.equal(inserted.selectorText, expected, "detachment must not restore a discarded selector");
+    }
+    sheet.replaceSync(`${source} ${selector} { color: red; }`);
+    assert.equal(sheet.cssRules.length, expected === null ? 1 : 2, selector);
+    if (expected !== null) {
+      const parsed = sheet.cssRules[1]; assert.ok(parsed instanceof CSSStyleRule);
+      assert.equal(parsed.selectorText, expected, selector);
+      sheet.insertRule(`@media all { ${selector} { color: red; } }`, 2);
+      const media = sheet.cssRules[2]; assert.ok(media instanceof CSSGroupingRule);
+      const child = media.cssRules[0]; assert.ok(child instanceof CSSStyleRule);
+      assert.equal(child.selectorText, expected, selector);
+      const copy = new CSSStyleSheet(); copy.replaceSync(sheet.serializeStrict());
+      assert.deepEqual(Array.from(copy.cssRules, rule => rule!.cssText), Array.from(sheet.cssRules, rule => rule!.cssText));
+    }
+  }
+});

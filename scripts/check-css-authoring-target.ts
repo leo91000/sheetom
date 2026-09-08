@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import corpus from "../compatibility/css-authoring-probes.json" with { type: "json" };
 import propertyCorpus from "../compatibility/webref-property-branches.json" with { type: "json" };
+import { assertAuthoringRoundTrip, snapshotAuthoringRule as snapshotRule } from "./css-authoring-roundtrip.ts";
 
 const requestedBackend = process.argv.find(argument => argument.startsWith("--backend="))?.slice(10);
 assert.ok(requestedBackend === undefined || ["native", "wasm"].includes(requestedBackend));
@@ -11,29 +12,22 @@ if (requestedBackend !== "wasm") backends.push(["native", await import("../dist/
 if (requestedBackend !== "native") backends.push(["wasm", await (await import("../packages/wasm/dist/index.js")).createSheetOM(new Uint8Array(await readFile(new URL("../packages/wasm/dist/sheetom_wasm_bg.wasm", import.meta.url))).buffer)]);
 // This function is also executed verbatim in Chromium. Snapshots cover authored
 // state, invalid-mutation atomicity, parentage, and live collection identity.
+
 function observe(api, probe) {
   const sheet = new api.CSSStyleSheet();
   const snapshots = [];
-  const state = rule => {
-    const result = { type: rule.constructor.name, children: [] };
-    for (const field of ["selectorText", "conditionText", "name", "keyText", "syntax", "inherits", "initialValue", "fontFamily", "basePalette", "overrideColors", "start", "end"])
-      if (field in rule) result[field] = rule[field];
-    if (rule.style) result.style = { cssText: rule.style.cssText, items: Array.from(rule.style, name => [name, rule.style.getPropertyValue(name), rule.style.getPropertyPriority(name)]), parent: rule.style.parentRule === rule };
-    if (rule.cssRules) result.children = Array.from(rule.cssRules, state);
-    return result;
-  };
   if (probe.kind === "rule") sheet.replaceSync(probe.value);
   else {
     sheet.replaceSync(".probe { color: blue; }");
     const rule = sheet.cssRules[0];
     if (probe.kind === "selector") rule.selectorText = probe.value;
     else rule.style.setProperty(probe.property, probe.value, "important");
-    snapshots.push(state(rule));
+    snapshots.push(snapshotRule(rule));
     if (probe.kind === "selector") rule.selectorText = ":not(";
     else rule.style.setProperty(probe.property, `${probe.value}; color: green`, "important");
-    snapshots.push(state(rule));
+    snapshots.push(snapshotRule(rule));
   }
-  snapshots.push(Array.from(sheet.cssRules, state));
+  snapshots.push(Array.from(sheet.cssRules, snapshotRule));
   const list = sheet.cssRules;
   if (sheet.cssRules.length) {
     const rule = sheet.cssRules[sheet.cssRules.length - 1];
@@ -48,7 +42,7 @@ try {
   assert.equal(browser.version(), "151.0.7922.34", "Review the pinned browser version before advancing evidence");
   const page = await browser.newPage();
   const mismatches = [];
-  const evaluator = observe.toString();
+  const evaluator = `(function () { const snapshotRule = ${snapshotRule.toString()}; return ${observe.toString()}; })()`;
   for (const probe of corpus.probes) {
     const expected = await page.evaluate(({ evaluator, probe }) => (0, eval)(`(${evaluator})`)(globalThis, probe), { evaluator, probe });
     for (const [backend, api] of backends) {
@@ -58,6 +52,15 @@ try {
       sheet.replaceSync(probe.kind === "rule" ? probe.value : probe.kind === "selector" ? `${probe.value} { color: red; }` : `.probe { ${probe.property}: ${probe.value}; }`);
       const serialized = sheet.serializeStrict();
       const reparse = new api.CSSStyleSheet(); reparse.replaceSync(serialized);
+      try {
+        assertAuthoringRoundTrip(api, sheet, reparse, snapshotRule);
+      } catch {
+        mismatches.push({ id: probe.id, backend, roundTripState: {
+          before: Array.from(sheet.cssRules, snapshotRule),
+          after: Array.from(reparse.cssRules, snapshotRule),
+          serialized,
+        } });
+      }
       try { assert.equal(reparse.serializeStrict(), serialized); } catch { mismatches.push({ id: probe.id, backend, roundTrip: serialized }); }
     }
   }
