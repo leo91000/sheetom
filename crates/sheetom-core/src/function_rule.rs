@@ -86,6 +86,37 @@ pub(crate) fn parse_function_prelude(header: &str) -> Option<ParsedFunctionPrelu
     })
 }
 
+pub(crate) fn parse_mixin_prelude(header: &str) -> Option<ParsedFunctionPrelude> {
+    let mut input = ParserInput::new(header);
+    let mut parser = Parser::new(&mut input);
+    match parser.next().ok()? {
+        Token::AtKeyword(value) if value.eq_ignore_ascii_case("mixin") => {}
+        _ => return None,
+    }
+    let (name, parameters) = match parser.next().ok()?.clone() {
+        Token::Ident(value) if valid_dashed_identifier(&value) => (value.to_string(), Vec::new()),
+        Token::Function(value) if valid_dashed_identifier(&value) => {
+            let parameters = parser
+                .parse_nested_block(|input| parse_parameters(input, true))
+                .ok()?;
+            (value.to_string(), parameters)
+        }
+        _ => return None,
+    };
+    let mut names = std::collections::HashSet::new();
+    if parameters
+        .iter()
+        .any(|parameter| !names.insert(&parameter.name))
+    {
+        return None;
+    }
+    parser.is_exhausted().then_some(ParsedFunctionPrelude {
+        name,
+        parameters,
+        return_type: "*".to_owned(),
+    })
+}
+
 pub(crate) fn canonical_function_descriptor_name(name: &str) -> Option<String> {
     if name.starts_with("--") {
         return (name.len() > 2).then(|| name.to_owned());
@@ -106,6 +137,13 @@ pub(crate) fn parse_function_descriptor_value(name: &str, value: &str) -> Option
 fn parse_function_parameters<'i, 't>(
     input: &mut Parser<'i, 't>,
 ) -> Result<Vec<ParsedFunctionParameter>, ParseError<'i, ()>> {
+    parse_parameters(input, false)
+}
+
+fn parse_parameters<'i, 't>(
+    input: &mut Parser<'i, 't>,
+    strict_defaults: bool,
+) -> Result<Vec<ParsedFunctionParameter>, ParseError<'i, ()>> {
     skip_css_trivia(input);
     if input.is_exhausted() {
         return Ok(Vec::new());
@@ -116,12 +154,13 @@ fn parse_function_parameters<'i, 't>(
         if count > MAX_FUNCTION_PARAMETERS {
             return Err(parameter.new_custom_error(()));
         }
-        parse_function_parameter(parameter)
+        parse_function_parameter(parameter, strict_defaults)
     })
 }
 
 fn parse_function_parameter<'i, 't>(
     input: &mut Parser<'i, 't>,
+    strict_defaults: bool,
 ) -> Result<ParsedFunctionParameter, ParseError<'i, ()>> {
     skip_css_trivia(input);
     let name = input.expect_ident_cloned()?;
@@ -146,7 +185,8 @@ fn parse_function_parameter<'i, 't>(
             has_recovery_blocking_trailing_whitespace(raw_value),
         ) {
             DefaultValueDisposition::Accepted => Some(trim_css_trivia(raw_value)),
-            DefaultValueDisposition::Omitted => None,
+            DefaultValueDisposition::Omitted if !strict_defaults => None,
+            DefaultValueDisposition::Omitted => return Err(input.new_custom_error(())),
             DefaultValueDisposition::InvalidRule => return Err(input.new_custom_error(())),
         },
         None => None,

@@ -114,6 +114,11 @@ impl SemanticDeclaration {
                 Property::Grid(value) => value.to_cssom_string(),
                 Property::GridTemplate(value) => value.to_cssom_string(),
                 Property::GridTemplateAreas(value) => value.to_cssom_string(),
+                Property::Animation(values, _) => values
+                    .iter()
+                    .map(|value| value.to_cssom_string())
+                    .collect::<Result<Vec<_>, _>>()
+                    .map(|values| values.join(", ")),
                 _ => property.value_to_css_string(PrinterOptions::default()),
             }
             .map_err(|error| EngineError::Serialize(error.to_string())),

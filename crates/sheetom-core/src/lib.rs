@@ -18,10 +18,14 @@ mod observable;
 mod property_constraints;
 mod recovered_value;
 mod rules;
+mod selector_cssom;
 mod semantic_value;
 mod shorthand;
 mod substitution_value;
+mod supports;
 mod syntax;
+
+pub use supports::css_supports;
 
 pub(crate) use catalog::sheetom_parser_property_name;
 
@@ -56,8 +60,8 @@ pub use recovered_value::{
 };
 pub use rules::{
     normalize_media_text, normalize_media_text_with_limits, normalize_selector_text,
-    normalize_selector_text_with_limits, normalize_supports_text,
-    normalize_supports_text_with_limits, parse_container_prelude,
+    normalize_selector_text_in_namespaces, normalize_selector_text_with_limits,
+    normalize_supports_text, normalize_supports_text_with_limits, parse_container_prelude,
     parse_container_prelude_with_limits, parse_recovered_rule_tree,
     parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree,
     parse_recovered_single_rule_tree_with_limits, parse_rule_tree, parse_rule_tree_with_limits,
@@ -96,7 +100,7 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.77";
+pub const ENGINE_REVISION: &str = "lightningcss-1.33.0-c6a0c3ce-sheetom.79";
 pub const DEFAULT_MAX_STYLESHEET_BYTES: usize = 64 * 1024 * 1024;
 pub const DEFAULT_MAX_DECLARATION_VALUE_BYTES: usize = 1024 * 1024;
 pub const DEFAULT_MAX_NESTING_DEPTH: usize = 4096;
@@ -505,7 +509,7 @@ mod tests {
 
     #[test]
     fn reports_the_vendored_engine_revision() {
-        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.77");
+        assert_eq!(ENGINE_REVISION, "lightningcss-1.33.0-c6a0c3ce-sheetom.79");
     }
 
     #[test]

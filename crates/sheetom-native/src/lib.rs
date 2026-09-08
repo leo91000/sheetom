@@ -7,7 +7,7 @@ use napi::bindgen_prelude::Array;
 use napi_derive::napi;
 use sheetom_core::{
     canonicalize_declaration_block_with_limits as canonicalize, inspect_property_with_limits,
-    normalize_media_text_with_limits, normalize_selector_text_with_limits,
+    normalize_media_text_with_limits, normalize_selector_text_in_namespaces,
     normalize_supports_text_with_limits, parse_container_prelude_with_limits,
     parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
     parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree_with_limits,
@@ -383,6 +383,7 @@ pub fn parse_recovered_rule_tree_json(
 #[napi]
 pub fn normalize_selector(
     source: String,
+    namespaces: Option<String>,
     max_stylesheet_bytes: Option<u32>,
     max_declaration_value_bytes: Option<u32>,
     max_nesting_depth: Option<u32>,
@@ -396,7 +397,7 @@ pub fn normalize_selector(
         max_rules,
         max_declarations_per_block,
     );
-    normalize_selector_text_with_limits(&source, limits)
+    normalize_selector_text_in_namespaces(&source, namespaces.as_deref().unwrap_or(""), limits)
         .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 
@@ -437,6 +438,12 @@ pub fn normalize_supports(
         max_declarations_per_block,
     );
     normalize_supports_text_with_limits(&source, limits)
+        .map_err(|error| napi::Error::from_reason(error.to_string()))
+}
+
+#[napi]
+pub fn supports_css(source: String, value: Option<String>) -> napi::Result<bool> {
+    sheetom_core::css_supports(&source, value.as_deref())
         .map_err(|error| napi::Error::from_reason(error.to_string()))
 }
 

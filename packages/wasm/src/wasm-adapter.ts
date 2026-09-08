@@ -37,8 +37,9 @@ interface GeneratedDeclarationState {
 interface WasmGlueModule {
   engineAbiIdentity(): string;
   normalizeMedia(source: string, ...budget: BudgetArguments): string;
-  normalizeSelector(source: string, ...budget: BudgetArguments): string;
+  normalizeSelector(source: string, namespaces: string, ...budget: BudgetArguments): string;
   normalizeSupports(source: string, ...budget: BudgetArguments): string;
+  supportsCss(source: string, value?: string): boolean;
   parseContainerPreludeJson(source: string, ...budget: BudgetArguments): string;
   parseCounterStyleDescriptorValue(
     name: string,
@@ -130,9 +131,10 @@ export async function initializeWasmEngineBinding(
     normalizeMedia: (sourceValue, ...budget) => guard(
       () => glue.normalizeMedia(sourceValue, ...budget),
     ),
-    normalizeSelector: (sourceValue, ...budget) => guard(
-      () => glue.normalizeSelector(sourceValue, ...budget),
+    normalizeSelector: (sourceValue, namespaces, ...budget) => guard(
+      () => glue.normalizeSelector(sourceValue, namespaces, ...budget),
     ),
+    supportsCss: (sourceValue, value) => guard(() => glue.supportsCss(sourceValue, value)),
     normalizeSupports: (sourceValue, ...budget) => guard(
       () => glue.normalizeSupports(sourceValue, ...budget),
     ),

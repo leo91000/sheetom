@@ -1,0 +1,1706 @@
+{
+  "schemaVersion": 1,
+  "probes": [
+    {
+      "id": "selector.active",
+      "root": "css.selectors.active",
+      "kind": "selector",
+      "value": ":active"
+    },
+    {
+      "id": "selector.active-view-transition",
+      "root": "css.selectors.active-view-transition",
+      "kind": "selector",
+      "value": ":active-view-transition"
+    },
+    {
+      "id": "selector.active-view-transition-type",
+      "root": "css.selectors.active-view-transition-type",
+      "kind": "selector",
+      "value": ":active-view-transition-type(slide)"
+    },
+    {
+      "id": "selector.after",
+      "root": "css.selectors.after",
+      "kind": "selector",
+      "value": "::after"
+    },
+    {
+      "id": "selector.any-link",
+      "root": "css.selectors.any-link",
+      "kind": "selector",
+      "value": ":any-link"
+    },
+    {
+      "id": "selector.attribute",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[data-x=\"a\" i]"
+    },
+    {
+      "id": "selector.backdrop",
+      "root": "css.selectors.backdrop",
+      "kind": "selector",
+      "value": "::backdrop"
+    },
+    {
+      "id": "selector.before",
+      "root": "css.selectors.before",
+      "kind": "selector",
+      "value": "::before"
+    },
+    {
+      "id": "selector.checked",
+      "root": "css.selectors.checked",
+      "kind": "selector",
+      "value": ":checked"
+    },
+    {
+      "id": "selector.child",
+      "root": "css.selectors.child",
+      "kind": "selector",
+      "value": ".a > .b"
+    },
+    {
+      "id": "selector.class",
+      "root": "css.selectors.class",
+      "kind": "selector",
+      "value": ".a"
+    },
+    {
+      "id": "selector.cue",
+      "root": "css.selectors.cue",
+      "kind": "selector",
+      "value": "::cue(b)"
+    },
+    {
+      "id": "selector.default",
+      "root": "css.selectors.default",
+      "kind": "selector",
+      "value": ":default"
+    },
+    {
+      "id": "selector.defined",
+      "root": "css.selectors.defined",
+      "kind": "selector",
+      "value": ":defined"
+    },
+    {
+      "id": "selector.descendant",
+      "root": "css.selectors.descendant",
+      "kind": "selector",
+      "value": ".a .b"
+    },
+    {
+      "id": "selector.details-content",
+      "root": "css.selectors.details-content",
+      "kind": "selector",
+      "value": "::details-content"
+    },
+    {
+      "id": "selector.dir",
+      "root": "css.selectors.dir",
+      "kind": "selector",
+      "value": ":dir(rtl)"
+    },
+    {
+      "id": "selector.disabled",
+      "root": "css.selectors.disabled",
+      "kind": "selector",
+      "value": ":disabled"
+    },
+    {
+      "id": "selector.empty",
+      "root": "css.selectors.empty",
+      "kind": "selector",
+      "value": ":empty"
+    },
+    {
+      "id": "selector.enabled",
+      "root": "css.selectors.enabled",
+      "kind": "selector",
+      "value": ":enabled"
+    },
+    {
+      "id": "selector.file-selector-button",
+      "root": "css.selectors.file-selector-button",
+      "kind": "selector",
+      "value": "::file-selector-button"
+    },
+    {
+      "id": "selector.first-child",
+      "root": "css.selectors.first-child",
+      "kind": "selector",
+      "value": ":first-child"
+    },
+    {
+      "id": "selector.first-letter",
+      "root": "css.selectors.first-letter",
+      "kind": "selector",
+      "value": "::first-letter"
+    },
+    {
+      "id": "selector.first-line",
+      "root": "css.selectors.first-line",
+      "kind": "selector",
+      "value": "::first-line"
+    },
+    {
+      "id": "selector.first-of-type",
+      "root": "css.selectors.first-of-type",
+      "kind": "selector",
+      "value": ":first-of-type"
+    },
+    {
+      "id": "selector.focus",
+      "root": "css.selectors.focus",
+      "kind": "selector",
+      "value": ":focus"
+    },
+    {
+      "id": "selector.focus-visible",
+      "root": "css.selectors.focus-visible",
+      "kind": "selector",
+      "value": ":focus-visible"
+    },
+    {
+      "id": "selector.focus-within",
+      "root": "css.selectors.focus-within",
+      "kind": "selector",
+      "value": ":focus-within"
+    },
+    {
+      "id": "selector.has",
+      "root": "css.selectors.has",
+      "kind": "selector",
+      "value": ":has(> .card)"
+    },
+    {
+      "id": "selector.highlight",
+      "root": "css.selectors.highlight",
+      "kind": "selector",
+      "value": "::highlight(search)"
+    },
+    {
+      "id": "selector.host",
+      "root": "css.selectors.host",
+      "kind": "selector",
+      "value": ":host"
+    },
+    {
+      "id": "selector.hostfunction",
+      "root": "css.selectors.hostfunction",
+      "kind": "selector",
+      "value": ":host(.card)"
+    },
+    {
+      "id": "selector.hover",
+      "root": "css.selectors.hover",
+      "kind": "selector",
+      "value": ":hover"
+    },
+    {
+      "id": "selector.id",
+      "root": "css.selectors.id",
+      "kind": "selector",
+      "value": "#a"
+    },
+    {
+      "id": "selector.in-range",
+      "root": "css.selectors.in-range",
+      "kind": "selector",
+      "value": ":in-range"
+    },
+    {
+      "id": "selector.indeterminate",
+      "root": "css.selectors.indeterminate",
+      "kind": "selector",
+      "value": ":indeterminate"
+    },
+    {
+      "id": "selector.invalid",
+      "root": "css.selectors.invalid",
+      "kind": "selector",
+      "value": ":invalid"
+    },
+    {
+      "id": "selector.is",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is(.a, .b)"
+    },
+    {
+      "id": "selector.lang",
+      "root": "css.selectors.lang",
+      "kind": "selector",
+      "value": ":lang(en)"
+    },
+    {
+      "id": "selector.last-child",
+      "root": "css.selectors.last-child",
+      "kind": "selector",
+      "value": ":last-child"
+    },
+    {
+      "id": "selector.last-of-type",
+      "root": "css.selectors.last-of-type",
+      "kind": "selector",
+      "value": ":last-of-type"
+    },
+    {
+      "id": "selector.link",
+      "root": "css.selectors.link",
+      "kind": "selector",
+      "value": ":link"
+    },
+    {
+      "id": "selector.list",
+      "root": "css.selectors.list",
+      "kind": "selector",
+      "value": ".a, .b"
+    },
+    {
+      "id": "selector.modal",
+      "root": "css.selectors.modal",
+      "kind": "selector",
+      "value": ":modal"
+    },
+    {
+      "id": "selector.namespace",
+      "root": "css.selectors.namespace",
+      "kind": "selector",
+      "value": "*|a"
+    },
+    {
+      "id": "selector.nesting",
+      "root": "css.selectors.nesting",
+      "kind": "selector",
+      "value": "& > span"
+    },
+    {
+      "id": "selector.next-sibling",
+      "root": "css.selectors.next-sibling",
+      "kind": "selector",
+      "value": ".a + .b"
+    },
+    {
+      "id": "selector.not",
+      "root": "css.selectors.not",
+      "kind": "selector",
+      "value": ":not(.a, .b)"
+    },
+    {
+      "id": "selector.nth-child",
+      "root": "css.selectors.nth-child",
+      "kind": "selector",
+      "value": ":nth-child(2n + 1 of .card)"
+    },
+    {
+      "id": "selector.nth-last-child",
+      "root": "css.selectors.nth-last-child",
+      "kind": "selector",
+      "value": ":nth-last-child(2n of .card)"
+    },
+    {
+      "id": "selector.nth-last-of-type",
+      "root": "css.selectors.nth-last-of-type",
+      "kind": "selector",
+      "value": ":nth-last-of-type(2n)"
+    },
+    {
+      "id": "selector.nth-of-type",
+      "root": "css.selectors.nth-of-type",
+      "kind": "selector",
+      "value": ":nth-of-type(2n)"
+    },
+    {
+      "id": "selector.only-child",
+      "root": "css.selectors.only-child",
+      "kind": "selector",
+      "value": ":only-child"
+    },
+    {
+      "id": "selector.only-of-type",
+      "root": "css.selectors.only-of-type",
+      "kind": "selector",
+      "value": ":only-of-type"
+    },
+    {
+      "id": "selector.open",
+      "root": "css.selectors.open",
+      "kind": "selector",
+      "value": ":open"
+    },
+    {
+      "id": "selector.optional",
+      "root": "css.selectors.optional",
+      "kind": "selector",
+      "value": ":optional"
+    },
+    {
+      "id": "selector.out-of-range",
+      "root": "css.selectors.out-of-range",
+      "kind": "selector",
+      "value": ":out-of-range"
+    },
+    {
+      "id": "selector.part",
+      "root": "css.selectors.part",
+      "kind": "selector",
+      "value": "::part(label)"
+    },
+    {
+      "id": "selector.placeholder",
+      "root": "css.selectors.placeholder",
+      "kind": "selector",
+      "value": "::placeholder"
+    },
+    {
+      "id": "selector.placeholder-shown",
+      "root": "css.selectors.placeholder-shown",
+      "kind": "selector",
+      "value": ":placeholder-shown"
+    },
+    {
+      "id": "selector.popover-open",
+      "root": "css.selectors.popover-open",
+      "kind": "selector",
+      "value": ":popover-open"
+    },
+    {
+      "id": "selector.read-only",
+      "root": "css.selectors.read-only",
+      "kind": "selector",
+      "value": ":read-only"
+    },
+    {
+      "id": "selector.read-write",
+      "root": "css.selectors.read-write",
+      "kind": "selector",
+      "value": ":read-write"
+    },
+    {
+      "id": "selector.required",
+      "root": "css.selectors.required",
+      "kind": "selector",
+      "value": ":required"
+    },
+    {
+      "id": "selector.root",
+      "root": "css.selectors.root",
+      "kind": "selector",
+      "value": ":root"
+    },
+    {
+      "id": "selector.scope",
+      "root": "css.selectors.scope",
+      "kind": "selector",
+      "value": ":scope"
+    },
+    {
+      "id": "selector.slotted",
+      "root": "css.selectors.slotted",
+      "kind": "selector",
+      "value": "::slotted(.a)"
+    },
+    {
+      "id": "selector.state",
+      "root": "css.selectors.state",
+      "kind": "selector",
+      "value": ":state(active)"
+    },
+    {
+      "id": "selector.subsequent-sibling",
+      "root": "css.selectors.subsequent-sibling",
+      "kind": "selector",
+      "value": ".a ~ .b"
+    },
+    {
+      "id": "selector.target",
+      "root": "css.selectors.target",
+      "kind": "selector",
+      "value": ":target"
+    },
+    {
+      "id": "selector.target-text",
+      "root": "css.selectors.target-text",
+      "kind": "selector",
+      "value": "::target-text"
+    },
+    {
+      "id": "selector.type",
+      "root": "css.selectors.type",
+      "kind": "selector",
+      "value": "div"
+    },
+    {
+      "id": "selector.universal",
+      "root": "css.selectors.universal",
+      "kind": "selector",
+      "value": "*"
+    },
+    {
+      "id": "selector.user-invalid",
+      "root": "css.selectors.user-invalid",
+      "kind": "selector",
+      "value": ":user-invalid"
+    },
+    {
+      "id": "selector.user-valid",
+      "root": "css.selectors.user-valid",
+      "kind": "selector",
+      "value": ":user-valid"
+    },
+    {
+      "id": "selector.valid",
+      "root": "css.selectors.valid",
+      "kind": "selector",
+      "value": ":valid"
+    },
+    {
+      "id": "selector.view-transition",
+      "root": "css.selectors.view-transition",
+      "kind": "selector",
+      "value": "::view-transition"
+    },
+    {
+      "id": "selector.view-transition-group",
+      "root": "css.selectors.view-transition-group",
+      "kind": "selector",
+      "value": "::view-transition-group(card)"
+    },
+    {
+      "id": "selector.view-transition-image-pair",
+      "root": "css.selectors.view-transition-image-pair",
+      "kind": "selector",
+      "value": "::view-transition-image-pair(card)"
+    },
+    {
+      "id": "selector.view-transition-new",
+      "root": "css.selectors.view-transition-new",
+      "kind": "selector",
+      "value": "::view-transition-new(card)"
+    },
+    {
+      "id": "selector.view-transition-old",
+      "root": "css.selectors.view-transition-old",
+      "kind": "selector",
+      "value": "::view-transition-old(card)"
+    },
+    {
+      "id": "selector.visited",
+      "root": "css.selectors.visited",
+      "kind": "selector",
+      "value": ":visited"
+    },
+    {
+      "id": "selector.where",
+      "root": "css.selectors.where",
+      "kind": "selector",
+      "value": ":where(.a, .b)"
+    },
+    {
+      "id": "type.abs",
+      "root": "css.types.abs",
+      "kind": "declaration",
+      "property": "width",
+      "value": "abs(-1px)"
+    },
+    {
+      "id": "type.acos",
+      "root": "css.types.acos",
+      "kind": "declaration",
+      "property": "rotate",
+      "value": "acos(.5)"
+    },
+    {
+      "id": "type.angle",
+      "root": "css.types.angle",
+      "kind": "declaration",
+      "property": "rotate",
+      "value": "45deg"
+    },
+    {
+      "id": "type.angle-percentage",
+      "root": "css.types.angle-percentage",
+      "kind": "declaration",
+      "property": "offset-rotate",
+      "value": "45deg"
+    },
+    {
+      "id": "type.asin",
+      "root": "css.types.asin",
+      "kind": "declaration",
+      "property": "rotate",
+      "value": "asin(.5)"
+    },
+    {
+      "id": "type.atan",
+      "root": "css.types.atan",
+      "kind": "declaration",
+      "property": "rotate",
+      "value": "atan(1)"
+    },
+    {
+      "id": "type.atan2",
+      "root": "css.types.atan2",
+      "kind": "declaration",
+      "property": "rotate",
+      "value": "atan2(1, 2)"
+    },
+    {
+      "id": "type.attr",
+      "root": "css.types.attr",
+      "kind": "declaration",
+      "property": "content",
+      "value": "attr(data-label)"
+    },
+    {
+      "id": "type.basic-shape",
+      "root": "css.types.basic-shape",
+      "kind": "declaration",
+      "property": "clip-path",
+      "value": "shape(from 0% 0%, line to 100% 0%, line to 50% 100%, close)"
+    },
+    {
+      "id": "type.blend-mode",
+      "root": "css.types.blend-mode",
+      "kind": "declaration",
+      "property": "mix-blend-mode",
+      "value": "multiply"
+    },
+    {
+      "id": "type.calc",
+      "root": "css.types.calc",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(1px + 2%)"
+    },
+    {
+      "id": "type.calc-keyword",
+      "root": "css.types.calc-keyword",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(infinity * 1px)"
+    },
+    {
+      "id": "type.clamp",
+      "root": "css.types.clamp",
+      "kind": "declaration",
+      "property": "width",
+      "value": "clamp(1px, 2vw, 30px)"
+    },
+    {
+      "id": "type.color",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "oklch(50% .1 30)"
+    },
+    {
+      "id": "type.cos",
+      "root": "css.types.cos",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "cos(45deg)"
+    },
+    {
+      "id": "type.counter",
+      "root": "css.types.counter",
+      "kind": "declaration",
+      "property": "content",
+      "value": "counter(chapter, decimal)"
+    },
+    {
+      "id": "type.counters",
+      "root": "css.types.counters",
+      "kind": "declaration",
+      "property": "content",
+      "value": "counters(chapter, \".\", decimal)"
+    },
+    {
+      "id": "type.dimension",
+      "root": "css.types.dimension",
+      "kind": "declaration",
+      "property": "width",
+      "value": "2px"
+    },
+    {
+      "id": "type.easing-function",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0, .5 25%, 1)"
+    },
+    {
+      "id": "type.env",
+      "root": "css.types.env",
+      "kind": "declaration",
+      "property": "padding-top",
+      "value": "env(safe-area-inset-top, 0px)"
+    },
+    {
+      "id": "type.exp",
+      "root": "css.types.exp",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "exp(0)"
+    },
+    {
+      "id": "type.filter-function",
+      "root": "css.types.filter-function",
+      "kind": "declaration",
+      "property": "filter",
+      "value": "blur(1px)"
+    },
+    {
+      "id": "type.flex",
+      "root": "css.types.flex",
+      "kind": "declaration",
+      "property": "grid-template-columns",
+      "value": "1fr 2fr"
+    },
+    {
+      "id": "type.global_keywords",
+      "root": "css.types.global_keywords",
+      "kind": "declaration",
+      "property": "color",
+      "value": "revert-layer"
+    },
+    {
+      "id": "type.gradient",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "type.hypot",
+      "root": "css.types.hypot",
+      "kind": "declaration",
+      "property": "width",
+      "value": "hypot(3px, 4px)"
+    },
+    {
+      "id": "type.image",
+      "root": "css.types.image",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "image-set(url(a.png) 1x, url(b.png) 2x)"
+    },
+    {
+      "id": "type.integer",
+      "root": "css.types.integer",
+      "kind": "declaration",
+      "property": "z-index",
+      "value": "2"
+    },
+    {
+      "id": "type.length",
+      "root": "css.types.length",
+      "kind": "declaration",
+      "property": "width",
+      "value": "1dvh"
+    },
+    {
+      "id": "type.length-percentage",
+      "root": "css.types.length-percentage",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(10% + 2px)"
+    },
+    {
+      "id": "type.line-style",
+      "root": "css.types.line-style",
+      "kind": "declaration",
+      "property": "border-top-style",
+      "value": "dashed"
+    },
+    {
+      "id": "type.log",
+      "root": "css.types.log",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "log(1)"
+    },
+    {
+      "id": "type.max",
+      "root": "css.types.max",
+      "kind": "declaration",
+      "property": "width",
+      "value": "max(1px, 2vw)"
+    },
+    {
+      "id": "type.min",
+      "root": "css.types.min",
+      "kind": "declaration",
+      "property": "width",
+      "value": "min(1px, 2vw)"
+    },
+    {
+      "id": "type.mod",
+      "root": "css.types.mod",
+      "kind": "declaration",
+      "property": "width",
+      "value": "mod(5px, 2px)"
+    },
+    {
+      "id": "type.number",
+      "root": "css.types.number",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": ".5"
+    },
+    {
+      "id": "type.overflow",
+      "root": "css.types.overflow",
+      "kind": "declaration",
+      "property": "overflow",
+      "value": "clip"
+    },
+    {
+      "id": "type.percentage",
+      "root": "css.types.percentage",
+      "kind": "declaration",
+      "property": "width",
+      "value": "10%"
+    },
+    {
+      "id": "type.position",
+      "root": "css.types.position",
+      "kind": "declaration",
+      "property": "object-position",
+      "value": "right 10px bottom 20px"
+    },
+    {
+      "id": "type.pow",
+      "root": "css.types.pow",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "pow(.5, 2)"
+    },
+    {
+      "id": "type.ratio",
+      "root": "css.types.ratio",
+      "kind": "declaration",
+      "property": "aspect-ratio",
+      "value": "16 / 9"
+    },
+    {
+      "id": "type.ray",
+      "root": "css.types.ray",
+      "kind": "declaration",
+      "property": "offset-path",
+      "value": "ray(45deg closest-side)"
+    },
+    {
+      "id": "type.rem",
+      "root": "css.types.rem",
+      "kind": "declaration",
+      "property": "width",
+      "value": "rem(5px, 2px)"
+    },
+    {
+      "id": "type.resolution",
+      "root": "css.types.resolution",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "image-set(url(a.png) 192dpi)"
+    },
+    {
+      "id": "type.round",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "width",
+      "value": "round(nearest, 11px, 5px)"
+    },
+    {
+      "id": "type.sign",
+      "root": "css.types.sign",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "sign(-1)"
+    },
+    {
+      "id": "type.sin",
+      "root": "css.types.sin",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "sin(45deg)"
+    },
+    {
+      "id": "type.sqrt",
+      "root": "css.types.sqrt",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(sqrt(4) * 1px)"
+    },
+    {
+      "id": "type.string",
+      "root": "css.types.string",
+      "kind": "declaration",
+      "property": "content",
+      "value": "\"hello\""
+    },
+    {
+      "id": "type.tan",
+      "root": "css.types.tan",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "tan(45deg)"
+    },
+    {
+      "id": "type.time",
+      "root": "css.types.time",
+      "kind": "declaration",
+      "property": "animation-duration",
+      "value": "1s"
+    },
+    {
+      "id": "type.transform-function",
+      "root": "css.types.transform-function",
+      "kind": "declaration",
+      "property": "transform",
+      "value": "translate3d(1px, 2px, 3px) rotate(45deg)"
+    },
+    {
+      "id": "type.url",
+      "root": "css.types.url",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "url(\"a.png\")"
+    },
+    {
+      "id": "type.var",
+      "root": "css.types.var",
+      "kind": "declaration",
+      "property": "color",
+      "value": "var(--color, red)"
+    },
+    {
+      "id": "rule.charset",
+      "root": "css.at-rules.charset",
+      "kind": "rule",
+      "value": "@charset \"UTF-8\";"
+    },
+    {
+      "id": "rule.container",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container card style(--theme: dark) { .a { color: red; } }"
+    },
+    {
+      "id": "rule.counter-style",
+      "root": "css.at-rules.counter-style",
+      "kind": "rule",
+      "value": "@counter-style marks { system: cyclic; symbols: \"x\" \"y\"; suffix: \" \"; }"
+    },
+    {
+      "id": "rule.font-face",
+      "root": "css.at-rules.font-face",
+      "kind": "rule",
+      "value": "@font-face { font-family: Probe; src: url(a.woff2) format(\"woff2\"); font-weight: 100 900; }"
+    },
+    {
+      "id": "rule.font-feature-values",
+      "root": "css.at-rules.font-feature-values",
+      "kind": "rule",
+      "value": "@font-feature-values Probe { @styleset { nice: 1 2; } }"
+    },
+    {
+      "id": "rule.font-palette-values",
+      "root": "css.at-rules.font-palette-values",
+      "kind": "rule",
+      "value": "@font-palette-values --brand { font-family: Probe; base-palette: 0; override-colors: 1 red; }"
+    },
+    {
+      "id": "rule.import",
+      "root": "css.at-rules.import",
+      "kind": "rule",
+      "value": "@import url(\"a.css\") layer(base) supports(display: grid) screen;"
+    },
+    {
+      "id": "rule.keyframes",
+      "root": "css.at-rules.keyframes",
+      "kind": "rule",
+      "value": "@keyframes fade { from { opacity: 0; } to { opacity: 1; } }"
+    },
+    {
+      "id": "rule.layer",
+      "root": "css.at-rules.layer",
+      "kind": "rule",
+      "value": "@layer base { .a { color: red; } }"
+    },
+    {
+      "id": "rule.media",
+      "root": "css.at-rules.media",
+      "kind": "rule",
+      "value": "@media (400px < width < 900px) { .a { color: red; } }"
+    },
+    {
+      "id": "rule.namespace",
+      "root": "css.at-rules.namespace",
+      "kind": "rule",
+      "value": "@namespace svg url(\"http://www.w3.org/2000/svg\");"
+    },
+    {
+      "id": "rule.page",
+      "root": "css.at-rules.page",
+      "kind": "rule",
+      "value": "@page :first { size: A4; margin: 1cm; @top-left { content: \"Chapter\"; } }"
+    },
+    {
+      "id": "rule.property",
+      "root": "css.at-rules.property",
+      "kind": "rule",
+      "value": "@property --theme { syntax: \"<color>\"; inherits: false; initial-value: red; }"
+    },
+    {
+      "id": "rule.scope",
+      "root": "css.at-rules.scope",
+      "kind": "rule",
+      "value": "@scope (.card) to (.stop) { :scope { color: red; } }"
+    },
+    {
+      "id": "rule.starting-style",
+      "root": "css.at-rules.starting-style",
+      "kind": "rule",
+      "value": "@starting-style { .a { opacity: 0; } }"
+    },
+    {
+      "id": "rule.supports",
+      "root": "css.at-rules.supports",
+      "kind": "rule",
+      "value": "@supports selector(:has(.a)) and (display: grid) { .a { color: red; } }"
+    },
+    {
+      "id": "feature.baseline-shift",
+      "root": "css.properties.baseline-shift",
+      "kind": "declaration",
+      "property": "baseline-shift",
+      "value": "10%"
+    },
+    {
+      "id": "feature.contrast-color",
+      "root": "css.properties.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "contrast-color(red)"
+    },
+    {
+      "id": "feature.crisp-edges",
+      "root": "css.properties.image-rendering",
+      "kind": "declaration",
+      "property": "image-rendering",
+      "value": "crisp-edges"
+    },
+    {
+      "id": "feature.field-sizing",
+      "root": "css.properties.field-sizing",
+      "kind": "declaration",
+      "property": "field-sizing",
+      "value": "content"
+    },
+    {
+      "id": "feature.font-family-math",
+      "root": "css.properties.font-family",
+      "kind": "declaration",
+      "property": "font-family",
+      "value": "math"
+    },
+    {
+      "id": "feature.rcap",
+      "root": "css.properties.width",
+      "kind": "declaration",
+      "property": "width",
+      "value": "2rcap"
+    },
+    {
+      "id": "feature.rch",
+      "root": "css.properties.width",
+      "kind": "declaration",
+      "property": "width",
+      "value": "2rch"
+    },
+    {
+      "id": "feature.rex",
+      "root": "css.properties.width",
+      "kind": "declaration",
+      "property": "width",
+      "value": "2rex"
+    },
+    {
+      "id": "feature.ric",
+      "root": "css.properties.width",
+      "kind": "declaration",
+      "property": "width",
+      "value": "2ric"
+    },
+    {
+      "id": "feature.text-decoration-skip-ink-all",
+      "root": "css.properties.text-decoration-skip-ink",
+      "kind": "declaration",
+      "property": "text-decoration-skip-ink",
+      "value": "all"
+    },
+    {
+      "id": "feature.text-indent-each-line",
+      "root": "css.properties.text-indent",
+      "kind": "declaration",
+      "property": "text-indent",
+      "value": "2em each-line"
+    },
+    {
+      "id": "feature.text-indent-hanging",
+      "root": "css.properties.text-indent",
+      "kind": "declaration",
+      "property": "text-indent",
+      "value": "2em hanging"
+    },
+    {
+      "id": "property.custom-property",
+      "root": "css.properties.custom-property",
+      "kind": "declaration",
+      "property": "--tokens",
+      "value": "{ a: b; c: d }"
+    },
+    {
+      "id": "gradient.0",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.1",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.2",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.3",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.4",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.5",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.6",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.7",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.8",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.9",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.10",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.11",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "background",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.12",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.13",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.14",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.15",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.16",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.17",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.18",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.19",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.20",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.21",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.22",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.23",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.24",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.25",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.26",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.27",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.28",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.29",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.30",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.31",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.32",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.33",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.34",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.35",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.36",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.37",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.38",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.39",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.40",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.41",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "gradient.42",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "linear-gradient(in oklch, red, blue)"
+    },
+    {
+      "id": "gradient.43",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "linear-gradient(to right in hsl longer hue, RED 10% 20%, blue)"
+    },
+    {
+      "id": "gradient.44",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "radial-gradient(circle at left top in srgb-linear, red, blue)"
+    },
+    {
+      "id": "gradient.45",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "conic-gradient(in oklch from 45deg at left top, red, blue)"
+    },
+    {
+      "id": "gradient.46",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "linear-gradient(in unknown, red, blue)"
+    },
+    {
+      "id": "gradient.47",
+      "root": "css.types.gradient",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "linear-gradient(in srgb longer hue, red, blue)"
+    },
+    {
+      "id": "easing.48",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0,1)"
+    },
+    {
+      "id": "easing.49",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0 0% 20%,1)"
+    },
+    {
+      "id": "easing.50",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0, .3, .7,1)"
+    },
+    {
+      "id": "easing.51",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0 50%, 1 20%, 0)"
+    },
+    {
+      "id": "easing.52",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(50% 0,100% 1)"
+    },
+    {
+      "id": "easing.53",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0 calc(20% + 10%),1)"
+    },
+    {
+      "id": "easing.54",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0)"
+    },
+    {
+      "id": "easing.55",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation-timing-function",
+      "value": "linear(0 0% 20% 30%,1)"
+    },
+    {
+      "id": "easing.56",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0,1)"
+    },
+    {
+      "id": "easing.57",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0 0% 20%,1)"
+    },
+    {
+      "id": "easing.58",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0, .3, .7,1)"
+    },
+    {
+      "id": "easing.59",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0 50%, 1 20%, 0)"
+    },
+    {
+      "id": "easing.60",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(50% 0,100% 1)"
+    },
+    {
+      "id": "easing.61",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0 calc(20% + 10%),1)"
+    },
+    {
+      "id": "easing.62",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0)"
+    },
+    {
+      "id": "easing.63",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition-timing-function",
+      "value": "linear(0 0% 20% 30%,1)"
+    },
+    {
+      "id": "easing.64",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0,1)"
+    },
+    {
+      "id": "easing.65",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0 0% 20%,1)"
+    },
+    {
+      "id": "easing.66",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0, .3, .7,1)"
+    },
+    {
+      "id": "easing.67",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0 50%, 1 20%, 0)"
+    },
+    {
+      "id": "easing.68",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(50% 0,100% 1)"
+    },
+    {
+      "id": "easing.69",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0 calc(20% + 10%),1)"
+    },
+    {
+      "id": "easing.70",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0)"
+    },
+    {
+      "id": "easing.71",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "1s linear(0 0% 20% 30%,1)"
+    },
+    {
+      "id": "easing.72",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0,1)"
+    },
+    {
+      "id": "easing.73",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0 0% 20%,1)"
+    },
+    {
+      "id": "easing.74",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0, .3, .7,1)"
+    },
+    {
+      "id": "easing.75",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0 50%, 1 20%, 0)"
+    },
+    {
+      "id": "easing.76",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(50% 0,100% 1)"
+    },
+    {
+      "id": "easing.77",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0 calc(20% + 10%),1)"
+    },
+    {
+      "id": "easing.78",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0)"
+    },
+    {
+      "id": "easing.79",
+      "root": "css.types.easing-function",
+      "kind": "declaration",
+      "property": "transition",
+      "value": "1s linear(0 0% 20% 30%,1)"
+    },
+    {
+      "id": "selector.attribute-unknown-namespace",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[missing|attr]"
+    },
+    {
+      "id": "selector.attribute-any-namespace",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[*|attr]"
+    },
+    {
+      "id": "selector.attribute-empty-namespace",
+      "root": "css.selectors.attribute",
+      "kind": "selector",
+      "value": "[|attr]"
+    },
+    {
+      "id": "selector.is-single",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is(.valid)"
+    },
+    {
+      "id": "selector.is-unknown-type-namespace",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is(missing|a, .valid)"
+    },
+    {
+      "id": "selector.where-unknown-type-namespace",
+      "root": "css.selectors.where",
+      "kind": "selector",
+      "value": ":where(missing|a, .valid)"
+    },
+    {
+      "id": "selector.is-unknown-attribute-namespace",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is([missing|attr], .valid)"
+    },
+    {
+      "id": "selector.is-empty-after-namespace-recovery",
+      "root": "css.selectors.is",
+      "kind": "selector",
+      "value": ":is([missing|attr])"
+    },
+    {
+      "id": "selector.where-nested-namespace-recovery",
+      "root": "css.selectors.where",
+      "kind": "selector",
+      "value": ":where(:not([missing|attr]), .valid)"
+    },
+    {
+      "id": "selector.not-unknown-attribute-namespace",
+      "root": "css.selectors.not",
+      "kind": "selector",
+      "value": ":not([missing|attr], .valid)"
+    },
+    {
+      "id": "selector.has-unknown-attribute-namespace",
+      "root": "css.selectors.has",
+      "kind": "selector",
+      "value": ":has([missing|attr], .valid)"
+    },
+    {
+      "id": "selector.nth-child-unknown-attribute-namespace",
+      "root": "css.selectors.nth-child",
+      "kind": "selector",
+      "value": ":nth-child(2n of [missing|attr], .valid)"
+    },
+    {
+      "id": "rule.namespace-attribute-and-forgiving-lists",
+      "root": "css.at-rules.namespace",
+      "kind": "rule",
+      "value": "@namespace svg url(\"urn:svg\"); [svg|attr] { color: red; } @media all { :is([missing|attr], [svg|attr]) { color: blue; } }"
+    }
+  ]
+}

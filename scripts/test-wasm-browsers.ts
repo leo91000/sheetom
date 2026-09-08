@@ -27,6 +27,7 @@ const workerSource = `
     try {
       const { createSheetOM } = await import(event.data.moduleUrl);
       const api = await createSheetOM();
+      if (!api.CSS.supports("color", "contrast-color(red)")) throw new Error("Worker CSS namespace missing");
       const sheet = new api.CSSStyleSheet();
       sheet.replaceSync('.worker { color: red; }');
       self.postMessage({ ok: true, css: sheet.serialize() });
@@ -97,6 +98,9 @@ try {
           "padding",
           "72px var(--space, var(--space,",
         );
+        const modern = new first.CSSStyleSheet();
+        modern.replaceSync("@mixin --theme(--color: red) { color: var(--color); @contents; } .card { animation-timing-function: linear(0, 1); background-image: linear-gradient(in oklch, red, blue); @apply --theme(blue); }");
+        const modernState = { mixin: modern.cssRules[0] instanceof first.CSSMixinRule, parameters: modern.cssRules[0].getParameters(), application: modern.cssRules[1].cssRules[0] instanceof first.CSSApplyStatementRule, arguments: modern.cssRules[1].cssRules[0].getArguments(), supports: first.CSS.supports("background-image", "linear-gradient(in oklch, red, blue)"), escaped: first.CSS.escape("0a"), easing: modern.cssRules[1].style.animationTimingFunction };
         const workerResult = await new Promise((resolve, reject) => {
           const worker = new Worker(workerUrl, { type: "module" });
           worker.onmessage = event => {
@@ -107,6 +111,7 @@ try {
           worker.postMessage({ moduleUrl });
         });
         return {
+          modernState,
           frozen: Object.isFrozen(first),
           sharedDefault: first === concurrent,
           independentClasses: first.CSSStyleSheet !== independent.CSSStyleSheet,
@@ -119,6 +124,7 @@ try {
         moduleUrl: `${origin}/index.js`,
         workerUrl: `${origin}/worker.js`,
       });
+      assert.deepEqual(result.modernState, { mixin: true, parameters: [{ name: "--color", type: "*", defaultValue: "red" }], application: true, arguments: ["blue"], supports: true, escaped: "\\30 a", easing: "linear(0 0%, 1 100%)" });
       assert.equal(result.frozen, true, `${browserType.name()} facade is frozen`);
       assert.equal(result.sharedDefault, true, `${browserType.name()} shares default init`);
       assert.equal(

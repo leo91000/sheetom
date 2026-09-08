@@ -12,6 +12,7 @@ import {
   type NativeRuleDescription,
 } from "./internal/native-rule-parser.js";
 import {
+  supportsNativeCss,
   normalizeNativeMedia,
   normalizeNativeSelector,
   parseNativeContainerPrelude,
@@ -36,6 +37,7 @@ import {
 import {
   defaultResourceBudget,
   normalizeResourceBudget,
+  rethrowResourceBudgetError,
   type NativeResourceBudget,
   type SheetOMResourceBudget,
 } from "./internal/resource-budget.js";
@@ -54,6 +56,42 @@ export {
   type SheetOMSerializationErrorCode,
 } from "./serialization-error.js";
 
+/** CSS authoring utilities, without installing or replacing the global CSS namespace. */
+export const CSS = {
+  /** Serialize a DOMString as a CSS identifier, including lone UTF-16 surrogates. */
+  escape(value: string): string {
+    requireArguments(arguments.length, 1, "CSS", "escape");
+    const input = `${value}`;
+    let output = "";
+    for (let index = 0; index < input.length; index += 1) {
+      const code = input.charCodeAt(index);
+      const character = input[index]!;
+      if (code === 0) output += "\uFFFD";
+      else if (code <= 31 || code === 127
+        || (code >= 48 && code <= 57 && (index === 0 || (index === 1 && input[0] === "-")))) {
+        output += `\\${code.toString(16)} `;
+      } else if (input === "-") output += "\\-";
+      else if (code >= 128 || /[a-zA-Z0-9_-]/u.test(character)) output += character;
+      else output += `\\${character}`;
+    }
+    return output;
+  },
+
+  /** Test a declaration or supports condition against the pinned authoring capabilities. */
+  supports(propertyOrCondition: string, value?: string): boolean {
+    requireArguments(arguments.length, 1, "CSS", "supports");
+    try {
+      return arguments.length > 1
+        ? supportsNativeCss(`${propertyOrCondition}`, `${value}`)
+        : supportsNativeCss(`${propertyOrCondition}`);
+    } catch (error) {
+      rethrowResourceBudgetError(error);
+      throw error;
+    }
+  },
+};
+Object.defineProperty(CSS, Symbol.toStringTag, { value: "CSS", configurable: true });
+
 const arrayIndexPattern = /^(0|[1-9]\d*)$/;
 const regularSheetMetadata = new WeakMap<
   object,
@@ -67,7 +105,22 @@ const ruleResourceBudgets = new WeakMap<object, NativeResourceBudget>();
 const sheetResourceBudgets = new WeakMap<object, NativeResourceBudget>();
 const sheetRuleArrays = new WeakMap<object, CSSRule[]>();
 const sheetRuleCounts = new WeakMap<object, number>();
+const sheetNamespaces = new WeakMap<object, string>();
+
+function namespaceText(sheet: CSSStyleSheet | null): string {
+  if (!sheet) return "";
+  return sheetNamespaces.get(sheet) ?? "";
+}
+
+function namespaceRulesText(rules: readonly CSSRule[]): string {
+  return rules.filter(rule => rule instanceof CSSNamespaceRule).map(rule => rule.cssText).join("");
+}
+
+function permitsNamespaceMutation(rules: readonly CSSRule[]): boolean {
+  return rules.every(rule => rule instanceof CSSNamespaceRule || rule instanceof CSSImportRule);
+}
 const functionRuleHeaders = new WeakMap<object, string>();
+const mixinRuleHeaders = new WeakMap<object, string>();
 const unsignedLongRange = 2 ** 32;
 const pageMarginRuleNames = new Set([
   "top-left-corner",
@@ -175,8 +228,9 @@ function namedPropertyToCSS(property: string): string {
 function normalizeSelectorText(
   value: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
+  namespaces = "",
 ): string | null {
-  return normalizeNativeSelector(value, resourceBudget);
+  return normalizeNativeSelector(value, resourceBudget, namespaces);
 }
 
 function toUnsignedLong(value: unknown): number {
@@ -740,6 +794,107 @@ export class CSSFunctionRule extends CSSGroupingRule {
   }
 
   set cssText(_value: string) {}
+}
+
+/** Experimental revision-pinned native CSS mixin definition. */
+export class CSSMixinRule extends CSSGroupingRule {
+  readonly name: string;
+  readonly contents = true;
+  readonly #parameters: readonly FunctionParameter[];
+
+  private constructor(name: string, parameters: readonly FunctionParameter[]) {
+    super(0);
+    this.name = serializeNativeIdentifier(name);
+    this.#parameters = parameters.map(parameter => ({ ...parameter }));
+    const functionHeader = serializeFunctionHeader(name, parameters, "*");
+    const header = functionHeader.replace(/^@function /u, "@mixin ");
+    mixinRuleHeaders.set(this, parameters.length === 0 ? header.slice(0, -2) : header);
+    lockOwnProperties(this, "name", "contents");
+  }
+
+  getParameters(): FunctionParameter[] {
+    return this.#parameters.map(parameter => ({ ...parameter }));
+  }
+
+  override get cssText(): string { return serializeMixinCssText(this); }
+  set cssText(_value: string) {}
+}
+
+/** Experimental native CSS mixin application with a contents block. */
+export class CSSApplyBlockRule extends CSSGroupingRule {
+  readonly name: string;
+  readonly #arguments: readonly string[];
+
+  private constructor(name: string, args: readonly string[], header: string) {
+    super(0);
+    this.name = serializeNativeIdentifier(name);
+    this.#arguments = [...args];
+    mixinRuleHeaders.set(this, header);
+    lockOwnProperties(this, "name");
+  }
+
+  getArguments(): string[] { return [...this.#arguments]; }
+  override get cssText(): string { return serializeMixinCssText(this); }
+  set cssText(_value: string) {}
+}
+
+/** Experimental native CSS mixin application without a contents block. */
+export class CSSApplyStatementRule extends CSSRule {
+  readonly name: string;
+  readonly #arguments: readonly string[];
+  readonly #header: string;
+
+  private constructor(name: string, args: readonly string[], header: string) {
+    super(0);
+    this.name = serializeNativeIdentifier(name);
+    this.#arguments = [...args];
+    this.#header = header;
+    lockOwnProperties(this, "name");
+  }
+
+  getArguments(): string[] { return [...this.#arguments]; }
+  override get cssText(): string { return `${this.#header};`; }
+  set cssText(_value: string) {}
+}
+
+/** Experimental native CSS mixin contents placeholder with a fallback block. */
+export class CSSContentsBlockRule extends CSSGroupingRule {
+  private constructor() {
+    super(0);
+    mixinRuleHeaders.set(this, "@contents");
+  }
+  override get cssText(): string { return serializeMixinCssText(this); }
+  set cssText(_value: string) {}
+}
+
+/** Experimental native CSS mixin contents placeholder without a fallback. */
+export class CSSContentsStatementRule extends CSSRule {
+  private constructor() { super(0); }
+  override get cssText(): string { return "@contents;"; }
+  set cssText(_value: string) {}
+}
+
+function serializeMixinCssText(root: CSSGroupingRule): string {
+  const chunks: string[] = [];
+  const pending: (CSSRule | string)[] = [root];
+  while (pending.length > 0) {
+    const item = pending.pop()!;
+    if (typeof item === "string") { chunks.push(item); continue; }
+    if (!(item instanceof CSSGroupingRule)) { chunks.push(item.cssText); continue; }
+    const header = groupingRuleHeader(item);
+    // The pinned mixin algorithm omits the space before its opening brace.
+    chunks.push(header, item instanceof CSSMixinRule ? "{ " : " { ");
+    pending.push(" }");
+    const children = ruleTree.children(item);
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      pending.push(children[index]!);
+      if (index > 0) pending.push(" ");
+    }
+    if (item instanceof CSSStyleRule && item.style.cssText !== "") {
+      pending.push(children.length ? `${item.style.cssText} ` : item.style.cssText);
+    }
+  }
+  return chunks.join("");
 }
 
 function serializeFunctionHeader(
@@ -1772,6 +1927,10 @@ export class CSSStyleRule extends CSSGroupingRule {
   readonly style: CSSStyleDeclaration;
   #selectorText: string;
 
+  #namespaces(): string {
+    return namespaceText(this.parentStyleSheet);
+  }
+
   private constructor(
     selectorText: string,
     normalized?: typeof normalizedSelectorText,
@@ -1796,6 +1955,7 @@ export class CSSStyleRule extends CSSGroupingRule {
     const normalized = normalizeSelectorText(
       `${value}`,
       ruleResourceBudgets.get(this) ?? defaultResourceBudget,
+      this.#namespaces(),
     );
     if (normalized === null) return;
     this.#selectorText = normalized;
@@ -1890,18 +2050,25 @@ function describeRuleSafe(rule: CSSRule, strict: boolean): RuleSerializationPlan
       children: ruleTree.children(rule),
     };
   }
+  if (rule instanceof CSSApplyStatementRule && rule.getArguments().length === 1 && rule.getArguments()[0] === "") {
+    return { kind: "raw", cssText: `@apply ${rule.name}({ });` };
+  }
   if (!(rule instanceof CSSGroupingRule)) {
     return { kind: "raw", cssText: rule.cssText };
   }
 
   return {
     kind: "block",
-    header: groupingRuleHeader(rule),
+    header: rule instanceof CSSApplyBlockRule && rule.getArguments().length === 1 && rule.getArguments()[0] === ""
+      ? `@apply ${rule.name}({ })` : groupingRuleHeader(rule),
     children: ruleTree.children(rule),
   };
 }
 
 function groupingRuleHeader(rule: CSSGroupingRule): string {
+  const mixinHeader = mixinRuleHeaders.get(rule);
+  if (mixinHeader !== undefined) return mixinHeader;
+  if (rule instanceof CSSStyleRule) return rule.selectorText;
   if (rule instanceof CSSFunctionRule) {
     return functionRuleHeaders.get(rule) ?? "@function";
   }
@@ -1975,6 +2142,7 @@ function createRuleFromNative(
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
   resourceBudget: NativeResourceBudget,
+  parentRule: CSSRule | null = null,
 ): CSSRule | null {
   return constructWithResourceBudget(() =>
     createRuleTreeFromNative(
@@ -1982,6 +2150,7 @@ function createRuleFromNative(
       reportDiagnostic,
       preserveImports,
       resourceBudget,
+      parentRule,
     ),
     resourceBudget,
   );
@@ -1992,6 +2161,7 @@ function createRuleTreeFromNative(
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
   resourceBudget: NativeResourceBudget,
+  parentRule: CSSRule | null,
 ): CSSRule | null {
   const root = createRuleShellFromNative(
     description,
@@ -2000,6 +2170,7 @@ function createRuleTreeFromNative(
     resourceBudget,
   );
   if (!root) return null;
+  attachRuleTree(root, parentRule, parentRule?.parentStyleSheet ?? null);
 
   const pending = [{ description, rule: root }];
   while (pending.length > 0) {
@@ -2016,6 +2187,7 @@ function createRuleTreeFromNative(
     const childFrames: { description: NativeRuleDescription; rule: CSSRule }[] = [];
     for (const childDescription of current.description.children) {
       if (isNativeMetadataRule(childDescription)) continue;
+      if (!isMixinContextAllowed(childDescription.kind, current.rule)) continue;
       const child = createRuleShellFromNative(
         childDescription,
         reportDiagnostic,
@@ -2023,7 +2195,8 @@ function createRuleTreeFromNative(
         resourceBudget,
       );
       if (!child) continue;
-      if (child instanceof CSSFunctionDeclarations && child.style.length === 0) continue;
+      if ((child instanceof CSSFunctionDeclarations || child instanceof CSSNestedDeclarations)
+        && child.style.length === 0) continue;
       if (current.rule instanceof CSSKeyframesRule && !(child instanceof CSSKeyframeRule)) {
         continue;
       }
@@ -2052,6 +2225,7 @@ function createRuleTreeFromNative(
 
 function isNativeMetadataRule(description: NativeRuleDescription): boolean {
   return description.kind === "function-parameter"
+    || description.kind === "mixin-argument"
     || description.kind === "property-descriptor"
     || description.kind === "view-transition-type"
     || description.kind === "layer-name";
@@ -2201,7 +2375,8 @@ function createRuleShellFromNative(
           .map(candidate => candidate.prelude),
         description.cssText,
       ]);
-    case "function": {
+    case "function":
+    case "mixin": {
       const parameters = description.children
         .filter(candidate => candidate.kind === "function-parameter")
         .map(candidate => {
@@ -2219,13 +2394,30 @@ function createRuleShellFromNative(
                 type: candidate.declarations,
               };
         });
-      rule = constructWebIDL<CSSFunctionRule>(CSSFunctionRule, [
-        description.prelude,
-        parameters,
-        description.declarations,
-      ]);
+      rule = description.kind === "mixin"
+        ? constructWebIDL<CSSMixinRule>(CSSMixinRule, [description.prelude, parameters])
+        : constructWebIDL<CSSFunctionRule>(CSSFunctionRule, [
+            description.prelude, parameters, description.declarations,
+          ]);
       break;
     }
+    case "apply-block":
+    case "apply-statement": {
+      const arguments_ = description.children.filter(child => child.kind === "mixin-argument");
+      const args = arguments_.map(argument => argument.declarations);
+      const header = `@apply ${serializeNativeIdentifier(description.prelude)}${args.length
+        ? `(${arguments_.map(argument => argument.cssText).join(", ")})` : ""}`;
+      rule = description.kind === "apply-block"
+        ? constructWebIDL<CSSApplyBlockRule>(CSSApplyBlockRule, [description.prelude, args, header])
+        : constructWebIDL<CSSApplyStatementRule>(CSSApplyStatementRule, [description.prelude, args, header]);
+      break;
+    }
+    case "contents-block":
+      rule = constructWebIDL<CSSContentsBlockRule>(CSSContentsBlockRule);
+      break;
+    case "contents-statement":
+      rule = constructWebIDL<CSSContentsStatementRule>(CSSContentsStatementRule);
+      break;
     case "namespace":
       return constructWebIDL<CSSNamespaceRule>(CSSNamespaceRule, [
         nativeRuleDescriptor(description, "namespace-uri"),
@@ -2294,6 +2486,7 @@ function parseStrictRule(
   preserveImports = false,
   parentRule: CSSGroupingRule | null = null,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
+  namespaces = namespaceText(parentRule?.parentStyleSheet ?? null),
 ): CSSRule | null {
   if (parentRule instanceof CSSPageRule) {
     const page = parseNativeRule(`@page { ${ruleText} }`, resourceBudget);
@@ -2312,12 +2505,43 @@ function parseStrictRule(
       ? parseNativeRuleWithErrorRecovery(ruleText, resourceBudget)
       : null);
   if (!description || (description.kind === "import" && !preserveImports)) return null;
+  if (!isMixinContextAllowed(description.kind, parentRule)) return null;
+  const validSelector = (rule: NativeRuleDescription): boolean => {
+    if (rule.kind !== "style" || !rule.prelude.includes("|")) return true;
+    const normalized = normalizeNativeSelector(rule.prelude, resourceBudget, namespaces);
+    if (normalized === null) return false;
+    rule.prelude = normalized;
+    return true;
+  };
+  if (!validSelector(description)) return null;
+  const pending = [description];
+  while (pending.length) {
+    const current = pending.pop()!;
+    current.children = current.children.filter(validSelector);
+    for (const child of current.children) pending.push(child);
+  }
   return createRuleFromNative(
     description,
     reportDiagnostic,
     preserveImports,
     resourceBudget,
+    parentRule,
   );
+}
+
+function isMixinContextAllowed(kind: string, parent: CSSRule | null): boolean {
+  if (!["mixin", "apply-block", "apply-statement", "contents-block", "contents-statement", "private"].includes(kind)) {
+    return true;
+  }
+  let nested = false;
+  let mixin = false;
+  for (let current = parent; current; current = current.parentRule) {
+    if (current instanceof CSSFunctionRule) return false;
+    if (current instanceof CSSStyleRule || current instanceof CSSMixinRule) nested = true;
+    if (current instanceof CSSMixinRule) mixin = true;
+  }
+  if (kind === "mixin") return !nested;
+  return kind.startsWith("contents-") ? mixin : nested;
 }
 
 function hasFunctionAncestor(rule: CSSRule): boolean {
@@ -2356,7 +2580,9 @@ function parseStyleSheetRules(
   reportDiagnostic: ReportDiagnostic,
   preserveImports: boolean,
   resourceBudget: NativeResourceBudget,
-): CSSRule[] {
+): { rules: CSSRule[]; namespaces: string } {
+  let namespaces = "";
+  let namespaceRulesAllowed = true;
   const rules: CSSRule[] = [];
   let parsedRuleCount = 0;
   for (const rawRule of scanTopLevelRules(cssText, resourceBudget)) {
@@ -2366,8 +2592,13 @@ function parseStyleSheetRules(
       preserveImports,
       null,
       resourceBudget,
+      namespaces,
     );
     if (rule) {
+      if (rule instanceof CSSNamespaceRule) {
+        if (!namespaceRulesAllowed) continue;
+        namespaces += rule.cssText;
+      } else if (!(rule instanceof CSSImportRule)) namespaceRulesAllowed = false;
       parsedRuleCount += ruleForestSize([rule]);
       assertRuleCountBudget(parsedRuleCount, resourceBudget);
       rules.push(rule);
@@ -2383,19 +2614,41 @@ function parseStyleSheetRules(
     rules.push(opaque);
   }
 
-  return rules;
+  return { rules, namespaces };
 }
 
-/** A mutable, browser-shaped authoring stylesheet. */
-export class CSSStyleSheet {
-  readonly cssRules: CSSRuleList;
+const stylesheetConstructionKey = Symbol("StyleSheet construction");
+
+/** Shared stylesheet metadata. Instances are created through CSSStyleSheet. */
+export class StyleSheet {
   readonly media: MediaList;
   readonly ownerNode: null = null;
   readonly parentStyleSheet: null = null;
-  readonly ownerRule: null = null;
   readonly title: null = null;
   readonly type = "text/css";
   disabled: boolean;
+
+  protected constructor();
+  /** @internal */
+  protected constructor(options: CSSStyleSheetOptions, resourceBudget: NativeResourceBudget, key: symbol);
+  protected constructor(options: CSSStyleSheetOptions = {}, resourceBudget: NativeResourceBudget = defaultResourceBudget, key?: symbol) {
+    if (key !== stylesheetConstructionKey) throw new TypeError("Illegal constructor");
+    const media = options.media === undefined ? "" : `${options.media}`;
+    this.media = constructWithResourceBudget(
+      () => constructWebIDL<MediaList>(MediaList, [media]), resourceBudget,
+    );
+    this.disabled = Boolean(options.disabled);
+  }
+
+  get href(): string | null {
+    return regularSheetMetadata.get(this)?.href ?? null;
+  }
+}
+
+/** A mutable, browser-shaped authoring stylesheet. */
+export class CSSStyleSheet extends StyleSheet {
+  readonly cssRules: CSSRuleList;
+  readonly ownerRule: null = null;
 
   readonly #rules: CSSRule[] = [];
   readonly #diagnostics: SheetOMDiagnostic[] | null;
@@ -2404,21 +2657,15 @@ export class CSSStyleSheet {
   constructor(options: CSSStyleSheetOptions | null = {}) {
     const normalizedOptions = options ?? {};
     const resourceBudget = normalizeResourceBudget(normalizedOptions.resourceBudget);
+    super(normalizedOptions, resourceBudget, stylesheetConstructionKey);
     sheetResourceBudgets.set(this, resourceBudget);
     sheetRuleArrays.set(this, this.#rules);
     sheetRuleCounts.set(this, 0);
+    sheetNamespaces.set(this, "");
     this.#diagnostics = Boolean(normalizedOptions.diagnostics) ? [] : null;
     this.#constructedBaseURL = normalizedOptions.baseURL === undefined
       ? "about:blank"
       : `${normalizedOptions.baseURL}`;
-    const media = normalizedOptions.media === undefined
-      ? ""
-      : `${normalizedOptions.media}`;
-    this.media = constructWithResourceBudget(
-      () => constructWebIDL<MediaList>(MediaList, [media]),
-      resourceBudget,
-    );
-    this.disabled = Boolean(normalizedOptions.disabled);
     this.cssRules = constructInternally(
       () => constructWebIDL<CSSRuleList>(CSSRuleList, [this.#rules]),
     );
@@ -2432,10 +2679,6 @@ export class CSSStyleSheet {
       "title",
       "type",
     );
-  }
-
-  get href(): string | null {
-    return regularSheetMetadata.get(this)?.href ?? null;
   }
 
   get baseURL(): string {
@@ -2461,9 +2704,13 @@ export class CSSStyleSheet {
       regular,
       null,
       resourceBudget,
+      namespaceText(this),
     );
     if (!rule) throw new DOMException("The rule could not be parsed.", "SyntaxError");
 
+    if (rule instanceof CSSNamespaceRule && !permitsNamespaceMutation(this.#rules)) {
+      throw new DOMException("Namespace rules cannot change after other rules exist.", "InvalidStateError");
+    }
     const precedingRules = this.#rules.slice(0, normalizedIndex);
     const followingRules = this.#rules.slice(normalizedIndex);
     const invalidImportOrder = rule instanceof CSSImportRule
@@ -2476,6 +2723,7 @@ export class CSSStyleSheet {
     const insertedCount = assertRuleInsertionBudget(this, rule, resourceBudget);
     attachRuleTree(rule, null, this);
     this.#rules.splice(normalizedIndex, 0, rule);
+    if (rule instanceof CSSNamespaceRule) sheetNamespaces.set(this, namespaceRulesText(this.#rules));
     adjustSheetRuleCount(this, insertedCount);
     return normalizedIndex;
   }
@@ -2487,15 +2735,19 @@ export class CSSStyleSheet {
       throw new DOMException("The index is outside the allowed range.", "IndexSizeError");
     }
 
+    if (this.#rules[normalizedIndex] instanceof CSSNamespaceRule && !permitsNamespaceMutation(this.#rules)) {
+      throw new DOMException("Namespace rules cannot change while other rules exist.", "InvalidStateError");
+    }
     const [removed] = this.#rules.splice(normalizedIndex, 1);
     if (!removed) return;
+    if (removed instanceof CSSNamespaceRule) sheetNamespaces.set(this, namespaceRulesText(this.#rules));
     adjustSheetRuleCount(this, -ruleForestSize([removed]));
     attachRuleTree(removed, null, null);
   }
 
   replaceSync(cssText: string): void {
     requireArguments(arguments.length, 1, "CSSStyleSheet", "replaceSync");
-    const replacement = parseStyleSheetRules(
+    const { rules: replacement, namespaces } = parseStyleSheetRules(
       `${cssText}`,
       this.#reportDiagnostic,
       regularSheetMetadata.has(this),
@@ -2505,6 +2757,7 @@ export class CSSStyleSheet {
     for (const rule of this.#rules) {
       attachRuleTree(rule, null, null);
     }
+    sheetNamespaces.set(this, namespaces);
     for (const rule of replacement) attachRuleTree(rule, null, this);
 
     this.#rules.splice(0, this.#rules.length, ...replacement);

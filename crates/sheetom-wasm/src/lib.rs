@@ -3,7 +3,7 @@
 use js_sys::{Array, Error as JsError};
 use sheetom_core::{
     canonicalize_declaration_block_with_limits as canonicalize, inspect_property_with_limits,
-    normalize_media_text_with_limits, normalize_selector_text_with_limits,
+    normalize_media_text_with_limits, normalize_selector_text_in_namespaces,
     normalize_supports_text_with_limits, parse_container_prelude_with_limits,
     parse_counter_style_descriptor, parse_counter_style_descriptors, parse_counter_style_name,
     parse_recovered_rule_tree_with_limits, parse_recovered_single_rule_tree_with_limits,
@@ -221,14 +221,16 @@ pub fn engine_abi_identity() -> String {
 #[wasm_bindgen(js_name = normalizeSelector)]
 pub fn normalize_selector(
     source: String,
+    namespaces: Option<String>,
     max_stylesheet_bytes: Option<u32>,
     max_declaration_value_bytes: Option<u32>,
     max_nesting_depth: Option<u32>,
     max_rules: Option<u32>,
     max_declarations_per_block: Option<u32>,
 ) -> Result<String, JsValue> {
-    normalize_selector_text_with_limits(
+    normalize_selector_text_in_namespaces(
         &source,
+        namespaces.as_deref().unwrap_or(""),
         resource_limits(
             max_stylesheet_bytes,
             max_declaration_value_bytes,
@@ -282,6 +284,11 @@ pub fn normalize_supports(
         ),
     )
     .map_err(engine_error)
+}
+
+#[wasm_bindgen(js_name = supportsCss)]
+pub fn supports_css(source: String, value: Option<String>) -> Result<bool, JsValue> {
+    sheetom_core::css_supports(&source, value.as_deref()).map_err(engine_error)
 }
 
 #[wasm_bindgen(js_name = parseContainerPreludeJson)]

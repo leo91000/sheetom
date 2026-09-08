@@ -24,6 +24,13 @@ fidelity. Conversely, `serialize()` is a SheetOM extension: browsers reparse its
 output and expose the equivalent object model rather than implementing the same
 method.
 
+## Dated authoring target
+
+The unreleased June 2026 target is defined by the [dated inventory and evidence
+mapping](./css-june-2026-parity-evidence.md). It adds five experimental mixin
+interfaces under an exact CSSWG revision. The target date refers to Web Platform
+Baseline availability; it is separate from the versions of the browser oracles.
+
 ## Browser precedence
 
 SheetOM follows standards and behavior shared by the pinned browser engines.
