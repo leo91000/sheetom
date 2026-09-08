@@ -132,6 +132,51 @@ pub(crate) fn project_observable_value(name: &str, source: &str) -> Option<Strin
         .map(|projection| projection.observable)
 }
 
+fn serialize_embedded_gradients(source: &str) -> String {
+    let mut tokenizer = TokenizerWithSpans::new(source);
+    let mut blocks = Vec::new();
+    let mut edits = Vec::new();
+    while let Ok(span) = tokenizer.next_token() {
+        match span.token {
+            Token::Function(name) => blocks.push(
+                name.to_ascii_lowercase()
+                    .ends_with("gradient")
+                    .then_some(span.start.byte_index()),
+            ),
+            Token::ParenthesisBlock | Token::SquareBracketBlock | Token::CurlyBracketBlock => {
+                blocks.push(None)
+            }
+            Token::CloseParenthesis | Token::CloseSquareBracket | Token::CloseCurlyBracket => {
+                if let Some(Some(start)) = blocks.pop() {
+                    let end = span.end.byte_index();
+                    if let Ok(Some(value)) = crate::geometric_value::parse_geometric_property(
+                        "shape-outside",
+                        &source[start..end],
+                    ) {
+                        if let Ok(Some(value)) = value.gradient_observable_value() {
+                            edits.push((start, end, serialize_gradient_observable(&value)));
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    edits.sort_by_key(|(start, _, _)| *start);
+    let mut output = String::new();
+    let mut cursor = 0;
+    for (start, end, value) in edits {
+        if start < cursor {
+            continue;
+        }
+        output.push_str(&source[cursor..start]);
+        output.push_str(&value);
+        cursor = end;
+    }
+    output.push_str(&source[cursor..]);
+    output
+}
+
 fn serialize_gradient_observable(input: &str) -> String {
     let mut value = canonicalize_unquoted_urls(input);
     value = replace_gradient_color_tokens(&value);
@@ -437,8 +482,8 @@ fn serialize_typed_observable(
     if starts_image_set_function(closed) {
         return serialize_gradient_observable(closed);
     }
-    if closed.contains("gradient(") {
-        return closed.to_owned();
+    if closed.to_ascii_lowercase().contains("gradient(") {
+        return serialize_embedded_gradients(closed);
     }
     serialize_default_observable(input, closed, canonical, recovered)
 }

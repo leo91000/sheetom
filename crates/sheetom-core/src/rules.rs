@@ -23,6 +23,9 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
 };
 
+#[path = "mixin_rule.rs"]
+mod mixin_rule;
+
 thread_local! {
     static ACTIVE_RESOURCE_LIMITS: Cell<ResourceLimits> = Cell::new(ResourceLimits::default());
 }
@@ -275,17 +278,64 @@ pub fn normalize_selector_text_with_limits(
 }
 
 fn normalize_selector_text_active(source: &str) -> Result<String, EngineError> {
-    let rule_source = format!("{source}{{}} ");
+    normalize_selector_in_context(source, "")
+}
+
+pub fn normalize_selector_text_in_namespaces(
+    source: &str,
+    namespaces: &str,
+    limits: ResourceLimits,
+) -> Result<String, EngineError> {
+    with_resource_limits(limits, || normalize_selector_in_context(source, namespaces))
+}
+
+fn normalize_selector_in_context(source: &str, namespaces: &str) -> Result<String, EngineError> {
+    if is_at_rule_source(source) {
+        return Err(EngineError::Parse("invalid selector".to_owned()));
+    }
+    let rule_source = format!("{namespaces}{source}{{}} ");
     with_internal_wrapper_budget(source, &rule_source, || {
         run_parser_operation(&rule_source, || {
             let sheet = StyleSheet::parse(&rule_source, ParserOptions::default())
                 .map_err(|error| EngineError::Parse(error.to_string()))?;
-            let Some(CssRule::Style(rule)) = sheet.rules.0.first() else {
+            let Some(CssRule::Style(rule)) = sheet.rules.0.last() else {
                 return Err(EngineError::Parse("invalid selector list".to_owned()));
             };
-            rule.selectors
+            let prefixes = sheet
+                .rules
+                .0
+                .iter()
+                .filter_map(|rule| match rule {
+                    CssRule::Namespace(rule) => {
+                        rule.prefix.as_ref().map(|prefix| prefix.0.as_ref())
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            if !crate::selector_cssom::all_components(
+                &rule.selectors,
+                |component| match component {
+                    lightningcss::selector::Component::Namespace(prefix, _) => {
+                        prefixes.contains(&prefix.0.as_ref())
+                    }
+                    _ => true,
+                },
+            ) {
+                return Err(EngineError::Parse("unknown selector namespace".to_owned()));
+            }
+            let default_namespace = sheet
+                .rules
+                .0
+                .iter()
+                .any(|rule| matches!(rule, CssRule::Namespace(rule) if rule.prefix.is_none()));
+            let serialized = rule
+                .selectors
                 .to_css_string(PrinterOptions::default())
-                .map_err(|error| EngineError::Serialize(error.to_string()))
+                .map_err(|error| EngineError::Serialize(error.to_string()))?;
+            Ok(crate::selector_cssom::serialize(
+                &serialized,
+                default_namespace,
+            ))
         })
     })
 }
@@ -920,6 +970,9 @@ fn parse_recovered_rule_tree_inner(source: &str, depth: usize) -> Result<ParsedR
             actual: depth,
             limit: limits.max_nesting_depth,
         });
+    }
+    if mixin_rule::is_mixin_syntax(source) {
+        return mixin_rule::parse(source, depth);
     }
     if scan_safety_metrics(source).maximum_depth > LARGE_STACK_DEPTH_THRESHOLD {
         if let Some(parsed) = recover_function_tree_iterative(source, depth) {
@@ -2041,10 +2094,16 @@ fn parse_font_feature_entries(source: &str) -> Option<Vec<ParsedRule>> {
 }
 
 fn recover_style_body(probe: &mut ParsedRule, body: &str, depth: usize) -> Result<(), EngineError> {
-    let fragments = scan_recovered_block_items(body);
+    let fragments = mixin_rule::scan_items(body)?;
     let mut declarations = Vec::new();
     let mut found_child = false;
     for fragment in fragments {
+        if matches!(
+            mixin_rule::keyword(fragment).as_deref(),
+            Some("mixin" | "contents")
+        ) {
+            continue;
+        }
         match parse_recovered_rule_tree_inner(fragment, depth + 1) {
             Ok(child) => {
                 flush_nested_declarations(probe, &mut declarations, found_child);
@@ -2317,10 +2376,13 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
     let parsed = match rule {
         CssRule::Style(rule) => ParsedRule {
             kind: "style".to_owned(),
-            prelude: rule
-                .selectors
-                .to_css_string(PrinterOptions::default())
-                .map_err(|error| EngineError::Serialize(error.to_string()))?,
+            prelude: crate::selector_cssom::serialize(
+                &rule
+                    .selectors
+                    .to_css_string(PrinterOptions::default())
+                    .map_err(|error| EngineError::Serialize(error.to_string()))?,
+                true,
+            ),
             declarations: serialize(&rule.declarations)?,
             children: convert_rule_list(&rule.rules, count)?,
             css_text,
@@ -2657,7 +2719,13 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
         },
         CssRule::Ignored => return Ok(None),
         _ => {
-            if let Some((header, body)) = split_outer_block(&css_text) {
+            if mixin_rule::is_mixin_syntax(&css_text) {
+                let Ok(parsed) = mixin_rule::parse(&css_text, 0) else {
+                    return Ok(None);
+                };
+                add_parsed_descendant_count(&parsed, count)?;
+                parsed
+            } else if let Some((header, body)) = split_outer_block(&css_text) {
                 if is_function_rule_header(header) {
                     let Some(prelude) = parse_function_prelude(header) else {
                         return Ok(None);
@@ -2713,7 +2781,11 @@ fn parsed_rule_node_count(rule: &ParsedRule) -> usize {
 fn parsed_rule_counts_as_node(rule: &ParsedRule) -> bool {
     !matches!(
         rule.kind.as_str(),
-        "function-parameter" | "property-descriptor" | "view-transition-type" | "layer-name"
+        "function-parameter"
+            | "mixin-argument"
+            | "property-descriptor"
+            | "view-transition-type"
+            | "layer-name"
     )
 }
 

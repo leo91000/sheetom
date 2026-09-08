@@ -28,6 +28,13 @@ with constructors from the same returned facade. Initialization and traps use
 `SheetOMWasmBindingError` with stable `SHEETOM_WASM_*` codes; ordinary CSS and
 Resource Budget failures retain the native facade contract.
 
+## CSS utilities
+
+The exported `CSS` object provides `escape(value)` and the two
+`supports(condition)` / `supports(property, value)` overloads. They use the
+revision-pinned authoring capabilities and do not install a global namespace.
+`CSSStyleSheet` inherits from the exported, nonconstructible `StyleSheet` base.
+
 ## Stylesheets and identity
 
 `CSSStyleSheet.cssRules` is stable and live. `insertRule` and `deleteRule` use
@@ -178,6 +185,17 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
   semantics. As in Chromium 151, assigning `result` through its named setter
   or `setProperty()` is a no-op; `cssText` replacement and `removeProperty()`
   remain live.
+
+- Experimental `CSSMixinRule` exposes `name`, `contents`, fresh parameter
+  records from `getParameters()`, and live grouping mutation.
+- Experimental `CSSApplyBlockRule` / `CSSApplyStatementRule` expose `name`
+  and fresh `getArguments()` snapshots. Block applications own live `cssRules`.
+- Experimental `CSSContentsBlockRule` / `CSSContentsStatementRule` distinguish
+  a fallback block from a statement. Declaration runs inside mixin-related
+  blocks are editable `CSSNestedDeclarations`. Mixins are never expanded.
+
+These five mixin interfaces are available by default under the exact draft
+revision and [explicit resolutions](./css-june-2026-parity-evidence.md).
 
 Unknown metadata and future rules can be retained and serialized, but are
 read-only until a standards-defined mutable interface is implemented.

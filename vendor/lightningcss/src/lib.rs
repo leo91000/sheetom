@@ -19488,14 +19488,13 @@ mod tests {
       ".foo{mask:linear-gradient(90deg,#f000,red)}",
     );
     // Compare relative color
-    // TODO: Support <color-interpolation-method>
     minify_test(
       ".foo { mask: linear-gradient(90deg in hsl longer hue, rgb(from red r g b / 0), red) }",
-      ".foo{mask:linear-gradient(90deg in hsl longer hue, rgb(from red r g b/0), red)}",
+      ".foo{mask:linear-gradient(90deg in hsl longer hue,rgb(from red r g b/0),red)}",
     );
     minify_test(
       ".foo { mask: linear-gradient(90deg in hsl longer hue, alpha(from red / 0%), red) }",
-      ".foo{mask:linear-gradient(90deg in hsl longer hue, #f000, red)}",
+      ".foo{mask:linear-gradient(90deg in hsl longer hue,#f000,red)}",
     );
 
     minify_test(

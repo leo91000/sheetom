@@ -84,3 +84,10 @@ new SheetOM.CSSCounterStyleRule("custom");
 new SheetOM.CSSFontFeatureValuesMap();
 // @ts-expect-error CSSFontFeatureValuesRule is not publicly constructible.
 new SheetOM.CSSFontFeatureValuesRule("Inter");
+
+// @ts-expect-error StyleSheet is a nonconstructible CSSOM base interface.
+new SheetOM.StyleSheet();
+// @ts-expect-error Mixin objects are created by stylesheet parsing.
+new SheetOM.CSSMixinRule();
+// @ts-expect-error Application objects are created by stylesheet parsing.
+new SheetOM.CSSApplyStatementRule();

@@ -131,7 +131,8 @@
     "test:browser:matrix": "SHEETOM_BROWSER_MATRIX=1 vitest run --project browser",
     "test:differential": "npm run build && node scripts/browser-differential.ts",
     "typecheck": "tsc --noEmit && npm run typecheck:scripts",
-    "typecheck:scripts": "tsc --project tsconfig.scripts.json"
+    "typecheck:scripts": "tsc --project tsconfig.scripts.json",
+    "css:target:check": "node scripts/generate-css-feature-target.ts && node scripts/generate-css-authoring-coverage.ts && node scripts/check-css-authoring-target.ts && node scripts/test-modern-css-backends.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.0",

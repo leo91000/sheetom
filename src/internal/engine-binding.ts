@@ -60,8 +60,9 @@ export interface EngineBindingIdentityProvider {
 
 /** Transport-neutral private contract implemented by native and WebAssembly engines. */
 export interface EngineBinding extends EngineBindingIdentityProvider {
+  supportsCss(source: string, value?: string): boolean;
   normalizeMedia(source: string, ...budget: EngineBudgetArguments): string;
-  normalizeSelector(source: string, ...budget: EngineBudgetArguments): string;
+  normalizeSelector(source: string, namespaces: string, ...budget: EngineBudgetArguments): string;
   normalizeSupports(source: string, ...budget: EngineBudgetArguments): string;
   parseContainerPreludeJson(source: string, ...budget: EngineBudgetArguments): string;
   parseCounterStyleDescriptorValue(

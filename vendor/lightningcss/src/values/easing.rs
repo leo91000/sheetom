@@ -22,6 +22,8 @@ use std::fmt::Write;
 pub enum EasingFunction {
   /// A linear easing function.
   Linear,
+  /// A piecewise linear easing function, with normalized input positions.
+  LinearFunction(Vec<LinearStop>),
   /// Equivalent to `cubic-bezier(0.25, 0.1, 0.25, 1)`.
   Ease,
   /// Equivalent to `cubic-bezier(0.42, 0, 1, 1)`.
@@ -49,6 +51,60 @@ pub enum EasingFunction {
     #[cfg_attr(feature = "serde", serde(default))]
     position: StepPosition,
   },
+}
+
+/// A point on a piecewise linear easing function.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct LinearStop {
+  /// Output progress.
+  pub output: CSSNumber,
+  /// Input progress, as a fraction of one.
+  pub input: CSSNumber,
+}
+
+fn parse_linear<'i, 't>(input: &mut Parser<'i, 't>) -> Result<EasingFunction, ParseError<'i, ParserError<'i>>> {
+  use crate::values::percentage::Percentage;
+  let stops = input.parse_comma_separated(|input| {
+    let mut output = None;
+    let mut positions = Vec::new();
+    while !input.is_exhausted() {
+      if output.is_none() {
+        if let Ok(value) = input.try_parse(CSSNumber::parse) { output = Some(value); continue; }
+      }
+      if positions.len() == 2 { return Err(input.new_custom_error(ParserError::InvalidValue)); }
+      positions.push(Percentage::parse(input)?.0);
+    }
+    let output = output.ok_or_else(|| input.new_custom_error(ParserError::InvalidValue))?;
+    Ok((output, positions))
+  })?;
+  if stops.len() < 2 { return Err(input.new_custom_error(ParserError::InvalidValue)); }
+  let mut points = Vec::new();
+  for (output, positions) in stops {
+    if positions.is_empty() { points.push((output, None)); }
+    else { for position in positions { points.push((output, Some(position))); } }
+  }
+  let last = points.len() - 1;
+  points[0].1.get_or_insert(0.0);
+  let mut largest = f32::NEG_INFINITY;
+  for (index, (_, position)) in points.iter_mut().enumerate() {
+    if index == last && position.is_none() { *position = Some(1.0_f32.max(largest)); }
+    if let Some(position) = position { *position = position.max(largest); largest = *position; }
+  }
+  let mut previous = 0;
+  for index in 1..points.len() {
+    if let Some(end) = points[index].1 {
+      let start = points[previous].1.unwrap_or(0.0);
+      for middle in previous + 1..index {
+        points[middle].1 = Some(start + (end - start) * (middle - previous) as f32 / (index - previous) as f32);
+      }
+      previous = index;
+    }
+  }
+  Ok(EasingFunction::LinearFunction(points.into_iter().map(|(output, input)| LinearStop { output, input: input.unwrap_or(0.0) }).collect()))
 }
 
 impl EasingFunction {
@@ -85,6 +141,7 @@ impl<'i> Parse<'i> for EasingFunction {
     let function = input.expect_function()?.clone();
     input.parse_nested_block(|input| {
       match_ignore_ascii_case! { &function,
+        "linear" => parse_linear(input),
         "cubic-bezier" => {
           let x1 = CSSNumber::parse(input)?;
           input.expect_comma()?;
@@ -116,6 +173,16 @@ impl ToCss for EasingFunction {
   {
     match self {
       EasingFunction::Linear => dest.write_str("linear"),
+      EasingFunction::LinearFunction(stops) => {
+        dest.write_str("linear(")?;
+        for (index, stop) in stops.iter().enumerate() {
+          if index > 0 { dest.delim(',', false)?; }
+          stop.output.to_css(dest)?;
+          dest.write_char(' ')?;
+          crate::values::percentage::Percentage(stop.input).to_css(dest)?;
+        }
+        dest.write_char(')')
+      },
       EasingFunction::Ease => dest.write_str("ease"),
       EasingFunction::EaseIn => dest.write_str("ease-in"),
       EasingFunction::EaseOut => dest.write_str("ease-out"),
@@ -231,5 +298,28 @@ impl<'i> Parse<'i> for StepPosition {
       _ => return Err(location.new_unexpected_token_error(Token::Ident(ident.clone())))
     };
     Ok(keyword)
+  }
+}
+
+#[cfg(test)]
+mod sheetom_linear_tests {
+  use super::*;
+  use crate::stylesheet::PrinterOptions;
+
+  #[test]
+  fn normalizes_piecewise_linear_points() {
+    for (source, expected) in [
+      ("linear(0, 1)", "linear(0 0%, 1 100%)"),
+      ("linear(0 0% 20%, 1)", "linear(0 0%, 0 20%, 1 100%)"),
+      ("linear(0 50%, 1 20%, 0)", "linear(0 50%, 1 50%, 0 100%)"),
+      ("linear(50% 0, 100% 1)", "linear(0 50%, 1 100%)"),
+      ("linear(0 calc(20% + 10%), 1)", "linear(0 30%, 1 100%)"),
+    ] {
+      let value = EasingFunction::parse_string(source).unwrap();
+      assert_eq!(value.to_css_string(PrinterOptions::default()).unwrap(), expected);
+    }
+    for source in ["linear()", "linear(0)", "linear(0,)", "linear(0 0% 20% 30%, 1)", "linear(0px, 1)"] {
+      assert!(EasingFunction::parse_string(source).is_err(), "{source}");
+    }
   }
 }

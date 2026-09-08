@@ -3,7 +3,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import corpus from "../compatibility/webref-property-branches.json" with { type: "json" };
-import { CSSStyleRule, CSSStyleSheet } from "../dist/index.js";
+const { CSSStyleRule, CSSStyleSheet } = process.argv.includes("--wasm")
+  ? await (await import("../packages/wasm/dist/index.js")).createSheetOM(
+      new Uint8Array(await readFile(new URL("../packages/wasm/dist/sheetom_wasm_bg.wasm", import.meta.url))).buffer,
+    )
+  : await import("../dist/index.js");
 
 const corpusUrl = new URL("../compatibility/webref-property-branches.json", import.meta.url);
 const ratchetUrl = new URL("../compatibility/webref-branch-ratchet.json", import.meta.url);

@@ -34,7 +34,7 @@ export declare function nativeEngineRevision(): string
 
 export declare function normalizeMedia(source: string, maxStylesheetBytes?: number | undefined | null, maxDeclarationValueBytes?: number | undefined | null, maxNestingDepth?: number | undefined | null, maxRules?: number | undefined | null, maxDeclarationsPerBlock?: number | undefined | null): string
 
-export declare function normalizeSelector(source: string, maxStylesheetBytes?: number | undefined | null, maxDeclarationValueBytes?: number | undefined | null, maxNestingDepth?: number | undefined | null, maxRules?: number | undefined | null, maxDeclarationsPerBlock?: number | undefined | null): string
+export declare function normalizeSelector(source: string, namespaces?: string | undefined | null, maxStylesheetBytes?: number | undefined | null, maxDeclarationValueBytes?: number | undefined | null, maxNestingDepth?: number | undefined | null, maxRules?: number | undefined | null, maxDeclarationsPerBlock?: number | undefined | null): string
 
 export declare function normalizeSupports(source: string, maxStylesheetBytes?: number | undefined | null, maxDeclarationValueBytes?: number | undefined | null, maxNestingDepth?: number | undefined | null, maxRules?: number | undefined | null, maxDeclarationsPerBlock?: number | undefined | null): string
 
@@ -66,3 +66,5 @@ export declare function scanTopLevelRulesJson(source: string, maxStylesheetBytes
 export declare function serializeFontFamilyValue(value: string): string
 
 export declare function serializeIdentifierValue(value: string): string
+
+export declare function supportsCss(source: string, value?: string | undefined | null): boolean

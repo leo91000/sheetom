@@ -608,6 +608,11 @@ fn extract_authored_gradient(
             .ok_or_else(|| EngineError::Parse("gradient color span is invalid".to_owned()))?
             .trim()
             .to_owned();
+        let source = if source.chars().all(|c| c.is_ascii_alphabetic() || c == '-') {
+            source.to_ascii_lowercase()
+        } else {
+            source
+        };
         let mut position_count = 0usize;
         while !parser.is_exhausted() && position_count < 2 {
             if conic {

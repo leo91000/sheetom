@@ -196,3 +196,5 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0185 | [Preserve pending shorthand semantics during serialization](./0185-preserve-pending-shorthand-semantics.md) | accepted |
 | 0186 | [Promote RC11 without a calendar soak](./0186-promote-rc11-without-a-calendar-soak.md) | accepted |
 | 0187 | [Compact redundant semantic value storage](./0187-compact-redundant-semantic-value-storage.md) | accepted |
+| 0188 | [Target June 2026 authoring CSSOM and explicit experiments](./0188-target-june-2026-authoring-cssom-and-explicit-experiments.md) | accepted |
+| 0189 | [Expose pinned draft mixin interfaces by default](./0189-expose-pinned-draft-mixin-interfaces-by-default.md) | accepted |
