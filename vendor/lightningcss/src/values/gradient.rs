@@ -246,16 +246,22 @@ impl<'i> Parse<'i> for ColorInterpolation {
     if !matches!(color_space.as_str(), "srgb" | "srgb-linear" | "display-p3" | "display-p3-linear" | "a98-rgb" | "prophoto-rgb" | "rec2020" | "lab" | "oklab" | "xyz" | "xyz-d50" | "xyz-d65" | "hsl" | "hwb" | "lch" | "oklch") {
       return Err(input.new_custom_error(ParserError::InvalidValue));
     }
-    let hue_method = input.try_parse(|input| {
-      let method = input.expect_ident()?.to_ascii_lowercase();
-      if !matches!(method.as_str(), "shorter" | "longer" | "increasing" | "decreasing")
-        || !matches!(color_space.as_str(), "hsl" | "hwb" | "lch" | "oklch") {
-        return Err(input.new_custom_error(ParserError::InvalidValue));
-      }
-      input.expect_ident_matching("hue")?;
-      Ok::<_, ParseError<'i, ParserError<'i>>>(method)
-    }).ok();
-    Ok(Self { color_space, hue_method })
+    let hue_method = input
+      .try_parse(|input| {
+        let method = input.expect_ident()?.to_ascii_lowercase();
+        if !matches!(method.as_str(), "shorter" | "longer" | "increasing" | "decreasing")
+          || !matches!(color_space.as_str(), "hsl" | "hwb" | "lch" | "oklch")
+        {
+          return Err(input.new_custom_error(ParserError::InvalidValue));
+        }
+        input.expect_ident_matching("hue")?;
+        Ok::<_, ParseError<'i, ParserError<'i>>>(method)
+      })
+      .ok();
+    Ok(Self {
+      color_space,
+      hue_method,
+    })
   }
 }
 
@@ -666,6 +672,7 @@ fn convert_to_legacy_direction(direction: &LineDirection) -> LineDirection {
     LineDirection::Angle(angle) => {
       let angle = angle.clone();
       let deg = match angle {
+        Angle::Calculation(_) => return LineDirection::Angle(angle),
         Angle::Deg(n) => convert_to_legacy_degree(n),
         Angle::Rad(n) => {
           let n = n / (2.0 * PI) * 360.0;

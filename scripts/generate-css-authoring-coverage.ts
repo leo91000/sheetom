@@ -33,6 +33,8 @@ const apiSuites = {
   CSSImportRule: ["tests/static-rule-interfaces.test.ts", "tests/stylesheet-metadata.test.ts"],
   CSSNamespaceRule: ["tests/static-rule-interfaces.test.ts", "tests/selector-text.test.ts"],
   CSSNestedDeclarations: ["tests/grouping-rules.test.ts"],
+  CSSPositionTryRule: ["tests/baseline-september.test.ts"],
+  CSSPositionTryDescriptors: ["tests/baseline-september.test.ts"],
   CSSPropertyRule: ["tests/static-rule-interfaces.test.ts"],
 };
 const surfaces = new Map();

@@ -22,6 +22,7 @@ pub struct AlphaValue(pub f32);
 impl<'i> Parse<'i> for AlphaValue {
   fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     match NumberOrPercentage::parse(input)? {
+      NumberOrPercentage::Calculation(_) => Err(input.new_custom_error(ParserError::InvalidValue)),
       NumberOrPercentage::Percentage(percent) => Ok(AlphaValue(percent.0)),
       NumberOrPercentage::Number(number) => Ok(AlphaValue(number)),
     }

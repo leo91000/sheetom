@@ -1,5 +1,7 @@
 # June 2026 authoring target: implementation and evidence
 
+Historical June snapshot. The [current September target](css-september-2026-parity-evidence.md) advances the cutoff and corrects individual-branch selection.
+
 This is the unreleased authoring target for features Newly available by
 2026-06-30, plus explicitly selected experimental mixins and existing custom
 functions. It does not implement cascade, mixin expansion, selector matching,

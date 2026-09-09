@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
 const targetUrl = new URL("../compatibility/css-feature-target.json", import.meta.url);
-const cutoff = "2026-06-30";
+const cutoff = "2026-09-09";
 const sourceSha256 = "7633fe15d2ac393c69682150cd2e20b1164f4b8396fd9ecbc8226e25777dcac0";
 const beforeCutoff = status => ["low", "high"].includes(status?.baseline)
   && typeof status.baseline_low_date === "string" && status.baseline_low_date <= cutoff;
@@ -25,14 +25,15 @@ if (sourcePath) {
   const data = JSON.parse(bytes.toString("utf8"));
   const cssGroup = id => id === "css" || Boolean(data.groups[id]?.parent && cssGroup(data.groups[id].parent));
   const features = Object.entries(data.features).filter(([, feature]) =>
-    feature.kind === "feature" && beforeCutoff(feature.status) && (
+    feature.kind === "feature" && (beforeCutoff(feature.status)
+      || (feature.compat_features ?? []).some(key => beforeCutoff(feature.status?.by_compat_key?.[key]))) && (
       (feature.group ?? []).some(cssGroup)
       || (feature.compat_features ?? []).some(key => key.startsWith("css.") || /^api\.(CSS|StyleSheet|MediaList)/.test(key))
     )
   ).sort(([a], [b]) => a.localeCompare(b, "en")).map(([id, feature]) => ({
     id,
     name: feature.name,
-    baselineLowDate: feature.status.baseline_low_date,
+    baselineLowDate: feature.status.baseline_low_date ?? null,
     specifications: feature.spec ?? [],
     branches: [...(feature.compat_features ?? [])].sort().map(key => {
       const status = feature.status.by_compat_key?.[key];
@@ -73,10 +74,10 @@ assert.equal(manifest.schemaVersion, 1);
 assert.equal(manifest.cutoff, cutoff);
 assert.equal(manifest.source.dataSha256, sourceSha256);
 assert.equal(manifest.source.version, "3.37.0");
-assert.equal(manifest.features.length, 311);
+assert.equal(manifest.features.length, 328);
 assert.equal(new Set(manifest.features.map(feature => feature.id)).size, manifest.features.length);
 for (const feature of manifest.features) {
-  assert.ok(feature.baselineLowDate <= cutoff, feature.id);
+  assert.ok(feature.branches.some(branch => branch.eligible) || feature.baselineLowDate && feature.baselineLowDate <= cutoff, feature.id);
   assert.equal(new Set(feature.branches.map(branch => branch.key)).size, feature.branches.length);
   for (const branch of feature.branches) {
     assert.equal(branch.eligible, beforeCutoff({ baseline: branch.baseline, baseline_low_date: branch.baselineLowDate }), branch.key);

@@ -1,5 +1,7 @@
 # CSS through June 2026: feature selection inventory
 
+Historical June snapshot. The [current September target](css-september-2026-parity-evidence.md) advances the cutoff and corrects individual-branch selection.
+
 This is design evidence for the accepted cumulative June 30, 2026 Baseline cutoff. It inventories candidate feature families; it does not certify SheetOM support, completed branch coverage, or passing tests. The separately accepted experimental CSS mixin family is additive and available by default, with its own revision-pinned draft contract.
 
 ## Frozen source

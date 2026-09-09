@@ -294,9 +294,7 @@ impl<'i> Parse<'i> for FlexBasis {
 }
 
 impl FlexBasis {
-  fn parse_shorthand<'i, 't>(
-    input: &mut Parser<'i, 't>,
-  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+  fn parse_shorthand<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     let location = input.current_source_location();
     let value = Self::parse(input)?;
     if matches!(value, Self::CalcSize(_)) {
@@ -447,6 +445,7 @@ fn calc_size_contains_size(value: &Calc<FlexCalcSizeLengthPercentage>) -> bool {
     }
     Calc::Product(_, value) => calc_size_contains_size(value),
     Calc::Function(function) => match function.as_ref() {
+      MathFunction::SiblingCount | MathFunction::SiblingIndex | MathFunction::Progress(_) => false,
       MathFunction::Calc(value) | MathFunction::Abs(value) | MathFunction::Sign(value) => {
         calc_size_contains_size(value)
       }
@@ -1409,12 +1408,8 @@ mod tests {
   use crate::stylesheet::ParserOptions;
 
   fn parse_typed<'i>(name: &'i str, source: &'i str) -> Property<'i> {
-    let property = Property::parse_string(
-      PropertyId::from(name),
-      source,
-      ParserOptions::default(),
-    )
-    .unwrap_or_else(|error| panic!("{name}: {source} should parse: {error:?}"));
+    let property = Property::parse_string(PropertyId::from(name), source, ParserOptions::default())
+      .unwrap_or_else(|error| panic!("{name}: {source} should parse: {error:?}"));
     assert!(!matches!(property, Property::Unparsed(_)), "{name}: {source}");
     property
   }
@@ -1498,24 +1493,12 @@ mod tests {
   fn parses_and_canonicalizes_flex_calc_size() {
     for (source, expected) in [
       ("calc-size(auto, size)", "calc-size(auto, size)"),
-      (
-        "calc-size(auto, size + 1px)",
-        "calc-size(auto, 1px + size)",
-      ),
+      ("calc-size(auto, size + 1px)", "calc-size(auto, 1px + size)"),
       ("calc-size(auto, size * 2)", "calc-size(auto, 2 * size)"),
       ("calc-size(auto, size / 2)", "calc-size(auto, .5 * size)"),
-      (
-        "calc-size(auto, size / 2 + 1px)",
-        "calc-size(auto, 1px + (.5 * size))",
-      ),
-      (
-        "calc-size(auto, 1px - size / 2)",
-        "calc-size(auto, 1px - (.5 * size))",
-      ),
-      (
-        "calc-size(auto, min(size, 10px))",
-        "calc-size(auto, min(size, 10px))",
-      ),
+      ("calc-size(auto, size / 2 + 1px)", "calc-size(auto, 1px + (.5 * size))"),
+      ("calc-size(auto, 1px - size / 2)", "calc-size(auto, 1px - (.5 * size))"),
+      ("calc-size(auto, min(size, 10px))", "calc-size(auto, min(size, 10px))"),
       ("calc-size(any, 1px)", "calc-size(any, 1px)"),
       ("calc-size(any, 10%)", "calc-size(any, 10%)"),
       ("calc-size(10%, size)", "calc-size(10%, size)"),
@@ -1524,18 +1507,9 @@ mod tests {
         "calc-size(calc-size(auto, size), size)",
         "calc-size(calc-size(auto, size), size)",
       ),
-      (
-        "calc-size(auto, round(size, 1px))",
-        "calc-size(auto, round(size, 1px))",
-      ),
-      (
-        "calc-size(auto, sign(size) * 1px)",
-        "calc-size(auto, 1px * sign(size))",
-      ),
-      (
-        "calc-size(auto, size, ignored tokens)",
-        "calc-size(auto, size)",
-      ),
+      ("calc-size(auto, round(size, 1px))", "calc-size(auto, round(size, 1px))"),
+      ("calc-size(auto, sign(size) * 1px)", "calc-size(auto, 1px * sign(size))"),
+      ("calc-size(auto, size, ignored tokens)", "calc-size(auto, size)"),
     ] {
       let property = parse_typed("flex-basis", source);
       assert_eq!(

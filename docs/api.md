@@ -164,7 +164,7 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
   `CSSNamespaceRule` exposes immutable `namespaceURI` and `prefix` values.
 - `CSSImportRule` never fetches; `media` is live and `href` resolves against the
   sheet base URL.
-- `CSSFontFaceRule`, `CSSPageRule`/`CSSMarginRule`, `CSSPositionTryRule`, and
+- `CSSFontFaceRule`, `CSSPageRule`/`CSSMarginRule`, `CSSPositionTryRule`/`CSSPositionTryDescriptors`, and
   `CSSNestedDeclarations` expose declaration blocks.
 - `CSSKeyframesRule` provides `appendRule`, `deleteRule`, and last-match
   `findRule`; each `CSSKeyframeRule` exposes mutable `keyText` and `style`.
@@ -195,7 +195,7 @@ with the optional `UNSUPPORTED_SHORTHAND_VALUE` diagnostic.
   blocks are editable `CSSNestedDeclarations`. Mixins are never expanded.
 
 These five mixin interfaces are available by default under the exact draft
-revision and [explicit resolutions](./css-june-2026-parity-evidence.md).
+revision and [explicit resolutions](./css-september-2026-parity-evidence.md).
 
 Unknown metadata and future rules can be retained and serialized, but are
 read-only until a standards-defined mutable interface is implemented.
