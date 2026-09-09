@@ -29,7 +29,7 @@ test("Playwright installs use a resilient Ubuntu package source", () => {
 
 test("release-critical workflows share the Playwright installer", () => {
   const expectedUses = new Map([
-    ["ci.yml", 2],
+    ["ci.yml", 3],
     ["native-oracles.yml", 1],
     ["release.yml", 1],
   ]);
