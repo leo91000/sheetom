@@ -179,8 +179,8 @@ jobs:
       - run: npm run native:test
       - name: Gate Webref-derived Chromium property branches
         run: npm run native:webref-property-branches
-      - name: Install the Chromium oracle
-        run: npx playwright install chromium
+      - name: Install the authoring browser oracles
+        uses: ./.github/actions/install-playwright
       - name: Compare native declaration sequences with Chromium
         run: npm run native:browser-differential:run
       - name: Gate the dated native CSS authoring target
