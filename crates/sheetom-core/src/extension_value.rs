@@ -527,8 +527,30 @@ fn is_leading_math_function(source: &str) -> bool {
         _ => return false,
     };
     [
-        "calc", "min", "max", "clamp", "round", "rem", "mod", "abs", "sign", "hypot", "sin", "cos",
-        "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "log", "exp",
+        "sibling-count",
+        "sibling-index",
+        "progress",
+        "calc",
+        "min",
+        "max",
+        "clamp",
+        "round",
+        "rem",
+        "mod",
+        "abs",
+        "sign",
+        "hypot",
+        "sin",
+        "cos",
+        "tan",
+        "asin",
+        "acos",
+        "atan",
+        "atan2",
+        "pow",
+        "sqrt",
+        "log",
+        "exp",
     ]
     .iter()
     .any(|candidate| function.eq_ignore_ascii_case(candidate))

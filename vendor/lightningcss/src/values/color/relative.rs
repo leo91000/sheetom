@@ -168,6 +168,11 @@ enum RelativeColorConstant {
 )]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 enum RelativeMathFunction {
+  Progress {
+    value: RelativeColorExpression,
+    start: RelativeColorExpression,
+    end: RelativeColorExpression,
+  },
   Calc {
     value: RelativeColorExpression,
   },
@@ -547,30 +552,30 @@ impl RelativeColorOrigin {
 
 impl RelativeColorMix {
   fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, cssparser::ParseError<'i, ParserError<'i>>> {
-    let (color_space, hue_interpolation_method) = if input
-      .try_parse(|input| input.expect_ident_matching("in"))
-      .is_ok()
-    {
-      let color_space = ColorSpaceName::parse(input)?;
-      let hue_interpolation_method = if matches!(
-        color_space,
-        ColorSpaceName::Hsl | ColorSpaceName::Hwb | ColorSpaceName::LCH | ColorSpaceName::OKLCH
-      ) {
-        input
-          .try_parse(|input| -> Result<HueInterpolationMethod, cssparser::ParseError<'i, ParserError<'i>>> {
-            let method = HueInterpolationMethod::parse(input)?;
-            input.expect_ident_matching("hue")?;
-            Ok(method)
-          })
-          .unwrap_or(HueInterpolationMethod::Shorter)
+    let (color_space, hue_interpolation_method) =
+      if input.try_parse(|input| input.expect_ident_matching("in")).is_ok() {
+        let color_space = ColorSpaceName::parse(input)?;
+        let hue_interpolation_method = if matches!(
+          color_space,
+          ColorSpaceName::Hsl | ColorSpaceName::Hwb | ColorSpaceName::LCH | ColorSpaceName::OKLCH
+        ) {
+          input
+            .try_parse(
+              |input| -> Result<HueInterpolationMethod, cssparser::ParseError<'i, ParserError<'i>>> {
+                let method = HueInterpolationMethod::parse(input)?;
+                input.expect_ident_matching("hue")?;
+                Ok(method)
+              },
+            )
+            .unwrap_or(HueInterpolationMethod::Shorter)
+        } else {
+          HueInterpolationMethod::Shorter
+        };
+        input.expect_comma()?;
+        (color_space, hue_interpolation_method)
       } else {
-        HueInterpolationMethod::Shorter
+        (ColorSpaceName::OKLAB, HueInterpolationMethod::Shorter)
       };
-      input.expect_comma()?;
-      (color_space, hue_interpolation_method)
-    } else {
-      (ColorSpaceName::OKLAB, HueInterpolationMethod::Shorter)
-    };
 
     let leading_first_percentage = input.try_parse(|input| input.expect_percentage()).ok();
     let first = RelativeColorOrigin::parse(input)?;
@@ -625,7 +630,12 @@ fn parse_origin_hsl<'i, 't>(
     } else {
       super::parse_alpha(input, &parser)?
     };
-    Ok(CssColor::Float(Box::new(FloatColor::HSL(super::HSL { h, s, l, alpha }))))
+    Ok(CssColor::Float(Box::new(FloatColor::HSL(super::HSL {
+      h,
+      s,
+      l,
+      alpha,
+    }))))
   })
 }
 
@@ -636,7 +646,12 @@ fn parse_origin_hwb<'i, 't>(
     let mut parser = ComponentParser::new(true);
     let (h, w, b, _) = super::parse_hsl_hwb_components::<super::HWB>(input, &mut parser, false)?;
     let alpha = super::parse_alpha(input, &parser)?;
-    Ok(CssColor::Float(Box::new(FloatColor::HWB(super::HWB { h, w, b, alpha }))))
+    Ok(CssColor::Float(Box::new(FloatColor::HWB(super::HWB {
+      h,
+      w,
+      b,
+      alpha,
+    }))))
   })
 }
 
@@ -879,52 +894,33 @@ fn divide_type(left: NumericType, right: NumericType) -> Option<NumericType> {
   None
 }
 
-fn canonical_add(
-  left: RelativeColorExpression,
-  right: RelativeColorExpression,
-) -> RelativeColorExpression {
-  if matches!(right, RelativeColorExpression::Number(_))
-    && !matches!(left, RelativeColorExpression::Number(_))
-  {
+fn canonical_add(left: RelativeColorExpression, right: RelativeColorExpression) -> RelativeColorExpression {
+  if matches!(right, RelativeColorExpression::Number(_)) && !matches!(left, RelativeColorExpression::Number(_)) {
     return RelativeColorExpression::Add(Box::new(right), Box::new(left));
   }
   RelativeColorExpression::Add(Box::new(left), Box::new(right))
 }
 
-fn canonical_subtract(
-  left: RelativeColorExpression,
-  right: RelativeColorExpression,
-) -> RelativeColorExpression {
+fn canonical_subtract(left: RelativeColorExpression, right: RelativeColorExpression) -> RelativeColorExpression {
   if let RelativeColorExpression::Number(value) = right {
     return canonical_add(RelativeColorExpression::Number(-value), left);
   }
   RelativeColorExpression::Subtract(Box::new(left), Box::new(right))
 }
 
-fn canonical_multiply(
-  left: RelativeColorExpression,
-  right: RelativeColorExpression,
-) -> RelativeColorExpression {
-  if matches!(right, RelativeColorExpression::Number(_))
-    && !matches!(left, RelativeColorExpression::Number(_))
-  {
+fn canonical_multiply(left: RelativeColorExpression, right: RelativeColorExpression) -> RelativeColorExpression {
+  if matches!(right, RelativeColorExpression::Number(_)) && !matches!(left, RelativeColorExpression::Number(_)) {
     return RelativeColorExpression::Multiply(Box::new(right), Box::new(left));
   }
   RelativeColorExpression::Multiply(Box::new(left), Box::new(right))
 }
 
-fn canonical_divide(
-  left: RelativeColorExpression,
-  right: RelativeColorExpression,
-) -> RelativeColorExpression {
+fn canonical_divide(left: RelativeColorExpression, right: RelativeColorExpression) -> RelativeColorExpression {
   if let RelativeColorExpression::Number(value) = right {
     if value != 0.0 && value.is_finite() {
       return canonical_multiply(RelativeColorExpression::Number(value.recip()), left);
     }
-    return RelativeColorExpression::Divide(
-      Box::new(left),
-      Box::new(RelativeColorExpression::Number(value)),
-    );
+    return RelativeColorExpression::Divide(Box::new(left), Box::new(RelativeColorExpression::Number(value)));
   }
   RelativeColorExpression::Divide(Box::new(left), Box::new(right))
 }
@@ -955,6 +951,14 @@ fn parse_math_function<'i, 't>(
       let max = parse_sum(input, context)?;
       require_same_types(input, [&min, &center, &max])?;
       RelativeMathFunction::Clamp { min, center, max }
+    } else if name.eq_ignore_ascii_case("progress") {
+      let value = parse_sum(input, context)?;
+      input.expect_comma()?;
+      let start = parse_sum(input, context)?;
+      input.expect_comma()?;
+      let end = parse_sum(input, context)?;
+      require_same_types(input, [&value, &start, &end])?;
+      RelativeMathFunction::Progress { value, start, end }
     } else if name.eq_ignore_ascii_case("round") {
       parse_round(input, context)?
     } else if name.eq_ignore_ascii_case("rem") {
@@ -1066,22 +1070,24 @@ fn parse_round<'i, 't>(
   context: RelativeColorParseContext,
 ) -> Result<RelativeMathFunction, cssparser::ParseError<'i, ParserError<'i>>> {
   let strategy = input
-    .try_parse(|input| -> Result<RoundingStrategy, cssparser::ParseError<'i, ParserError<'i>>> {
-      let identifier = input.expect_ident_cloned()?;
-      let strategy = if identifier.eq_ignore_ascii_case("nearest") {
-        RoundingStrategy::Nearest
-      } else if identifier.eq_ignore_ascii_case("up") {
-        RoundingStrategy::Up
-      } else if identifier.eq_ignore_ascii_case("down") {
-        RoundingStrategy::Down
-      } else if identifier.eq_ignore_ascii_case("to-zero") {
-        RoundingStrategy::ToZero
-      } else {
-        return Err(input.new_custom_error(ParserError::InvalidValue));
-      };
-      input.expect_comma()?;
-      Ok(strategy)
-    })
+    .try_parse(
+      |input| -> Result<RoundingStrategy, cssparser::ParseError<'i, ParserError<'i>>> {
+        let identifier = input.expect_ident_cloned()?;
+        let strategy = if identifier.eq_ignore_ascii_case("nearest") {
+          RoundingStrategy::Nearest
+        } else if identifier.eq_ignore_ascii_case("up") {
+          RoundingStrategy::Up
+        } else if identifier.eq_ignore_ascii_case("down") {
+          RoundingStrategy::Down
+        } else if identifier.eq_ignore_ascii_case("to-zero") {
+          RoundingStrategy::ToZero
+        } else {
+          return Err(input.new_custom_error(ParserError::InvalidValue));
+        };
+        input.expect_comma()?;
+        Ok(strategy)
+      },
+    )
     .unwrap_or(RoundingStrategy::Nearest);
   let value = parse_sum(input, context)?;
   let step = if input.try_parse(|input| input.expect_comma()).is_ok() {
@@ -1158,12 +1164,14 @@ impl RelativeColorExpression {
 impl RelativeMathFunction {
   fn numeric_type(&self) -> Option<NumericType> {
     match self {
-      Self::Calc { value }
-      | Self::Abs { value }
-      | Self::Sqrt { value }
-      | Self::Exp { value } => value.numeric_type(),
+      Self::Calc { value } | Self::Abs { value } | Self::Sqrt { value } | Self::Exp { value } => {
+        value.numeric_type()
+      }
       Self::Min { values } | Self::Max { values } | Self::Hypot { values } => same_expression_type(values),
       Self::Clamp { min, center, max } => same_expression_type([min, center, max]),
+      Self::Progress { value, start, end } => {
+        same_expression_type([value, start, end]).map(|_| NumericType::Number)
+      }
       Self::Round { value, step, .. } => {
         let value_type = value.numeric_type()?;
         if let Some(step) = step {
@@ -1179,14 +1187,10 @@ impl RelativeMathFunction {
       }
       Self::Atan2 { y, x } => same_expression_type([y, x]).map(|_| NumericType::Angle),
       Self::Sign { value } => value.numeric_type().map(|_| NumericType::Number),
-      Self::Sin { value } | Self::Cos { value } | Self::Tan { value } => matches!(
-        value.numeric_type()?,
-        NumericType::Number | NumericType::Angle
-      )
-      .then_some(NumericType::Number),
-      Self::Pow { base, exponent } => {
-        all_number_expressions([base, exponent]).then_some(NumericType::Number)
+      Self::Sin { value } | Self::Cos { value } | Self::Tan { value } => {
+        matches!(value.numeric_type()?, NumericType::Number | NumericType::Angle).then_some(NumericType::Number)
       }
+      Self::Pow { base, exponent } => all_number_expressions([base, exponent]).then_some(NumericType::Number),
       Self::Log { value, base } => {
         let value_is_number = value.numeric_type() == Some(NumericType::Number);
         let base_is_number = base
@@ -1316,11 +1320,14 @@ where
     if index > 0 {
       dest.delim(',', false)?;
     }
-    write_cssom_number(if channel.is_nan() {
-      0.0
-    } else {
-      channel.round().clamp(0.0, 255.0)
-    }, dest)?;
+    write_cssom_number(
+      if channel.is_nan() {
+        0.0
+      } else {
+        channel.round().clamp(0.0, 255.0)
+      },
+      dest,
+    )?;
   }
   if alpha != 1.0 {
     dest.delim(',', false)?;
@@ -1334,30 +1341,28 @@ where
   W: std::fmt::Write,
 {
   match color {
-    LABColor::LAB(color) => write_cssom_components("lab", color.l.clamp(0.0, 100.0), color.a, color.b, color.alpha, dest),
+    LABColor::LAB(color) => {
+      write_cssom_components("lab", color.l.clamp(0.0, 100.0), color.a, color.b, color.alpha, dest)
+    }
     LABColor::OKLAB(color) => {
       write_cssom_components("oklab", color.l.clamp(0.0, 1.0), color.a, color.b, color.alpha, dest)
     }
-    LABColor::LCH(color) => {
-      write_cssom_components(
-        "lch",
-        color.l.clamp(0.0, 100.0),
-        clamp_chroma(color.c),
-        normalize_hue(color.h),
-        color.alpha,
-        dest,
-      )
-    }
-    LABColor::OKLCH(color) => {
-      write_cssom_components(
-        "oklch",
-        color.l.clamp(0.0, 1.0),
-        clamp_chroma(color.c),
-        normalize_hue(color.h),
-        color.alpha,
-        dest,
-      )
-    }
+    LABColor::LCH(color) => write_cssom_components(
+      "lch",
+      color.l.clamp(0.0, 100.0),
+      clamp_chroma(color.c),
+      normalize_hue(color.h),
+      color.alpha,
+      dest,
+    ),
+    LABColor::OKLCH(color) => write_cssom_components(
+      "oklch",
+      color.l.clamp(0.0, 1.0),
+      clamp_chroma(color.c),
+      normalize_hue(color.h),
+      color.alpha,
+      dest,
+    ),
   }
 }
 
@@ -1608,6 +1613,15 @@ impl ToCss for RelativeMathFunction {
     W: std::fmt::Write,
   {
     match self {
+      Self::Progress { value, start, end } => {
+        dest.write_str("progress(")?;
+        value.to_css(dest)?;
+        dest.delim(',', false)?;
+        start.to_css(dest)?;
+        dest.delim(',', false)?;
+        end.to_css(dest)?;
+        dest.write_char(')')
+      }
       Self::Calc { value } => write_calc_function(value, dest),
       Self::Min { values } => write_list_function("min", values, dest),
       Self::Max { values } => write_list_function("max", values, dest),
@@ -1663,10 +1677,7 @@ impl ToCss for RelativeMathFunction {
   }
 }
 
-fn write_calc_function<W>(
-  value: &RelativeColorExpression,
-  dest: &mut Printer<W>,
-) -> Result<(), PrinterError>
+fn write_calc_function<W>(value: &RelativeColorExpression, dest: &mut Printer<W>) -> Result<(), PrinterError>
 where
   W: std::fmt::Write,
 {
@@ -1687,10 +1698,7 @@ where
   dest.write_char(')')
 }
 
-fn write_calc_sum_operand<W>(
-  value: &RelativeColorExpression,
-  dest: &mut Printer<W>,
-) -> Result<(), PrinterError>
+fn write_calc_sum_operand<W>(value: &RelativeColorExpression, dest: &mut Printer<W>) -> Result<(), PrinterError>
 where
   W: std::fmt::Write,
 {

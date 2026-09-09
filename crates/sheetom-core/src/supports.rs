@@ -288,14 +288,7 @@ fn selector_supported_shallow(source: &str) -> bool {
             | PseudoClass::CustomFunction { .. }
             | PseudoClass::Closed
             | PseudoClass::LocalLink
-            | PseudoClass::TargetWithin
-            | PseudoClass::Playing
-            | PseudoClass::Paused
-            | PseudoClass::Seeking
-            | PseudoClass::Buffering
-            | PseudoClass::Stalled
-            | PseudoClass::Muted
-            | PseudoClass::VolumeLocked,
+            | PseudoClass::TargetWithin,
         )
         | Component::PseudoElement(
             PseudoElement::Custom { .. } | PseudoElement::CustomFunction { .. },

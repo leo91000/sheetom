@@ -75,7 +75,7 @@ export interface EngineBinding extends EngineBindingIdentityProvider {
   serializeIdentifierValue(value: string): string;
   serializeFontFamilyValue(value: string): string;
   createDeclarationState(
-    context?: "style" | "font-face" | "function",
+    context?: "style" | "font-face" | "function" | "position-try",
     ...arguments_: EngineDeclarationStateArguments
   ): EngineDeclarationStateHandle;
   parseRecoveredRuleTreeJson(source: string, ...budget: EngineBudgetArguments): string;

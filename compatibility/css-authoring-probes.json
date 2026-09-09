@@ -1701,6 +1701,193 @@
       "root": "css.at-rules.namespace",
       "kind": "rule",
       "value": "@namespace svg url(\"urn:svg\"); [svg|attr] { color: red; } @media all { :is([missing|attr], [svg|attr]) { color: blue; } }"
+    },
+    {
+      "id": "selector.playing",
+      "root": "css.selectors.playing",
+      "kind": "selector",
+      "value": "video:playing",
+      "oracle": "firefox"
+    },
+    {
+      "id": "selector.paused",
+      "root": "css.selectors.paused",
+      "kind": "selector",
+      "value": "video:paused",
+      "oracle": "firefox"
+    },
+    {
+      "id": "selector.seeking",
+      "root": "css.selectors.seeking",
+      "kind": "selector",
+      "value": "video:seeking",
+      "oracle": "firefox"
+    },
+    {
+      "id": "selector.buffering",
+      "root": "css.selectors.buffering",
+      "kind": "selector",
+      "value": "video:buffering",
+      "oracle": "firefox"
+    },
+    {
+      "id": "selector.stalled",
+      "root": "css.selectors.stalled",
+      "kind": "selector",
+      "value": "video:stalled",
+      "oracle": "firefox"
+    },
+    {
+      "id": "selector.muted",
+      "root": "css.selectors.muted",
+      "kind": "selector",
+      "value": "video:muted",
+      "oracle": "firefox"
+    },
+    {
+      "id": "selector.volume-locked",
+      "root": "css.selectors.volume-locked",
+      "kind": "selector",
+      "value": "video:volume-locked",
+      "oracle": "firefox"
+    },
+    {
+      "id": "type.sibling-count.order",
+      "root": "css.types.sibling-count",
+      "kind": "declaration",
+      "property": "order",
+      "value": "sibling-count()"
+    },
+    {
+      "id": "type.sibling-count.width",
+      "root": "css.types.sibling-count",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(100% / sibling-count())"
+    },
+    {
+      "id": "type.sibling-count.animation-delay",
+      "root": "css.types.sibling-count",
+      "kind": "declaration",
+      "property": "animation-delay",
+      "value": "calc(0.1s * sibling-count())"
+    },
+    {
+      "id": "type.sibling-count.transform",
+      "root": "css.types.sibling-count",
+      "kind": "declaration",
+      "property": "transform",
+      "value": "rotate(calc(1deg * sibling-count()))"
+    },
+    {
+      "id": "type.sibling-index.order",
+      "root": "css.types.sibling-index",
+      "kind": "declaration",
+      "property": "order",
+      "value": "sibling-index()"
+    },
+    {
+      "id": "type.sibling-index.width",
+      "root": "css.types.sibling-index",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(100% / sibling-index())"
+    },
+    {
+      "id": "type.sibling-index.animation-delay",
+      "root": "css.types.sibling-index",
+      "kind": "declaration",
+      "property": "animation-delay",
+      "value": "calc(0.1s * sibling-index())"
+    },
+    {
+      "id": "type.sibling-index.transform",
+      "root": "css.types.sibling-index",
+      "kind": "declaration",
+      "property": "transform",
+      "value": "rotate(calc(1deg * sibling-index()))"
+    },
+    {
+      "id": "type.progress.opacity.274",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "progress(5, 0, 10)"
+    },
+    {
+      "id": "type.progress.opacity.275",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "progress(50px, 0px, 100px)"
+    },
+    {
+      "id": "type.progress.width.276",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "width",
+      "value": "calc(100px * progress(50vw, 0px, 1000px))"
+    },
+    {
+      "id": "rule.position-try",
+      "root": "css.at-rules.position-try",
+      "kind": "rule",
+      "value": "@position-try --try { margin: 1px; top: 2px; color: red; }"
+    },
+    {
+      "id": "type.anchor",
+      "root": "css.types.anchor",
+      "kind": "declaration",
+      "property": "top",
+      "value": "anchor(--a top, 10px)"
+    },
+    {
+      "id": "type.anchor-size",
+      "root": "css.types.anchor-size",
+      "kind": "declaration",
+      "property": "width",
+      "value": "anchor-size(--a width, 10px)"
+    },
+    {
+      "id": "selector.first",
+      "root": "css.selectors.first",
+      "kind": "rule",
+      "value": "@page :first { margin: 1cm; }"
+    },
+    {
+      "id": "type.sibling-index.scale",
+      "root": "css.types.sibling-index",
+      "kind": "declaration",
+      "property": "transform",
+      "value": "scale(sibling-index())"
+    },
+    {
+      "id": "type.progress.em",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "progress(1em,0em,2em)"
+    },
+    {
+      "id": "type.progress.frequency",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "progress(1Hz,0Hz,2Hz)"
+    },
+    {
+      "id": "type.progress.resolution",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "progress(1dppx,0dpi,192dpi)"
+    },
+    {
+      "id": "type.progress.relative-color",
+      "root": "css.types.progress",
+      "kind": "declaration",
+      "property": "color",
+      "value": "rgb(from red progress(r, 0, 255) g b)"
     }
   ]
 }

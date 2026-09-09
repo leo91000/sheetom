@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-06-30",
+  "cutoff": "2026-09-09",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
-    "families": 311,
-    "authoringSurfaces": 572,
-    "authoringKeyRecords": 2283,
-    "domOrEvaluationKeyRecords": 1098,
-    "deferredKeyRecords": 364
+    "families": 328,
+    "authoringSurfaces": 603,
+    "authoringKeyRecords": 2648,
+    "domOrEvaluationKeyRecords": 1107,
+    "deferredKeyRecords": 475
   },
   "surfaces": [
     {
@@ -162,6 +162,24 @@
       "root": "api.CSSPageRule",
       "evidence": [
         "tests/declaration-rules.test.ts",
+        "scripts/test-wasm-backend.ts"
+      ],
+      "profileIds": [],
+      "probeIds": []
+    },
+    {
+      "root": "api.CSSPositionTryDescriptors",
+      "evidence": [
+        "tests/baseline-september.test.ts",
+        "scripts/test-wasm-backend.ts"
+      ],
+      "profileIds": [],
+      "probeIds": []
+    },
+    {
+      "root": "api.CSSPositionTryRule",
+      "evidence": [
+        "tests/baseline-september.test.ts",
         "scripts/test-wasm-backend.ts"
       ],
       "profileIds": [],
@@ -409,6 +427,17 @@
       ]
     },
     {
+      "root": "css.at-rules.position-try",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts",
+        "scripts/rule-browser-differential.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "rule.position-try"
+      ]
+    },
+    {
       "root": "css.at-rules.property",
       "evidence": [
         "scripts/check-css-authoring-target.ts",
@@ -523,12 +552,42 @@
       "probeIds": []
     },
     {
+      "root": "css.properties.alignment-baseline",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.e3067b8362658d27"
+      ],
+      "probeIds": []
+    },
+    {
       "root": "css.properties.all",
       "evidence": [
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
         "webref-profile.0a72e83fbb30e9cc"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.anchor-name",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.ffd3e570e33ea116"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.anchor-scope",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.76d30005e416eedb"
       ],
       "probeIds": []
     },
@@ -679,6 +738,16 @@
       ],
       "profileIds": [
         "webref-profile.d963ac4a06fc0040"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.background-attachment",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.8fff08b3df9afab4"
       ],
       "probeIds": []
     },
@@ -1809,6 +1878,16 @@
       "probeIds": []
     },
     {
+      "root": "css.properties.cursor",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.ecc68f132b11ac9b"
+      ],
+      "probeIds": []
+    },
+    {
       "root": "css.properties.custom-property",
       "evidence": [
         "scripts/check-webref-property-branches.ts",
@@ -2203,6 +2282,16 @@
       ],
       "profileIds": [
         "webref-profile.118d5496e36c21f8"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.font-variant-position",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.74afa3616b315282"
       ],
       "probeIds": []
     },
@@ -3380,6 +3469,56 @@
       "probeIds": []
     },
     {
+      "root": "css.properties.position-area",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.8293e69aab73fcc5"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.position-try",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.6ebad4e15de35643"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.position-try-fallbacks",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.b06c6fd42af7bb65"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.position-try-order",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.7839e0b6df4b322f"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.position-visibility",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.639f7d3fb54cb2bf"
+      ],
+      "probeIds": []
+    },
+    {
       "root": "css.properties.print-color-adjust",
       "evidence": [
         "scripts/check-webref-property-branches.ts"
@@ -3856,6 +3995,46 @@
       ],
       "profileIds": [
         "webref-profile.d0f4e2689eb652ed"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.text-autospace",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.c2cb1f1e469b1f2e"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.text-box",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.9452c2010062c140"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.text-box-edge",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.b5cc491bfa61d280"
+      ],
+      "probeIds": []
+    },
+    {
+      "root": "css.properties.text-box-trim",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts"
+      ],
+      "profileIds": [
+        "webref-profile.a456fab59acdcdc3"
       ],
       "probeIds": []
     },
@@ -4476,6 +4655,16 @@
       ]
     },
     {
+      "root": "css.selectors.buffering",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.buffering"
+      ]
+    },
+    {
       "root": "css.selectors.checked",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -4603,6 +4792,16 @@
       "profileIds": [],
       "probeIds": [
         "selector.file-selector-button"
+      ]
+    },
+    {
+      "root": "css.selectors.first",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.first"
       ]
     },
     {
@@ -4841,6 +5040,16 @@
       ]
     },
     {
+      "root": "css.selectors.muted",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.muted"
+      ]
+    },
+    {
       "root": "css.selectors.namespace",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -4983,6 +5192,16 @@
       ]
     },
     {
+      "root": "css.selectors.paused",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.paused"
+      ]
+    },
+    {
       "root": "css.selectors.placeholder",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5000,6 +5219,16 @@
       "profileIds": [],
       "probeIds": [
         "selector.placeholder-shown"
+      ]
+    },
+    {
+      "root": "css.selectors.playing",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.playing"
       ]
     },
     {
@@ -5063,6 +5292,16 @@
       ]
     },
     {
+      "root": "css.selectors.seeking",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.seeking"
+      ]
+    },
+    {
       "root": "css.selectors.slotted",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5070,6 +5309,16 @@
       "profileIds": [],
       "probeIds": [
         "selector.slotted"
+      ]
+    },
+    {
+      "root": "css.selectors.stalled",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.stalled"
       ]
     },
     {
@@ -5223,6 +5472,16 @@
       ]
     },
     {
+      "root": "css.selectors.volume-locked",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "selector.volume-locked"
+      ]
+    },
+    {
       "root": "css.selectors.where",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5252,6 +5511,26 @@
       "profileIds": [],
       "probeIds": [
         "type.acos"
+      ]
+    },
+    {
+      "root": "css.types.anchor",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "type.anchor"
+      ]
+    },
+    {
+      "root": "css.types.anchor-size",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "type.anchor-size"
       ]
     },
     {
@@ -5715,6 +5994,22 @@
       ]
     },
     {
+      "root": "css.types.progress",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "type.progress.opacity.274",
+        "type.progress.opacity.275",
+        "type.progress.width.276",
+        "type.progress.em",
+        "type.progress.frequency",
+        "type.progress.resolution",
+        "type.progress.relative-color"
+      ]
+    },
+    {
       "root": "css.types.ratio",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5762,6 +6057,33 @@
       "profileIds": [],
       "probeIds": [
         "type.round"
+      ]
+    },
+    {
+      "root": "css.types.sibling-count",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "type.sibling-count.order",
+        "type.sibling-count.width",
+        "type.sibling-count.animation-delay",
+        "type.sibling-count.transform"
+      ]
+    },
+    {
+      "root": "css.types.sibling-index",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "type.sibling-index.order",
+        "type.sibling-index.width",
+        "type.sibling-index.animation-delay",
+        "type.sibling-index.transform",
+        "type.sibling-index.scale"
       ]
     },
     {
@@ -5982,6 +6304,54 @@
       ]
     },
     {
+      "id": "alignment-baseline",
+      "branches": [
+        {
+          "key": "css.properties.alignment-baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.alphabetic",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.central",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.ideographic",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.mathematical",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.middle",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.alignment-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.text-after-edge",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.alignment-baseline.text-before-edge",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
       "id": "all",
       "branches": [
         {
@@ -5998,6 +6368,1630 @@
           "key": "css.properties.content.alt_text",
           "disposition": "authoring-surface",
           "surface": "css.properties.content"
+        }
+      ]
+    },
+    {
+      "id": "anchor-positioning",
+      "branches": [
+        {
+          "key": "api.CSSPositionTryDescriptors",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.align-self",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.alignSelf",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.block-size",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.blockSize",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.bottom",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.height",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inline-size",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inlineSize",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset-block",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset-block-end",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset-block-start",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset-inline",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.inset-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.insetBlock",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.insetBlockEnd",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.insetBlockStart",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.insetInline",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.insetInlineEnd",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.insetInlineStart",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.justify-self",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.justifySelf",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.left",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-block",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-block-end",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-block-start",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-bottom",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-inline",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-left",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-right",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.margin-top",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginBlock",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginBlockEnd",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginBlockStart",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginBottom",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginInline",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginInlineEnd",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginInlineStart",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginLeft",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginRight",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.marginTop",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.max-block-size",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.max-height",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.max-inline-size",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.max-width",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.maxBlockSize",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.maxHeight",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.maxInlineSize",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.maxWidth",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.min-block-size",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.min-height",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.min-inline-size",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.min-width",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.minBlockSize",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.minHeight",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.minInlineSize",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.minWidth",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.place-self",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.placeSelf",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.position-anchor",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.position-area",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.positionAnchor",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.positionArea",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.right",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.top",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryDescriptors.width",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryDescriptors"
+        },
+        {
+          "key": "api.CSSPositionTryRule",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryRule"
+        },
+        {
+          "key": "api.CSSPositionTryRule.name",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryRule"
+        },
+        {
+          "key": "api.CSSPositionTryRule.style",
+          "disposition": "authoring-surface",
+          "surface": "api.CSSPositionTryRule"
+        },
+        {
+          "key": "api.HTMLButtonElement.commandForElement.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.HTMLButtonElement.popoverTargetElement.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.HTMLElement.showPopover.options_source_parameter.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.HTMLElement.togglePopover.options_source_parameter.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.HTMLInputElement.popoverTargetElement.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "css.at-rules.position-try",
+          "disposition": "authoring-surface",
+          "surface": "css.at-rules.position-try"
+        },
+        {
+          "key": "css.properties.align-items.anchor-center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-items"
+        },
+        {
+          "key": "css.properties.align-self.anchor-center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-self"
+        },
+        {
+          "key": "css.properties.anchor-name",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.anchor-name"
+        },
+        {
+          "key": "css.properties.anchor-name.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.anchor-name"
+        },
+        {
+          "key": "css.properties.anchor-scope",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.anchor-scope"
+        },
+        {
+          "key": "css.properties.anchor-scope.all",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.anchor-scope"
+        },
+        {
+          "key": "css.properties.anchor-scope.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.anchor-scope"
+        },
+        {
+          "key": "css.properties.block-size.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.block-size"
+        },
+        {
+          "key": "css.properties.bottom.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.bottom"
+        },
+        {
+          "key": "css.properties.bottom.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.bottom"
+        },
+        {
+          "key": "css.properties.height.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.height"
+        },
+        {
+          "key": "css.properties.inline-size.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inline-size"
+        },
+        {
+          "key": "css.properties.inset-block-end.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-block-end"
+        },
+        {
+          "key": "css.properties.inset-block-end.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-block-end"
+        },
+        {
+          "key": "css.properties.inset-block-start.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-block-start"
+        },
+        {
+          "key": "css.properties.inset-block-start.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-block-start"
+        },
+        {
+          "key": "css.properties.inset-block.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-block"
+        },
+        {
+          "key": "css.properties.inset-block.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-block"
+        },
+        {
+          "key": "css.properties.inset-inline-end.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-inline-end"
+        },
+        {
+          "key": "css.properties.inset-inline-end.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-inline-end"
+        },
+        {
+          "key": "css.properties.inset-inline-start.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-inline-start"
+        },
+        {
+          "key": "css.properties.inset-inline-start.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-inline-start"
+        },
+        {
+          "key": "css.properties.inset-inline.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-inline"
+        },
+        {
+          "key": "css.properties.inset-inline.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset-inline"
+        },
+        {
+          "key": "css.properties.inset.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset"
+        },
+        {
+          "key": "css.properties.inset.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.inset"
+        },
+        {
+          "key": "css.properties.justify-items.anchor-center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-self.anchor-center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.left.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.left"
+        },
+        {
+          "key": "css.properties.left.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.left"
+        },
+        {
+          "key": "css.properties.margin-block-end.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-block-end"
+        },
+        {
+          "key": "css.properties.margin-block-start.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-block-start"
+        },
+        {
+          "key": "css.properties.margin-block.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-block"
+        },
+        {
+          "key": "css.properties.margin-bottom.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-bottom"
+        },
+        {
+          "key": "css.properties.margin-inline-end.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-inline-end"
+        },
+        {
+          "key": "css.properties.margin-inline-start.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-inline-start"
+        },
+        {
+          "key": "css.properties.margin-inline.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-inline"
+        },
+        {
+          "key": "css.properties.margin-left.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-left"
+        },
+        {
+          "key": "css.properties.margin-right.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-right"
+        },
+        {
+          "key": "css.properties.margin-top.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin-top"
+        },
+        {
+          "key": "css.properties.margin.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.margin"
+        },
+        {
+          "key": "css.properties.max-block-size.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.max-block-size"
+        },
+        {
+          "key": "css.properties.max-height.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.max-height"
+        },
+        {
+          "key": "css.properties.max-inline-size.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.max-inline-size"
+        },
+        {
+          "key": "css.properties.max-width.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.max-width"
+        },
+        {
+          "key": "css.properties.min-block-size.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.min-block-size"
+        },
+        {
+          "key": "css.properties.min-height.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.min-height"
+        },
+        {
+          "key": "css.properties.min-inline-size.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.min-inline-size"
+        },
+        {
+          "key": "css.properties.min-width.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.min-width"
+        },
+        {
+          "key": "css.properties.place-items.anchor-center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-self.anchor-center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.position-anchor",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.position-anchor.auto",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.position-anchor.none",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.position-anchor.normal",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.position-area",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.disables_auto_margins_and_insets",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.self-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-all",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-self-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.span-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-area.y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-area"
+        },
+        {
+          "key": "css.properties.position-try",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.flip-block",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.flip-inline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.flip-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.flip-x",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.flip-y",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.position-area",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.self-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-all",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-self-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.span-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-fallbacks.y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-fallbacks"
+        },
+        {
+          "key": "css.properties.position-try-order",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-order"
+        },
+        {
+          "key": "css.properties.position-try-order.most-block-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-order"
+        },
+        {
+          "key": "css.properties.position-try-order.most-height",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-order"
+        },
+        {
+          "key": "css.properties.position-try-order.most-inline-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-order"
+        },
+        {
+          "key": "css.properties.position-try-order.most-width",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-order"
+        },
+        {
+          "key": "css.properties.position-try-order.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try-order"
+        },
+        {
+          "key": "css.properties.position-try.block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.flip-block",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.flip-inline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.flip-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.flip-x",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.flip-y",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.self-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-all",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-block-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-block-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-inline-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-inline-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-self-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.span-y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.x-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.x-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.y-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-try.y-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-try"
+        },
+        {
+          "key": "css.properties.position-visibility",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-visibility"
+        },
+        {
+          "key": "css.properties.position-visibility.always",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-visibility"
+        },
+        {
+          "key": "css.properties.position-visibility.anchor-valid",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.position-visibility.anchor-visible",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.position-visibility.no-overflow",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-visibility"
+        },
+        {
+          "key": "css.properties.right.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.right"
+        },
+        {
+          "key": "css.properties.right.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.right"
+        },
+        {
+          "key": "css.properties.top.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.top"
+        },
+        {
+          "key": "css.properties.top.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.top"
+        },
+        {
+          "key": "css.properties.width.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.width"
+        },
+        {
+          "key": "css.types.anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.types.anchor"
+        },
+        {
+          "key": "css.types.anchor-size",
+          "disposition": "authoring-surface",
+          "surface": "css.types.anchor-size"
+        },
+        {
+          "key": "css.types.anchor-size.inset_margin",
+          "disposition": "authoring-surface",
+          "surface": "css.types.anchor-size"
+        },
+        {
+          "key": "html.elements.button.commandfor.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "html.elements.button.popovertarget.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "html.elements.input.popovertarget.implicit_anchor_reference",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         }
       ]
     },
@@ -6455,6 +8449,85 @@
       ]
     },
     {
+      "id": "attr",
+      "branches": [
+        {
+          "key": "css.types.attr.declaration-value",
+          "disposition": "authoring-surface",
+          "surface": "css.types.attr"
+        },
+        {
+          "key": "css.types.attr.fallback",
+          "disposition": "authoring-surface",
+          "surface": "css.types.attr"
+        },
+        {
+          "key": "css.types.attr.type_function",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.angle",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.color",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.custom-ident",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.ident",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.image",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.integer",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.length",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.length-percentage",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.number",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.percentage",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.resolution",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.string",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.time",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.transform-function",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.attr.type_function.url",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
       "id": "attr-contents",
       "branches": [
         {
@@ -6603,6 +8676,35 @@
           "key": "css.properties.background.transparent",
           "disposition": "authoring-surface",
           "surface": "css.properties.background"
+        }
+      ]
+    },
+    {
+      "id": "background-attachment",
+      "branches": [
+        {
+          "key": "css.properties.background-attachment",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-attachment"
+        },
+        {
+          "key": "css.properties.background-attachment.fixed",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.background-attachment.local",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-attachment"
+        },
+        {
+          "key": "css.properties.background-attachment.multiple_backgrounds",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-attachment"
+        },
+        {
+          "key": "css.properties.background-attachment.scroll",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-attachment"
         }
       ]
     },
@@ -8327,6 +10429,74 @@
       ]
     },
     {
+      "id": "column-breaks",
+      "branches": [
+        {
+          "key": "css.properties.break-after.avoid-column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-after.column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-after.multicol_context",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-after.multicol_context.avoid",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-after.multicol_context.avoid-column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-after.multicol_context.column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-before.avoid-column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-before.column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-before.multicol_context",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-before.multicol_context.avoid",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-before.multicol_context.avoid-column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-before.multicol_context.column",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.break-inside.avoid-column",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.break-inside"
+        },
+        {
+          "key": "css.properties.break-inside.multicol_context",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.break-inside"
+        },
+        {
+          "key": "css.properties.break-inside.multicol_context.avoid-column",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.break-inside"
+        }
+      ]
+    },
+    {
       "id": "column-fill",
       "branches": [
         {
@@ -9470,6 +11640,177 @@
       ]
     },
     {
+      "id": "cursor",
+      "branches": [
+        {
+          "key": "css.properties.cursor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.cursor"
+        },
+        {
+          "key": "css.properties.cursor.alias",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.all-scroll",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.cursor"
+        },
+        {
+          "key": "css.properties.cursor.cell",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.cursor"
+        },
+        {
+          "key": "css.properties.cursor.col-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.context-menu",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.copy",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.crosshair",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.default",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.e-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.ew-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.grab",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.grabbing",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.help",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.move",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.n-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.ne-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.nesw-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.no-drop",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.none",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.not-allowed",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.ns-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.nw-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.nwse-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.pointer",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.progress",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.row-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.s-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.se-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.sw-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.text",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.cursor"
+        },
+        {
+          "key": "css.properties.cursor.url",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.cursor"
+        },
+        {
+          "key": "css.properties.cursor.url_positioning_syntax",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.vertical-text",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.w-resize",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.wait",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.zoom-in",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.cursor.zoom-out",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "svg.global_attributes.cursor",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        }
+      ]
+    },
+    {
       "id": "custom-properties",
       "branches": [
         {
@@ -9549,6 +11890,24 @@
       ]
     },
     {
+      "id": "display-contents",
+      "branches": [
+        {
+          "key": "css.properties.display.contents",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.display"
+        },
+        {
+          "key": "css.properties.display.contents.contents_unusual",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.display.contents.focusable_elements",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
       "id": "display-flow-root",
       "branches": [
         {
@@ -9568,6 +11927,33 @@
         },
         {
           "key": "css.properties.display.list-item.legend-support",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
+      "id": "display-mode",
+      "branches": [
+        {
+          "key": "css.at-rules.media.display-mode",
+          "disposition": "authoring-surface",
+          "surface": "css.at-rules.media"
+        },
+        {
+          "key": "css.at-rules.media.display-mode.browser",
+          "disposition": "authoring-surface",
+          "surface": "css.at-rules.media"
+        },
+        {
+          "key": "css.at-rules.media.display-mode.fullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.media.display-mode.minimal-ui",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.media.display-mode.standalone",
           "disposition": "not-baseline"
         }
       ]
@@ -11477,6 +13863,29 @@
       ]
     },
     {
+      "id": "font-variant-position",
+      "branches": [
+        {
+          "key": "css.properties.font-variant-position",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant-position"
+        },
+        {
+          "key": "css.properties.font-variant-position.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant-position"
+        },
+        {
+          "key": "css.properties.font-variant-position.sub",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.font-variant-position.super",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
       "id": "font-variation-settings",
       "branches": [
         {
@@ -11603,6 +14012,92 @@
           "key": "css.selectors.valid.form",
           "disposition": "authoring-surface",
           "surface": "css.selectors.valid"
+        }
+      ]
+    },
+    {
+      "id": "fullscreen",
+      "branches": [
+        {
+          "key": "api.Document.exitFullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Document.exitFullscreen.returns_promise",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Document.fullscreenElement",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Document.fullscreenEnabled",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Document.fullscreenchange_event",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Document.fullscreenerror_event",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Element.fullscreenchange_event",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Element.fullscreenerror_event",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Element.requestFullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Element.requestFullscreen.options_parameter",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Element.requestFullscreen.options_parameter.navigationUI_option",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.Element.requestFullscreen.returns_promise",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.HTMLIFrameElement.allowFullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "api.ShadowRoot.fullscreenElement",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.selectors.backdrop.fullscreen",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.backdrop"
+        },
+        {
+          "key": "css.selectors.fullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.selectors.fullscreen.all_elements",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "html.elements.iframe.allow.fullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "html.elements.iframe.allowfullscreen",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "http.headers.Permissions-Policy.fullscreen",
+          "disposition": "not-baseline"
         }
       ]
     },
@@ -15619,6 +18114,46 @@
       ]
     },
     {
+      "id": "media-pseudos",
+      "branches": [
+        {
+          "key": "css.selectors.buffering",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.buffering"
+        },
+        {
+          "key": "css.selectors.muted",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.muted"
+        },
+        {
+          "key": "css.selectors.paused",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.paused"
+        },
+        {
+          "key": "css.selectors.playing",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.playing"
+        },
+        {
+          "key": "css.selectors.seeking",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.seeking"
+        },
+        {
+          "key": "css.selectors.stalled",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.stalled"
+        },
+        {
+          "key": "css.selectors.volume-locked",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.volume-locked"
+        }
+      ]
+    },
+    {
       "id": "media-queries",
       "branches": [
         {
@@ -17114,6 +19649,24 @@
       ]
     },
     {
+      "id": "page-selectors",
+      "branches": [
+        {
+          "key": "css.selectors.first",
+          "disposition": "authoring-surface",
+          "surface": "css.selectors.first"
+        },
+        {
+          "key": "css.selectors.left",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.selectors.right",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
       "id": "page-setup",
       "branches": [
         {
@@ -17219,6 +19772,34 @@
           "key": "svg.global_attributes.paint-order",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        }
+      ]
+    },
+    {
+      "id": "path-shape",
+      "branches": [
+        {
+          "key": "css.types.basic-shape.path",
+          "disposition": "authoring-surface",
+          "surface": "css.types.basic-shape"
+        },
+        {
+          "key": "css.types.basic-shape.path.clip-path",
+          "disposition": "authoring-surface",
+          "surface": "css.types.basic-shape"
+        },
+        {
+          "key": "css.types.basic-shape.path.d",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.basic-shape.path.offset-path",
+          "disposition": "authoring-surface",
+          "surface": "css.types.basic-shape"
+        },
+        {
+          "key": "css.types.basic-shape.path.shape-outside",
+          "disposition": "not-baseline"
         }
       ]
     },
@@ -17506,6 +20087,16 @@
           "key": "css.properties.print-color-adjust.exact",
           "disposition": "authoring-surface",
           "surface": "css.properties.print-color-adjust"
+        }
+      ]
+    },
+    {
+      "id": "progress-function",
+      "branches": [
+        {
+          "key": "css.types.progress",
+          "disposition": "authoring-surface",
+          "surface": "css.types.progress"
         }
       ]
     },
@@ -18528,6 +21119,21 @@
           "key": "css.types.basic-shape.polygon",
           "disposition": "authoring-surface",
           "surface": "css.types.basic-shape"
+        }
+      ]
+    },
+    {
+      "id": "sibling-count",
+      "branches": [
+        {
+          "key": "css.types.sibling-count",
+          "disposition": "authoring-surface",
+          "surface": "css.types.sibling-count"
+        },
+        {
+          "key": "css.types.sibling-index",
+          "disposition": "authoring-surface",
+          "surface": "css.types.sibling-index"
         }
       ]
     },
@@ -23382,7 +25988,8 @@
         },
         {
           "key": "css.types.color.system-color.accentcolor_accentcolortext",
-          "disposition": "after-cutoff"
+          "disposition": "authoring-surface",
+          "surface": "css.types.color"
         },
         {
           "key": "css.types.color.system-color.buttonborder",
@@ -23864,6 +26471,120 @@
           "key": "css.properties.text-align-last.auto",
           "disposition": "authoring-surface",
           "surface": "css.properties.text-align-last"
+        }
+      ]
+    },
+    {
+      "id": "text-autospace",
+      "branches": [
+        {
+          "key": "css.properties.text-autospace",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-autospace"
+        },
+        {
+          "key": "css.properties.text-autospace.auto",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.text-autospace.ideograph-alpha",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.text-autospace.ideograph-numeric",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.text-autospace.insert",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.text-autospace.no-autospace",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-autospace"
+        },
+        {
+          "key": "css.properties.text-autospace.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-autospace"
+        },
+        {
+          "key": "css.properties.text-autospace.punctuation",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.text-autospace.replace",
+          "disposition": "not-baseline"
+        }
+      ]
+    },
+    {
+      "id": "text-box",
+      "branches": [
+        {
+          "key": "css.properties.text-box",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box"
+        },
+        {
+          "key": "css.properties.text-box-edge",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-edge"
+        },
+        {
+          "key": "css.properties.text-box-edge.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-edge"
+        },
+        {
+          "key": "css.properties.text-box-trim",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-trim"
+        },
+        {
+          "key": "css.properties.text-box-trim.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-trim"
+        },
+        {
+          "key": "css.properties.text-box-trim.trim-both",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-trim"
+        },
+        {
+          "key": "css.properties.text-box-trim.trim-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-trim"
+        },
+        {
+          "key": "css.properties.text-box-trim.trim-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box-trim"
+        },
+        {
+          "key": "css.properties.text-box.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-box"
+        },
+        {
+          "key": "css.types.text-edge",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.text-edge.alphabetic",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.text-edge.cap",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.text-edge.ex",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.types.text-edge.text",
+          "disposition": "not-baseline"
         }
       ]
     },

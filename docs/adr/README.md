@@ -198,3 +198,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0187 | [Compact redundant semantic value storage](./0187-compact-redundant-semantic-value-storage.md) | accepted |
 | 0188 | [Target June 2026 authoring CSSOM and explicit experiments](./0188-target-june-2026-authoring-cssom-and-explicit-experiments.md) | accepted |
 | 0189 | [Expose pinned draft mixin interfaces by default](./0189-expose-pinned-draft-mixin-interfaces-by-default.md) | accepted |
+| 0190 | [Target individual September Baseline branches](./0190-target-individual-september-baseline-branches.md) | accepted |

@@ -60,7 +60,7 @@ interface WasmGlueModule {
   serializeFontFamilyValue(value: string): string;
   serializeIdentifierValue(value: string): string;
   WasmDeclarationState: new (
-    context: "style" | "font-face" | "function",
+    context: "style" | "font-face" | "function" | "position-try",
     ...arguments_: [...BudgetArguments, initialCssText?: string]
   ) => GeneratedDeclarationState;
 }

@@ -1287,9 +1287,11 @@ export class CSSStyleDeclaration {
       reportSerializationDiagnostic,
       parentRule instanceof CSSFontFaceRule
         ? "font-face"
-        : parentRule instanceof CSSFunctionDeclarations
-          ? "function"
-          : "style",
+        : parentRule instanceof CSSPositionTryRule
+          ? "position-try"
+          : parentRule instanceof CSSFunctionDeclarations
+            ? "function"
+            : "style",
       ruleResourceBudgets.get(parentRule) ?? defaultResourceBudget,
       () => declarationSerializationDepth(parentRule),
       initialCssText,
@@ -1537,16 +1539,84 @@ export class CSSPageRule extends CSSGroupingRule {
   set cssText(_value: string) {}
 }
 
-/** A live `@position-try` declaration rule. */
+/** The allowed descriptors of an anchor positioning fallback rule. */
+export class CSSPositionTryDescriptors extends CSSStyleDeclaration {}
+
+// CSS Anchor Positioning defines both camelCase and dashed IDL accessors.
+for (const name of [
+  "margin",
+  "margin-top",
+  "margin-right",
+  "margin-bottom",
+  "margin-left",
+  "margin-block",
+  "margin-block-start",
+  "margin-block-end",
+  "margin-inline",
+  "margin-inline-start",
+  "margin-inline-end",
+  "inset",
+  "top",
+  "right",
+  "bottom",
+  "left",
+  "inset-block",
+  "inset-block-start",
+  "inset-block-end",
+  "inset-inline",
+  "inset-inline-start",
+  "inset-inline-end",
+  "width",
+  "min-width",
+  "max-width",
+  "height",
+  "min-height",
+  "max-height",
+  "block-size",
+  "min-block-size",
+  "max-block-size",
+  "inline-size",
+  "min-inline-size",
+  "max-inline-size",
+  "place-self",
+  "align-self",
+  "justify-self",
+  "position-anchor",
+  "position-area",
+]) {
+  const camelCase = name.replace(/-([a-z])/gu, (_match, letter: string) => letter.toUpperCase());
+  for (const accessor of new Set([name, camelCase])) {
+    Object.defineProperty(CSSPositionTryDescriptors.prototype, accessor, {
+      configurable: true,
+      enumerable: true,
+      get(this: CSSPositionTryDescriptors) {
+        return this.getPropertyValue(name);
+      },
+      set(this: CSSPositionTryDescriptors, value: string) {
+        this.setProperty(name, value);
+      },
+    });
+  }
+}
+
+/** A named anchor positioning fallback rule. */
 export class CSSPositionTryRule extends CSSRule {
   readonly name: string;
-  readonly style: CSSStyleDeclaration;
+  readonly #style: CSSPositionTryDescriptors;
 
   private constructor(name: string, initialCssText?: string) {
     super(0);
     this.name = name;
-    this.style = constructWebIDL<CSSStyleDeclaration>(CSSStyleDeclaration, [this, initialCssText]);
-    lockOwnProperties(this, "name", "style");
+    this.#style = constructWebIDL<CSSPositionTryDescriptors>(CSSPositionTryDescriptors, [this, initialCssText]);
+    lockOwnProperties(this, "name");
+  }
+
+  get style(): CSSPositionTryDescriptors {
+    return this.#style;
+  }
+
+  set style(cssText: string) {
+    this.#style.cssText = `${cssText}`;
   }
 
   override get cssText(): string {

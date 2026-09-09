@@ -12,14 +12,15 @@ interfaces. It does not include cascade evaluation, computed styles, rendering,
 or expanding mixins into ordinary declarations.
 _Avoid_: Full CSS support, rendering parity
 
-**June 2026 CSS target**:
+**Dated CSS target**:
 The cumulative set of CSS features that reached Web Platform Baseline Newly
-available on or before June 30, 2026, including features from earlier years.
+available on or before the pinned cutoff (currently September 9, 2026), including
+individually eligible branches of partially available families and earlier years.
 _Avoid_: Baseline Widely available, June-only features
 
 **Explicit experimental scope**:
 Native CSS mixins and custom functions included in the authoring compatibility
-work independently of their membership in the June 2026 CSS target. Their
+work independently of their membership in the dated CSS target. Their
 experimental status remains explicit.
 _Avoid_: Sass mixins, all experimental CSS
 

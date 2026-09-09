@@ -36,6 +36,7 @@ impl WasmDeclarationState {
             None | Some("style") => DeclarationContext::Style,
             Some("font-face") => DeclarationContext::FontFace,
             Some("function") => DeclarationContext::Function,
+            Some("position-try") => DeclarationContext::PositionTry,
             Some(context) => {
                 return Err(js_error(format!(
                     "SHEETOM_DECLARATION_CONTEXT: unsupported declaration context {context}"

@@ -57,7 +57,7 @@ export class NativeDeclarationBlock {
   constructor(
     reportDiagnostic: ReportDeclarationDiagnostic,
     reportSerializationDiagnostic: ReportSerializationDiagnostic,
-    context: "style" | "font-face" | "function" = "style",
+    context: "style" | "font-face" | "function" | "position-try" = "style",
     resourceBudget: NativeResourceBudget = defaultResourceBudget,
     reservedNestingDepth: () => number = () => 0,
     initialCssText?: string,

@@ -13,9 +13,7 @@ use crate::values::{
   angle::Angle,
   length::{Length, LengthPercentage},
   percentage::NumberOrPercentage,
-  position::{
-    HorizontalPosition, HorizontalPositionKeyword, Position, VerticalPosition, VerticalPositionKeyword,
-  },
+  position::{HorizontalPosition, HorizontalPositionKeyword, Position, VerticalPosition, VerticalPositionKeyword},
 };
 use crate::vendor_prefix::VendorPrefix;
 #[cfg(feature = "visitor")]
@@ -147,10 +145,7 @@ impl<'i> Parse<'i> for TransformOrigin {
 
     let z = Length::parse(input)?;
     input.expect_exhausted()?;
-    Ok(Self {
-      position,
-      z: Some(z),
-    })
+    Ok(Self { position, z: Some(z) })
   }
 }
 
@@ -1244,6 +1239,15 @@ impl ToCss for Transform {
         }
         dest.write_char(')')
       }
+      Scale(x, y) if x.to_number().is_none() || y.to_number().is_none() => {
+        dest.write_str("scale(")?;
+        x.to_css_as_number(dest)?;
+        if x != y {
+          dest.delim(',', false)?;
+          y.to_css_as_number(dest)?;
+        }
+        dest.write_char(')')
+      }
       Scale(x, y) => {
         let x: f32 = x.into();
         let y: f32 = y.into();
@@ -1263,10 +1267,20 @@ impl ToCss for Transform {
         }
         dest.write_char(')')
       }
+      ScaleX(x) if x.to_number().is_none() => {
+        dest.write_str("scaleX(")?;
+        x.to_css_as_number(dest)?;
+        dest.write_char(')')
+      }
       ScaleX(x) => {
         let x: f32 = x.into();
         dest.write_str("scaleX(")?;
         x.to_css(dest)?;
+        dest.write_char(')')
+      }
+      ScaleY(y) if y.to_number().is_none() => {
+        dest.write_str("scaleY(")?;
+        y.to_css_as_number(dest)?;
         dest.write_char(')')
       }
       ScaleY(y) => {
@@ -1275,10 +1289,24 @@ impl ToCss for Transform {
         y.to_css(dest)?;
         dest.write_char(')')
       }
+      ScaleZ(z) if z.to_number().is_none() => {
+        dest.write_str("scaleZ(")?;
+        z.to_css_as_number(dest)?;
+        dest.write_char(')')
+      }
       ScaleZ(z) => {
         let z: f32 = z.into();
         dest.write_str("scaleZ(")?;
         z.to_css(dest)?;
+        dest.write_char(')')
+      }
+      Scale3d(x, y, z) if [x, y, z].iter().any(|v| v.to_number().is_none()) => {
+        dest.write_str("scale3d(")?;
+        x.to_css_as_number(dest)?;
+        dest.delim(',', false)?;
+        y.to_css_as_number(dest)?;
+        dest.delim(',', false)?;
+        z.to_css_as_number(dest)?;
         dest.write_char(')')
       }
       Scale3d(x, y, z) => {
@@ -1507,11 +1535,11 @@ impl Transform {
           return Some(Matrix3d::translate(x, y, z));
         }
       }
-      Transform::Scale(x, y) => return Some(Matrix3d::scale(x.into(), y.into(), 1.0)),
-      Transform::ScaleX(x) => return Some(Matrix3d::scale(x.into(), 1.0, 1.0)),
-      Transform::ScaleY(y) => return Some(Matrix3d::scale(1.0, y.into(), 1.0)),
-      Transform::ScaleZ(z) => return Some(Matrix3d::scale(1.0, 1.0, z.into())),
-      Transform::Scale3d(x, y, z) => return Some(Matrix3d::scale(x.into(), y.into(), z.into())),
+      Transform::Scale(x, y) => return Some(Matrix3d::scale(x.to_number()?, y.to_number()?, 1.0)),
+      Transform::ScaleX(x) => return Some(Matrix3d::scale(x.to_number()?, 1.0, 1.0)),
+      Transform::ScaleY(y) => return Some(Matrix3d::scale(1.0, y.to_number()?, 1.0)),
+      Transform::ScaleZ(z) => return Some(Matrix3d::scale(1.0, 1.0, z.to_number()?)),
+      Transform::Scale3d(x, y, z) => return Some(Matrix3d::scale(x.to_number()?, y.to_number()?, z.to_number()?)),
       Transform::Rotate(angle) | Transform::RotateZ(angle) => {
         return Some(Matrix3d::rotate(0.0, 0.0, 1.0, to_radians!(angle)))
       }
@@ -1812,6 +1840,7 @@ fn convert_percentage_to_number<'i, 't>(
   input: &mut Parser<'i, 't>,
 ) -> Result<NumberOrPercentage, ParseError<'i, ParserError<'i>>> {
   Ok(match NumberOrPercentage::parse(input)? {
+    value @ NumberOrPercentage::Calculation(_) => value,
     NumberOrPercentage::Number(number) => NumberOrPercentage::Number(number),
     NumberOrPercentage::Percentage(percent) => NumberOrPercentage::Number(percent.0),
   })
@@ -1847,6 +1876,17 @@ impl ToCss for Scale {
     match self {
       Scale::None => {
         dest.write_str("none")?;
+      }
+      Scale::XYZ { x, y, z } if [x, y, z].iter().any(|v| v.to_number().is_none()) => {
+        x.to_css_as_number(dest)?;
+        if x != y || z.to_number() != Some(1.0) {
+          dest.write_char(' ')?;
+          y.to_css_as_number(dest)?;
+          if z.to_number() != Some(1.0) {
+            dest.write_char(' ')?;
+            z.to_css_as_number(dest)?;
+          }
+        }
       }
       Scale::XYZ { x, y, z } => {
         let x: f32 = x.into();
@@ -2002,12 +2042,8 @@ mod tests {
   };
 
   fn parse(source: &str) -> Result<String, ()> {
-    let property = Property::parse_string(
-      PropertyId::from("transform-origin"),
-      source,
-      ParserOptions::default(),
-    )
-    .map_err(|_| ())?;
+    let property = Property::parse_string(PropertyId::from("transform-origin"), source, ParserOptions::default())
+      .map_err(|_| ())?;
     if matches!(property, Property::Unparsed(_)) {
       return Err(());
     }

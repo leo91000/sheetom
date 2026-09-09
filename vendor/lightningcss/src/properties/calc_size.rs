@@ -221,6 +221,7 @@ fn calc_size_contains_size<D>(value: &Calc<CalcSizeLengthPercentage<D>>) -> bool
     }
     Calc::Product(_, value) => calc_size_contains_size(value),
     Calc::Function(function) => match function.as_ref() {
+      MathFunction::SiblingCount | MathFunction::SiblingIndex | MathFunction::Progress(_) => false,
       MathFunction::Calc(value) | MathFunction::Abs(value) | MathFunction::Sign(value) => {
         calc_size_contains_size(value)
       }
