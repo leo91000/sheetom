@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { chromium, firefox } from "playwright";
 import corpus from "../compatibility/css-authoring-probes.json" with { type: "json" };
 import propertyCorpus from "../compatibility/webref-property-branches.json" with { type: "json" };
 import { assertAuthoringRoundTrip, snapshotAuthoringRule as snapshotRule } from "./css-authoring-roundtrip.ts";
 
+import { loadValidationBackend } from "./validation-backend.ts";
+
 const requestedBackend = process.argv.find(argument => argument.startsWith("--backend="))?.slice(10);
 assert.ok(requestedBackend === undefined || ["native", "wasm"].includes(requestedBackend));
 const backends = [];
-if (requestedBackend !== "wasm") backends.push(["native", await import("../dist/index.js")]);
-if (requestedBackend !== "native") backends.push(["wasm", await (await import("../packages/wasm/dist/index.js")).createSheetOM(new Uint8Array(await readFile(new URL("../packages/wasm/dist/sheetom_wasm_bg.wasm", import.meta.url))).buffer)]);
+if (requestedBackend !== "wasm") backends.push(["native", await loadValidationBackend("native")]);
+if (requestedBackend !== "native") backends.push(["wasm", await loadValidationBackend("wasm")]);
 // This function is also executed verbatim in Chromium. Snapshots cover authored
 // state, invalid-mutation atomicity, parentage, and live collection identity.
 
@@ -87,7 +89,8 @@ try {
   const expectedEscapes = await page.evaluate(values => values.map(value => CSS.escape(value)), identifiers);
   for (const [, api] of backends) assert.deepEqual(identifiers.map(value => api.CSS.escape(value)), expectedEscapes);
   const report = { browser: browser.version(), mediaSelectorBrowser: mediaBrowser.version(), probes: corpus.probes.length, supportsChecksPerBackend: expectedSupports.length, escapeChecksPerBackend: identifiers.length, mismatches };
-  await writeFile(new URL("../target/css-authoring-target-report.json", import.meta.url), `${JSON.stringify(report, null, 2)}\n`);
+  const reportPath = process.argv.find(argument => argument.startsWith("--report="))?.slice(9) ?? new URL("../target/css-authoring-target-report.json", import.meta.url);
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify({ ...report, mismatches: mismatches.length }));
-  assert.equal(mismatches.length, 0, "See target/css-authoring-target-report.json");
+  assert.equal(mismatches.length, 0, `See ${reportPath}`);
 } finally { await browser.close(); await mediaBrowser.close(); }

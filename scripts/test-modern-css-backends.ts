@@ -4,6 +4,8 @@ import { spawnSync } from "node:child_process";
 import { transform } from "esbuild";
 import * as roundtrip from "./css-authoring-roundtrip.ts";
 
+import { loadValidationBackend } from "./validation-backend.ts";
+
 const backend = process.argv.find(argument => argument.startsWith("--backend="))?.slice(10);
 if (!backend) {
   for (const backend of ["native", "wasm"]) {
@@ -13,8 +15,7 @@ if (!backend) {
     process.stdout.write(result.stdout);
   }
 } else {
-  const api = backend === "native" ? await import("../dist/index.js")
-    : await (await import("../packages/wasm/dist/index.js")).createSheetOM(new Uint8Array(await readFile(new URL("../packages/wasm/dist/sheetom_wasm_bg.wasm", import.meta.url))).buffer);
+  const api = await loadValidationBackend(backend);
   // Execute exactly the unit contract against each packaged public facade.
   // Only the test registration and module imports are substituted; assertions
   // remain shared so backend tests cannot silently omit new regression cases.
