@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 
 import contracts from "../compatibility/browser-longhand-keyword-contracts.json" with { type: "json" };
 import { CSSStyleRule, CSSStyleSheet } from "../dist/index.js";

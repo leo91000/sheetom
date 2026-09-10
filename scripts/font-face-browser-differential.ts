@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 
 import { CSSFontFaceRule, parseStyleSheet } from "../dist/index.js";
 

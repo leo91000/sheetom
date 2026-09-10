@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { chromium, firefox, webkit } from "playwright";
+import { chromium, firefox, webkit } from "playwright-oracle";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 if (process.env.SHEETOM_RECORD_BASELINE !== "1") {

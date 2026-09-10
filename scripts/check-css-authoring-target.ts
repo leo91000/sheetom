@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
-import { chromium, firefox } from "playwright";
+import { chromium, firefox } from "playwright-oracle";
 import corpus from "../compatibility/css-authoring-probes.json" with { type: "json" };
 import propertyCorpus from "../compatibility/webref-property-branches.json" with { type: "json" };
 import { assertAuthoringRoundTrip, snapshotAuthoringRule as snapshotRule } from "./css-authoring-roundtrip.ts";

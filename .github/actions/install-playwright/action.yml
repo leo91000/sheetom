@@ -1,5 +1,5 @@
 name: Install Playwright browser cohort
-description: Install the pinned browser cohort with resilient Ubuntu package sources
+description: Install consumer browsers and the pinned compatibility oracle with resilient Ubuntu package sources
 
 runs:
   using: composite
@@ -21,3 +21,7 @@ runs:
     - name: Install browser engines and system dependencies
       shell: bash
       run: npx playwright install --with-deps chromium firefox webkit
+
+    - name: Install the pinned compatibility oracle
+      shell: bash
+      run: node node_modules/playwright-oracle/cli.js install --with-deps chromium firefox webkit

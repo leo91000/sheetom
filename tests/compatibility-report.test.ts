@@ -287,13 +287,13 @@ test("compatibility recording verifies and hashes every native WPT report", asyn
         rejected: report.evidence.nativeGrammar.webrefBranches.rejected,
       },
       {
-        passed: 11_590,
-        total: 11_590,
-        properties: 666,
+        passed: 11_612,
+        total: 11_612,
+        properties: 667,
         profiles: 371,
-        branches: 8_369,
-        accepted: 10_158,
-        rejected: 1_432,
+        branches: 8_405,
+        accepted: 10_133,
+        rejected: 1_479,
       },
     );
     assert.deepEqual(

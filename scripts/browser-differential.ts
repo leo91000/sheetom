@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fc from "fast-check";
-import { chromium, firefox, webkit } from "playwright";
+import { chromium, firefox, webkit } from "playwright-oracle";
 
 import {
   CSSStyleRule,

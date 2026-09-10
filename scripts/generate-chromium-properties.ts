@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 
 import * as csstree from "css-tree";
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 
 const browser = await chromium.launch({ headless: true });
 

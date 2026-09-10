@@ -148,6 +148,7 @@
     "esbuild": "0.28.2",
     "fast-check": "^4.9.0",
     "playwright": "^1.62.1",
+    "playwright-oracle": "npm:playwright-core@1.62.1",
     "rollup": "4.63.1",
     "tsdown": "^0.23.0",
     "typedoc": "^0.28.20",

@@ -25,6 +25,10 @@ test("Playwright installs use a resilient Ubuntu package source", () => {
     action,
     /playwright install --with-deps chromium firefox webkit/u,
   );
+  assert.match(
+    action,
+    /node node_modules\/playwright-oracle\/cli\.js install --with-deps chromium firefox webkit/u,
+  );
 });
 
 test("release-critical workflows share the Playwright installer", () => {

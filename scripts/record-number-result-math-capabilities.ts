@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 
 import {
   chromiumPropertyBaseline,
