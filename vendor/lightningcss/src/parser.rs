@@ -77,6 +77,11 @@ pub struct ParserOptions<'i> {
   pub warnings: Option<Arc<RwLock<Vec<Error<ParserError<'i>>>>>>,
   /// Feature flags to enable.
   pub flags: ParserFlags,
+  /// Allowed namespace prefixes for CSSOM selector parsing. `None` preserves
+  /// unresolved prefixes, as required by the standalone compiler.
+  pub namespace_prefixes: Option<Vec<String>>,
+  /// Reject invalid :is()/:where() branches when testing selector support.
+  pub strict_selector_lists: bool,
 }
 
 #[cfg(feature = "into_owned")]

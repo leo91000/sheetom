@@ -3,7 +3,9 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import corpus from "../compatibility/webref-property-branches.json" with { type: "json" };
-import { CSSStyleRule, CSSStyleSheet } from "../dist/index.js";
+import { loadValidationBackend } from "./validation-backend.ts";
+
+const { CSSStyleRule, CSSStyleSheet } = await loadValidationBackend(process.argv.includes("--wasm") ? "wasm" : "native");
 
 const corpusUrl = new URL("../compatibility/webref-property-branches.json", import.meta.url);
 const ratchetUrl = new URL("../compatibility/webref-branch-ratchet.json", import.meta.url);

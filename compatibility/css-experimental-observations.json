@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "browser": "151.0.7922.34",
+  "flags": [
+    "--enable-blink-features=CSSMixins"
+  ],
+  "authority": "Experimental browser observation only. The five SheetOM mixin interfaces follow CSSWG revision 5e68d5c1ca6656dd7a4b32f821d187aa9652ad5d; these browser interfaces and older body grammar do not override it.",
+  "observations": [
+    {
+      "source": "@mixin --theme(--color <color>: red) { color: var(--color); @contents; } .a { @apply --theme(blue); }",
+      "rules": [
+        {
+          "interface": "CSSMixinRule",
+          "cssText": "@mixin --theme(--color <color>: red) {\n}",
+          "children": []
+        },
+        {
+          "interface": "CSSStyleRule",
+          "cssText": ".a {\n  @apply --theme;\n}",
+          "children": [
+            {
+              "interface": "CSSApplyMixinRule",
+              "cssText": "@apply --theme;",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "@mixin --empty() {} .a { @apply --empty(); @apply --empty() {} }",
+      "rules": [
+        {
+          "interface": "CSSMixinRule",
+          "cssText": "@mixin --empty() {\n}",
+          "children": []
+        },
+        {
+          "interface": "CSSStyleRule",
+          "cssText": ".a {\n  @apply --empty;\n}",
+          "children": [
+            {
+              "interface": "CSSApplyMixinRule",
+              "cssText": "@apply --empty;",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "@mixin --card() { @result { color: red; @contents { color: blue; } } }",
+      "rules": [
+        {
+          "interface": "CSSMixinRule",
+          "cssText": "@mixin --card() {\n  @result {\n  color: red;\n  @contents;\n}\n}",
+          "children": [
+            {
+              "interface": "CSSResultRule",
+              "cssText": "@result {\n  color: red;\n  @contents;\n}",
+              "children": [
+                {
+                  "interface": "CSSNestedDeclarations",
+                  "cssText": "color: red;",
+                  "children": []
+                },
+                {
+                  "interface": "CSSContentsMixinRule",
+                  "cssText": "@contents;",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

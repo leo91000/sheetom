@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
+import "./generate-css-feature-target.ts";
 
 import {
   chromiumShorthandLonghands,
@@ -903,3 +904,5 @@ for (const fixtureId of resolvedFixtureIds) {
 }
 
 console.log("Conformance schemas and checked-in documents are valid.");
+
+await import("./generate-css-authoring-coverage.ts");

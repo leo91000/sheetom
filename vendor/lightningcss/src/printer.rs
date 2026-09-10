@@ -16,6 +16,8 @@ use parcel_sourcemap::{OriginalLocation, SourceMap};
 pub struct PrinterOptions<'a> {
   /// Whether to minify the CSS, i.e. remove white space.
   pub minify: bool,
+  /// Preserve authored :is() wrappers for observable CSSOM serialization.
+  pub preserve_selector_wrappers: bool,
   /// An optional reference to a source map to write mappings into.
   #[cfg(feature = "sourcemap")]
   #[cfg_attr(docsrs, doc(cfg(feature = "sourcemap")))]
@@ -77,6 +79,7 @@ pub struct Printer<'a, 'c, W> {
   line: u32,
   col: u32,
   pub(crate) minify: bool,
+  pub(crate) preserve_selector_wrappers: bool,
   pub(crate) targets: TargetsWithSupportsScope,
   /// Vendor prefix override. When non-empty, it overrides
   /// the vendor prefix of whatever is being printed.
@@ -108,6 +111,7 @@ impl<'a, 'c, W: std::fmt::Write + Sized> Printer<'a, 'c, W> {
       line: 0,
       col: 0,
       minify: options.minify,
+      preserve_selector_wrappers: options.preserve_selector_wrappers,
       targets: TargetsWithSupportsScope::new(options.targets),
       vendor_prefix: VendorPrefix::empty(),
       in_calc: false,

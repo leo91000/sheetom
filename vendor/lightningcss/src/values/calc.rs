@@ -52,11 +52,146 @@ pub enum MathFunction<V> {
   Sign(Calc<V>),
   /// The [`hypot()`](https://drafts.csswg.org/css-values-4/#funcdef-hypot) function.
   Hypot(Vec<Calc<V>>),
+  /// The tree-dependent, number-valued sibling functions.
+  SiblingCount,
+  /// The one-based index among element siblings.
+  SiblingIndex,
+  /// A dimension-independent interpolation progress calculation.
+  Progress(Progress),
+}
+
+/// Typed progress arguments are independent of the enclosing property's dimension.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub enum Progress {
+  /// Numbers or compatible lengths, including unresolved relative lengths.
+  Length([Calc<Length>; 3]),
+  /// Angles.
+  Angle([Calc<Angle>; 3]),
+  /// Times.
+  Time([Calc<Time>; 3]),
+  /// Percentages, with no property-dependent percentage hint.
+  Percentage([Calc<Percentage>; 3]),
+  /// Frequencies normalized to hertz.
+  Frequency([Calc<ProgressFrequency>; 3]),
+  /// Resolutions normalized to dots per pixel.
+  Resolution([Calc<ProgressResolution>; 3]),
+}
+
+// These dimensions have no element-dependent units. Keep them typed while
+// sharing the calculation grammar, including nested math and sibling values.
+macro_rules! progress_dimension {
+  ($name:ident, $unit:literal, $($input:literal => $scale:expr),+ $(,)?) => {
+    #[doc = concat!("A canonical ", $unit, " value in a progress calculation.")]
+    #[derive(Debug, Clone, PartialEq, PartialOrd)]
+    #[cfg_attr(feature = "visitor", derive(Visit))]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+    #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+    pub struct $name(f32);
+    impl<'i> Parse<'i> for $name {
+      fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+        let token = input.next()?.clone();
+        if let Token::Dimension { value, ref unit, .. } = token {
+          $(if unit.eq_ignore_ascii_case($input) { return Ok(Self(value * $scale)); })+
+        }
+        Err(input.new_unexpected_token_error(token))
+      }
+    }
+    impl ToCss for $name {
+      fn to_css<W: std::fmt::Write>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError> {
+        super::length::serialize_dimension(self.0, $unit, dest)
+      }
+    }
+    impl std::ops::Mul<f32> for $name {
+      type Output = Self;
+      fn mul(self, value: f32) -> Self { Self(self.0 * value) }
+    }
+    impl AddInternal for $name { fn add(self, other: Self) -> Self { Self(self.0 + other.0) } }
+    impl crate::traits::Op for $name {
+      fn op<F: FnOnce(f32, f32) -> f32>(&self, other: &Self, op: F) -> Self { Self(op(self.0, other.0)) }
+      fn op_to<T, F: FnOnce(f32, f32) -> T>(&self, other: &Self, op: F) -> T { op(self.0, other.0) }
+    }
+    impl crate::traits::Map for $name { fn map<F: FnOnce(f32) -> f32>(&self, op: F) -> Self { Self(op(self.0)) } }
+    impl Sign for $name { fn sign(&self) -> f32 { self.0.sign() } }
+    impl From<$name> for Calc<$name> { fn from(value: $name) -> Self { Self::Value(Box::new(value)) } }
+    impl TryFrom<Calc<$name>> for $name {
+      type Error = ();
+      fn try_from(value: Calc<Self>) -> Result<Self, ()> { match value { Calc::Value(value) => Ok(*value), _ => Err(()) } }
+    }
+    super::angle::impl_try_from_angle!($name);
+  };
+}
+progress_dimension!(ProgressFrequency, "hz", "hz" => 1.0, "khz" => 1000.0);
+progress_dimension!(ProgressResolution, "dppx", "dppx" => 1.0, "x" => 1.0, "dpi" => 1.0 / 96.0, "dpcm" => 2.54 / 96.0);
+
+impl Progress {
+  fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<(Self, Option<f32>), ParseError<'i, ParserError<'i>>> {
+    macro_rules! parse_arguments {
+      ($ty:ty, $variant:ident, $number:expr) => {
+        if let Ok(args) = input.try_parse(|input| {
+          let a = Calc::<$ty>::parse_sum(input, &|_| None, false)?;
+          input.expect_comma()?;
+          let b = Calc::<$ty>::parse_sum(input, &|_| None, false)?;
+          input.expect_comma()?;
+          let c = Calc::<$ty>::parse_sum(input, &|_| None, false)?;
+          input.expect_exhausted()?;
+          let args = [a, b, c];
+          if common_resolved_type(&args).is_none() {
+            return Err(input.new_custom_error(ParserError::InvalidValue));
+          }
+          Ok(args)
+        }) {
+          let number = |value: &Calc<$ty>| match value {
+            Calc::Number(value) => Some(*value),
+            Calc::Value(value) => ($number)(value),
+            _ => None,
+          };
+          let resolved = match (number(&args[0]), number(&args[1]), number(&args[2])) {
+            (Some(value), Some(start), Some(end)) => Some(((value - start) / (end - start)).clamp(0.0, 1.0)),
+            _ => match (&args[0], &args[1], &args[2]) {
+              (Calc::Value(value), Calc::Value(start), Calc::Value(end)) => {
+                value.try_op(start, |a, b| a - b).and_then(|distance| {
+                  end
+                    .try_op(start, |a, b| a - b)
+                    .and_then(|range| distance.try_op_to(&range, |a, b| (a / b).clamp(0.0, 1.0)))
+                })
+              }
+              _ => None,
+            },
+          };
+          return Ok((Self::$variant(args), resolved));
+        }
+      };
+    }
+    parse_arguments!(Length, Length, |v: &Length| v.to_px());
+    parse_arguments!(Angle, Angle, |v: &Angle| Some(v.to_degrees()));
+    parse_arguments!(Time, Time, |v: &Time| Some(v.to_ms()));
+    parse_arguments!(Percentage, Percentage, |v: &Percentage| Some(v.0));
+    parse_arguments!(ProgressFrequency, Frequency, |v: &ProgressFrequency| Some(v.0));
+    parse_arguments!(ProgressResolution, Resolution, |v: &ProgressResolution| Some(v.0));
+    Err(input.new_custom_error(ParserError::InvalidValue))
+  }
+
+  fn write_argument<W: std::fmt::Write>(&self, index: usize, dest: &mut Printer<W>) -> Result<(), PrinterError> {
+    match self {
+      Self::Length(args) => args[index].to_css(dest),
+      Self::Angle(args) => args[index].to_css(dest),
+      Self::Time(args) => args[index].to_css(dest),
+      Self::Percentage(args) => args[index].to_css(dest),
+      Self::Frequency(args) => args[index].to_css(dest),
+      Self::Resolution(args) => args[index].to_css(dest),
+    }
+  }
 }
 
 impl<V: IsCompatible> IsCompatible for MathFunction<V> {
   fn is_compatible(&self, browsers: Browsers) -> bool {
     match self {
+      MathFunction::SiblingCount | MathFunction::SiblingIndex | MathFunction::Progress(_) => false,
       MathFunction::Calc(v) => Feature::CalcFunction.is_compatible(browsers) && v.is_compatible(browsers),
       MathFunction::Min(v) => {
         Feature::MinFunction.is_compatible(browsers) && v.iter().all(|v| v.is_compatible(browsers))
@@ -183,6 +318,9 @@ enum MathSerializeKind {
   Abs,
   Sign,
   Hypot(usize),
+  SiblingCount,
+  SiblingIndex,
+  Progress,
 }
 
 trait MathSerializeOps<W: std::fmt::Write> {
@@ -197,6 +335,9 @@ where
 {
   fn kind(&self) -> MathSerializeKind {
     match self {
+      MathFunction::SiblingCount => MathSerializeKind::SiblingCount,
+      MathFunction::SiblingIndex => MathSerializeKind::SiblingIndex,
+      MathFunction::Progress(_) => MathSerializeKind::Progress,
       MathFunction::Calc(_) => MathSerializeKind::Calc,
       MathFunction::Min(values) => MathSerializeKind::Min(values.len()),
       MathFunction::Max(values) => MathSerializeKind::Max(values.len()),
@@ -212,6 +353,8 @@ where
 
   fn write_argument(&self, index: usize, dest: &mut Printer<W>) -> Result<(), PrinterError> {
     let value = match self {
+      MathFunction::SiblingCount | MathFunction::SiblingIndex => unreachable!(),
+      MathFunction::Progress(value) => return value.write_argument(index, dest),
       MathFunction::Calc(value) | MathFunction::Abs(value) | MathFunction::Sign(value) => match index {
         0 => value,
         _ => unreachable!(),
@@ -223,13 +366,13 @@ where
         2 => max,
         _ => unreachable!(),
       },
-      MathFunction::Round(_, value, step)
-      | MathFunction::Rem(value, step)
-      | MathFunction::Mod(value, step) => match index {
-        0 => value,
-        1 => step,
-        _ => unreachable!(),
-      },
+      MathFunction::Round(_, value, step) | MathFunction::Rem(value, step) | MathFunction::Mod(value, step) => {
+        match index {
+          0 => value,
+          1 => step,
+          _ => unreachable!(),
+        }
+      }
     };
     value.to_css(dest)
   }
@@ -282,7 +425,7 @@ fn serialize_math_function<W: std::fmt::Write>(
         function.write_argument(1, dest)?;
         dest.delim(',', false)?;
         function.write_argument(2, dest)?;
-        return dest.write_str("))")
+        return dest.write_str("))");
       }
 
       dest.write_str("clamp(")?;
@@ -311,6 +454,13 @@ fn serialize_math_function<W: std::fmt::Write>(
     MathSerializeKind::Abs => {
       dest.write_str("abs(")?;
       function.write_argument(0, dest)?;
+      dest.write_char(')')
+    }
+    MathSerializeKind::SiblingCount => dest.write_str("sibling-count()"),
+    MathSerializeKind::SiblingIndex => dest.write_str("sibling-index()"),
+    MathSerializeKind::Progress => {
+      dest.write_str("progress(")?;
+      serialize_math_arguments(function, 3, dest)?;
       dest.write_char(')')
     }
     MathSerializeKind::Sign => {
@@ -354,6 +504,9 @@ enum CalcParserFunction {
   Abs(CalcParserNode),
   Sign(CalcParserNode),
   Hypot(Vec<CalcParserNode>),
+  SiblingCount,
+  SiblingIndex,
+  Progress(Progress),
 }
 
 #[derive(Clone, Copy)]
@@ -500,16 +653,24 @@ impl<V> MathFunction<V> {
         common_resolved_type(values)
       }
       MathFunction::Clamp(min, center, max) => common_resolved_type([min, center, max]),
-      MathFunction::Round(_, value, step) | MathFunction::Rem(value, step) | MathFunction::Mod(value, step) => {
+      MathFunction::Round(_, value, step)
+      | MathFunction::Rem(value, step)
+      | MathFunction::Mod(value, step) => {
         common_resolved_type([value, step])
       }
-      MathFunction::Sign(_) => Some(CalcResolvedType::Number),
+      MathFunction::Sign(_)
+      | MathFunction::SiblingCount
+      | MathFunction::SiblingIndex
+      | MathFunction::Progress(_) => Some(CalcResolvedType::Number),
     }
   }
 
   fn contains_unresolved_sign(&self) -> bool {
     match self {
-      MathFunction::Sign(_) => true,
+      MathFunction::Sign(_)
+      | MathFunction::SiblingCount
+      | MathFunction::SiblingIndex
+      | MathFunction::Progress(_) => true,
       MathFunction::Calc(value) | MathFunction::Abs(value) => value.contains_unresolved_sign(),
       MathFunction::Min(values) | MathFunction::Max(values) | MathFunction::Hypot(values) => {
         values.iter().any(Calc::contains_unresolved_sign)
@@ -519,9 +680,7 @@ impl<V> MathFunction<V> {
           || center.contains_unresolved_sign()
           || max.contains_unresolved_sign()
       }
-      MathFunction::Round(_, value, step)
-      | MathFunction::Rem(value, step)
-      | MathFunction::Mod(value, step) => {
+      MathFunction::Round(_, value, step) | MathFunction::Rem(value, step) | MathFunction::Mod(value, step) => {
         value.contains_unresolved_sign() || step.contains_unresolved_sign()
       }
     }
@@ -626,8 +785,12 @@ impl<
 
   fn function(&mut self, function: CalcParserFunction) -> CalcParserNode {
     let function = match function {
-      CalcParserFunction::Min(values) => MathFunction::Min(values.into_iter().map(|value| self.take(value)).collect()),
-      CalcParserFunction::Max(values) => MathFunction::Max(values.into_iter().map(|value| self.take(value)).collect()),
+      CalcParserFunction::Min(values) => {
+        MathFunction::Min(values.into_iter().map(|value| self.take(value)).collect())
+      }
+      CalcParserFunction::Max(values) => {
+        MathFunction::Max(values.into_iter().map(|value| self.take(value)).collect())
+      }
       CalcParserFunction::Clamp(min, center, max) => {
         MathFunction::Clamp(self.take(min), self.take(center), self.take(max))
       }
@@ -637,6 +800,9 @@ impl<
       CalcParserFunction::Rem(value, step) => MathFunction::Rem(self.take(value), self.take(step)),
       CalcParserFunction::Mod(value, step) => MathFunction::Mod(self.take(value), self.take(step)),
       CalcParserFunction::Abs(value) => MathFunction::Abs(self.take(value)),
+      CalcParserFunction::SiblingCount => MathFunction::SiblingCount,
+      CalcParserFunction::SiblingIndex => MathFunction::SiblingIndex,
+      CalcParserFunction::Progress(value) => MathFunction::Progress(value),
       CalcParserFunction::Sign(value) => MathFunction::Sign(self.take(value)),
       CalcParserFunction::Hypot(values) => {
         MathFunction::Hypot(values.into_iter().map(|value| self.take(value)).collect())
@@ -659,15 +825,13 @@ impl<
     op: CalcParserBinaryOp,
   ) -> Option<CalcParserNode> {
     let value = match op {
-      CalcParserBinaryOp::Round(strategy) => Calc::apply_op(self.get(left), self.get(right), |a, b| {
-        round(a, b, strategy)
-      }),
+      CalcParserBinaryOp::Round(strategy) => {
+        Calc::apply_op(self.get(left), self.get(right), |a, b| round(a, b, strategy))
+      }
       CalcParserBinaryOp::Rem => Calc::apply_op(self.get(left), self.get(right), std::ops::Rem::rem),
       CalcParserBinaryOp::Mod => Calc::apply_op(self.get(left), self.get(right), modulo),
       CalcParserBinaryOp::Hypot => Calc::apply_op(self.get(left), self.get(right), f32::hypot),
-      CalcParserBinaryOp::HypotSum => {
-        Calc::apply_op(self.get(left), self.get(right), |a, b| a + b.powi(2))
-      }
+      CalcParserBinaryOp::HypotSum => Calc::apply_op(self.get(left), self.get(right), |a, b| a + b.powi(2)),
     }?;
     Some(self.insert(value))
   }
@@ -793,17 +957,11 @@ impl<
       return Ok(match value {
         Calc::Value(_) | Calc::Number(_) => value,
         _ => Calc::Function(Box::new(MathFunction::Calc(value))),
-      })
+      });
     }
 
     let mut ops = TypedCalcParserOps::new(parse_ident);
-    let root = parse_calc_function(
-      input,
-      function,
-      location,
-      &mut ops,
-      preserve_math_functions,
-    )?;
+    let root = parse_calc_function(input, function, location, &mut ops, preserve_math_functions)?;
     Ok(ops.take(root))
   }
 
@@ -975,7 +1133,7 @@ impl<
     }
 
     let value = input.try_parse(V::parse)?;
-    Ok(Calc::Value(Box::new(value)))
+    Ok(value.into())
   }
 
   fn apply_op<'t, O: FnOnce(f32, f32) -> f32>(a: &Calc<V>, b: &Calc<V>, op: O) -> Option<Self> {
@@ -1189,6 +1347,19 @@ fn parse_calc_function<'i, 't>(
       Ok(ops.apply_map(value, CalcParserMapOp::Abs)
         .unwrap_or_else(|| ops.function(CalcParserFunction::Abs(value))))
     }),
+    "sibling-count" | "sibling-index" => input.parse_nested_block(|input| {
+      input.expect_exhausted()?;
+      Ok(ops.function(if function.eq_ignore_ascii_case("sibling-count") {
+        CalcParserFunction::SiblingCount
+      } else { CalcParserFunction::SiblingIndex }))
+    }),
+    "progress" => input.parse_nested_block(|input| {
+      let (value, resolved) = Progress::parse(input)?;
+      Ok(match resolved {
+        Some(number) if !preserve_math_functions => ops.number(number),
+        _ => ops.function(CalcParserFunction::Progress(value)),
+      })
+    }),
     "sign" => input.parse_nested_block(|input| {
       let start = input.state();
       let value = match ops.parse_sum(input, preserve_math_functions) {
@@ -1274,9 +1445,13 @@ fn parse_calc_binary_function<'i, 't>(
     _ => unreachable!(),
   };
   if preserve_math_functions {
-    return Ok(ops.function(fallback()))
+    return Ok(ops.function(fallback()));
   }
-  Ok(ops.apply_binary(left, right, operation).unwrap_or_else(|| ops.function(fallback())))
+  Ok(
+    ops
+      .apply_binary(left, right, operation)
+      .unwrap_or_else(|| ops.function(fallback())),
+  )
 }
 
 fn parse_calc_trig<'i, 't>(
@@ -1286,9 +1461,7 @@ fn parse_calc_trig<'i, 't>(
   to_angle: bool,
 ) -> Result<CalcParserNode, ParseError<'i, ParserError<'i>>> {
   input.parse_nested_block(|input| {
-    let value: Calc<Angle> = Calc::parse_sum_with(input, |identifier| {
-      ops.parse_identifier_as_angle(identifier)
-    })?;
+    let value: Calc<Angle> = Calc::parse_sum_with(input, |identifier| ops.parse_identifier_as_angle(identifier))?;
     let radians = match value {
       Calc::Value(angle) if !to_angle => function(angle.to_radians()),
       Calc::Number(value) => function(value),
@@ -1307,9 +1480,8 @@ fn parse_calc_numeric<'i, 't>(
   input: &mut Parser<'i, 't>,
   ops: &dyn CalcParserOps<'i>,
 ) -> Result<CSSNumber, ParseError<'i, ParserError<'i>>> {
-  let value: Calc<CSSNumber> = Calc::parse_sum_with(input, |identifier| {
-    ops.parse_identifier_as_number(identifier)
-  })?;
+  let value: Calc<CSSNumber> =
+    Calc::parse_sum_with(input, |identifier| ops.parse_identifier_as_number(identifier))?;
   match value {
     Calc::Number(value) => Ok(value),
     Calc::Value(value) => Ok(*value),
@@ -1335,31 +1507,26 @@ fn parse_calc_atan2<'i, 't>(
   // atan2 accepts any number, dimension, or percentage pair of the same type, including types
   // that the outer V does not normally support. Try each concrete type before plain numbers.
   if let Ok(value) = input.try_parse(|input| Calc::<Length>::parse_atan2_args(input, &|_| None)) {
-    return Ok(value)
+    return Ok(value);
   }
   if let Ok(value) = input.try_parse(|input| Calc::<Percentage>::parse_atan2_args(input, &|_| None)) {
-    return Ok(value)
+    return Ok(value);
   }
   if let Ok(value) = input.try_parse(|input| Calc::<Angle>::parse_atan2_args(input, &|_| None)) {
-    return Ok(value)
+    return Ok(value);
   }
   if let Ok(value) = input.try_parse(|input| Calc::<Time>::parse_atan2_args(input, &|_| None)) {
-    return Ok(value)
+    return Ok(value);
   }
-  Calc::<CSSNumber>::parse_atan2_args(input, &|identifier| {
-    ops.parse_identifier_as_number(identifier)
-  })
+  Calc::<CSSNumber>::parse_atan2_args(input, &|identifier| ops.parse_identifier_as_number(identifier))
 }
 
-fn parse_calc_hypot<'i>(
-  ops: &mut dyn CalcParserOps<'i>,
-  args: &[CalcParserNode],
-) -> Option<CalcParserNode> {
+fn parse_calc_hypot<'i>(ops: &mut dyn CalcParserOps<'i>, args: &[CalcParserNode]) -> Option<CalcParserNode> {
   if args.len() == 1 {
-    return Some(ops.clone_node(args[0]))
+    return Some(ops.clone_node(args[0]));
   }
   if args.len() == 2 {
-    return ops.apply_binary(args[0], args[1], CalcParserBinaryOp::Hypot)
+    return ops.apply_binary(args[0], args[1], CalcParserBinaryOp::Hypot);
   }
   let mut args = args.iter().copied();
   let first = ops.apply_map(args.next()?, CalcParserMapOp::Square)?;
@@ -1511,12 +1678,8 @@ impl<V: TrySign> TrySign for Calc<V> {
       Calc::Number(v) => v.try_sign(),
       Calc::Value(v) => v.try_sign(),
       Calc::Product(c, v) => v.try_sign().map(|s| s * c.sign()),
-      Calc::ProductExpression(left, right) => {
-        Some(left.try_sign()? * right.try_sign()?)
-      }
-      Calc::QuotientExpression(value, divisor) => {
-        Some(value.try_sign()? / divisor.try_sign()?)
-      }
+      Calc::ProductExpression(left, right) => Some(left.try_sign()? * right.try_sign()?),
+      Calc::QuotientExpression(value, divisor) => Some(value.try_sign()? / divisor.try_sign()?),
       Calc::Function(f) => f.try_sign(),
       _ => None,
     }
@@ -1571,6 +1734,51 @@ impl<V: TrySign> TrySign for MathFunction<V> {
 mod tests {
   use super::*;
   use crate::stylesheet::PrinterOptions;
+
+  #[test]
+  fn preserves_tree_counting_math_across_dimensions() {
+    for name in ["sibling-count", "sibling-index"] {
+      let expression = format!("{}()", name);
+      assert!(Calc::<Percentage>::parse_string(&expression).unwrap().resolves_to_number());
+      assert!(Calc::<Percentage>::parse_string(&format!("{}(1)", name)).is_err());
+      let time = format!("calc(1s * {}())", name);
+      assert_eq!(
+        Time::parse_string(&time)
+          .unwrap()
+          .to_css_string(PrinterOptions::default())
+          .unwrap(),
+        time
+      );
+      let angle = format!("calc(1deg * {}())", name);
+      assert_eq!(
+        Angle::parse_string(&angle)
+          .unwrap()
+          .to_css_string(PrinterOptions::default())
+          .unwrap(),
+        angle
+      );
+      assert!(Length::parse_string(&expression).is_err());
+    }
+  }
+
+  #[test]
+  fn validates_progress_dimensions_and_cancels_identical_units() {
+    for value in [
+      "progress(1em, 0em, 2em)",
+      "progress(1khz, 0hz, 2000hz)",
+      "progress(1dppx, 0dpi, 192dpi)",
+    ] {
+      assert_eq!(CSSNumber::parse_string(value).unwrap(), 0.5);
+    }
+    for value in [
+      "progress(1px, 0, 2px)",
+      "progress(1px, 0s, 2px)",
+      "progress(1, 2)",
+      "progress(1, 2, 3, 4)",
+    ] {
+      assert!(Calc::<Percentage>::parse_string(value).is_err(), "{}", value);
+    }
+  }
 
   fn parse_percentage(source: &str, preserve_math_functions: bool) -> Calc<Percentage> {
     let mut input = ParserInput::new(source);

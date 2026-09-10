@@ -1,5 +1,27 @@
 # @sheetom/wasm
 
+## 0.2.0
+
+### Minor Changes
+
+- bde80b7: Add revision-pinned CSS mixin authoring interfaces, CSS.escape(), CSS.supports(),
+  and the StyleSheet base interface. Support linear() easing and gradient color
+  interpolation across property contexts; correct selector CSSOM serialization
+  and namespace-aware mutation. Gate the June 2026 authoring target on native and
+  WASM backends, including deep-input and invalid-mutation checks.
+  
+  Validate attribute namespaces and recover forgiving selector lists correctly,
+  retain namespace state after detachment, and preserve inactive animation
+  settings through serialization. Compare rule and declaration state on reparse.
+- 5ecb1a2: Support sibling-count(), sibling-index(), and progress() in typed CSS math,
+  preserving calculations that depend on element or layout context. Report
+  support for the seven Baseline media state selectors. Expose
+  CSSPositionTryDescriptors and enforce @position-try descriptor restrictions
+  across parsing, replacement, and mutation on both native and WASM backends.
+  
+  Advance the dated CSS authoring target to September 9, 2026 and include
+  individually Baseline compatibility branches of partially available families.
+
 ## 0.1.1
 
 ### Patch Changes

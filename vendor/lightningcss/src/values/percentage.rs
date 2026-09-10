@@ -175,11 +175,33 @@ pub enum NumberOrPercentage {
   Number(CSSNumber),
   /// A percentage.
   Percentage(Percentage),
+  /// A number or percentage calculation awaiting element context.
+  Calculation(Box<Calc<Percentage>>),
+}
+
+impl NumberOrPercentage {
+  /// Returns a scalar only when no element-dependent calculation remains.
+  pub fn to_number(&self) -> Option<CSSNumber> {
+    match self {
+      Self::Number(value) => Some(*value),
+      Self::Percentage(value) => Some(value.0),
+      Self::Calculation(_) => None,
+    }
+  }
+
+  /// Serializes percentages as numeric scale factors and preserves calculations.
+  pub fn to_css_as_number<W: std::fmt::Write>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError> {
+    match self {
+      Self::Calculation(value) => value.to_css(dest),
+      _ => self.to_number().unwrap().to_css(dest),
+    }
+  }
 }
 
 impl std::convert::Into<CSSNumber> for &NumberOrPercentage {
   fn into(self) -> CSSNumber {
     match self {
+      NumberOrPercentage::Calculation(_) => f32::NAN,
       NumberOrPercentage::Number(a) => *a,
       NumberOrPercentage::Percentage(a) => a.0,
     }

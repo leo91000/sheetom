@@ -813,6 +813,52 @@ impl<'i> ToCss for Animation<'i> {
   }
 }
 
+impl<'i> Animation<'i> {
+  /// Serialize editable CSSOM state, including inactive animation settings.
+  /// Compiler output may omit settings when the animation name is `none`;
+  /// authoring serialization must preserve them for later longhand mutation.
+  pub fn to_cssom_string(&self) -> Result<String, PrinterError> {
+    let mut result = String::new();
+    let mut printer = Printer::new(&mut result, Default::default());
+    self.duration.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.timing_function.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.delay.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.iteration_count.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.direction.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.fill_mode.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.play_state.to_css(&mut printer)?;
+    printer.write_char(' ')?;
+    self.name.to_css(&mut printer)?;
+    if self.timeline != AnimationTimeline::default() {
+      printer.write_char(' ')?;
+      self.timeline.to_css(&mut printer)?;
+    }
+    Ok(result)
+  }
+}
+
+#[cfg(test)]
+mod sheetom_authoring_tests {
+  use super::*;
+
+  #[test]
+  fn inactive_animation_settings_survive_authoring_serialization() {
+    for source in ["1s linear(0, 1) none", "2s ease 1s 3 reverse both paused none"] {
+      let animation = Animation::parse_string(source).unwrap();
+      let serialized = animation.to_cssom_string().unwrap();
+      let reparsed = Animation::parse_string(&serialized).unwrap();
+      assert!(animation == reparsed, "{source} -> {serialized}");
+      assert_eq!(animation.to_css_string(Default::default()).unwrap(), "none");
+    }
+  }
+}
+
 /// A list of animations.
 pub type AnimationList<'i> = SmallVec<[Animation<'i>; 1]>;
 

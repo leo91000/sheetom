@@ -62,6 +62,16 @@ for (const type of functionPreludeTypes) {
 
 const cases = [
   {
+    id: "unknown-namespace-prefix-recovery",
+    source: '@namespace svg url("urn:svg"); missing|path {} svg|path {} @media all { missing|path {} svg|circle {} }',
+    constructed: true,
+  },
+  {
+    id: "late-namespace-recovery",
+    source: '.a {} @namespace svg url("urn:svg"); svg|path {}',
+    constructed: true,
+  },
+  {
     id: "malformed-pending-substitution",
     source: ".x { padding: 72px var(--space, var(--space,; }",
   },

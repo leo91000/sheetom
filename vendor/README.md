@@ -20,3 +20,23 @@ Later SheetOM modifications are kept in focused commits. General parser correcti
 `npm run native:vendor-check` runs the complete library test suites for both
 vendored engines in the shared Cargo target directory. This keeps fork changes
 covered without adding another CI build cohort or recompiling the same graph.
+
+The June 2026 authoring update adds typed `linear()` easing points and gradient
+color interpolation methods in `values/easing.rs` and `values/gradient.rs`.
+The accompanying module tests cover parsing, normalization, invalid neighbors,
+and reparsing. Two existing interpolation minifier expectations now remove
+unnecessary comma whitespace because the values are parsed rather than retained
+as unparsed token lists. Public observable serialization is tested separately
+against the pinned browser through the SheetOM facade.
+
+Selector parsing also exposes opt-in namespace-prefix validation and strict
+`:is()`/`:where()` lists for CSSOM setters and `CSS.supports()`, respectively.
+The default compiler still retains unresolved prefixes. An opt-in printer flag
+preserves authored `:is()` wrappers instead of simplifying them. The selector
+module tests cover unknown attribute/type prefixes, forgiving-list recovery,
+strict capability checks, and unchanged compiler defaults.
+The nested `selectors` parser keeps separate recovery policies for `:is()`/
+`:where()`, `:has()`, and `:nth-child(... of ...)`; CSSOM rejects an invalid
+branch in the latter two while compiler defaults stay unchanged. Animation's
+authoring serializer also retains duration, easing, and other settings when
+its name is `none`, so a later longhand edit does not lose those settings.

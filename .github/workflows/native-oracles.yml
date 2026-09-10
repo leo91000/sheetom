@@ -57,6 +57,8 @@ jobs:
       - run: npm run wasm:test
       - run: npm run wasm:test:memory -- --output "$RUNNER_TEMP/wasm-memory.json"
       - uses: ./.github/actions/install-playwright
+      - name: Gate the dated WASM CSS authoring target
+        run: node scripts/check-css-authoring-target.ts --backend=wasm && node scripts/test-modern-css-backends.ts --backend=wasm && node scripts/check-webref-property-branches.ts --wasm
       - run: npm run wasm:test:browsers -- --output "$RUNNER_TEMP/wasm-direct.json"
       - run: npm run wasm:test:bundlers -- --output "$RUNNER_TEMP/wasm-bundlers.json"
       - run: npm run wasm:test:performance -- --output "$RUNNER_TEMP/wasm-performance.json"
