@@ -176,3 +176,18 @@ test("WASM evidence contracts rerun the backend matrix", () => {
     assert.equal(classifyPaths([filename]).wasm, true, filename);
   }
 });
+
+test("shared authoring validation changes select both backends and browser oracles", () => {
+    for (const filename of [
+        "scripts/validation-backend.ts",
+        "scripts/check-installed-packages.ts",
+        "scripts/test-modern-css-backends.ts",
+        "scripts/check-css-authoring-target.ts",
+        "scripts/check-webref-property-branches.ts",
+        "scripts/css-authoring-roundtrip.ts",
+    ]) {
+        const result = classifyPaths([filename]);
+        for (const gate of ["native", "wasm", "browser", "quality", "package"]) assert.equal(result[gate], true, `${filename}: ${gate}`);
+        assert.equal(result.performance, false, filename);
+    }
+});
