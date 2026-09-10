@@ -179,10 +179,12 @@ jobs:
       - run: npm run native:test
       - name: Gate Webref-derived Chromium property branches
         run: npm run native:webref-property-branches
-      - name: Install the Chromium oracle
-        run: npx playwright install chromium
+      - name: Install the authoring browser oracles
+        uses: ./.github/actions/install-playwright
       - name: Compare native declaration sequences with Chromium
         run: npm run native:browser-differential:run
+      - name: Gate the dated native CSS authoring target
+        run: node scripts/check-css-authoring-target.ts --backend=native && node scripts/test-modern-css-backends.ts --backend=native
 
   wasm-quality:
     needs: changes
@@ -232,6 +234,8 @@ jobs:
       - run: npm run wasm:test:memory -- --output "$RUNNER_TEMP/wasm-memory.json"
       - name: Install browser engines
         uses: ./.github/actions/install-playwright
+      - name: Gate the dated WASM CSS authoring target
+        run: node scripts/check-css-authoring-target.ts --backend=wasm && node scripts/test-modern-css-backends.ts --backend=wasm && node scripts/check-webref-property-branches.ts --wasm
       - name: Exercise direct HTTP and worker initialization
         run: npm run wasm:test:browsers -- --output "$RUNNER_TEMP/wasm-direct.json"
       - name: Exercise Vite, esbuild, Rollup, and Webpack consumers

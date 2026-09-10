@@ -20,9 +20,11 @@ export interface NativeScopePrelude {
 export function normalizeNativeSelector(
   source: string,
   resourceBudget: NativeResourceBudget = defaultResourceBudget,
+  namespaces = "",
 ): string | null {
   return callNative(() => engineBinding.normalizeSelector(
     source,
+    namespaces,
     ...nativeBudgetArguments(resourceBudget),
   ));
 }
@@ -101,4 +103,8 @@ function callNative(operation: () => string): string | null {
     rethrowResourceBudgetError(error);
     return null;
   }
+}
+
+export function supportsNativeCss(source: string, value?: string): boolean {
+  return engineBinding.supportsCss(source, value);
 }

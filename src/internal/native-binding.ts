@@ -10,7 +10,7 @@ import {
 
 interface NativeAddonBinding extends Omit<EngineBinding, "createDeclarationState"> {
   NativeDeclarationState: new (
-    context?: "style" | "font-face" | "function",
+    context?: "style" | "font-face" | "function" | "position-try",
     ...arguments_: [number, number, number, number, number, string?]
   ) => EngineDeclarationStateHandle;
 }

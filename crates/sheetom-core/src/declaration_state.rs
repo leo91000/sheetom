@@ -111,6 +111,52 @@ pub enum DeclarationContext {
     Style,
     FontFace,
     Function,
+    PositionTry,
+}
+
+fn is_position_try_descriptor(name: &str) -> bool {
+    matches!(
+        name,
+        "margin"
+            | "margin-top"
+            | "margin-right"
+            | "margin-bottom"
+            | "margin-left"
+            | "margin-block"
+            | "margin-block-start"
+            | "margin-block-end"
+            | "margin-inline"
+            | "margin-inline-start"
+            | "margin-inline-end"
+            | "inset"
+            | "top"
+            | "right"
+            | "bottom"
+            | "left"
+            | "inset-block"
+            | "inset-block-start"
+            | "inset-block-end"
+            | "inset-inline"
+            | "inset-inline-start"
+            | "inset-inline-end"
+            | "width"
+            | "min-width"
+            | "max-width"
+            | "height"
+            | "min-height"
+            | "max-height"
+            | "block-size"
+            | "min-block-size"
+            | "max-block-size"
+            | "inline-size"
+            | "min-inline-size"
+            | "max-inline-size"
+            | "place-self"
+            | "align-self"
+            | "justify-self"
+            | "position-anchor"
+            | "position-area"
+    )
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -399,7 +445,11 @@ impl DeclarationState {
         let mut winners = HashMap::<String, (DeclarationRecord, usize, usize)>::new();
 
         for (source_index, declaration) in declarations.into_iter().enumerate() {
-            if self.context == DeclarationContext::Function && declaration.important {
+            if matches!(
+                self.context,
+                DeclarationContext::Function | DeclarationContext::PositionTry
+            ) && declaration.important
+            {
                 continue;
             }
             let Some(name) = self.canonical_name(declaration.name) else {
@@ -592,6 +642,9 @@ impl DeclarationState {
     fn canonical_name<'a>(&self, name: &'a str) -> Option<Cow<'a, str>> {
         match self.context {
             DeclarationContext::Style => canonical_style_property_name(name),
+            DeclarationContext::PositionTry => {
+                canonical_style_property_name(name).filter(|name| is_position_try_descriptor(name))
+            }
             DeclarationContext::FontFace => canonical_descriptor_name(name).map(Cow::Owned),
             DeclarationContext::Function => {
                 canonical_function_descriptor_name(name).map(Cow::Owned)
@@ -600,9 +653,12 @@ impl DeclarationState {
     }
 
     fn shorthand_longhands(&self, name: &str) -> Option<&'static [&'static str]> {
-        (self.context == DeclarationContext::Style)
-            .then(|| style_shorthand_longhands(name))
-            .flatten()
+        (matches!(
+            self.context,
+            DeclarationContext::Style | DeclarationContext::PositionTry
+        ))
+        .then(|| style_shorthand_longhands(name))
+        .flatten()
     }
 
     fn parse_value(
@@ -624,7 +680,7 @@ impl DeclarationState {
         limits: ResourceLimits,
     ) -> Result<crate::shorthand::ParsedValue, MutationOutcome> {
         match self.context {
-            DeclarationContext::Style => {
+            DeclarationContext::Style | DeclarationContext::PositionTry => {
                 parse_value_for_source_with_limits(name, source_name, value, important, limits)
             }
             DeclarationContext::FontFace => {

@@ -1,15 +1,14 @@
 //! CSS angle values.
 
-use super::calc::Calc;
+use super::calc::{Calc, MathFunction};
 use super::length::serialize_dimension;
 use super::number::CSSNumber;
 use super::percentage::DimensionPercentage;
 use crate::error::{ParserError, PrinterError};
 use crate::printer::Printer;
 use crate::traits::{
-  impl_op,
   private::{AddInternal, TryAdd},
-  Map, Op, Parse, Sign, ToCss, Zero,
+  Parse, Sign, ToCss, TryMap, TryOp, TrySign, Zero,
 };
 #[cfg(feature = "visitor")]
 use crate::visitor::Visit;
@@ -31,6 +30,8 @@ use std::f32::consts::PI;
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub enum Angle {
+  /// A calculation that depends on element or layout context.
+  Calculation(Box<Calc<Angle>>),
   /// An angle in degrees. There are 360 degrees in a full circle.
   Deg(CSSNumber),
   /// An angle in radians. There are 2π radians in a full circle.
@@ -61,7 +62,7 @@ impl Angle {
   ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
     match input.try_parse(Calc::parse) {
       Ok(Calc::Value(v)) => return Ok(*v),
-      // Angles are always compatible, so they will always compute to a value.
+      Ok(value) if value.resolves_to_dimension() => return Ok(Self::Calculation(Box::new(value))),
       Ok(_) => return Err(input.new_custom_error(ParserError::InvalidValue)),
       _ => {}
     }
@@ -106,7 +107,14 @@ impl ToCss for Angle {
   where
     W: std::fmt::Write,
   {
+    if let Self::Calculation(value) = self {
+      return match value.as_ref() {
+        Calc::Function(_) => value.to_css(dest),
+        value => MathFunction::Calc(value.clone()).to_css(dest),
+      };
+    }
     let (value, unit) = match self {
+      Angle::Calculation(_) => unreachable!(),
       Angle::Deg(val) => (*val, "deg"),
       Angle::Grad(val) => (*val, "grad"),
       Angle::Rad(val) => {
@@ -147,6 +155,7 @@ impl Angle {
   pub fn to_radians(&self) -> CSSNumber {
     const RAD_PER_DEG: f32 = PI / 180.0;
     match self {
+      Angle::Calculation(_) => f32::NAN,
       Angle::Deg(deg) => deg * RAD_PER_DEG,
       Angle::Rad(rad) => *rad,
       Angle::Grad(grad) => grad * 180.0 / 200.0 * RAD_PER_DEG,
@@ -158,6 +167,7 @@ impl Angle {
   pub fn to_degrees(&self) -> CSSNumber {
     const DEG_PER_RAD: f32 = 180.0 / PI;
     match self {
+      Angle::Calculation(_) => f32::NAN,
       Angle::Deg(deg) => *deg,
       Angle::Rad(rad) => rad * DEG_PER_RAD,
       Angle::Grad(grad) => grad * 180.0 / 200.0,
@@ -170,6 +180,7 @@ impl Zero for Angle {
   fn is_zero(&self) -> bool {
     use Angle::*;
     match self {
+      Calculation(_) => false,
       Deg(v) | Rad(v) | Grad(v) | Turn(v) => *v == 0.0,
     }
   }
@@ -181,7 +192,10 @@ impl Zero for Angle {
 
 impl Into<Calc<Angle>> for Angle {
   fn into(self) -> Calc<Angle> {
-    Calc::Value(Box::new(self))
+    match self {
+      Self::Calculation(value) => *value,
+      value => Calc::Value(Box::new(value)),
+    }
   }
 }
 
@@ -191,6 +205,7 @@ impl TryFrom<Calc<Angle>> for Angle {
   fn try_from(calc: Calc<Angle>) -> Result<Angle, ()> {
     match calc {
       Calc::Value(v) => Ok(*v),
+      value if value.resolves_to_dimension() => Ok(Self::Calculation(Box::new(value))),
       _ => Err(()),
     }
   }
@@ -201,6 +216,7 @@ impl std::ops::Mul<CSSNumber> for Angle {
 
   fn mul(self, other: CSSNumber) -> Angle {
     match self {
+      Self::Calculation(value) => Self::Calculation(Box::new(*value * other)),
       Angle::Deg(v) => Angle::Deg(v * other),
       Angle::Rad(v) => Angle::Rad(v * other),
       Angle::Grad(v) => Angle::Grad(v * other),
@@ -217,13 +233,16 @@ impl AddInternal for Angle {
 
 impl TryAdd<Angle> for Angle {
   fn try_add(&self, other: &Angle) -> Option<Angle> {
-    Some(Angle::Deg(self.to_degrees() + other.to_degrees()))
+    self.try_op(other, |a, b| a + b)
   }
 }
 
 impl std::cmp::PartialEq<Angle> for Angle {
   fn eq(&self, other: &Angle) -> bool {
-    self.to_degrees() == other.to_degrees()
+    match (self, other) {
+      (Self::Calculation(a), Self::Calculation(b)) => a == b,
+      _ => self.to_degrees() == other.to_degrees(),
+    }
   }
 }
 
@@ -233,49 +252,77 @@ impl std::cmp::PartialOrd<Angle> for Angle {
   }
 }
 
-impl Op for Angle {
-  fn op<F: FnOnce(f32, f32) -> f32>(&self, other: &Self, op: F) -> Self {
-    match (self, other) {
+impl TryOp for Angle {
+  fn try_op<F: FnOnce(f32, f32) -> f32>(&self, other: &Self, op: F) -> Option<Self> {
+    if matches!(self, Self::Calculation(_)) || matches!(other, Self::Calculation(_)) {
+      return None;
+    }
+    Some(match (self, other) {
       (Angle::Deg(a), Angle::Deg(b)) => Angle::Deg(op(*a, *b)),
       (Angle::Rad(a), Angle::Rad(b)) => Angle::Rad(op(*a, *b)),
       (Angle::Grad(a), Angle::Grad(b)) => Angle::Grad(op(*a, *b)),
       (Angle::Turn(a), Angle::Turn(b)) => Angle::Turn(op(*a, *b)),
       (a, b) => Angle::Deg(op(a.to_degrees(), b.to_degrees())),
-    }
+    })
   }
 
-  fn op_to<T, F: FnOnce(f32, f32) -> T>(&self, other: &Self, op: F) -> T {
-    match (self, other) {
+  fn try_op_to<T, F: FnOnce(f32, f32) -> T>(&self, other: &Self, op: F) -> Option<T> {
+    if matches!(self, Self::Calculation(_)) || matches!(other, Self::Calculation(_)) {
+      return None;
+    }
+    Some(match (self, other) {
       (Angle::Deg(a), Angle::Deg(b)) => op(*a, *b),
       (Angle::Rad(a), Angle::Rad(b)) => op(*a, *b),
       (Angle::Grad(a), Angle::Grad(b)) => op(*a, *b),
       (Angle::Turn(a), Angle::Turn(b)) => op(*a, *b),
       (a, b) => op(a.to_degrees(), b.to_degrees()),
-    }
+    })
   }
 }
 
-impl Map for Angle {
-  fn map<F: FnOnce(f32) -> f32>(&self, op: F) -> Self {
-    match self {
+impl TryMap for Angle {
+  fn try_map<F: FnOnce(f32) -> f32>(&self, op: F) -> Option<Self> {
+    if matches!(self, Self::Calculation(_)) {
+      return None;
+    }
+    Some(match self {
+      Self::Calculation(_) => unreachable!(),
       Angle::Deg(deg) => Angle::Deg(op(*deg)),
       Angle::Rad(rad) => Angle::Rad(op(*rad)),
       Angle::Grad(grad) => Angle::Grad(op(*grad)),
       Angle::Turn(turn) => Angle::Turn(op(*turn)),
-    }
+    })
   }
 }
 
-impl Sign for Angle {
-  fn sign(&self) -> f32 {
+impl TrySign for Angle {
+  fn try_sign(&self) -> Option<f32> {
     match self {
-      Angle::Deg(v) | Angle::Rad(v) | Angle::Grad(v) | Angle::Turn(v) => v.sign(),
+      Self::Calculation(_) => None,
+      Angle::Deg(v) | Angle::Rad(v) | Angle::Grad(v) | Angle::Turn(v) => Some(v.sign()),
     }
   }
 }
 
-impl_op!(Angle, std::ops::Rem, rem);
-impl_op!(Angle, std::ops::Add, add);
+impl std::ops::Add for Angle {
+  type Output = Self;
+  fn add(self, other: Self) -> Self {
+    self
+      .try_op(&other, |a, b| a + b)
+      .unwrap_or_else(|| Self::Calculation(Box::new(Calc::Sum(Box::new(self.into()), Box::new(other.into())))))
+  }
+}
+impl std::ops::Rem for Angle {
+  type Output = Self;
+  fn rem(self, other: Self) -> Self {
+    self.try_op(&other, |a, b| a % b).unwrap_or_else(|| {
+      Self::Calculation(Box::new(Calc::Function(Box::new(MathFunction::Rem(
+        self.into(),
+        other.into(),
+      )))))
+    })
+  }
+}
 
 /// A CSS [`<angle-percentage>`](https://www.w3.org/TR/css-values-4/#typedef-angle-percentage) value.
 /// May be specified as either an angle or a percentage that resolves to an angle.

@@ -224,6 +224,60 @@ impl ToCss for Gradient {
   }
 }
 
+/// The color space and optional polar hue path of a gradient.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+pub struct ColorInterpolation {
+  /// The normalized color space name.
+  #[cfg_attr(feature = "visitor", skip_visit)]
+  pub color_space: String,
+  /// The normalized hue path, when explicitly specified.
+  #[cfg_attr(feature = "visitor", skip_visit)]
+  pub hue_method: Option<String>,
+}
+
+impl<'i> Parse<'i> for ColorInterpolation {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.expect_ident_matching("in")?;
+    let color_space = input.expect_ident()?.to_ascii_lowercase();
+    if !matches!(color_space.as_str(), "srgb" | "srgb-linear" | "display-p3" | "display-p3-linear" | "a98-rgb" | "prophoto-rgb" | "rec2020" | "lab" | "oklab" | "xyz" | "xyz-d50" | "xyz-d65" | "hsl" | "hwb" | "lch" | "oklch") {
+      return Err(input.new_custom_error(ParserError::InvalidValue));
+    }
+    let hue_method = input
+      .try_parse(|input| {
+        let method = input.expect_ident()?.to_ascii_lowercase();
+        if !matches!(method.as_str(), "shorter" | "longer" | "increasing" | "decreasing")
+          || !matches!(color_space.as_str(), "hsl" | "hwb" | "lch" | "oklch")
+        {
+          return Err(input.new_custom_error(ParserError::InvalidValue));
+        }
+        input.expect_ident_matching("hue")?;
+        Ok::<_, ParseError<'i, ParserError<'i>>>(method)
+      })
+      .ok();
+    Ok(Self {
+      color_space,
+      hue_method,
+    })
+  }
+}
+
+impl ToCss for ColorInterpolation {
+  fn to_css<W: std::fmt::Write>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError> {
+    dest.write_str("in ")?;
+    dest.write_str(if self.color_space == "xyz" { "xyz-d65" } else { &self.color_space })?;
+    if let Some(method) = &self.hue_method {
+      dest.write_char(' ')?;
+      dest.write_str(method)?;
+      dest.write_str(" hue")?;
+    }
+    Ok(())
+  }
+}
+
 /// A CSS [`linear-gradient()`](https://www.w3.org/TR/css-images-3/#linear-gradients) or `repeating-linear-gradient()`.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "visitor", derive(Visit))]
@@ -235,6 +289,8 @@ impl ToCss for Gradient {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub struct LinearGradient {
+  /// The explicitly authored color interpolation method.
+  pub interpolation: Option<ColorInterpolation>,
   /// The vendor prefixes for the gradient.
   pub vendor_prefix: VendorPrefix,
   /// The direction of the gradient.
@@ -248,16 +304,15 @@ impl LinearGradient {
     input: &mut Parser<'i, 't>,
     vendor_prefix: VendorPrefix,
   ) -> Result<LinearGradient, ParseError<'i, ParserError<'i>>> {
-    let direction = if let Ok(direction) =
-      input.try_parse(|input| LineDirection::parse(input, vendor_prefix != VendorPrefix::None))
-    {
-      input.expect_comma()?;
-      direction
-    } else {
-      LineDirection::Vertical(VerticalPositionKeyword::Bottom)
-    };
+    let mut interpolation = input.try_parse(ColorInterpolation::parse).ok();
+    let direction = input.try_parse(|input| LineDirection::parse(input, vendor_prefix != VendorPrefix::None)).ok();
+    if interpolation.is_none() { interpolation = input.try_parse(ColorInterpolation::parse).ok(); }
+    if interpolation.is_some() && vendor_prefix != VendorPrefix::None { return Err(input.new_custom_error(ParserError::InvalidValue)); }
+    if direction.is_some() || interpolation.is_some() { input.expect_comma()?; }
+    let direction = direction.unwrap_or(LineDirection::Vertical(VerticalPositionKeyword::Bottom));
     let items = parse_items(input)?;
     Ok(LinearGradient {
+      interpolation,
       direction,
       items,
       vendor_prefix,
@@ -268,6 +323,15 @@ impl LinearGradient {
   where
     W: std::fmt::Write,
   {
+    if let Some(interpolation) = &self.interpolation {
+      if self.direction != LineDirection::Vertical(VerticalPositionKeyword::Bottom) && self.direction != LineDirection::Angle(Angle::Deg(180.0)) {
+        self.direction.to_css(dest, is_prefixed)?;
+        dest.write_char(' ')?;
+      }
+      interpolation.to_css(dest)?;
+      dest.delim(',', false)?;
+      return serialize_items(&self.items, dest);
+    }
     let angle = match &self.direction {
       LineDirection::Vertical(VerticalPositionKeyword::Bottom) => 180.0,
       LineDirection::Vertical(VerticalPositionKeyword::Top) => 0.0,
@@ -330,6 +394,7 @@ impl LinearGradient {
 
   fn get_fallback(&self, kind: ColorFallbackKind) -> LinearGradient {
     LinearGradient {
+      interpolation: self.interpolation.clone(),
       direction: self.direction.clone(),
       items: self.items.iter().map(|item| item.get_fallback(kind)).collect(),
       vendor_prefix: self.vendor_prefix,
@@ -373,6 +438,8 @@ impl IsCompatible for LinearGradient {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub struct RadialGradient {
+  /// The explicitly authored color interpolation method.
+  pub interpolation: Option<ColorInterpolation>,
   /// The vendor prefixes for the gradient.
   pub vendor_prefix: VendorPrefix,
   /// The shape of the gradient.
@@ -388,6 +455,7 @@ impl<'i> RadialGradient {
     input: &mut Parser<'i, 't>,
     vendor_prefix: VendorPrefix,
   ) -> Result<RadialGradient, ParseError<'i, ParserError<'i>>> {
+    let mut interpolation = input.try_parse(ColorInterpolation::parse).ok();
     let shape = input.try_parse(EndingShape::parse).ok();
     let position = input
       .try_parse(|input| {
@@ -396,12 +464,15 @@ impl<'i> RadialGradient {
       })
       .ok();
 
-    if shape.is_some() || position.is_some() {
+    if interpolation.is_none() { interpolation = input.try_parse(ColorInterpolation::parse).ok(); }
+    if interpolation.is_some() && vendor_prefix != VendorPrefix::None { return Err(input.new_custom_error(ParserError::InvalidValue)); }
+    if shape.is_some() || position.is_some() || interpolation.is_some() {
       input.expect_comma()?;
     }
 
     let items = parse_items(input)?;
     Ok(RadialGradient {
+      interpolation,
       shape: shape.unwrap_or_default(),
       position: position.unwrap_or(Position::center()),
       items,
@@ -415,6 +486,13 @@ impl ToCss for RadialGradient {
   where
     W: std::fmt::Write,
   {
+    if let Some(interpolation) = &self.interpolation {
+      if self.shape != EndingShape::default() { self.shape.to_css(dest)?; dest.write_char(' ')?; }
+      if !self.position.is_center() { dest.write_str("at ")?; self.position.to_css(dest)?; dest.write_char(' ')?; }
+      interpolation.to_css(dest)?;
+      dest.delim(',', false)?;
+      return serialize_items(&self.items, dest);
+    }
     if self.shape != EndingShape::default() {
       self.shape.to_css(dest)?;
       if self.position.is_center() {
@@ -437,6 +515,7 @@ impl ToCss for RadialGradient {
 impl RadialGradient {
   fn get_fallback(&self, kind: ColorFallbackKind) -> RadialGradient {
     RadialGradient {
+      interpolation: self.interpolation.clone(),
       shape: self.shape.clone(),
       position: self.position.clone(),
       items: self.items.iter().map(|item| item.get_fallback(kind)).collect(),
@@ -593,6 +672,7 @@ fn convert_to_legacy_direction(direction: &LineDirection) -> LineDirection {
     LineDirection::Angle(angle) => {
       let angle = angle.clone();
       let deg = match angle {
+        Angle::Calculation(_) => return LineDirection::Angle(angle),
         Angle::Deg(n) => convert_to_legacy_degree(n),
         Angle::Rad(n) => {
           let n = n / (2.0 * PI) * 360.0;
@@ -814,6 +894,8 @@ enum_property! {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
 pub struct ConicGradient {
+  /// The explicitly authored color interpolation method.
+  pub interpolation: Option<ColorInterpolation>,
   /// The angle of the gradient.
   pub angle: Angle,
   /// The position of the gradient.
@@ -824,6 +906,7 @@ pub struct ConicGradient {
 
 impl ConicGradient {
   fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    let mut interpolation = input.try_parse(ColorInterpolation::parse).ok();
     let angle = input.try_parse(|input| {
       input.expect_ident_matching("from")?;
       // Spec allows unitless zero angles for gradients.
@@ -836,12 +919,14 @@ impl ConicGradient {
       Position::parse(input)
     });
 
-    if angle.is_ok() || position.is_ok() {
+    if interpolation.is_none() { interpolation = input.try_parse(ColorInterpolation::parse).ok(); }
+    if angle.is_ok() || position.is_ok() || interpolation.is_some() {
       input.expect_comma()?;
     }
 
     let items = parse_items_with(input, parse_conic_stop)?;
     Ok(ConicGradient {
+      interpolation,
       angle: angle.unwrap_or(Angle::Deg(0.0)),
       position: position.unwrap_or(Position::center()),
       items,
@@ -854,6 +939,13 @@ impl ToCss for ConicGradient {
   where
     W: std::fmt::Write,
   {
+    if let Some(interpolation) = &self.interpolation {
+      if !self.angle.is_zero() { dest.write_str("from ")?; self.angle.to_css(dest)?; dest.write_char(' ')?; }
+      if !self.position.is_center() { dest.write_str("at ")?; self.position.to_css(dest)?; dest.write_char(' ')?; }
+      interpolation.to_css(dest)?;
+      dest.delim(',', false)?;
+      return serialize_items(&self.items, dest);
+    }
     if !self.angle.is_zero() {
       dest.write_str("from ")?;
       self.angle.to_css(dest)?;
@@ -878,6 +970,7 @@ impl ToCss for ConicGradient {
 impl ConicGradient {
   fn get_fallback(&self, kind: ColorFallbackKind) -> ConicGradient {
     ConicGradient {
+      interpolation: self.interpolation.clone(),
       angle: self.angle.clone(),
       position: self.position.clone(),
       items: self.items.iter().map(|item| item.get_fallback(kind)).collect(),
@@ -1553,4 +1646,35 @@ fn convert_stops_to_webkit(items: &Vec<GradientItem<LengthPercentage>>) -> Resul
   }
 
   Ok(stops)
+}
+
+#[cfg(test)]
+mod sheetom_interpolation_tests {
+  use super::*;
+  use crate::stylesheet::PrinterOptions;
+
+  #[test]
+  fn parses_interpolation_in_all_gradient_families() {
+    for source in [
+      "linear-gradient(in oklch, red, blue)",
+      "linear-gradient(to right in hsl longer hue, red, blue)",
+      "radial-gradient(circle at left top in srgb-linear, red, blue)",
+      "conic-gradient(in oklch from 45deg at left top, red, blue)",
+      "repeating-linear-gradient(in lab, red, blue)",
+      "repeating-radial-gradient(in lch decreasing hue, red, blue)",
+      "repeating-conic-gradient(in xyz, red, blue)",
+    ] {
+      let value = Gradient::parse_string(source).unwrap();
+      let serialized = value.to_css_string(PrinterOptions::default()).unwrap();
+      assert!(serialized.contains(" in ") || serialized.contains("(in "), "{serialized}");
+      assert_eq!(Gradient::parse_string(&serialized).unwrap().to_css_string(PrinterOptions::default()).unwrap(), serialized);
+    }
+    for source in [
+      "linear-gradient(in unknown, red, blue)",
+      "linear-gradient(in srgb longer hue, red, blue)",
+      "linear-gradient(in hsl longer, red, blue)",
+      "linear-gradient(in hsl in lab, red, blue)",
+      "-webkit-linear-gradient(in oklch, red, blue)",
+    ] { assert!(Gradient::parse_string(source).is_err(), "{source}"); }
+  }
 }
