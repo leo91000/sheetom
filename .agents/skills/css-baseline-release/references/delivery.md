@@ -7,8 +7,11 @@ over historical counts or versions. Discover the repository slug and PR/run IDs.
 
 ## Local evidence
 
-Install the pinned toolchain/dependencies and required browser engines. After engine
-identity and generated files have been updated, the current broad validation is:
+Install the pinned toolchain and repository dependencies with `npm ci --include=dev`.
+The managed container sets `NODE_ENV=production`, so plain `npm ci` omits validation
+tools such as esbuild and Playwright. Install the required browser engines using
+the repository-pinned Playwright. After engine identity and generated files have
+been updated, the current broad validation is:
 
 ```sh
 npm run native:build
