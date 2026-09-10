@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
 import css from "@webref/css";
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 
 import observations from "../compatibility/property-value-observations.json" with { type: "json" };
 import probes from "../compatibility/property-value-probes.json" with { type: "json" };

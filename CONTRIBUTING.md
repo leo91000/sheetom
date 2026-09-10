@@ -76,6 +76,19 @@ at the lowest useful layer and a public compatibility witness when observable.
 
 ## Compatibility evidence
 
+The `playwright-oracle` development dependency pins Playwright Core and its
+browser engines to the reviewed serialization contract. Differential tests,
+corpus generators, and compatibility reports use that cohort. Upgrade it only
+with an explicit review of browser-observable changes and regenerated evidence.
+The regular `playwright` dependency independently exercises current browser
+adapters and WASM HTTP, worker, bundler, and performance consumers. Install both
+cohorts for local validation:
+
+```sh
+npx playwright install chromium firefox webkit
+node node_modules/playwright-oracle/cli.js install chromium firefox webkit
+```
+
 Use checked-in generators for mechanical corpora. Do not hand-edit generated
 browser observations or immutable release baselines. Recording commands are
 deliberate maintainer operations; ordinary CI runs their `--check` forms and

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 const browser = await chromium.launch({ args: ["--enable-blink-features=CSSMixins"] });
 try {
   const page = await browser.newPage();

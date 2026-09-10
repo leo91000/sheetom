@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-import { chromium } from "playwright";
+import { chromium } from "playwright-oracle";
 
 const contractsUrl = new URL("../compatibility/shorthand-grammar-contracts.json", import.meta.url);
 const outputUrl = new URL("../compatibility/shorthand-grammar-observations.json", import.meta.url);

@@ -93,7 +93,7 @@ for (let index = 0; index < shorthandGrammarCases.length; index += 1) {
   }
 }
 const playwrightBrowsers = JSON.parse(await readFile(
-  path.join(repositoryRoot, "node_modules/playwright-core/browsers.json"),
+  path.join(repositoryRoot, "node_modules/playwright-oracle/browsers.json"),
   "utf8",
 ));
 
