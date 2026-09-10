@@ -19,7 +19,17 @@ const isDocumentationPath = filePath =>
 
 const isReleaseMetadataPath = filePath => filePath.startsWith(".changeset/");
 
+const isAuthoringValidationPath = filePath => [
+    "scripts/validation-backend.ts",
+    "scripts/check-installed-packages.ts",
+    "scripts/test-modern-css-backends.ts",
+    "scripts/check-css-authoring-target.ts",
+    "scripts/check-webref-property-branches.ts",
+    "scripts/css-authoring-roundtrip.ts",
+].includes(filePath);
+
 const isNativePath = filePath =>
+    isAuthoringValidationPath(filePath) ||
     filePath === "engine-abi.json" ||
     filePath === "Cargo.lock" ||
     filePath === "Cargo.toml" ||
@@ -54,6 +64,7 @@ const isVendorPath = filePath =>
     filePath.startsWith("vendor/lightningcss/");
 
 const isWasmPath = filePath =>
+    isAuthoringValidationPath(filePath) ||
     filePath === "engine-abi.json" ||
     filePath === "Cargo.lock" ||
     filePath === "Cargo.toml" ||
@@ -79,6 +90,7 @@ const isAutomationPath = filePath =>
     filePath === "scripts/classify-ci-changes.test.ts";
 
 const isBrowserPath = filePath =>
+    isAuthoringValidationPath(filePath) ||
     filePath.startsWith("src/") ||
     filePath.startsWith("tests/browser/") ||
     filePath.startsWith("tests/conformance/") ||
@@ -133,7 +145,7 @@ export function classifyPaths(filePaths, { forceFull = false } = {}) {
     );
     const hasUnknownPath = knownPaths.length !== filePaths.length;
     const native = filePaths.some(isNativePath);
-    const quality = hasUnknownPath;
+    const quality = hasUnknownPath || filePaths.some(isAuthoringValidationPath);
 
     return {
         browser: filePaths.some(isBrowserPath),
