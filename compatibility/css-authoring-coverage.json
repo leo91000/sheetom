@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-09",
+  "cutoff": "2026-09-14",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
     "families": 328,
     "authoringSurfaces": 603,
-    "authoringKeyRecords": 2648,
-    "domOrEvaluationKeyRecords": 1107,
+    "authoringKeyRecords": 2647,
+    "domOrEvaluationKeyRecords": 1108,
     "deferredKeyRecords": 475
   },
   "surfaces": [
@@ -8599,8 +8599,8 @@
         },
         {
           "key": "css.selectors.backdrop.inherit_from_originating_element",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.backdrop"
+          "disposition": "dom-or-evaluation",
+          "reason": "Computed inheritance from the originating element; ::backdrop selector authoring is audited separately."
         }
       ]
     },
