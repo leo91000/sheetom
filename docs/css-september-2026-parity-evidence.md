@@ -1,6 +1,7 @@
 # September 2026 CSS authoring target
 
-The current target includes individually Baseline CSS compatibility branches
+The [14 September refresh](css-baseline-audit-2026-09-14.md) records the current
+source and inventory. The implementation target below includes individually Baseline CSS compatibility branches
 through **2026-09-09**, including branches of families that are not completely
 Baseline. The source remains web-features 3.37.0, with revision and data hash in
 [the target manifest](../compatibility/css-feature-target.json).
