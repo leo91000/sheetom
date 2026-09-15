@@ -1,5 +1,13 @@
 # sheetom
 
+## 0.2.2
+
+### Patch Changes
+
+- d2f9c90: Update the N-API build CLI to 3.9.1, fast-check to 4.10.0, and Rollup to 4.63.2 while validating the native package and WebAssembly bundler consumers.
+- 1796381: Update Vite to 8.3.0 and Node.js development typings to 24.13.4, retaining the supported native, WebAssembly, and browser consumers.
+- 4dae5c0: Update Vitest and its Playwright browser adapter together to 5.0.0 so the development test suite installs with compatible peer dependencies.
+
 ## 0.2.1
 
 ### Patch Changes
