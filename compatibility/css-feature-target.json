@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-09",
+  "cutoff": "2026-09-14",
   "source": {
     "package": "web-features",
-    "version": "3.37.0",
-    "revision": "60e8982caeaa28c4913f45c2cb20b5f6114de510",
-    "url": "https://registry.npmjs.org/web-features/-/web-features-3.37.0.tgz",
-    "dataSha256": "7633fe15d2ac393c69682150cd2e20b1164f4b8396fd9ecbc8226e25777dcac0"
+    "version": "3.38.0",
+    "revision": "cbb306322da9bede139385e284de32577a48779c",
+    "url": "https://registry.npmjs.org/web-features/-/web-features-3.38.0.tgz",
+    "dataSha256": "a7e5aac0c7ac62329fbc59bf0d64393206054b9a7bd746688392a643fb0766be"
   },
   "experimental": {
     "features": [
@@ -3501,7 +3501,7 @@
         },
         {
           "key": "css.selectors.backdrop.inherit_from_originating_element",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -24951,14 +24951,14 @@
         },
         {
           "key": "css.properties.rx",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.ry",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -28006,14 +28006,14 @@
         },
         {
           "key": "api.SVGFESpecularLightingElement.kernelUnitLengthX",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
           "key": "api.SVGFESpecularLightingElement.kernelUnitLengthY",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -28958,7 +28958,7 @@
         },
         {
           "key": "svg.elements.feSpecularLighting.kernelUnitLength",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -30223,7 +30223,7 @@
         },
         {
           "key": "css.properties.text-decoration-thickness.percentage",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -30884,7 +30884,7 @@
       "branches": [
         {
           "key": "css.properties.text-wrap",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-05",
           "eligible": true,
           "eligibility": "within-cutoff"

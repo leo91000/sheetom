@@ -1,5 +1,14 @@
 # sheetom
 
+## 0.2.1
+
+### Patch Changes
+
+- 49a793e: Update the development dependency fast-uri from 3.1.5 to 3.1.7 to fix URI authority and host validation vulnerabilities in conformance tooling.
+- d21ba5c: Update Changesets CLI, N-API CLI, Webref CSS data, Playwright, Rollup, tsdown, Vite, and Webpack. Preserve the reviewed CSSOM serialization oracle independently from the newer browsers used for adapter and WASM consumer validation.
+- d8880ef: Update the development dependency js-yaml from 4.3.1 to 4.3.2 to limit CPU usage from YAML merge sequences in development tooling.
+- f36e80f: Update the Vitest development toolchain from 4.1.10 to 4.1.11, including the mock redirect security fix and browser runner corrections.
+
 ## 0.2.0
 
 ### Minor Changes
