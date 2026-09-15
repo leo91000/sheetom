@@ -43,6 +43,11 @@ for (const feature of target.features) {
   const dispositions = [];
   for (const branch of feature.branches) {
     if (!branch.eligible) { dispositions.push({ key: branch.key, disposition: branch.eligibility }); continue; }
+    // Inheritance is evaluation; the accompanying ::backdrop syntax has its own probe.
+    if (branch.key === "css.selectors.backdrop.inherit_from_originating_element") {
+      dispositions.push({ key: branch.key, disposition: "dom-or-evaluation", reason: "Computed inheritance from the originating element; ::backdrop selector authoring is audited separately." });
+      continue;
+    }
     const [namespace, category, name] = branch.key.split(".");
     if (namespace !== "css" && !(namespace === "api" && /^(CSS|StyleSheet|MediaList)/u.test(category))
       || namespace === "api" && (excludedApi.has(category) || ["highlights_static", "registerProperty_static"].includes(name))) {
