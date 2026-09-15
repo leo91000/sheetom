@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: weekly
     groups:
+      # Vitest and its browser adapters require matching peer versions.
+      vitest:
+        patterns:
+          - vitest
+          - "@vitest/*"
       npm-minor-and-patch:
         update-types:
           - minor
