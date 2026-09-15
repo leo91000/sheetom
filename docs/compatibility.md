@@ -26,9 +26,10 @@ method.
 
 ## Dated authoring target
 
-The unreleased June 2026 target is defined by the [dated inventory and evidence
-mapping](./css-june-2026-parity-evidence.md). It adds five experimental mixin
-interfaces under an exact CSSWG revision. The target date refers to Web Platform
+The current target is defined by the [14 September 2026 audit](./css-baseline-audit-2026-09-14.md)
+and [September authoring evidence](./css-september-2026-parity-evidence.md).
+Experimental mixin interfaces remain pinned to an exact CSSWG revision and
+separate from Baseline claims. The target date refers to Web Platform
 Baseline availability; it is separate from the versions of the browser oracles.
 
 ## Browser precedence
