@@ -136,7 +136,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.0",
-    "@napi-rs/cli": "3.9.0",
+    "@napi-rs/cli": "3.9.1",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@types/css-tree": "^3.2.0",
     "@types/node": "^24.0.0",
@@ -149,7 +149,7 @@
     "fast-check": "^4.9.0",
     "playwright": "^1.62.1",
     "playwright-oracle": "npm:playwright-core@1.62.1",
-    "rollup": "4.63.1",
+    "rollup": "4.63.2",
     "tsdown": "^0.23.0",
     "typedoc": "^0.28.20",
     "typescript": "^6.0.3",
