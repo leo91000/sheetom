@@ -25,3 +25,7 @@ runs:
     - name: Install the pinned compatibility oracle
       shell: bash
       run: node node_modules/playwright-oracle/cli.js install --with-deps chromium firefox webkit
+
+    - name: Install the pinned Baseline alpha oracle
+      shell: bash
+      run: node node_modules/playwright-baseline/cli.js install --with-deps chromium

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { chromium, firefox } from "playwright-oracle";
+import { chromium as baselineChromium } from "playwright-baseline";
 import corpus from "../compatibility/css-authoring-probes.json" with { type: "json" };
 import propertyCorpus from "../compatibility/webref-property-branches.json" with { type: "json" };
 import { assertAuthoringRoundTrip, snapshotAuthoringRule as snapshotRule } from "./css-authoring-roundtrip.ts";
@@ -41,15 +42,18 @@ function observe(api, probe) {
 }
 const browser = await chromium.launch();
 const mediaBrowser = await firefox.launch();
+const baselineBrowser = await baselineChromium.launch();
 try {
   assert.equal(browser.version(), "151.0.7922.34", "Review the pinned browser version before advancing evidence");
   const page = await browser.newPage();
   const mediaPage = await mediaBrowser.newPage();
+  const baselinePage = await baselineBrowser.newPage();
+  assert.equal(baselineBrowser.version(), "153.0.8010.12", "Review the alpha oracle before advancing evidence");
   assert.equal(mediaBrowser.version(), "153.0", "Review the media selector oracle before advancing evidence");
   const mismatches = [];
   const evaluator = `(function () { const snapshotRule = ${snapshotRule.toString()}; return ${observe.toString()}; })()`;
   for (const probe of corpus.probes) {
-    const reference = probe.oracle === "firefox" ? mediaPage : page;
+    const reference = probe.oracle === "baseline-chromium" ? baselinePage : probe.oracle === "firefox" ? mediaPage : page;
     const expected = await reference.evaluate(({ evaluator, probe }) => (0, eval)(`(${evaluator})`)(globalThis, probe), { evaluator, probe });
     for (const [backend, api] of backends) {
       const actual = observe(api, probe);
@@ -74,12 +78,17 @@ try {
   const conditions = ["color: red", "(color: red !important)", "not (color:red;)", "not(color:red)", "not (invalid:value)", "(color:red) and (width:1px) or (height:1px)", "(color:red) and", "(color:red) trailing", "(color:red) or (width:invalid)", ...corpus.probes.filter(p => p.kind === "selector").map(p => `selector(${p.value})`), "selector(:is(div, :unknown))", "selector(:lang(en, fr))", "not (unknown(\"bad\nstring\"))", "not (color: red])", "selector(div, p)", "selector(:unknown)", ...["woff", "woff2", "truetype", "opentype", "collection", "svg", "embedded-opentype", "unknown"].map(name => `font-format(${name})`), ...["features-opentype", "features-aat", "features-graphite", "variations", "palettes", "color-colrv0", "color-colrv1", "color-sbix", "color-cbdt", "color-svg", "incremental", "unknown"].map(name => `font-tech(${name})`)];
   for (const depth of [80, 4000]) for (const selector of [":is(.a)", ":not(.a)", ":has(> .a)", ":is(.a, :unknown)", ":has(:has(.a))", ":nth-child(2n of .a)", ":where([data-x=odd])"]) conditions.push(`selector(${":is(".repeat(depth)}${selector}${")".repeat(depth)})`);
   const expectedSupports = await page.evaluate(({ declarations, conditions }) => [...declarations.map(([p, v]) => CSS.supports(p, v)), ...conditions.map(c => CSS.supports(c))], { declarations, conditions });
-  // Chromium 151 predates Baseline media selectors. Use an explicit positive
-  // Firefox reference for these conditions, keeping the other oracles pinned.
+  // Retain Firefox evidence for media selectors withdrawn from Baseline.
   for (const probe of corpus.probes.filter(p => p.oracle === "firefox" && p.kind === "selector")) {
     const condition = `selector(${probe.value})`;
     const index = conditions.indexOf(condition);
     expectedSupports[declarations.length + index] = await mediaPage.evaluate(value => CSS.supports(value), condition);
+  }
+  // New declarations use the same explicitly selected oracle as their state probes.
+  const declarationProbes = corpus.probes.filter(p => p.kind === "declaration");
+  for (const [index, probe] of declarationProbes.entries()) {
+    if (probe.oracle !== "baseline-chromium") continue;
+    expectedSupports[index] = await baselinePage.evaluate(({ property, value }) => CSS.supports(property, value), probe);
   }
   for (const [backend, api] of backends) {
     const actual = [...declarations.map(([p, v]) => api.CSS.supports(p, v)), ...conditions.map(c => api.CSS.supports(c))];
@@ -88,9 +97,9 @@ try {
   const identifiers = [...Array.from({ length: 256 }, (_, index) => String.fromCharCode(index)), "-", "-0x", "123", "é🐕", "\uD800", "\uDC00", "a\uD800b", "--name"];
   const expectedEscapes = await page.evaluate(values => values.map(value => CSS.escape(value)), identifiers);
   for (const [, api] of backends) assert.deepEqual(identifiers.map(value => api.CSS.escape(value)), expectedEscapes);
-  const report = { browser: browser.version(), mediaSelectorBrowser: mediaBrowser.version(), probes: corpus.probes.length, supportsChecksPerBackend: expectedSupports.length, escapeChecksPerBackend: identifiers.length, mismatches };
+  const report = { browser: browser.version(), baselineBrowser: baselineBrowser.version(), mediaSelectorBrowser: mediaBrowser.version(), probes: corpus.probes.length, supportsChecksPerBackend: expectedSupports.length, escapeChecksPerBackend: identifiers.length, mismatches };
   const reportPath = process.argv.find(argument => argument.startsWith("--report="))?.slice(9) ?? new URL("../target/css-authoring-target-report.json", import.meta.url);
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify({ ...report, mismatches: mismatches.length }));
   assert.equal(mismatches.length, 0, `See ${reportPath}`);
-} finally { await browser.close(); await mediaBrowser.close(); }
+} finally { await browser.close(); await mediaBrowser.close(); await baselineBrowser.close(); }

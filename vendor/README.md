@@ -40,3 +40,10 @@ The nested `selectors` parser keeps separate recovery policies for `:is()`/
 branch in the latter two while compiler defaults stay unchanged. Animation's
 authoring serializer also retains duration, easing, and other settings when
 its name is `none`, so a later longhand edit does not lose those settings.
+
+The September 21 update retains relative `alpha()` origins and channel expressions
+in the existing relative-color AST, and adds a typed two-branch `LightDarkImage`.
+These values serialize without resolving current color or the used color scheme.
+The previous eager-alpha evaluator is removed. The vendor minifier expectations
+now retain alpha expressions, matching the fork's existing relative-color policy;
+public CSSOM canonicalization is checked against the additional pinned browser.

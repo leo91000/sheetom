@@ -328,7 +328,7 @@ fn replace_gradient_color_tokens(input: &str) -> String {
 
 fn is_serializable_color_function(name: &str) -> bool {
     [
-        "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color",
+        "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color", "alpha",
     ]
     .iter()
     .any(|candidate| name.eq_ignore_ascii_case(candidate))
@@ -1314,7 +1314,7 @@ fn is_relative_color_function(value: &str) -> bool {
         return false;
     };
     if ![
-        "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color",
+        "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color", "alpha",
     ]
     .iter()
     .any(|candidate| function.eq_ignore_ascii_case(candidate))

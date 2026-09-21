@@ -1888,6 +1888,210 @@
       "kind": "declaration",
       "property": "color",
       "value": "rgb(from red progress(r, 0, 255) g b)"
+    },
+    {
+      "id": "baseline-september-21.0",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "alpha(from currentColor / calc(alpha * .5))",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.1",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "alpha(from Canvas / .3)",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.2",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "alpha(from red / none)",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.3",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "alpha(from red)",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.4",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-color",
+      "value": "alpha(from light-dark(red, blue) / 50%)",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.5",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "border-color",
+      "value": "alpha(from currentColor / .5)",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.6",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "light-dark(url(\"a.png\"), url(\"b.png\"))"
+    },
+    {
+      "id": "baseline-september-21.7",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "light-dark(none, linear-gradient(red, blue))"
+    },
+    {
+      "id": "baseline-september-21.8",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "light-dark(light-dark(url(\"a.png\"), none), url(\"b.png\"))"
+    },
+    {
+      "id": "baseline-september-21.9",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "list-style-image",
+      "value": "light-dark(none, url(\"b.png\"))"
+    },
+    {
+      "id": "baseline-september-21.10",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.11",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "mask-image",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.position-anchor.auto",
+      "root": "css.properties.position-anchor",
+      "kind": "declaration",
+      "property": "position-anchor",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-september-21.position-anchor.none",
+      "root": "css.properties.position-anchor",
+      "kind": "declaration",
+      "property": "position-anchor",
+      "value": "none"
+    },
+    {
+      "id": "baseline-september-21.position-anchor.normal",
+      "root": "css.properties.position-anchor",
+      "kind": "declaration",
+      "property": "position-anchor",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-september-21.position-anchor.--anchor",
+      "root": "css.properties.position-anchor",
+      "kind": "declaration",
+      "property": "position-anchor",
+      "value": "--anchor"
+    },
+    {
+      "id": "baseline-september-21.overflow-anchor.auto",
+      "root": "css.properties.overflow-anchor",
+      "kind": "declaration",
+      "property": "overflow-anchor",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-september-21.overflow-anchor.none",
+      "root": "css.properties.overflow-anchor",
+      "kind": "declaration",
+      "property": "overflow-anchor",
+      "value": "none"
+    },
+    {
+      "id": "baseline-september-21.invalid.0",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "alpha(from currentColor / calc(alpha + 1px))",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.invalid.1",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "alpha(from red / r)",
+      "oracle": "baseline-chromium"
+    },
+    {
+      "id": "baseline-september-21.invalid.2",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "light-dark(none, none, none)"
+    },
+    {
+      "id": "baseline-september-21.invalid.3",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-image",
+      "value": "light-dark(red, url(\"a.png\"))"
+    },
+    {
+      "id": "baseline-september-21.image.background",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.image.mask",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.image.border-image",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "border-image",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.image.list-style",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "list-style",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.image.content",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "content",
+      "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "baseline-september-21.image.shape-outside",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "shape-outside",
+      "value": "light-dark(url(\"a.png\"), none)"
     }
   ]
 }

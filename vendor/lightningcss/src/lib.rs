@@ -19361,7 +19361,7 @@ mod tests {
     // Alpha keyword referencing origin's alpha.
     minify_test(
       ".foo{color:alpha(from currentcolor / alpha)}",
-      ".foo{color:alpha(from currentcolor / alpha)}",
+      ".foo{color:alpha(from currentcolor/alpha)}",
     );
     test("alpha(from rgba(255, 0, 0, 0.8) / alpha)", "rgba(255, 0, 0, 0.8)");
 
@@ -19387,21 +19387,21 @@ mod tests {
     // Test sibling-index() and sibling-count()
     minify_test(
       ".foo{color:alpha(from green / sibling-index())}",
-      ".foo{color:alpha(from green / sibling-index())}",
+      ".foo{color:alpha(from green/sibling-index())}",
     );
     minify_test(
       ".foo{color:alpha(from green / calc(sibling-index() * 0.2))}",
-      ".foo{color:alpha(from green / calc(sibling-index() * .2))}",
+      ".foo{color:alpha(from green/calc(0.2 * sibling-index()))}",
     );
     minify_test(
       ".foo{color:alpha(from green / sibling-count())}",
-      ".foo{color:alpha(from green / sibling-count())}",
+      ".foo{color:alpha(from green/sibling-count())}",
     );
 
     // Nested in other color functions.
     minify_test(
       ".foo{color:color-mix(in srgb, alpha(from red / 0.5), blue)}",
-      ".foo{color:#5500aabf}",
+      ".foo{color:color-mix(in srgb,alpha(from red/0.5),#00f)}",
     );
     test("rgb(from alpha(from red / 0.5) r g b / alpha)", "rgba(255, 0, 0, 0.5)");
 
@@ -19421,7 +19421,7 @@ mod tests {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/system-color#syntax
     minify_test(
       ".foo{color:alpha(from ActiveText / 0.5)}",
-      ".foo{color:alpha(from ActiveText / .5)}",
+      ".foo{color:alpha(from activetext/0.5)}",
     );
 
     // Out-of-range alpha values.
@@ -19437,7 +19437,7 @@ mod tests {
     // Unresolved relative colors keep their tokens.
     minify_test(
       ".foo{color:rgb(from alpha(from currentColor / 0.5) r g b)}",
-      ".foo{color:rgb(from alpha(from currentColor / .5) r g b)}",
+      ".foo{color:rgb(from alpha(from currentcolor/0.5) r g b)}",
     );
     minify_test(
       ".foo{color:alpha(from red / var(--alpha))}",
@@ -19480,12 +19480,12 @@ mod tests {
     );
 
     // Test in image()
-    minify_test(".foo { mask: image(alpha(from red / 1))}", ".foo{mask:image(red)}");
+    minify_test(".foo { mask: image(alpha(from red / 1))}", ".foo{mask:image(alpha(from red/1))}");
 
     // Test in linear-gradient()
     minify_test(
       ".foo { mask: linear-gradient(90deg, alpha(from red / 0%), red) }",
-      ".foo{mask:linear-gradient(90deg,#f000,red)}",
+      ".foo{mask:linear-gradient(90deg,alpha(from red/0%),red)}",
     );
     // Compare relative color
     minify_test(
@@ -19494,12 +19494,12 @@ mod tests {
     );
     minify_test(
       ".foo { mask: linear-gradient(90deg in hsl longer hue, alpha(from red / 0%), red) }",
-      ".foo{mask:linear-gradient(90deg in hsl longer hue,#f000,red)}",
+      ".foo{mask:linear-gradient(90deg in hsl longer hue,alpha(from red/0%),red)}",
     );
 
     minify_test(
       ".foo { color: alpha(from color(display-p3 1 0 0) / 0.5) }",
-      ".foo{color:color(display-p3 1 0 0/.5)}",
+      ".foo{color:alpha(from color(display-p3 1 0 0)/0.5)}",
     );
 
     // The following tests were converted from WPT: https://github.com/web-platform-tests/wpt/blob/master/css/css-color/parsing/relative-color-valid.html
@@ -21283,13 +21283,13 @@ mod tests {
   }
 
   #[test]
-  fn test_relative_alpha_color_fallbacks() {
+  fn test_relative_alpha_color_preservation_with_legacy_targets() {
+    // Authoring retains relative alpha just like other relative color functions.
     prefix_test(
       ".foo { color: alpha(from color(srgb 1 0 0) / 0.5) }",
       indoc! { r#"
         .foo {
-          color: #ff000080;
-          color: color(srgb 1 0 0 / .5);
+          color: alpha(from color(srgb 1 0 0) / 0.5);
         }
       "#},
       Browsers {
@@ -21301,8 +21301,7 @@ mod tests {
       ".foo { color: alpha(from color(display-p3 1 0 0) / 0.5) }",
       indoc! { r#"
         .foo {
-          color: #ff0f0e80;
-          color: color(display-p3 1 0 0 / .5);
+          color: alpha(from color(display-p3 1 0 0) / 0.5);
         }
       "#},
       Browsers {
@@ -31425,7 +31424,7 @@ mod tests {
       ".foo { color: alpha(from light-dark(yellow, red) / 10%); }",
       indoc! { r#"
       .foo {
-        color: var(--lightningcss-light, #ffff001a) var(--lightningcss-dark, #ff00001a);
+        color: alpha(from light-dark(yellow, red) / 10%);
       }
       "#},
       Browsers {

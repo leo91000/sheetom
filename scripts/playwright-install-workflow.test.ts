@@ -46,3 +46,7 @@ test("release-critical workflows share the Playwright installer", () => {
     assert.doesNotMatch(workflow.source, /playwright install --with-deps/u);
   }
 });
+
+test("installs the pinned Baseline alpha oracle", () => {
+  assert.match(action, /node node_modules\/playwright-baseline\/cli\.js install --with-deps chromium/u);
+});
