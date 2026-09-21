@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-14",
+  "cutoff": "2026-09-21",
   "source": {
     "package": "web-features",
-    "version": "3.38.0",
-    "revision": "cbb306322da9bede139385e284de32577a48779c",
-    "url": "https://registry.npmjs.org/web-features/-/web-features-3.38.0.tgz",
-    "dataSha256": "a7e5aac0c7ac62329fbc59bf0d64393206054b9a7bd746688392a643fb0766be"
+    "version": "3.39.0",
+    "revision": "a9cc987771757d5604fa37cb76f40f5e9b3808f1",
+    "url": "https://registry.npmjs.org/web-features/-/web-features-3.39.0.tgz",
+    "dataSha256": "b9e65236833bf78451fbd05ac4c587b643247a6d5ee4f0e8e28daaa13b7247cd"
   },
   "experimental": {
     "features": [
@@ -17,10 +17,10 @@
     "mixinDraftSha256": "4967c197dfd1b86cb321b835ebcdb2577974bc80d7097294294cd75a8249a76c"
   },
   "summary": {
-    "featureFamilies": 328,
-    "uniqueCompatibilityKeys": 4230,
-    "eligibleKeyRecords": 3755,
-    "deferredKeyRecords": 475
+    "featureFamilies": 330,
+    "uniqueCompatibilityKeys": 4219,
+    "eligibleKeyRecords": 3757,
+    "deferredKeyRecords": 462
   },
   "features": [
     {
@@ -295,6 +295,23 @@
           "key": "css.properties.all",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        }
+      ]
+    },
+    {
+      "id": "alpha",
+      "name": "alpha()",
+      "baselineLowDate": "2026-09-14",
+      "specifications": [
+        "https://drafts.csswg.org/css-color-5/#relative-alpha"
+      ],
+      "branches": [
+        {
+          "key": "css.types.color.alpha",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
           "eligible": true,
           "eligibility": "within-cutoff"
         }
@@ -1244,31 +1261,31 @@
         },
         {
           "key": "css.properties.position-anchor",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.position-anchor.auto",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.position-anchor.none",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.position-anchor.normal",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.position-area",
@@ -3366,20 +3383,6 @@
         },
         {
           "key": "css.types.attr.type_function.time",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.types.attr.type_function.transform-function",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.types.attr.type_function.url",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
@@ -8435,13 +8438,6 @@
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.properties.display.contents.focusable_elements",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         }
       ]
     },
@@ -8725,13 +8721,6 @@
           "baselineLowDate": "2015-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.empty.matches_whitespace",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         }
       ]
     },
@@ -10718,13 +10707,6 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.font-variant.greek_accented_characters",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
           "key": "css.properties.font-variant.historical-forms",
           "baseline": "high",
           "baselineLowDate": "2023-03-13",
@@ -10765,13 +10747,6 @@
           "baselineLowDate": "2015-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.font-variant.uppercase_eszett",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         },
         {
           "key": "svg.global_attributes.font-variant",
@@ -13959,6 +13934,23 @@
           "key": "css.types.color.light-dark",
           "baseline": "low",
           "baselineLowDate": "2024-05-13",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        }
+      ]
+    },
+    {
+      "id": "light-dark-image",
+      "name": "light-dark() image values",
+      "baselineLowDate": "2026-09-14",
+      "specifications": [
+        "https://drafts.csswg.org/css-color-5/#typedef-light-dark-image"
+      ],
+      "branches": [
+        {
+          "key": "css.types.color.light-dark.image_value",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
           "eligible": true,
           "eligibility": "within-cutoff"
         }
@@ -17661,66 +17653,6 @@
       ]
     },
     {
-      "id": "media-pseudos",
-      "name": "Media element pseudo-classes",
-      "baselineLowDate": "2026-08-28",
-      "specifications": [
-        "https://drafts.csswg.org/selectors-4/#resource-pseudos",
-        "https://html.spec.whatwg.org/multipage/semantics-other.html#pseudo-classes"
-      ],
-      "branches": [
-        {
-          "key": "css.selectors.buffering",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.muted",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.paused",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.playing",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.seeking",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.stalled",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.selectors.volume-locked",
-          "baseline": "low",
-          "baselineLowDate": "2026-08-28",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        }
-      ]
-    },
-    {
       "id": "media-queries",
       "name": "Media queries",
       "baselineLowDate": "2015-07-29",
@@ -19450,6 +19382,37 @@
       ]
     },
     {
+      "id": "overflow-anchor",
+      "name": "overflow-anchor",
+      "baselineLowDate": "2026-09-14",
+      "specifications": [
+        "https://drafts.csswg.org/css-scroll-anchoring-1/#exclusion-api"
+      ],
+      "branches": [
+        {
+          "key": "css.properties.overflow-anchor",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.overflow-anchor.auto",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.overflow-anchor.none",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        }
+      ]
+    },
+    {
       "id": "overflow-clip",
       "name": "overflow: clip",
       "baselineLowDate": "2022-09-12",
@@ -20187,13 +20150,6 @@
           "baselineLowDate": "2022-09-12",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.types.basic-shape.path.shape-outside",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         }
       ]
     },
@@ -29959,20 +29915,6 @@
           "baselineLowDate": "2025-11-11",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.text-autospace.punctuation",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.properties.text-autospace.replace",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         }
       ]
     },

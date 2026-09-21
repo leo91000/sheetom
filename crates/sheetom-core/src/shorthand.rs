@@ -20,7 +20,8 @@ use lightningcss::{
     declaration::DeclarationBlock,
     properties::{Property, PropertyId},
     stylesheet::{ParserOptions, PrinterOptions},
-    traits::IntoOwned,
+    traits::{IntoOwned, Parse},
+    values::image::Image,
 };
 use std::{
     cell::RefCell,
@@ -2458,7 +2459,9 @@ fn observable_background_layer_value(longhand: &str, input: &str) -> Option<Stri
 }
 
 fn is_image_component(component: &str) -> bool {
-    component == "none"
+    // The same function name also accepts colors; classify its typed arguments.
+    (component.starts_with("light-dark(") && Image::parse_string(component).is_ok())
+        || component == "none"
         || [
             "url(",
             "image(",

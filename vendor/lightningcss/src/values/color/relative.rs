@@ -22,7 +22,7 @@ const MAX_RELATIVE_COLOR_NESTING_DEPTH: usize = 500;
 pub struct RelativeColor {
   function: RelativeColorFunction,
   origin: RelativeColorOrigin,
-  components: [RelativeColorComponent; 3],
+  components: Option<[RelativeColorComponent; 3]>,
   alpha: Option<RelativeColorComponent>,
 }
 
@@ -66,6 +66,7 @@ struct RelativeColorMix {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 enum RelativeColorFunction {
+  Alpha,
   RGB,
   HSL,
   HWB,
@@ -283,6 +284,9 @@ impl RelativeColorParseContext {
 
 impl RelativeColorFunction {
   fn from_name(name: &str) -> Option<Self> {
+    if name.eq_ignore_ascii_case("alpha") {
+      return Some(Self::Alpha);
+    }
     if name.eq_ignore_ascii_case("rgb") || name.eq_ignore_ascii_case("rgba") {
       return Some(Self::RGB);
     }
@@ -312,6 +316,7 @@ impl RelativeColorFunction {
 
   fn name(self) -> &'static str {
     match self {
+      Self::Alpha => "alpha",
       Self::RGB => "rgb",
       Self::HSL => "hsl",
       Self::HWB => "hwb",
@@ -326,6 +331,7 @@ impl RelativeColorFunction {
   fn allows_channel(self, channel: RelativeColorChannel) -> bool {
     use RelativeColorChannel::*;
     match self {
+      Self::Alpha => matches!(channel, Alpha),
       Self::RGB => matches!(channel, R | G | B | Alpha),
       Self::HSL => matches!(channel, H | S | L | Alpha),
       Self::HWB => matches!(channel, H | W | B | Alpha),
@@ -672,11 +678,15 @@ pub(super) fn parse_relative_color<'i, 't>(
 
     let context = RelativeColorParseContext::new(function);
 
-    let components = [
-      parse_component(input, context, 0)?,
-      parse_component(input, context, 1)?,
-      parse_component(input, context, 2)?,
-    ];
+    let components = if function == RelativeColorFunction::Alpha {
+      None
+    } else {
+      Some([
+        parse_component(input, context, 0)?,
+        parse_component(input, context, 1)?,
+        parse_component(input, context, 2)?,
+      ])
+    };
     let alpha = if input.try_parse(|input| input.expect_delim('/')).is_ok() {
       Some(parse_alpha_component(input, context)?)
     } else {
@@ -1491,12 +1501,14 @@ impl ToCss for RelativeColor {
     dest.write_str(self.function.name())?;
     dest.write_str("(from ")?;
     self.origin.to_css(dest)?;
-    dest.write_char(' ')?;
+    if self.function != RelativeColorFunction::Alpha {
+      dest.write_char(' ')?;
+    }
     if let RelativeColorFunction::Color(space) = self.function {
       dest.write_str(space.name())?;
       dest.write_char(' ')?;
     }
-    for (index, component) in self.components.iter().enumerate() {
+    for (index, component) in self.components.iter().flatten().enumerate() {
       if index > 0 {
         dest.write_char(' ')?;
       }
@@ -1761,4 +1773,28 @@ where
     value.to_css(dest)?;
   }
   dest.write_char(')')
+}
+
+#[cfg(test)]
+mod alpha_tests {
+  use super::*;
+  use crate::stylesheet::PrinterOptions;
+
+  #[test]
+  fn alpha_retains_origins_and_only_accepts_alpha_channels() {
+    for source in [
+      "alpha(from currentColor)",
+      "alpha(from Canvas / calc(alpha * .5))",
+      "alpha(from light-dark(red, blue) / none)",
+      "alpha(from alpha(from currentColor / .5) / alpha)",
+    ] {
+      let color = CssColor::parse_string(source).unwrap();
+      assert!(matches!(color, CssColor::Relative(_)));
+      let css = color.to_css_string(PrinterOptions::default()).unwrap();
+      assert_eq!(CssColor::parse_string(&css).unwrap(), color);
+    }
+    for source in ["alpha()", "alpha(red)", "alpha(from red / r)", "alpha(from red / 1px)", "alpha(from red / calc(alpha + 1px))"] {
+      assert!(CssColor::parse_string(source).is_err(), "{}", source);
+    }
+  }
 }

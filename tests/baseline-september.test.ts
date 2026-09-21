@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
+import { assertAuthoringRoundTrip } from "../scripts/css-authoring-roundtrip.ts";
+import * as api from "../src/index.js";
 import { CSS, CSSStyleSheet, CSSStyleDeclaration, CSSPositionTryRule, CSSPositionTryDescriptors } from "../src/index.js";
 
 test("sibling functions retain element context across numeric dimensions", () => {
@@ -53,7 +55,7 @@ test("progress validates its argument types independently of the enclosing prope
   assert.equal(CSS.supports("width", "progress(5, 0, 10)"), false);
 });
 
-test("Baseline media state selectors report authoring support", () => {
+test("media state selectors retain support after their Baseline withdrawal", () => {
   for (const name of ["playing", "paused", "seeking", "buffering", "stalled", "muted", "volume-locked"]) {
     assert.equal(CSS.supports(`selector(video:${name})`), true);
     assert.equal(CSS.supports(`selector(:is(video:${name}))`), true);
@@ -98,4 +100,66 @@ test("position-try has a live descriptor interface and filters every mutation pa
   style.setProperty("left", "7px");
   assert.equal(style.getPropertyValue("left"), "7px");
   assert.equal(rule.parentStyleSheet, null);
+});
+
+test("alpha retains typed unresolved origins in color contexts", () => {
+  for (const property of ["color", "background-color", "border-color", "outline-color", "flood-color", "stop-color"]) {
+    for (const origin of ["red", "currentColor", "Canvas", "light-dark(red, blue)", "contrast-color(currentColor)", "rgb(from currentColor r g b)", "alpha(from currentColor / .8)"]) {
+      for (const suffix of ["", " / 50%", " / none", " / calc(alpha * .5)"]) {
+        const value = `alpha(from ${origin}${suffix})`;
+        const sheet = new CSSStyleSheet(); sheet.replaceSync(`a { ${property}: ${value}; }`);
+        const style = (sheet.cssRules[0] as import("../src/index.js").CSSStyleRule).style;
+        assert.equal(CSS.supports(property, value), true, `${property}: ${value}`);
+        assert.match(style.getPropertyValue(property), /alpha\(from /u);
+        const before = style.cssText;
+        for (const invalid of ["alpha()", "alpha(red)", "alpha(from red / r)", "alpha(from red / 1px)", "alpha(from red / calc(alpha + 1px))", "alpha(from red / .5, blue)", "alpha(from red / .5 .6)"]) {
+          assert.equal(CSS.supports(property, invalid), false, invalid);
+          style.setProperty(property, invalid); assert.equal(style.cssText, before);
+        }
+        const reparsed = new CSSStyleSheet(); reparsed.replaceSync(sheet.serializeStrict());
+        assert.equal(reparsed.cssRules[0]!.cssText, sheet.cssRules[0]!.cssText);
+      }
+    }
+  }
+});
+
+test("light-dark images retain both branches through mutation and reparse", () => {
+  for (const property of ["background-image", "mask-image", "list-style-image", "border-image-source", "background", "mask", "border-image", "list-style", "content", "shape-outside"]) {
+    for (const value of ['light-dark(url("light.png"), url("dark.png"))', 'light-dark(none, linear-gradient(red, blue))', 'light-dark(light-dark(none, url("a.png")), url("b.png"))', 'light-dark(image-set(url("a.png") 1x), none)']) {
+      const sheet = new CSSStyleSheet(); sheet.replaceSync("a {}");
+      const style = (sheet.cssRules[0] as import("../src/index.js").CSSStyleRule).style;
+      assert.equal(CSS.supports(property, value), true, `${property}: ${value}`);
+      style.setProperty(property, value, "important");
+      assert.match(style.getPropertyValue(property), /^light-dark\(/u);
+      assert.equal(style.getPropertyPriority(property), "important");
+      const before = style.cssText;
+      for (const invalid of ['light-dark()', 'light-dark(none)', 'light-dark(none, none, none)', 'light-dark(red, url("a.png"))', 'light-dark(url("a.png"), blue)', 'light-dark(none none)', 'light-dark(linear-gradient(), none)']) {
+        assert.equal(CSS.supports(property, invalid), false, invalid);
+        style.setProperty(property, invalid); assert.equal(style.cssText, before);
+      }
+      const reparse = new CSSStyleSheet(); reparse.replaceSync(sheet.serializeStrict());
+      assertAuthoringRoundTrip(api, sheet, reparse);
+      assert.equal(reparse.serializeStrict(), sheet.serializeStrict());
+      style.cssText = before;
+      assert.equal(style.cssText, before);
+    }
+  }
+  assert.equal(CSS.supports("color", 'light-dark(url("a.png"), none)'), false);
+});
+
+test("scheme image shorthands preserve exposed longhands when the group changes", () => {
+  for (const [property, image, other, otherValue] of [["background", "background-image", "background-color", "red"], ["mask", "mask-image", "mask-mode", "alpha"]] as const) {
+    const defaults = property === "background" ? " 0% 0% / auto repeat scroll padding-box border-box" : "";
+    const sheet = new CSSStyleSheet(); sheet.replaceSync(`a { ${property}: light-dark(url("a.png"), none)${defaults}; }`);
+    const style = (sheet.cssRules[0] as import("../src/index.js").CSSStyleRule).style;
+    assert.equal(style.getPropertyValue(image), 'light-dark(url("a.png"), none)');
+    style.setProperty(other, otherValue);
+    assert.equal(style.getPropertyValue(image), 'light-dark(url("a.png"), none)');
+    const reparse = new CSSStyleSheet(); reparse.replaceSync(sheet.serializeStrict());
+    assertAuthoringRoundTrip(api, sheet, reparse);
+  }
+  const sheet = new CSSStyleSheet(); sheet.replaceSync("a { background: light-dark(red, blue); }");
+  const style = (sheet.cssRules[0] as import("../src/index.js").CSSStyleRule).style;
+  assert.equal(style.getPropertyValue("background-color"), "light-dark(red, blue)");
+  assert.equal(style.getPropertyValue("background-image"), "initial");
 });

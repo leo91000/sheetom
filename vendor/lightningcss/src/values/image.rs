@@ -39,6 +39,45 @@ pub enum Image<'i> {
   Gradient(Box<Gradient>),
   /// An `image-set()`.
   ImageSet(ImageSet<'i>),
+  /// A pair of images selected by the used color scheme.
+  LightDark(Box<LightDarkImage<'i>>),
+}
+
+/// The image-valued `light-dark()` function. Both branches remain authored state.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "visitor", derive(Visit))]
+#[cfg_attr(feature = "into_owned", derive(static_self::IntoOwned))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct LightDarkImage<'i> {
+  /// The light-scheme image, or `none`.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  pub light: Image<'i>,
+  /// The dark-scheme image, or `none`.
+  pub dark: Image<'i>,
+}
+
+impl<'i> Parse<'i> for LightDarkImage<'i> {
+  fn parse<'t>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.expect_function_matching("light-dark")?;
+    input.parse_nested_block(|input| {
+      let light = Image::parse(input)?;
+      input.expect_comma()?;
+      let dark = Image::parse(input)?;
+      input.expect_exhausted()?;
+      Ok(Self { light, dark })
+    })
+  }
+}
+
+impl ToCss for LightDarkImage<'_> {
+  fn to_css<W: std::fmt::Write>(&self, dest: &mut Printer<W>) -> Result<(), PrinterError> {
+    dest.write_str("light-dark(")?;
+    self.light.to_css(dest)?;
+    dest.delim(',', false)?;
+    self.dark.to_css(dest)?;
+    dest.write_char(')')
+  }
 }
 
 impl<'i> Default for Image<'i> {
@@ -131,6 +170,7 @@ impl<'i> IsCompatible for Image<'i> {
         Gradient::WebKitGradient(..) => is_webkit_gradient(browsers),
       },
       Image::ImageSet(i) => i.is_compatible(browsers),
+      Image::LightDark(_) => false,
       Image::Url(..) | Image::None => true,
     }
   }
@@ -495,4 +535,27 @@ impl<'i> ImageSetOption<'i> {
 fn parse_file_type<'i, 't>(input: &mut Parser<'i, 't>) -> Result<CowRcStr<'i>, ParseError<'i, ParserError<'i>>> {
   input.expect_function_matching("type")?;
   input.parse_nested_block(|input| Ok(input.expect_string_cloned()?))
+}
+
+#[cfg(test)]
+mod scheme_image_tests {
+  use super::*;
+  use crate::stylesheet::PrinterOptions;
+
+  #[test]
+  fn typed_scheme_images_validate_both_branches_and_round_trip() {
+    for source in [
+      "light-dark(url(a.png), none)",
+      "light-dark(none, linear-gradient(red, blue))",
+      "light-dark(light-dark(none, url(a.png)), image-set(url(b.png) 1x))",
+    ] {
+      let value = Image::parse_string(source).unwrap();
+      assert!(matches!(value, Image::LightDark(_)));
+      let css = value.to_css_string(PrinterOptions::default()).unwrap();
+      assert_eq!(Image::parse_string(&css).unwrap(), value);
+    }
+    for source in ["light-dark()", "light-dark(none)", "light-dark(none, none, none)", "light-dark(red, none)"] {
+      assert!(Image::parse_string(source).is_err(), "{}", source);
+    }
+  }
 }

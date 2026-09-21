@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-14",
+  "cutoff": "2026-09-21",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
-    "families": 328,
-    "authoringSurfaces": 603,
-    "authoringKeyRecords": 2647,
+    "families": 330,
+    "authoringSurfaces": 598,
+    "authoringKeyRecords": 2649,
     "domOrEvaluationKeyRecords": 1108,
-    "deferredKeyRecords": 475
+    "deferredKeyRecords": 462
   },
   "surfaces": [
     {
@@ -3219,6 +3219,20 @@
       "probeIds": []
     },
     {
+      "root": "css.properties.overflow-anchor",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.003afde43b0e22ee"
+      ],
+      "probeIds": [
+        "baseline-september-21.overflow-anchor.auto",
+        "baseline-september-21.overflow-anchor.none"
+      ]
+    },
+    {
       "root": "css.properties.overflow-block",
       "evidence": [
         "scripts/check-webref-property-branches.ts"
@@ -3467,6 +3481,22 @@
         "webref-profile.6705c50932f4b9bc"
       ],
       "probeIds": []
+    },
+    {
+      "root": "css.properties.position-anchor",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.12ef612d5ff62f25"
+      ],
+      "probeIds": [
+        "baseline-september-21.position-anchor.auto",
+        "baseline-september-21.position-anchor.none",
+        "baseline-september-21.position-anchor.normal",
+        "baseline-september-21.position-anchor.--anchor"
+      ]
     },
     {
       "root": "css.properties.position-area",
@@ -4655,16 +4685,6 @@
       ]
     },
     {
-      "root": "css.selectors.buffering",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.buffering"
-      ]
-    },
-    {
       "root": "css.selectors.checked",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5040,16 +5060,6 @@
       ]
     },
     {
-      "root": "css.selectors.muted",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.muted"
-      ]
-    },
-    {
       "root": "css.selectors.namespace",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5192,16 +5202,6 @@
       ]
     },
     {
-      "root": "css.selectors.paused",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.paused"
-      ]
-    },
-    {
       "root": "css.selectors.placeholder",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5219,16 +5219,6 @@
       "profileIds": [],
       "probeIds": [
         "selector.placeholder-shown"
-      ]
-    },
-    {
-      "root": "css.selectors.playing",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.playing"
       ]
     },
     {
@@ -5292,16 +5282,6 @@
       ]
     },
     {
-      "root": "css.selectors.seeking",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.seeking"
-      ]
-    },
-    {
       "root": "css.selectors.slotted",
       "evidence": [
         "scripts/check-css-authoring-target.ts"
@@ -5309,16 +5289,6 @@
       "profileIds": [],
       "probeIds": [
         "selector.slotted"
-      ]
-    },
-    {
-      "root": "css.selectors.stalled",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.stalled"
       ]
     },
     {
@@ -5469,16 +5439,6 @@
       "profileIds": [],
       "probeIds": [
         "selector.visited"
-      ]
-    },
-    {
-      "root": "css.selectors.volume-locked",
-      "evidence": [
-        "scripts/check-css-authoring-target.ts"
-      ],
-      "profileIds": [],
-      "probeIds": [
-        "selector.volume-locked"
       ]
     },
     {
@@ -5650,7 +5610,29 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "type.color"
+        "type.color",
+        "baseline-september-21.0",
+        "baseline-september-21.1",
+        "baseline-september-21.2",
+        "baseline-september-21.3",
+        "baseline-september-21.4",
+        "baseline-september-21.5",
+        "baseline-september-21.6",
+        "baseline-september-21.7",
+        "baseline-september-21.8",
+        "baseline-september-21.9",
+        "baseline-september-21.10",
+        "baseline-september-21.11",
+        "baseline-september-21.invalid.0",
+        "baseline-september-21.invalid.1",
+        "baseline-september-21.invalid.2",
+        "baseline-september-21.invalid.3",
+        "baseline-september-21.image.background",
+        "baseline-september-21.image.mask",
+        "baseline-september-21.image.border-image",
+        "baseline-september-21.image.list-style",
+        "baseline-september-21.image.content",
+        "baseline-september-21.image.shape-outside"
       ]
     },
     {
@@ -6362,6 +6344,16 @@
       ]
     },
     {
+      "id": "alpha",
+      "branches": [
+        {
+          "key": "css.types.color.alpha",
+          "disposition": "authoring-surface",
+          "surface": "css.types.color"
+        }
+      ]
+    },
+    {
       "id": "alt-text-generated-content",
       "branches": [
         {
@@ -7031,19 +7023,23 @@
         },
         {
           "key": "css.properties.position-anchor",
-          "disposition": "not-baseline"
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-anchor"
         },
         {
           "key": "css.properties.position-anchor.auto",
-          "disposition": "not-baseline"
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-anchor"
         },
         {
           "key": "css.properties.position-anchor.none",
-          "disposition": "not-baseline"
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-anchor"
         },
         {
           "key": "css.properties.position-anchor.normal",
-          "disposition": "not-baseline"
+          "disposition": "authoring-surface",
+          "surface": "css.properties.position-anchor"
         },
         {
           "key": "css.properties.position-area",
@@ -8515,14 +8511,6 @@
         },
         {
           "key": "css.types.attr.type_function.time",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.types.attr.type_function.transform-function",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.types.attr.type_function.url",
           "disposition": "not-baseline"
         }
       ]
@@ -11900,10 +11888,6 @@
         {
           "key": "css.properties.display.contents.contents_unusual",
           "disposition": "not-baseline"
-        },
-        {
-          "key": "css.properties.display.contents.focusable_elements",
-          "disposition": "not-baseline"
         }
       ]
     },
@@ -12085,10 +12069,6 @@
           "key": "css.selectors.empty",
           "disposition": "authoring-surface",
           "surface": "css.selectors.empty"
-        },
-        {
-          "key": "css.selectors.empty.matches_whitespace",
-          "disposition": "not-baseline"
         }
       ]
     },
@@ -13426,10 +13406,6 @@
           "surface": "css.properties.font-variant"
         },
         {
-          "key": "css.properties.font-variant.greek_accented_characters",
-          "disposition": "not-baseline"
-        },
-        {
           "key": "css.properties.font-variant.historical-forms",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-variant"
@@ -13458,10 +13434,6 @@
           "key": "css.properties.font-variant.turkic_is",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-variant"
-        },
-        {
-          "key": "css.properties.font-variant.uppercase_eszett",
-          "disposition": "not-baseline"
         },
         {
           "key": "svg.global_attributes.font-variant",
@@ -15551,6 +15523,16 @@
       "branches": [
         {
           "key": "css.types.color.light-dark",
+          "disposition": "authoring-surface",
+          "surface": "css.types.color"
+        }
+      ]
+    },
+    {
+      "id": "light-dark-image",
+      "branches": [
+        {
+          "key": "css.types.color.light-dark.image_value",
           "disposition": "authoring-surface",
           "surface": "css.types.color"
         }
@@ -18114,46 +18096,6 @@
       ]
     },
     {
-      "id": "media-pseudos",
-      "branches": [
-        {
-          "key": "css.selectors.buffering",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.buffering"
-        },
-        {
-          "key": "css.selectors.muted",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.muted"
-        },
-        {
-          "key": "css.selectors.paused",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.paused"
-        },
-        {
-          "key": "css.selectors.playing",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.playing"
-        },
-        {
-          "key": "css.selectors.seeking",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.seeking"
-        },
-        {
-          "key": "css.selectors.stalled",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.stalled"
-        },
-        {
-          "key": "css.selectors.volume-locked",
-          "disposition": "authoring-surface",
-          "surface": "css.selectors.volume-locked"
-        }
-      ]
-    },
-    {
       "id": "media-queries",
       "branches": [
         {
@@ -19323,6 +19265,26 @@
       ]
     },
     {
+      "id": "overflow-anchor",
+      "branches": [
+        {
+          "key": "css.properties.overflow-anchor",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.overflow-anchor"
+        },
+        {
+          "key": "css.properties.overflow-anchor.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.overflow-anchor"
+        },
+        {
+          "key": "css.properties.overflow-anchor.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.overflow-anchor"
+        }
+      ]
+    },
+    {
       "id": "overflow-clip",
       "branches": [
         {
@@ -19796,10 +19758,6 @@
           "key": "css.types.basic-shape.path.offset-path",
           "disposition": "authoring-surface",
           "surface": "css.types.basic-shape"
-        },
-        {
-          "key": "css.types.basic-shape.path.shape-outside",
-          "disposition": "not-baseline"
         }
       ]
     },
@@ -26507,14 +26465,6 @@
           "key": "css.properties.text-autospace.normal",
           "disposition": "authoring-surface",
           "surface": "css.properties.text-autospace"
-        },
-        {
-          "key": "css.properties.text-autospace.punctuation",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.properties.text-autospace.replace",
-          "disposition": "not-baseline"
         }
       ]
     },
