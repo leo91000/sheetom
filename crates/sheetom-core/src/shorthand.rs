@@ -525,7 +525,7 @@ fn synthesize_timeline_trigger(records: &[&DeclarationRecord], safe: bool) -> Op
             if names[index] != "none" {
                 components.push(names[index]);
             }
-            if sources[index] != "auto" {
+            if !matches!(sources[index], "auto" | "none") {
                 components.push(sources[index]);
             }
             let activation_start = activation_starts[index];
