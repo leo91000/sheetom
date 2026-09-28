@@ -26,7 +26,7 @@ method.
 
 ## Dated authoring target
 
-The current target is defined by the [14 September 2026 audit](./css-baseline-audit-2026-09-14.md)
+The current target is defined by the [28 September 2026 audit](./css-baseline-audit-2026-09-28.md)
 and [September authoring evidence](./css-september-2026-parity-evidence.md).
 Experimental mixin interfaces remain pinned to an exact CSSWG revision and
 separate from Baseline claims. The target date refers to Web Platform

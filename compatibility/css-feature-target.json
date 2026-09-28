@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-21",
+  "cutoff": "2026-09-28",
   "source": {
     "package": "web-features",
-    "version": "3.39.0",
-    "revision": "a9cc987771757d5604fa37cb76f40f5e9b3808f1",
-    "url": "https://registry.npmjs.org/web-features/-/web-features-3.39.0.tgz",
-    "dataSha256": "b9e65236833bf78451fbd05ac4c587b643247a6d5ee4f0e8e28daaa13b7247cd"
+    "version": "3.40.0",
+    "revision": "8ddac30855da1beb8a99347eefcd344a02310709",
+    "url": "https://registry.npmjs.org/web-features/-/web-features-3.40.0.tgz",
+    "dataSha256": "656360c41c80b95064eec068453e4d26d85668587124352ab3226b4a34ca1670"
   },
   "experimental": {
     "features": [
@@ -17,10 +17,10 @@
     "mixinDraftSha256": "4967c197dfd1b86cb321b835ebcdb2577974bc80d7097294294cd75a8249a76c"
   },
   "summary": {
-    "featureFamilies": 330,
-    "uniqueCompatibilityKeys": 4219,
-    "eligibleKeyRecords": 3757,
-    "deferredKeyRecords": 462
+    "featureFamilies": 331,
+    "uniqueCompatibilityKeys": 4218,
+    "eligibleKeyRecords": 3759,
+    "deferredKeyRecords": 459
   },
   "features": [
     {
@@ -2751,7 +2751,7 @@
         },
         {
           "key": "api.CSSKeyframesRule.length",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-22",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -6657,8 +6657,25 @@
       ]
     },
     {
+      "id": "container-name-queries",
+      "name": "Name-only container queries",
+      "baselineLowDate": "2026-05-07",
+      "specifications": [
+        "https://drafts.csswg.org/css-conditional-5/#typedef-container-condition"
+      ],
+      "branches": [
+        {
+          "key": "css.at-rules.container.container-query_optional",
+          "baseline": "low",
+          "baselineLowDate": "2026-05-07",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        }
+      ]
+    },
+    {
       "id": "container-queries",
-      "name": "Container queries",
+      "name": "Container queries (size)",
       "baselineLowDate": "2023-02-14",
       "specifications": [
         "https://drafts.csswg.org/css-conditional-5/#container-queries"
@@ -6823,13 +6840,6 @@
           "baselineLowDate": "2015-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.content.none_applies_to_elements",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         },
         {
           "key": "css.properties.content.normal",
@@ -14605,13 +14615,6 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.list-style-type.symbols",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
           "key": "css.properties.list-style-type.tamil",
           "baseline": "high",
           "baselineLowDate": "2021-09-20",
@@ -14701,13 +14704,6 @@
           "baselineLowDate": "2015-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.list-style.symbols",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         }
       ]
     },
@@ -19121,6 +19117,13 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.outline.auto",
+          "baseline": "high",
+          "baselineLowDate": "2023-03-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.outline.currentColor",
           "baseline": "high",
           "baselineLowDate": "2023-03-27",
@@ -20101,7 +20104,7 @@
       "branches": [
         {
           "key": "css.properties.paint-order",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-22",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -30875,7 +30878,7 @@
         },
         {
           "key": "css.properties.text-wrap.nowrap",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -30889,7 +30892,7 @@
         },
         {
           "key": "css.properties.text-wrap.wrap",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"
@@ -32540,35 +32543,35 @@
       "branches": [
         {
           "key": "css.properties.white-space-collapse",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.white-space-collapse.break-spaces",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.white-space-collapse.collapse",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.white-space-collapse.preserve",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.white-space-collapse.preserve-breaks",
-          "baseline": "low",
+          "baseline": "high",
           "baselineLowDate": "2024-03-19",
           "eligible": true,
           "eligibility": "within-cutoff"

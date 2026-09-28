@@ -403,13 +403,30 @@ fn parse_container_prelude_active(source: &str) -> Result<ParsedContainerPrelude
     if parsed.kind != "container" {
         return Err(EngineError::Parse("invalid container query".to_owned()));
     }
-    let condition_text = format_condition_text(source);
-    let query_start = container_query_start(&condition_text);
-    let (name, query) = condition_text.split_at(query_start);
-    let name = trim_css_whitespace(name).to_owned();
-    let query = trim_css_whitespace(query).to_owned();
-    if query.is_empty() {
-        return Err(EngineError::Parse("container query is empty".to_owned()));
+    // The rule parser already validated the grammar. Decode the optional name
+    // as one CSS identifier so escape terminators and escaped whitespace cannot
+    // be mistaken for the boundary before its query. `not` belongs to the query.
+    let mut input = ParserInput::new(source);
+    let mut parser = Parser::new(&mut input);
+    let name = match parser.next() {
+        Ok(Token::Ident(name)) if !name.eq_ignore_ascii_case("not") => serialize_identifier(name),
+        _ => String::new(),
+    };
+    let query_start = if name.is_empty() {
+        0
+    } else {
+        parser.position().byte_index()
+    };
+    let query = format_condition_text(&source[query_start..]);
+    let condition_text = match (name.is_empty(), query.is_empty()) {
+        (true, _) => query.clone(),
+        (_, true) => name.clone(),
+        _ => format!("{name} {query}"),
+    };
+    if name.is_empty() && query.is_empty() {
+        return Err(EngineError::Parse(
+            "container condition is empty".to_owned(),
+        ));
     }
     Ok(ParsedContainerPrelude {
         condition_text,
@@ -503,16 +520,6 @@ fn valid_unquoted_font_family(value: &str) -> bool {
     let mut input = ParserInput::new(value);
     let mut parser = Parser::new(&mut input);
     matches!(parser.next().ok(), Some(Token::Ident(_))) && parser.is_exhausted()
-}
-
-fn container_query_start(source: &str) -> usize {
-    if source.starts_with('(')
-        || starts_with_ignore_ascii_case(source, "style(")
-        || starts_with_ignore_ascii_case(source, "scroll-state(")
-    {
-        return 0;
-    }
-    source.find(is_css_whitespace).unwrap_or(source.len())
 }
 
 fn starts_with_ignore_ascii_case(source: &str, prefix: &str) -> bool {

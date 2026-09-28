@@ -1,7 +1,9 @@
 # September 2026 CSS authoring target
 
-The [21 September refresh](css-baseline-audit-2026-09-21.md) records the current
-source, inventory, alpha colors and scheme-dependent images. The previous
+The [28 September refresh](css-baseline-audit-2026-09-28.md) records the current
+source, inventory and name-only container state. The
+[21 September refresh](css-baseline-audit-2026-09-21.md) records alpha colors and
+scheme-dependent images. The previous
 [14 September refresh](css-baseline-audit-2026-09-14.md) remains historical evidence. The implementation target below includes individually
 Baseline CSS compatibility branches
 through **2026-09-09**, including branches of families that are not completely

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-21",
+  "cutoff": "2026-09-28",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
-    "families": 330,
+    "families": 331,
     "authoringSurfaces": 598,
-    "authoringKeyRecords": 2649,
+    "authoringKeyRecords": 2651,
     "domOrEvaluationKeyRecords": 1108,
-    "deferredKeyRecords": 462
+    "deferredKeyRecords": 459
   },
   "surfaces": [
     {
@@ -312,7 +312,16 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "rule.container"
+        "rule.container",
+        "rule.container-name-only",
+        "rule.container-escaped-name-only",
+        "rule.container-negated",
+        "rule.container-invalid-empty",
+        "rule.container-invalid-none",
+        "rule.container-invalid-two-names",
+        "rule.container-invalid-not",
+        "rule.container-invalid-initial",
+        "rule.container-hex-escaped-name"
       ]
     },
     {
@@ -3161,12 +3170,15 @@
     {
       "root": "css.properties.outline",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.046cbf9ab34da90f"
       ],
-      "probeIds": []
+      "probeIds": [
+        "declaration.outline-auto"
+      ]
     },
     {
       "root": "css.properties.outline-color",
@@ -10724,6 +10736,16 @@
       ]
     },
     {
+      "id": "container-name-queries",
+      "branches": [
+        {
+          "key": "css.at-rules.container.container-query_optional",
+          "disposition": "authoring-surface",
+          "surface": "css.at-rules.container"
+        }
+      ]
+    },
+    {
       "id": "container-queries",
       "branches": [
         {
@@ -10834,10 +10856,6 @@
           "key": "css.properties.content.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.content"
-        },
-        {
-          "key": "css.properties.content.none_applies_to_elements",
-          "disposition": "not-baseline"
         },
         {
           "key": "css.properties.content.normal",
@@ -15987,10 +16005,6 @@
           "surface": "css.properties.list-style-type"
         },
         {
-          "key": "css.properties.list-style-type.symbols",
-          "disposition": "not-baseline"
-        },
-        {
           "key": "css.properties.list-style-type.tamil",
           "disposition": "authoring-surface",
           "surface": "css.properties.list-style-type"
@@ -16054,10 +16068,6 @@
           "key": "css.properties.list-style.outside",
           "disposition": "authoring-surface",
           "surface": "css.properties.list-style"
-        },
-        {
-          "key": "css.properties.list-style.symbols",
-          "disposition": "not-baseline"
         }
       ]
     },
@@ -19079,6 +19089,11 @@
       "branches": [
         {
           "key": "css.properties.outline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.outline"
+        },
+        {
+          "key": "css.properties.outline.auto",
           "disposition": "authoring-surface",
           "surface": "css.properties.outline"
         },
