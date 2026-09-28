@@ -55,7 +55,7 @@ export function assertAuthoringRoundTrip(api: AuthoringAPI, before: CSSStyleShee
 
 export function snapshotAuthoringRule(rule: RuleState): RuleSnapshot {
   const result: RuleSnapshot = { type: rule.constructor.name, children: [] };
-  for (const field of ["selectorText", "conditionText", "name", "keyText", "syntax", "inherits", "initialValue", "fontFamily", "basePalette", "overrideColors", "start", "end", "namespaceURI", "prefix", "returnType", "contents"])
+  for (const field of ["selectorText", "conditionText", "containerName", "containerQuery", "name", "keyText", "syntax", "inherits", "initialValue", "fontFamily", "basePalette", "overrideColors", "start", "end", "namespaceURI", "prefix", "returnType", "contents"])
     if (field in rule) result[field] = Reflect.get(rule, field);
   if (rule.style) {
     const style = rule.style;

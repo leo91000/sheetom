@@ -163,3 +163,49 @@ test("scheme image shorthands preserve exposed longhands when the group changes"
   assert.equal(style.getPropertyValue("background-color"), "light-dark(red, blue)");
   assert.equal(style.getPropertyValue("background-image"), "initial");
 });
+
+test("name-only containers expose their name and an empty query through live rule state", () => {
+  for (const [source, name] of [["card", "card"], ["--card", "--card"], [String.raw`\63 ard`, "card"], [String.raw`foo\ bar`, String.raw`foo\ bar`]]) {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(`@container ${source} { .a { color: red; } }`);
+    const rule = sheet.cssRules[0];
+    assert.ok(rule instanceof api.CSSContainerRule);
+    assert.equal(rule.conditionText, name);
+    assert.equal(rule.containerName, name);
+    assert.equal(rule.containerQuery, "");
+    const children = rule.cssRules;
+    const child = children[0];
+    assert.equal(child?.parentRule, rule);
+    assert.equal(child?.parentStyleSheet, sheet);
+    rule.insertRule(".b { outline: auto; }", 1);
+    const before = rule.cssText;
+    assert.throws(() => rule.insertRule("@container none {}", 0), { name: "SyntaxError" });
+    assert.equal(rule.cssText, before);
+    assert.equal(rule.cssRules, children);
+    rule.deleteRule(1);
+    const reparsed = new CSSStyleSheet();
+    reparsed.replaceSync(sheet.serializeStrict());
+    assertAuthoringRoundTrip(api, sheet, reparsed);
+    sheet.deleteRule(0);
+    assert.equal(rule.parentStyleSheet, null);
+    assert.equal(child?.parentStyleSheet, null);
+    assert.equal(child?.parentRule, rule);
+  }
+  for (const condition of ["not (width > 1px)", "(width > 1px)", "style(--theme: dark)"]) {
+    const sheet = new CSSStyleSheet();
+    sheet.insertRule(`@container ${condition} {}`);
+    const rule = sheet.cssRules[0];
+    assert.ok(rule instanceof api.CSSContainerRule);
+    assert.equal(rule.containerName, "");
+    assert.equal(rule.containerQuery, condition);
+  }
+  for (const invalid of ["", "none", "not", "and", "or", "initial", "card other"]) {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(`@container ${invalid} { .a {} }`);
+    assert.equal(sheet.cssRules.length, 0, invalid);
+    sheet.insertRule(".retained {}");
+    const before = sheet.serializeStrict();
+    assert.throws(() => sheet.insertRule(`@container ${invalid} {}`, 0), { name: "SyntaxError" });
+    assert.equal(sheet.serializeStrict(), before);
+  }
+});

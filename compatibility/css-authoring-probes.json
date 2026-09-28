@@ -2092,6 +2092,67 @@
       "kind": "declaration",
       "property": "shape-outside",
       "value": "light-dark(url(\"a.png\"), none)"
+    },
+    {
+      "id": "rule.container-name-only",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container card { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-escaped-name-only",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container foo\\ bar { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-negated",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container not (width > 1px) { .a { color: red; } }"
+    },
+    {
+      "id": "declaration.outline-auto",
+      "root": "css.properties.outline",
+      "kind": "declaration",
+      "property": "outline",
+      "value": "auto"
+    },
+    {
+      "id": "rule.container-invalid-empty",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container  { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-invalid-none",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container none { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-invalid-two-names",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container card other { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-invalid-not",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container not { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-invalid-initial",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container initial { .a { color: red; } }"
+    },
+    {
+      "id": "rule.container-hex-escaped-name",
+      "root": "css.at-rules.container",
+      "kind": "rule",
+      "value": "@container \\63 ard { .a { color: red; } }"
     }
   ]
 }

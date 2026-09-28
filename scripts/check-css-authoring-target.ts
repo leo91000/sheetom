@@ -19,7 +19,20 @@ if (requestedBackend !== "native") backends.push(["wasm", await loadValidationBa
 function observe(api, probe) {
   const sheet = new api.CSSStyleSheet();
   const snapshots = [];
-  if (probe.kind === "rule") sheet.replaceSync(probe.value);
+  if (probe.kind === "rule") {
+    sheet.replaceSync(probe.value);
+    const rule = sheet.cssRules[0];
+    if (rule?.constructor.name === "CSSContainerRule") {
+      const children = rule.cssRules;
+      rule.insertRule(".inserted { outline: auto; }", children.length);
+      snapshots.push(snapshotRule(rule));
+      let errorName;
+      try { rule.insertRule("@container none {}", 0); }
+      catch (error) { errorName = error.name; }
+      snapshots.push({ errorName, sameList: rule.cssRules === children, state: snapshotRule(rule) });
+      rule.deleteRule(children.length - 1);
+    }
+  }
   else {
     sheet.replaceSync(".probe { color: blue; }");
     const rule = sheet.cssRules[0];

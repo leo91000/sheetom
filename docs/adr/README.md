@@ -200,3 +200,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0189 | [Expose pinned draft mixin interfaces by default](./0189-expose-pinned-draft-mixin-interfaces-by-default.md) | accepted |
 | 0190 | [Target individual September Baseline branches](./0190-target-individual-september-baseline-branches.md) | accepted |
 | 0191 | [Retain relative alpha colors and scheme-dependent images](./0191-retain-relative-alpha-and-scheme-images.md) | accepted |
+| 0192 | [Expose name-only container state](./0192-expose-name-only-container-state.md) | accepted |
