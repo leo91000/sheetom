@@ -150,11 +150,11 @@
     "playwright": "^1.62.1",
     "playwright-baseline": "npm:playwright-core@1.63.0",
     "playwright-oracle": "npm:playwright-core@1.62.1",
-    "rollup": "4.63.5",
+    "rollup": "4.63.6",
     "tsdown": "^0.23.0",
     "typedoc": "^0.28.20",
     "typescript": "^6.0.3",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "^5.0.0",
     "webpack": "5.111.1"
   },
