@@ -2153,6 +2153,174 @@
       "root": "css.at-rules.container",
       "kind": "rule",
       "value": "@container \\63 ard { .a { color: red; } }"
+    },
+    {
+      "id": "baseline-october.background-position-x.center",
+      "root": "css.properties.background-position-x",
+      "kind": "declaration",
+      "property": "background-position-x",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october.background-position-x.left",
+      "root": "css.properties.background-position-x",
+      "kind": "declaration",
+      "property": "background-position-x",
+      "value": "left"
+    },
+    {
+      "id": "baseline-october.background-position-x.right",
+      "root": "css.properties.background-position-x",
+      "kind": "declaration",
+      "property": "background-position-x",
+      "value": "right"
+    },
+    {
+      "id": "baseline-october.background-position-y.bottom",
+      "root": "css.properties.background-position-y",
+      "kind": "declaration",
+      "property": "background-position-y",
+      "value": "bottom"
+    },
+    {
+      "id": "baseline-october.background-position-y.center",
+      "root": "css.properties.background-position-y",
+      "kind": "declaration",
+      "property": "background-position-y",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october.background-position-y.top",
+      "root": "css.properties.background-position-y",
+      "kind": "declaration",
+      "property": "background-position-y",
+      "value": "top"
+    },
+    {
+      "id": "baseline-october.clip-path.none",
+      "root": "css.properties.clip-path",
+      "kind": "declaration",
+      "property": "clip-path",
+      "value": "none"
+    },
+    {
+      "id": "baseline-october.font-size.large",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "large"
+    },
+    {
+      "id": "baseline-october.font-size.larger",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "larger"
+    },
+    {
+      "id": "baseline-october.font-size.medium",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "medium"
+    },
+    {
+      "id": "baseline-october.font-size.small",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "small"
+    },
+    {
+      "id": "baseline-october.font-size.smaller",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "smaller"
+    },
+    {
+      "id": "baseline-october.font-size.x-large",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "x-large"
+    },
+    {
+      "id": "baseline-october.font-size.x-small",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "x-small"
+    },
+    {
+      "id": "baseline-october.font-size.xx-large",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "xx-large"
+    },
+    {
+      "id": "baseline-october.font-size.xx-small",
+      "root": "css.properties.font-size",
+      "kind": "declaration",
+      "property": "font-size",
+      "value": "xx-small"
+    },
+    {
+      "id": "baseline-october.pointer-events.all",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "all"
+    },
+    {
+      "id": "baseline-october.pointer-events.auto",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-october.pointer-events.fill",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "fill"
+    },
+    {
+      "id": "baseline-october.pointer-events.none",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "none"
+    },
+    {
+      "id": "baseline-october.pointer-events.painted",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "painted"
+    },
+    {
+      "id": "baseline-october.pointer-events.stroke",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "stroke"
+    },
+    {
+      "id": "baseline-october.pointer-events.visible",
+      "root": "css.properties.pointer-events",
+      "kind": "declaration",
+      "property": "pointer-events",
+      "value": "visible"
+    },
+    {
+      "id": "baseline-october.text-shadow.none",
+      "root": "css.properties.text-shadow",
+      "kind": "declaration",
+      "property": "text-shadow",
+      "value": "none"
     }
   ]
 }

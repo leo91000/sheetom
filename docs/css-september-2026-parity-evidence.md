@@ -1,6 +1,8 @@
 # September 2026 CSS authoring target
 
-The [28 September refresh](css-baseline-audit-2026-09-28.md) records the current
+The [5 October refresh](css-baseline-audit-2026-10-05.md) records the current
+source and newly catalogued keyword evidence. The
+[28 September refresh](css-baseline-audit-2026-09-28.md) records its dated
 source, inventory and name-only container state. The
 [21 September refresh](css-baseline-audit-2026-09-21.md) records alpha colors and
 scheme-dependent images. The previous
