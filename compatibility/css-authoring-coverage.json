@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-28",
+  "cutoff": "2026-10-05",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
     "families": 331,
     "authoringSurfaces": 598,
-    "authoringKeyRecords": 2651,
-    "domOrEvaluationKeyRecords": 1108,
-    "deferredKeyRecords": 459
+    "authoringKeyRecords": 2675,
+    "domOrEvaluationKeyRecords": 1111,
+    "deferredKeyRecords": 460
   },
   "surfaces": [
     {
@@ -823,22 +823,32 @@
     {
       "root": "css.properties.background-position-x",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.f579430e89230528"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october.background-position-x.center",
+        "baseline-october.background-position-x.left",
+        "baseline-october.background-position-x.right"
+      ]
     },
     {
       "root": "css.properties.background-position-y",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.63d43cc47580bcc2"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october.background-position-y.bottom",
+        "baseline-october.background-position-y.center",
+        "baseline-october.background-position-y.top"
+      ]
     },
     {
       "root": "css.properties.background-repeat",
@@ -1586,12 +1596,15 @@
     {
       "root": "css.properties.clip-path",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.89b8de451b8a9014"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october.clip-path.none"
+      ]
     },
     {
       "root": "css.properties.clip-rule",
@@ -2157,12 +2170,23 @@
     {
       "root": "css.properties.font-size",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.09ac30b0f4b440a5"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october.font-size.large",
+        "baseline-october.font-size.larger",
+        "baseline-october.font-size.medium",
+        "baseline-october.font-size.small",
+        "baseline-october.font-size.smaller",
+        "baseline-october.font-size.x-large",
+        "baseline-october.font-size.x-small",
+        "baseline-october.font-size.xx-large",
+        "baseline-october.font-size.xx-small"
+      ]
     },
     {
       "root": "css.properties.font-size-adjust",
@@ -3477,12 +3501,21 @@
     {
       "root": "css.properties.pointer-events",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.8abb239490a6f000"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october.pointer-events.all",
+        "baseline-october.pointer-events.auto",
+        "baseline-october.pointer-events.fill",
+        "baseline-october.pointer-events.none",
+        "baseline-october.pointer-events.painted",
+        "baseline-october.pointer-events.stroke",
+        "baseline-october.pointer-events.visible"
+      ]
     },
     {
       "root": "css.properties.position",
@@ -4240,12 +4273,15 @@
     {
       "root": "css.properties.text-shadow",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.771e28ab72f516f6"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october.text-shadow.none"
+      ]
     },
     {
       "root": "css.properties.text-transform",
@@ -8832,6 +8868,21 @@
           "surface": "css.properties.background-position-x"
         },
         {
+          "key": "css.properties.background-position-x.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-position-x"
+        },
+        {
+          "key": "css.properties.background-position-x.left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-position-x"
+        },
+        {
+          "key": "css.properties.background-position-x.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-position-x"
+        },
+        {
           "key": "css.properties.background-position-x.side-relative_values",
           "disposition": "authoring-surface",
           "surface": "css.properties.background-position-x"
@@ -8842,7 +8893,22 @@
           "surface": "css.properties.background-position-y"
         },
         {
+          "key": "css.properties.background-position-y.bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-position-y"
+        },
+        {
+          "key": "css.properties.background-position-y.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-position-y"
+        },
+        {
           "key": "css.properties.background-position-y.side-relative_values",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-position-y"
+        },
+        {
+          "key": "css.properties.background-position-y.top",
           "disposition": "authoring-surface",
           "surface": "css.properties.background-position-y"
         },
@@ -10243,6 +10309,11 @@
         },
         {
           "key": "css.properties.clip-path.html_elements",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.clip-path"
+        },
+        {
+          "key": "css.properties.clip-path.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.clip-path"
         },
@@ -11906,6 +11977,10 @@
         {
           "key": "css.properties.display.contents.contents_unusual",
           "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.display.contents.focusable_elements",
+          "disposition": "not-baseline"
         }
       ]
     },
@@ -13151,7 +13226,52 @@
           "surface": "css.properties.font-size"
         },
         {
+          "key": "css.properties.font-size.large",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.larger",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.medium",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
           "key": "css.properties.font-size.rem_values",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.small",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.smaller",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.x-large",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.x-small",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.xx-large",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-size"
+        },
+        {
+          "key": "css.properties.font-size.xx-small",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-size"
         },
@@ -19855,7 +19975,42 @@
           "surface": "css.properties.pointer-events"
         },
         {
+          "key": "css.properties.pointer-events.all",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
+          "key": "css.properties.pointer-events.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
+          "key": "css.properties.pointer-events.fill",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
           "key": "css.properties.pointer-events.html_elements",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
+          "key": "css.properties.pointer-events.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
+          "key": "css.properties.pointer-events.painted",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
+          "key": "css.properties.pointer-events.stroke",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.pointer-events"
+        },
+        {
+          "key": "css.properties.pointer-events.visible",
           "disposition": "authoring-surface",
           "surface": "css.properties.pointer-events"
         }
@@ -22106,6 +22261,21 @@
         },
         {
           "key": "api.SVGPathElement",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.SVGPathElement.getPointAtLength",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.SVGPathElement.getTotalLength",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.SVGPathElement.pathLength",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
@@ -26931,6 +27101,11 @@
       "branches": [
         {
           "key": "css.properties.text-shadow",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.text-shadow"
+        },
+        {
+          "key": "css.properties.text-shadow.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.text-shadow"
         }

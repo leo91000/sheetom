@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-09-28",
+  "cutoff": "2026-10-05",
   "source": {
     "package": "web-features",
-    "version": "3.40.0",
-    "revision": "8ddac30855da1beb8a99347eefcd344a02310709",
-    "url": "https://registry.npmjs.org/web-features/-/web-features-3.40.0.tgz",
-    "dataSha256": "656360c41c80b95064eec068453e4d26d85668587124352ab3226b4a34ca1670"
+    "version": "3.40.1",
+    "revision": "8606657a71535d688f5473579712717fe9442c0f",
+    "url": "https://registry.npmjs.org/web-features/-/web-features-3.40.1.tgz",
+    "dataSha256": "60e0e919d7fece714fa309a1f7c5a327f867bfda744789bdeac1355292895e4d"
   },
   "experimental": {
     "features": [
@@ -18,9 +18,9 @@
   },
   "summary": {
     "featureFamilies": 331,
-    "uniqueCompatibilityKeys": 4218,
-    "eligibleKeyRecords": 3759,
-    "deferredKeyRecords": 459
+    "uniqueCompatibilityKeys": 4246,
+    "eligibleKeyRecords": 3786,
+    "deferredKeyRecords": 460
   },
   "features": [
     {
@@ -3859,6 +3859,27 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.background-position-x.center",
+          "baseline": "high",
+          "baselineLowDate": "2016-09-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.background-position-x.left",
+          "baseline": "high",
+          "baselineLowDate": "2016-09-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.background-position-x.right",
+          "baseline": "high",
+          "baselineLowDate": "2016-09-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.background-position-x.side-relative_values",
           "baseline": "low",
           "baselineLowDate": "2026-01-21",
@@ -3873,9 +3894,30 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.background-position-y.bottom",
+          "baseline": "high",
+          "baselineLowDate": "2016-09-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.background-position-y.center",
+          "baseline": "high",
+          "baselineLowDate": "2016-09-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.background-position-y.side-relative_values",
           "baseline": "low",
           "baselineLowDate": "2026-01-21",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.background-position-y.top",
+          "baseline": "high",
+          "baselineLowDate": "2016-09-20",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -5888,6 +5930,13 @@
         },
         {
           "key": "css.properties.clip-path.html_elements",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.clip-path.none",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
@@ -8448,6 +8497,13 @@
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.properties.display.contents.focusable_elements",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
         }
       ]
     },
@@ -10308,7 +10364,70 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.font-size.large",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.larger",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.medium",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.font-size.rem_values",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.small",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.smaller",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.x-large",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.x-small",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.xx-large",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.font-size.xx-small",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
           "eligible": true,
@@ -20279,7 +20398,56 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.pointer-events.all",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.pointer-events.auto",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.pointer-events.fill",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.pointer-events.html_elements",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.pointer-events.none",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.pointer-events.painted",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.pointer-events.stroke",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.pointer-events.visible",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
           "eligible": true,
@@ -23610,6 +23778,27 @@
           "key": "api.SVGPathElement",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.SVGPathElement.getPointAtLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.SVGPathElement.getTotalLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.SVGPathElement.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -30597,6 +30786,13 @@
       "branches": [
         {
           "key": "css.properties.text-shadow",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.text-shadow.none",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
           "eligible": true,
