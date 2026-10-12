@@ -1,6 +1,8 @@
 # September 2026 CSS authoring target
 
-The [5 October refresh](css-baseline-audit-2026-10-05.md) records the current
+The [12 October refresh](css-baseline-audit-2026-10-12.md) records the current
+source, alignment-key reorganization and executable property evidence. The
+[5 October refresh](css-baseline-audit-2026-10-05.md) records its dated
 source and newly catalogued keyword evidence. The
 [28 September refresh](css-baseline-audit-2026-09-28.md) records its dated
 source, inventory and name-only container state. The

@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-10-05",
+  "cutoff": "2026-10-12",
   "source": {
     "package": "web-features",
-    "version": "3.40.1",
-    "revision": "8606657a71535d688f5473579712717fe9442c0f",
-    "url": "https://registry.npmjs.org/web-features/-/web-features-3.40.1.tgz",
-    "dataSha256": "60e0e919d7fece714fa309a1f7c5a327f867bfda744789bdeac1355292895e4d"
+    "version": "3.42.0",
+    "revision": "fab686752db54ca26f9b55c99181ab2485fda0c2",
+    "url": "https://registry.npmjs.org/web-features/-/web-features-3.42.0.tgz",
+    "dataSha256": "4eb8992b18f0037182be93a1088b650bece21862bc6697e83b76c4726faa4728"
   },
   "experimental": {
     "features": [
@@ -17,10 +17,10 @@
     "mixinDraftSha256": "4967c197dfd1b86cb321b835ebcdb2577974bc80d7097294294cd75a8249a76c"
   },
   "summary": {
-    "featureFamilies": 331,
-    "uniqueCompatibilityKeys": 4246,
-    "eligibleKeyRecords": 3786,
-    "deferredKeyRecords": 460
+    "featureFamilies": 332,
+    "uniqueCompatibilityKeys": 4257,
+    "eligibleKeyRecords": 3798,
+    "deferredKeyRecords": 459
   },
   "features": [
     {
@@ -56,7 +56,7 @@
       ],
       "branches": [
         {
-          "key": "css.properties.align-self.position_absolute_context",
+          "key": "css.properties.align-self.context_position_absolute",
           "baseline": "low",
           "baselineLowDate": "2025-09-15",
           "eligible": true,
@@ -202,7 +202,7 @@
       ],
       "branches": [
         {
-          "key": "css.properties.align-content.block_context",
+          "key": "css.properties.align-content.context_block",
           "baseline": "low",
           "baselineLowDate": "2024-04-16",
           "eligible": true,
@@ -3123,6 +3123,30 @@
       ]
     },
     {
+      "id": "animations-css-animation-accessors",
+      "name": "Animation accessors",
+      "baselineLowDate": "2026-09-14",
+      "specifications": [
+        "https://drafts.csswg.org/css-animations-2/#dom-animationevent-animation"
+      ],
+      "branches": [
+        {
+          "key": "api.AnimationEvent.animation",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.TransitionEvent.animation",
+          "baseline": "low",
+          "baselineLowDate": "2026-09-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        }
+      ]
+    },
+    {
       "id": "appearance",
       "name": "appearance",
       "baselineLowDate": "2022-03-14",
@@ -4225,6 +4249,13 @@
         },
         {
           "key": "css.properties.border-image-source",
+          "baseline": "high",
+          "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.border-image-source.none",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
           "eligible": true,
@@ -7531,27 +7562,6 @@
           "eligibility": "not-baseline"
         },
         {
-          "key": "api.CSSPseudoElement",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "api.CSSPseudoElement.element",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "api.CSSPseudoElement.type",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
           "key": "api.CSSRule",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
@@ -9204,65 +9214,79 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-content.flex_context",
+          "key": "css.properties.align-content.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-content.context_flex",
           "baseline": "high",
           "baselineLowDate": "2015-09-30",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-content.flex_context.baseline",
-          "baseline": "high",
-          "baselineLowDate": "2020-01-15",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-content.flex_context.first_baseline",
-          "baseline": "high",
-          "baselineLowDate": "2020-01-15",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-content.flex_context.last_baseline",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.properties.align-content.flex_context.safe_unsafe",
-          "baseline": "low",
-          "baselineLowDate": "2024-07-29",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-content.flex_context.space-evenly",
-          "baseline": "high",
-          "baselineLowDate": "2020-01-15",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-content.flex_context.start_end",
+          "key": "css.properties.align-content.end",
           "baseline": "high",
           "baselineLowDate": "2022-07-20",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-content.flex_context.stretch",
+          "key": "css.properties.align-content.first_baseline",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.align-content.last_baseline",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
           "key": "css.properties.align-content.normal",
           "baseline": "high",
           "baselineLowDate": "2015-09-30",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-content.safe",
+          "baseline": "low",
+          "baselineLowDate": "2024-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-content.space-evenly",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-content.start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-content.stretch",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-content.unsafe",
+          "baseline": "low",
+          "baselineLowDate": "2024-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -9274,44 +9298,79 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.flex_context",
+          "key": "css.properties.align-items.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-items.center",
+          "baseline": "high",
+          "baselineLowDate": "2015-09-30",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-items.context_flex",
           "baseline": "high",
           "baselineLowDate": "2016-07-27",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.flex_context.baseline",
+          "key": "css.properties.align-items.context_flex.end_in_flex",
+          "baseline": "high",
+          "baselineLowDate": "2022-03-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-items.context_flex.start_in_flex",
+          "baseline": "high",
+          "baselineLowDate": "2022-03-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-items.end",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.flex_context.first_baseline",
+          "key": "css.properties.align-items.first_baseline",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.flex_context.last_baseline",
+          "key": "css.properties.align-items.last_baseline",
           "baseline": "high",
           "baselineLowDate": "2022-12-13",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.flex_context.safe_unsafe",
+          "key": "css.properties.align-items.safe",
           "baseline": "low",
           "baselineLowDate": "2024-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.flex_context.start_end",
+          "key": "css.properties.align-items.start",
           "baseline": "high",
-          "baselineLowDate": "2022-03-14",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-items.unsafe",
+          "baseline": "low",
+          "baselineLowDate": "2024-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -9330,51 +9389,44 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-self.flex_context",
+          "key": "css.properties.align-self.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-self.context_flex",
           "baseline": "high",
           "baselineLowDate": "2015-09-30",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-self.flex_context.baseline",
+          "key": "css.properties.align-self.context_flex.stretch_in_flex",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-self.flex_context.first_baseline",
-          "baseline": "high",
-          "baselineLowDate": "2020-01-15",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-self.flex_context.last_baseline",
-          "baseline": "high",
-          "baselineLowDate": "2022-12-13",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-self.flex_context.safe_unsafe",
-          "baseline": "low",
-          "baselineLowDate": "2024-07-29",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-self.flex_context.start_end",
+          "key": "css.properties.align-self.end",
           "baseline": "high",
           "baselineLowDate": "2022-03-14",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-self.flex_context.stretch",
+          "key": "css.properties.align-self.first_baseline",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-self.last_baseline",
+          "baseline": "high",
+          "baselineLowDate": "2022-12-13",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -9386,9 +9438,30 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.align-self.safe",
+          "baseline": "low",
+          "baselineLowDate": "2024-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-self.start",
+          "baseline": "high",
+          "baselineLowDate": "2022-03-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.align-self.stretch",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.align-self.unsafe",
+          "baseline": "low",
+          "baselineLowDate": "2024-07-29",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -12191,28 +12264,21 @@
       ],
       "branches": [
         {
-          "key": "css.properties.align-content.grid_context",
+          "key": "css.properties.align-content.context_grid",
           "baseline": "high",
           "baselineLowDate": "2017-10-17",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.grid_context",
+          "key": "css.properties.align-items.context_grid",
           "baseline": "high",
           "baselineLowDate": "2017-10-17",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.properties.align-items.grid_context.start_end",
-          "baseline": "high",
-          "baselineLowDate": "2020-01-15",
-          "eligible": true,
-          "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.properties.align-self.grid_context",
+          "key": "css.properties.align-self.context_grid",
           "baseline": "high",
           "baselineLowDate": "2017-10-17",
           "eligible": true,
@@ -18425,7 +18491,7 @@
       ],
       "branches": [
         {
-          "key": "css.properties.align-content.multicol_context",
+          "key": "css.properties.align-content.context_multicol",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
@@ -18734,6 +18800,13 @@
         },
         {
           "key": "css.properties.columns",
+          "baseline": "high",
+          "baselineLowDate": "2017-03-07",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.columns.auto",
           "baseline": "high",
           "baselineLowDate": "2017-03-07",
           "eligible": true,
@@ -20072,77 +20145,112 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.at-rules.page.bottom-center",
+          "key": "css.at-rules.page.at_bottom-center",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.bottom-left",
+          "key": "css.at-rules.page.at_bottom-left",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.bottom-left-corner",
+          "key": "css.at-rules.page.at_bottom-left-corner",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.bottom-right",
+          "key": "css.at-rules.page.at_bottom-right",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.bottom-right-corner",
+          "key": "css.at-rules.page.at_bottom-right-corner",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.left-bottom",
+          "key": "css.at-rules.page.at_left-bottom",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.left-middle",
+          "key": "css.at-rules.page.at_left-middle",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.left-top",
+          "key": "css.at-rules.page.at_left-top",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.right-bottom",
+          "key": "css.at-rules.page.at_right-bottom",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.right-middle",
+          "key": "css.at-rules.page.at_right-middle",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
           "eligibility": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.right-top",
+          "key": "css.at-rules.page.at_right-top",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.at_top-center",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.at_top-left",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.at_top-left-corner",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.at_top-right",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.at_top-right-corner",
           "baseline": false,
           "baselineLowDate": null,
           "eligible": false,
@@ -20168,41 +20276,6 @@
           "baselineLowDate": "2024-12-11",
           "eligible": true,
           "eligibility": "within-cutoff"
-        },
-        {
-          "key": "css.at-rules.page.top-center",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.top-left",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.top-left-corner",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.top-right",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.top-right-corner",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
         },
         {
           "key": "css.properties.page",
@@ -24965,6 +25038,13 @@
           "eligibility": "not-baseline"
         },
         {
+          "key": "css.properties.color-interpolation.linearRGB",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.color-interpolation.sRGB",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
@@ -29339,11 +29419,18 @@
           "eligibility": "within-cutoff"
         },
         {
-          "key": "css.types.color.system-color.accentcolor_accentcolortext",
-          "baseline": "low",
-          "baselineLowDate": "2026-07-02",
-          "eligible": true,
-          "eligibility": "within-cutoff"
+          "key": "css.types.color.system-color.accentcolor",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.types.color.system-color.accentcolortext",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
         },
         {
           "key": "css.types.color.system-color.buttonborder",

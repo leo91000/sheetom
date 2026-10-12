@@ -2321,6 +2321,209 @@
       "kind": "declaration",
       "property": "text-shadow",
       "value": "none"
+    },
+    {
+      "id": "baseline-october-12.align-content.baseline",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-october-12.align-content.first-baseline",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "first baseline"
+    },
+    {
+      "id": "baseline-october-12.align-content.end",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "end"
+    },
+    {
+      "id": "baseline-october-12.align-content.safe-center",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "safe center"
+    },
+    {
+      "id": "baseline-october-12.align-content.space-evenly",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "space-evenly"
+    },
+    {
+      "id": "baseline-october-12.align-content.start",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "start"
+    },
+    {
+      "id": "baseline-october-12.align-content.stretch",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-october-12.align-content.unsafe-center",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "unsafe center"
+    },
+    {
+      "id": "baseline-october-12.align-items.baseline",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-october-12.align-items.center",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-12.align-items.end",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "end"
+    },
+    {
+      "id": "baseline-october-12.align-items.first-baseline",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "first baseline"
+    },
+    {
+      "id": "baseline-october-12.align-items.last-baseline",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "last baseline"
+    },
+    {
+      "id": "baseline-october-12.align-items.safe-center",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "safe center"
+    },
+    {
+      "id": "baseline-october-12.align-items.start",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "start"
+    },
+    {
+      "id": "baseline-october-12.align-items.unsafe-center",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "unsafe center"
+    },
+    {
+      "id": "baseline-october-12.align-items.stretch",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-october-12.align-self.baseline",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-october-12.align-self.end",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "end"
+    },
+    {
+      "id": "baseline-october-12.align-self.first-baseline",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "first baseline"
+    },
+    {
+      "id": "baseline-october-12.align-self.last-baseline",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "last baseline"
+    },
+    {
+      "id": "baseline-october-12.align-self.safe-center",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "safe center"
+    },
+    {
+      "id": "baseline-october-12.align-self.start",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "start"
+    },
+    {
+      "id": "baseline-october-12.align-self.unsafe-center",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "unsafe center"
+    },
+    {
+      "id": "baseline-october-12.align-self.stretch",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-october-12.align-self.center",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-12.border-image-source.none",
+      "root": "css.properties.border-image-source",
+      "kind": "declaration",
+      "property": "border-image-source",
+      "value": "none"
+    },
+    {
+      "id": "baseline-october-12.columns.auto",
+      "root": "css.properties.columns",
+      "kind": "declaration",
+      "property": "columns",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-october-12.color-interpolation.linearRGB",
+      "root": "css.properties.color-interpolation",
+      "kind": "declaration",
+      "property": "color-interpolation",
+      "value": "linearRGB"
     }
   ]
 }
