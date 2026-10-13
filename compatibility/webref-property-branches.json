@@ -4,8 +4,8 @@
   "baseline": {
     "browser": "chromium",
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
-    "webrefVersion": "8.7.5",
-    "webrefCssSha256": "493e40c1d01cf03f0d9e78cd5b0fd27ad6e5150838339ed315e52c525d840157",
+    "webrefVersion": "8.7.6",
+    "webrefCssSha256": "4860d2a9ad90814a61888e8b2d879651fd523c0d3926eecfe4548b4dd60a20eb",
     "propertyManifestSha256": "6622a8e9731e13437f56221fac0def5e5c0fe75ceb190e7b5194ffb1e64983c1",
     "semanticTerminalsSha256": "1c75d8f6ef10f14d60555bb19b7ce92901086298bf1393e5d1baef0926b7407e",
     "generator": "webref-value-definition-sampler@1"
