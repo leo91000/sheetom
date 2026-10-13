@@ -150,7 +150,7 @@
     "playwright": "^1.62.1",
     "playwright-baseline": "npm:playwright-core@1.63.0",
     "playwright-oracle": "npm:playwright-core@1.62.1",
-    "rollup": "4.64.2",
+    "rollup": "4.64.4",
     "tsdown": "^0.23.0",
     "typedoc": "^0.28.20",
     "typescript": "^6.0.3",
