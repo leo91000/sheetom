@@ -330,7 +330,7 @@ fn synthesize_special_shorthand(
         "mask" => synthesize_mask(records, safe),
         "mask-position" | "-webkit-mask-position" => synthesize_position_lists(
             records,
-            safe,
+            false,
             "-webkit-mask-position-x",
             "-webkit-mask-position-y",
         ),
@@ -1120,6 +1120,8 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
         "mask-mode",
     ];
     let lists = parallel_lists(records, &properties, safe)?;
+    let observable_images = value_list(record_value(records, "mask-image", false)?)?;
+    let positions = parallel_lists(records, &properties[1..3], false)?;
     let mut layers = Vec::with_capacity(lists[0].len());
     for index in 0..lists[0].len() {
         // CSSOM exposes an omitted mask image as `initial` on the expanded
@@ -1130,8 +1132,9 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
             "initial" => "none",
             image => image,
         };
-        let x = *lists[1].get(index)?;
-        let y = *lists[2].get(index)?;
+        let omitted_image = *observable_images.get(index)? == "initial";
+        let x = *positions[0].get(index)?;
+        let y = *positions[1].get(index)?;
         let size = *lists[3].get(index)?;
         let repeat = *lists[4].get(index)?;
         let origin = *lists[5].get(index)?;
@@ -1139,7 +1142,7 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
         let composite = *lists[7].get(index)?;
         let mode = *lists[8].get(index)?;
         let mut components = Vec::new();
-        if image != "none" {
+        if image != "none" || safe && !omitted_image {
             components.push(image.to_owned());
         }
         if x != "0%" || y != "0%" || size != "auto" {
@@ -1169,7 +1172,9 @@ fn synthesize_mask(records: &[&DeclarationRecord], safe: bool) -> Option<String>
             components.push(mode.to_owned());
         }
         layers.push(if components.is_empty() {
-            "none".to_owned()
+            // An explicit none would change mask-image's observable initial
+            // marker on reparse. add is a valid component with the same defaults.
+            if safe && omitted_image { "add" } else { "none" }.to_owned()
         } else {
             components.join(" ")
         });

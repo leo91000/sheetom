@@ -20,7 +20,7 @@ if (!backend) {
   // Only the test registration and module imports are substituted; assertions
   // remain shared so backend tests cannot silently omit new regression cases.
   let checks = 0;
-  for (const filename of ["mixin-rules", "css-namespace", "selector-text", "modern-css-roundtrip", "baseline-september"]) {
+  for (const filename of ["mixin-rules", "css-namespace", "selector-text", "modern-css-roundtrip", "baseline-september", "baseline-october"]) {
     const source = await readFile(new URL(`../tests/${filename}.test.ts`, import.meta.url), "utf8");
     const { code } = await transform(source, { loader: "ts", format: "cjs", target: "es2022" });
     const require = name => {

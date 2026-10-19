@@ -2524,6 +2524,615 @@
       "kind": "declaration",
       "property": "color-interpolation",
       "value": "linearRGB"
+    },
+    {
+      "id": "baseline-october-19.animation.paused",
+      "root": "css.properties.animation",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "paused"
+    },
+    {
+      "id": "baseline-october-19.animation.running",
+      "root": "css.properties.animation",
+      "kind": "declaration",
+      "property": "animation",
+      "value": "running"
+    },
+    {
+      "id": "baseline-october-19.border-top-width.thin",
+      "root": "css.types.line-width",
+      "kind": "declaration",
+      "property": "border-top-width",
+      "value": "thin"
+    },
+    {
+      "id": "baseline-october-19.border-top-width.medium",
+      "root": "css.types.line-width",
+      "kind": "declaration",
+      "property": "border-top-width",
+      "value": "medium"
+    },
+    {
+      "id": "baseline-october-19.border-top-width.thick",
+      "root": "css.types.line-width",
+      "kind": "declaration",
+      "property": "border-top-width",
+      "value": "thick"
+    },
+    {
+      "id": "baseline-october-19.border-top-width.2px",
+      "root": "css.types.line-width",
+      "kind": "declaration",
+      "property": "border-top-width",
+      "value": "2px"
+    },
+    {
+      "id": "baseline-october-19.content.url(\"https://example.com/image.png\")",
+      "root": "css.properties.content",
+      "kind": "declaration",
+      "property": "content",
+      "value": "url(\"https://example.com/image.png\")"
+    },
+    {
+      "id": "baseline-october-19.color.currentcolor",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "currentcolor"
+    },
+    {
+      "id": "baseline-october-19.align-content.center",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-19.align-content.space-around",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "space-around"
+    },
+    {
+      "id": "baseline-october-19.align-content.space-between",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "space-between"
+    },
+    {
+      "id": "baseline-october-19.align-items.normal",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-october-19.align-items.self-end",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "self-end"
+    },
+    {
+      "id": "baseline-october-19.align-items.self-start",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "self-start"
+    },
+    {
+      "id": "baseline-october-19.align-items.stretch",
+      "root": "css.properties.align-items",
+      "kind": "declaration",
+      "property": "align-items",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-october-19.align-self.center",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-19.align-self.self-end",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "self-end"
+    },
+    {
+      "id": "baseline-october-19.align-self.self-start",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "self-start"
+    },
+    {
+      "id": "baseline-october-19.font-variant.full-width",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "full-width"
+    },
+    {
+      "id": "baseline-october-19.font-variant.jis04",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "jis04"
+    },
+    {
+      "id": "baseline-october-19.font-variant.jis78",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "jis78"
+    },
+    {
+      "id": "baseline-october-19.font-variant.jis83",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "jis83"
+    },
+    {
+      "id": "baseline-october-19.font-variant.jis90",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "jis90"
+    },
+    {
+      "id": "baseline-october-19.font-variant.proportional-width",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "proportional-width"
+    },
+    {
+      "id": "baseline-october-19.font-variant.ruby",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "ruby"
+    },
+    {
+      "id": "baseline-october-19.font-variant.simplified",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "simplified"
+    },
+    {
+      "id": "baseline-october-19.font-variant.traditional",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "traditional"
+    },
+    {
+      "id": "baseline-october-19.font-variant.common-ligatures",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "common-ligatures"
+    },
+    {
+      "id": "baseline-october-19.font-variant.contextual",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "contextual"
+    },
+    {
+      "id": "baseline-october-19.font-variant.discretionary-ligatures",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "discretionary-ligatures"
+    },
+    {
+      "id": "baseline-october-19.font-variant.historical-ligatures",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "historical-ligatures"
+    },
+    {
+      "id": "baseline-october-19.font-variant.no-common-ligatures",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "no-common-ligatures"
+    },
+    {
+      "id": "baseline-october-19.font-variant.no-contextual",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "no-contextual"
+    },
+    {
+      "id": "baseline-october-19.font-variant.no-discretionary-ligatures",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "no-discretionary-ligatures"
+    },
+    {
+      "id": "baseline-october-19.font-variant.no-historical-ligatures",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "no-historical-ligatures"
+    },
+    {
+      "id": "baseline-october-19.font-variant.diagonal-fractions",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "diagonal-fractions"
+    },
+    {
+      "id": "baseline-october-19.font-variant.lining-nums",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "lining-nums"
+    },
+    {
+      "id": "baseline-october-19.font-variant.oldstyle-nums",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "oldstyle-nums"
+    },
+    {
+      "id": "baseline-october-19.font-variant.ordinal",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "ordinal"
+    },
+    {
+      "id": "baseline-october-19.font-variant.proportional-nums",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "proportional-nums"
+    },
+    {
+      "id": "baseline-october-19.font-variant.slashed-zero",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "slashed-zero"
+    },
+    {
+      "id": "baseline-october-19.font-variant.stacked-fractions",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "stacked-fractions"
+    },
+    {
+      "id": "baseline-october-19.font-variant.tabular-nums",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "tabular-nums"
+    },
+    {
+      "id": "baseline-october-19.mask-position.bottom",
+      "root": "css.properties.mask-position",
+      "kind": "declaration",
+      "property": "mask-position",
+      "value": "bottom"
+    },
+    {
+      "id": "baseline-october-19.mask-position.center",
+      "root": "css.properties.mask-position",
+      "kind": "declaration",
+      "property": "mask-position",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-19.mask-position.left",
+      "root": "css.properties.mask-position",
+      "kind": "declaration",
+      "property": "mask-position",
+      "value": "left"
+    },
+    {
+      "id": "baseline-october-19.mask-position.right",
+      "root": "css.properties.mask-position",
+      "kind": "declaration",
+      "property": "mask-position",
+      "value": "right"
+    },
+    {
+      "id": "baseline-october-19.mask-position.top",
+      "root": "css.properties.mask-position",
+      "kind": "declaration",
+      "property": "mask-position",
+      "value": "top"
+    },
+    {
+      "id": "baseline-october-19.mask-repeat.no-repeat",
+      "root": "css.properties.mask-repeat",
+      "kind": "declaration",
+      "property": "mask-repeat",
+      "value": "no-repeat"
+    },
+    {
+      "id": "baseline-october-19.mask-repeat.repeat",
+      "root": "css.properties.mask-repeat",
+      "kind": "declaration",
+      "property": "mask-repeat",
+      "value": "repeat"
+    },
+    {
+      "id": "baseline-october-19.mask-repeat.repeat-x",
+      "root": "css.properties.mask-repeat",
+      "kind": "declaration",
+      "property": "mask-repeat",
+      "value": "repeat-x"
+    },
+    {
+      "id": "baseline-october-19.mask-repeat.repeat-y",
+      "root": "css.properties.mask-repeat",
+      "kind": "declaration",
+      "property": "mask-repeat",
+      "value": "repeat-y"
+    },
+    {
+      "id": "baseline-october-19.mask-repeat.round",
+      "root": "css.properties.mask-repeat",
+      "kind": "declaration",
+      "property": "mask-repeat",
+      "value": "round"
+    },
+    {
+      "id": "baseline-october-19.mask-repeat.space",
+      "root": "css.properties.mask-repeat",
+      "kind": "declaration",
+      "property": "mask-repeat",
+      "value": "space"
+    },
+    {
+      "id": "baseline-october-19.mask-size.auto",
+      "root": "css.properties.mask-size",
+      "kind": "declaration",
+      "property": "mask-size",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-october-19.mask-size.contain",
+      "root": "css.properties.mask-size",
+      "kind": "declaration",
+      "property": "mask-size",
+      "value": "contain"
+    },
+    {
+      "id": "baseline-october-19.mask-size.cover",
+      "root": "css.properties.mask-size",
+      "kind": "declaration",
+      "property": "mask-size",
+      "value": "cover"
+    },
+    {
+      "id": "baseline-october-19.mask.add",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "add"
+    },
+    {
+      "id": "baseline-october-19.mask.alpha",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "alpha"
+    },
+    {
+      "id": "baseline-october-19.mask.bottom",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "bottom"
+    },
+    {
+      "id": "baseline-october-19.mask.center",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-19.mask.exclude",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "exclude"
+    },
+    {
+      "id": "baseline-october-19.mask.intersect",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "intersect"
+    },
+    {
+      "id": "baseline-october-19.mask.left",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "left"
+    },
+    {
+      "id": "baseline-october-19.mask.match-source",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "match-source"
+    },
+    {
+      "id": "baseline-october-19.mask.no-repeat",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "no-repeat"
+    },
+    {
+      "id": "baseline-october-19.mask.repeat",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "repeat"
+    },
+    {
+      "id": "baseline-october-19.mask.repeat-x",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "repeat-x"
+    },
+    {
+      "id": "baseline-october-19.mask.repeat-y",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "repeat-y"
+    },
+    {
+      "id": "baseline-october-19.mask.right",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "right"
+    },
+    {
+      "id": "baseline-october-19.mask.round",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "round"
+    },
+    {
+      "id": "baseline-october-19.mask.space",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "space"
+    },
+    {
+      "id": "baseline-october-19.mask.subtract",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "subtract"
+    },
+    {
+      "id": "baseline-october-19.mask.top",
+      "root": "css.properties.mask",
+      "kind": "declaration",
+      "property": "mask",
+      "value": "top"
+    },
+    {
+      "id": "baseline-october-19.color.revert-rule",
+      "root": "css.types.global_keywords",
+      "kind": "declaration",
+      "property": "color",
+      "value": "revert-rule"
+    },
+    {
+      "id": "baseline-october-19.width.revert-rule",
+      "root": "css.types.global_keywords",
+      "kind": "declaration",
+      "property": "width",
+      "value": "revert-rule"
+    },
+    {
+      "id": "baseline-october-19.margin.revert-rule",
+      "root": "css.types.global_keywords",
+      "kind": "declaration",
+      "property": "margin",
+      "value": "revert-rule"
+    },
+    {
+      "id": "baseline-october-19.all.revert-rule",
+      "root": "css.types.global_keywords",
+      "kind": "declaration",
+      "property": "all",
+      "value": "revert-rule"
+    },
+    {
+      "id": "baseline-october-19.--baseline-rule.revert-rule",
+      "root": "css.types.global_keywords",
+      "kind": "declaration",
+      "property": "--baseline-rule",
+      "value": "revert-rule"
+    },
+    {
+      "id": "baseline-october-19.vector-effect.non-scaling-stroke",
+      "root": "css.properties.vector-effect",
+      "kind": "declaration",
+      "property": "vector-effect",
+      "value": "non-scaling-stroke"
+    },
+    {
+      "id": "baseline-october-19.vector-effect.none",
+      "root": "css.properties.vector-effect",
+      "kind": "declaration",
+      "property": "vector-effect",
+      "value": "none"
+    },
+    {
+      "id": "baseline-october-19.backface-visibility.hidden",
+      "root": "css.properties.backface-visibility",
+      "kind": "declaration",
+      "property": "backface-visibility",
+      "value": "hidden"
+    },
+    {
+      "id": "baseline-october-19.backface-visibility.visible",
+      "root": "css.properties.backface-visibility",
+      "kind": "declaration",
+      "property": "backface-visibility",
+      "value": "visible"
+    },
+    {
+      "id": "baseline-october-19.transform-style.flat",
+      "root": "css.properties.transform-style",
+      "kind": "declaration",
+      "property": "transform-style",
+      "value": "flat"
+    },
+    {
+      "id": "baseline-october-19.transform-style.preserve-3d",
+      "root": "css.properties.transform-style",
+      "kind": "declaration",
+      "property": "transform-style",
+      "value": "preserve-3d"
+    },
+    {
+      "id": "baseline-october-19.font-feature-settings.normal",
+      "root": "css.properties.font-feature-settings",
+      "kind": "declaration",
+      "property": "font-feature-settings",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-october-19.font-feature-settings.\"liga\"-0",
+      "root": "css.properties.font-feature-settings",
+      "kind": "declaration",
+      "property": "font-feature-settings",
+      "value": "\"liga\" 0"
     }
   ]
 }
