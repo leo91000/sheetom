@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-10-12",
+  "cutoff": "2026-10-19",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
-    "families": 332,
+    "families": 333,
     "authoringSurfaces": 598,
-    "authoringKeyRecords": 2685,
+    "authoringKeyRecords": 2761,
     "domOrEvaluationKeyRecords": 1113,
-    "deferredKeyRecords": 459
+    "deferredKeyRecords": 476
   },
   "surfaces": [
     {
@@ -547,7 +547,10 @@
         "baseline-october-12.align-content.space-evenly",
         "baseline-october-12.align-content.start",
         "baseline-october-12.align-content.stretch",
-        "baseline-october-12.align-content.unsafe-center"
+        "baseline-october-12.align-content.unsafe-center",
+        "baseline-october-19.align-content.center",
+        "baseline-october-19.align-content.space-around",
+        "baseline-october-19.align-content.space-between"
       ]
     },
     {
@@ -568,7 +571,11 @@
         "baseline-october-12.align-items.safe-center",
         "baseline-october-12.align-items.start",
         "baseline-october-12.align-items.unsafe-center",
-        "baseline-october-12.align-items.stretch"
+        "baseline-october-12.align-items.stretch",
+        "baseline-october-19.align-items.normal",
+        "baseline-october-19.align-items.self-end",
+        "baseline-october-19.align-items.self-start",
+        "baseline-october-19.align-items.stretch"
       ]
     },
     {
@@ -589,7 +596,10 @@
         "baseline-october-12.align-self.start",
         "baseline-october-12.align-self.unsafe-center",
         "baseline-october-12.align-self.stretch",
-        "baseline-october-12.align-self.center"
+        "baseline-october-12.align-self.center",
+        "baseline-october-19.align-self.center",
+        "baseline-october-19.align-self.self-end",
+        "baseline-october-19.align-self.self-start"
       ]
     },
     {
@@ -635,12 +645,16 @@
     {
       "root": "css.properties.animation",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.a84d4cd1617dac3e"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.animation.paused",
+        "baseline-october-19.animation.running"
+      ]
     },
     {
       "root": "css.properties.animation-composition",
@@ -765,12 +779,16 @@
     {
       "root": "css.properties.backface-visibility",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.108d6ab45f1f7553"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.backface-visibility.hidden",
+        "baseline-october-19.backface-visibility.visible"
+      ]
     },
     {
       "root": "css.properties.background",
@@ -1893,12 +1911,15 @@
     {
       "root": "css.properties.content",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.31f54199e478da90"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.content.url(\"https://example.com/image.png\")"
+      ]
     },
     {
       "root": "css.properties.content-visibility",
@@ -2171,12 +2192,16 @@
     {
       "root": "css.properties.font-feature-settings",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.ddbcfc2b2bf0f700"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.font-feature-settings.normal",
+        "baseline-october-19.font-feature-settings.\"liga\"-0"
+      ]
     },
     {
       "root": "css.properties.font-kerning",
@@ -2302,12 +2327,39 @@
     {
       "root": "css.properties.font-variant",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.ab8d4a18a796f8af"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.font-variant.full-width",
+        "baseline-october-19.font-variant.jis04",
+        "baseline-october-19.font-variant.jis78",
+        "baseline-october-19.font-variant.jis83",
+        "baseline-october-19.font-variant.jis90",
+        "baseline-october-19.font-variant.proportional-width",
+        "baseline-october-19.font-variant.ruby",
+        "baseline-october-19.font-variant.simplified",
+        "baseline-october-19.font-variant.traditional",
+        "baseline-october-19.font-variant.common-ligatures",
+        "baseline-october-19.font-variant.contextual",
+        "baseline-october-19.font-variant.discretionary-ligatures",
+        "baseline-october-19.font-variant.historical-ligatures",
+        "baseline-october-19.font-variant.no-common-ligatures",
+        "baseline-october-19.font-variant.no-contextual",
+        "baseline-october-19.font-variant.no-discretionary-ligatures",
+        "baseline-october-19.font-variant.no-historical-ligatures",
+        "baseline-october-19.font-variant.diagonal-fractions",
+        "baseline-october-19.font-variant.lining-nums",
+        "baseline-october-19.font-variant.oldstyle-nums",
+        "baseline-october-19.font-variant.ordinal",
+        "baseline-october-19.font-variant.proportional-nums",
+        "baseline-october-19.font-variant.slashed-zero",
+        "baseline-october-19.font-variant.stacked-fractions",
+        "baseline-october-19.font-variant.tabular-nums"
+      ]
     },
     {
       "root": "css.properties.font-variant-alternates",
@@ -2925,12 +2977,31 @@
     {
       "root": "css.properties.mask",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.cb0da4131342b9b0"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.mask.add",
+        "baseline-october-19.mask.alpha",
+        "baseline-october-19.mask.bottom",
+        "baseline-october-19.mask.center",
+        "baseline-october-19.mask.exclude",
+        "baseline-october-19.mask.intersect",
+        "baseline-october-19.mask.left",
+        "baseline-october-19.mask.match-source",
+        "baseline-october-19.mask.no-repeat",
+        "baseline-october-19.mask.repeat",
+        "baseline-october-19.mask.repeat-x",
+        "baseline-october-19.mask.repeat-y",
+        "baseline-october-19.mask.right",
+        "baseline-october-19.mask.round",
+        "baseline-october-19.mask.space",
+        "baseline-october-19.mask.subtract",
+        "baseline-october-19.mask.top"
+      ]
     },
     {
       "root": "css.properties.mask-clip",
@@ -2975,32 +3046,52 @@
     {
       "root": "css.properties.mask-position",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.9a7dad1ab8eac9bd"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.mask-position.bottom",
+        "baseline-october-19.mask-position.center",
+        "baseline-october-19.mask-position.left",
+        "baseline-october-19.mask-position.right",
+        "baseline-october-19.mask-position.top"
+      ]
     },
     {
       "root": "css.properties.mask-repeat",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.ebbe3230327e02a5"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.mask-repeat.no-repeat",
+        "baseline-october-19.mask-repeat.repeat",
+        "baseline-october-19.mask-repeat.repeat-x",
+        "baseline-october-19.mask-repeat.repeat-y",
+        "baseline-october-19.mask-repeat.round",
+        "baseline-october-19.mask-repeat.space"
+      ]
     },
     {
       "root": "css.properties.mask-size",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.9decf67bce15fd49"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.mask-size.auto",
+        "baseline-october-19.mask-size.contain",
+        "baseline-october-19.mask-size.cover"
+      ]
     },
     {
       "root": "css.properties.mask-type",
@@ -4437,12 +4528,16 @@
     {
       "root": "css.properties.transform-style",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.6f645e433ef9eba2"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.transform-style.flat",
+        "baseline-october-19.transform-style.preserve-3d"
+      ]
     },
     {
       "root": "css.properties.transition",
@@ -4451,16 +4546,6 @@
       ],
       "profileIds": [
         "webref-profile.ccef55f3d4fbf609"
-      ],
-      "probeIds": []
-    },
-    {
-      "root": "css.properties.transition-behavior",
-      "evidence": [
-        "scripts/check-webref-property-branches.ts"
-      ],
-      "profileIds": [
-        "webref-profile.3ca7f66bf6ce0640"
       ],
       "probeIds": []
     },
@@ -4527,12 +4612,16 @@
     {
       "root": "css.properties.vector-effect",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.9ab0efefda0a34ad"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-19.vector-effect.non-scaling-stroke",
+        "baseline-october-19.vector-effect.none"
+      ]
     },
     {
       "root": "css.properties.vertical-align",
@@ -5721,7 +5810,8 @@
         "baseline-september-21.image.border-image",
         "baseline-september-21.image.list-style",
         "baseline-september-21.image.content",
-        "baseline-september-21.image.shape-outside"
+        "baseline-september-21.image.shape-outside",
+        "baseline-october-19.color.currentcolor"
       ]
     },
     {
@@ -5853,7 +5943,12 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "type.global_keywords"
+        "type.global_keywords",
+        "baseline-october-19.color.revert-rule",
+        "baseline-october-19.width.revert-rule",
+        "baseline-october-19.margin.revert-rule",
+        "baseline-october-19.all.revert-rule",
+        "baseline-october-19.--baseline-rule.revert-rule"
       ]
     },
     {
@@ -5972,6 +6067,19 @@
       "profileIds": [],
       "probeIds": [
         "type.line-style"
+      ]
+    },
+    {
+      "root": "css.types.line-width",
+      "evidence": [
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [],
+      "probeIds": [
+        "baseline-october-19.border-top-width.thin",
+        "baseline-october-19.border-top-width.medium",
+        "baseline-october-19.border-top-width.thick",
+        "baseline-october-19.border-top-width.2px"
       ]
     },
     {
@@ -8412,7 +8520,17 @@
           "surface": "css.properties.animation"
         },
         {
+          "key": "css.properties.animation.paused",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation"
+        },
+        {
           "key": "css.properties.animation.reverse",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation"
+        },
+        {
+          "key": "css.properties.animation.running",
           "disposition": "authoring-surface",
           "surface": "css.properties.animation"
         },
@@ -10127,6 +10245,11 @@
           "key": "css.types.line-style",
           "disposition": "authoring-surface",
           "surface": "css.types.line-style"
+        },
+        {
+          "key": "css.types.line-width",
+          "disposition": "authoring-surface",
+          "surface": "css.types.line-width"
         }
       ]
     },
@@ -10966,7 +11089,7 @@
           "surface": "css.properties.content"
         },
         {
-          "key": "css.properties.content.element_replacement",
+          "key": "css.properties.content.content_replacement",
           "disposition": "authoring-surface",
           "surface": "css.properties.content"
         },
@@ -11762,6 +11885,11 @@
           "key": "css.properties.outline-color.currentColor",
           "disposition": "authoring-surface",
           "surface": "css.properties.outline-color"
+        },
+        {
+          "key": "css.types.color.currentcolor",
+          "disposition": "authoring-surface",
+          "surface": "css.types.color"
         }
       ]
     },
@@ -12490,6 +12618,11 @@
           "surface": "css.properties.align-content"
         },
         {
+          "key": "css.properties.align-content.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-content"
+        },
+        {
           "key": "css.properties.align-content.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-content"
@@ -12515,6 +12648,16 @@
         },
         {
           "key": "css.properties.align-content.safe",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-content"
+        },
+        {
+          "key": "css.properties.align-content.space-around",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-content"
+        },
+        {
+          "key": "css.properties.align-content.space-between",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-content"
         },
@@ -12584,12 +12727,32 @@
           "surface": "css.properties.align-items"
         },
         {
+          "key": "css.properties.align-items.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-items"
+        },
+        {
           "key": "css.properties.align-items.safe",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-items"
         },
         {
+          "key": "css.properties.align-items.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-items"
+        },
+        {
+          "key": "css.properties.align-items.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-items"
+        },
+        {
           "key": "css.properties.align-items.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-items"
+        },
+        {
+          "key": "css.properties.align-items.stretch",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-items"
         },
@@ -12610,6 +12773,11 @@
         },
         {
           "key": "css.properties.align-self.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-self"
+        },
+        {
+          "key": "css.properties.align-self.center",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-self"
         },
@@ -12645,6 +12813,16 @@
         },
         {
           "key": "css.properties.align-self.safe",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-self"
+        },
+        {
+          "key": "css.properties.align-self.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-self"
+        },
+        {
+          "key": "css.properties.align-self.self-start",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-self"
         },
@@ -13948,6 +14126,51 @@
           "key": "css.properties.font-variant-east-asian.traditional",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-variant-east-asian"
+        },
+        {
+          "key": "css.properties.font-variant.full-width",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.jis04",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.jis78",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.jis83",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.jis90",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.proportional-width",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.ruby",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.simplified",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.traditional",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
         }
       ]
     },
@@ -14008,6 +14231,46 @@
           "key": "css.properties.font-variant-ligatures.normal",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-variant-ligatures"
+        },
+        {
+          "key": "css.properties.font-variant.common-ligatures",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.contextual",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.discretionary-ligatures",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.historical-ligatures",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.no-common-ligatures",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.no-contextual",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.no-discretionary-ligatures",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.no-historical-ligatures",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
         }
       ]
     },
@@ -14063,6 +14326,46 @@
           "key": "css.properties.font-variant-numeric.tabular-nums",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-variant-numeric"
+        },
+        {
+          "key": "css.properties.font-variant.diagonal-fractions",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.lining-nums",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.oldstyle-nums",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.ordinal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.proportional-nums",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.slashed-zero",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.stacked-fractions",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.tabular-nums",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
         }
       ]
     },
@@ -17706,7 +18009,23 @@
           "disposition": "not-baseline"
         },
         {
+          "key": "css.properties.mask-clip.border-box",
+          "disposition": "not-baseline"
+        },
+        {
           "key": "css.properties.mask-clip.content",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-clip.content-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-clip.fill-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-clip.no-clip",
           "disposition": "not-baseline"
         },
         {
@@ -17714,7 +18033,19 @@
           "disposition": "not-baseline"
         },
         {
+          "key": "css.properties.mask-clip.padding-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-clip.stroke-box",
+          "disposition": "not-baseline"
+        },
+        {
           "key": "css.properties.mask-clip.text",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-clip.view-box",
           "disposition": "not-baseline"
         },
         {
@@ -17782,7 +18113,15 @@
           "disposition": "not-baseline"
         },
         {
+          "key": "css.properties.mask-origin.border-box",
+          "disposition": "not-baseline"
+        },
+        {
           "key": "css.properties.mask-origin.content",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-origin.content-box",
           "disposition": "not-baseline"
         },
         {
@@ -17791,6 +18130,10 @@
         },
         {
           "key": "css.properties.mask-origin.padding",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask-origin.padding-box",
           "disposition": "not-baseline"
         },
         {
@@ -17807,7 +18150,62 @@
           "surface": "css.properties.mask-position"
         },
         {
+          "key": "css.properties.mask-position.bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-position"
+        },
+        {
+          "key": "css.properties.mask-position.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-position"
+        },
+        {
+          "key": "css.properties.mask-position.left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-position"
+        },
+        {
+          "key": "css.properties.mask-position.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-position"
+        },
+        {
+          "key": "css.properties.mask-position.top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-position"
+        },
+        {
           "key": "css.properties.mask-repeat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-repeat"
+        },
+        {
+          "key": "css.properties.mask-repeat.no-repeat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-repeat"
+        },
+        {
+          "key": "css.properties.mask-repeat.repeat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-repeat"
+        },
+        {
+          "key": "css.properties.mask-repeat.repeat-x",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-repeat"
+        },
+        {
+          "key": "css.properties.mask-repeat.repeat-y",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-repeat"
+        },
+        {
+          "key": "css.properties.mask-repeat.round",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-repeat"
+        },
+        {
+          "key": "css.properties.mask-repeat.space",
           "disposition": "authoring-surface",
           "surface": "css.properties.mask-repeat"
         },
@@ -17815,6 +18213,138 @@
           "key": "css.properties.mask-size",
           "disposition": "authoring-surface",
           "surface": "css.properties.mask-size"
+        },
+        {
+          "key": "css.properties.mask-size.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-size"
+        },
+        {
+          "key": "css.properties.mask-size.contain",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-size"
+        },
+        {
+          "key": "css.properties.mask-size.cover",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-size"
+        },
+        {
+          "key": "css.properties.mask.add",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.alpha",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.border-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.bottom",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.content-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.exclude",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.fill-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.intersect",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.left",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.luminance",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.match-source",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.no-clip",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.no-repeat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.padding-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.repeat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.repeat-x",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.repeat-y",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.round",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.space",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.stroke-box",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.mask.subtract",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.top",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.view-box",
+          "disposition": "not-baseline"
         }
       ]
     },
@@ -20579,6 +21109,16 @@
           "key": "css.at-rules.media.-webkit-min-device-pixel-ratio",
           "disposition": "authoring-surface",
           "surface": "css.at-rules.media"
+        }
+      ]
+    },
+    {
+      "id": "revert-rule",
+      "branches": [
+        {
+          "key": "css.types.global_keywords.revert-rule",
+          "disposition": "authoring-surface",
+          "surface": "css.types.global_keywords"
         }
       ]
     },
@@ -23431,6 +23971,16 @@
           "surface": "css.properties.vector-effect"
         },
         {
+          "key": "css.properties.vector-effect.non-scaling-stroke",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.vector-effect"
+        },
+        {
+          "key": "css.properties.vector-effect.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.vector-effect"
+        },
+        {
           "key": "css.properties.word-spacing.svg_elements",
           "disposition": "authoring-surface",
           "surface": "css.properties.word-spacing"
@@ -26229,14 +26779,6 @@
           "surface": "css.types.color"
         },
         {
-          "key": "css.types.color.system-color.accentcolor",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.types.color.system-color.accentcolortext",
-          "disposition": "not-baseline"
-        },
-        {
           "key": "css.types.color.system-color.buttonborder",
           "disposition": "not-baseline"
         },
@@ -27674,6 +28216,16 @@
           "surface": "css.properties.backface-visibility"
         },
         {
+          "key": "css.properties.backface-visibility.hidden",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.backface-visibility"
+        },
+        {
+          "key": "css.properties.backface-visibility.visible",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.backface-visibility"
+        },
+        {
           "key": "css.properties.perspective",
           "disposition": "authoring-surface",
           "surface": "css.properties.perspective"
@@ -27715,6 +28267,16 @@
         },
         {
           "key": "css.properties.transform-style",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.transform-style"
+        },
+        {
+          "key": "css.properties.transform-style.flat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.transform-style"
+        },
+        {
+          "key": "css.properties.transform-style.preserve-3d",
           "disposition": "authoring-surface",
           "surface": "css.properties.transform-style"
         },
@@ -27785,8 +28347,7 @@
       "branches": [
         {
           "key": "css.properties.transition-behavior",
-          "disposition": "authoring-surface",
-          "surface": "css.properties.transition-behavior"
+          "disposition": "not-baseline"
         },
         {
           "key": "css.properties.transition.transition-behavior",

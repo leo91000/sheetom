@@ -114,6 +114,10 @@ pub enum DeclarationContext {
     PositionTry,
 }
 
+fn reset_by_all(name: &str) -> bool {
+    !name.starts_with("--") && !matches!(name, "direction" | "unicode-bidi")
+}
+
 fn is_position_try_descriptor(name: &str) -> bool {
     matches!(
         name,
@@ -263,6 +267,10 @@ impl DeclarationState {
             return String::new();
         };
 
+        if let Some(reset) = self.implicit_all_record(&name) {
+            return reset.observable_value().to_owned();
+        }
+
         if self.shorthand_longhands(&name).is_some() {
             return synthesize_shorthand(&self.records, &name, false).unwrap_or_default();
         }
@@ -296,6 +304,10 @@ impl DeclarationState {
         let Some(name) = self.canonical_name(name) else {
             return "";
         };
+
+        if let Some(reset) = self.implicit_all_record(&name) {
+            return if reset.important { "important" } else { "" };
+        }
 
         if let Some(longhands) = self.shorthand_longhands(&name) {
             let records = longhands
@@ -416,13 +428,27 @@ impl DeclarationState {
             .map(|record| record.name.as_str())
             .collect::<HashSet<_>>()
             .len();
-        let projected_len = self.records.len() + additional_records;
+        let reset_all = source_name == "all" && self.context == DeclarationContext::Style;
+        let projected_len = if reset_all {
+            self.records
+                .iter()
+                .filter(|record| !reset_by_all(&record.name))
+                .count()
+                + records.len()
+        } else {
+            self.records.len() + additional_records
+        };
         if projected_len > self.limits.max_declarations_per_block {
             self.next_pending_group_id = previous_group_id;
             return Err(EngineError::DeclarationLimitExceeded {
                 actual: projected_len,
                 limit: self.limits.max_declarations_per_block,
             });
+        }
+        // CSSOM's all setter replaces every affected declaration, regardless
+        // of the previous priority. Validate the complete write before removal.
+        if reset_all {
+            self.records.retain(|record| !reset_by_all(&record.name));
         }
         for record in records {
             self.commit(record);
@@ -637,6 +663,25 @@ impl DeclarationState {
 
     fn find(&self, name: &str) -> Option<&DeclarationRecord> {
         self.records.iter().find(|record| record.name == name)
+    }
+
+    // Chromium retains a compact all entry but exposes its value through
+    // affected property getters until an explicit longhand overrides it.
+    fn implicit_all_record(&self, name: &str) -> Option<&DeclarationRecord> {
+        if self.context != DeclarationContext::Style
+            || name == "all"
+            || !reset_by_all(name)
+            || self.find(name).is_some()
+            || self.shorthand_longhands(name).is_some_and(|longhands| {
+                longhands
+                    .iter()
+                    .any(|longhand| self.find(longhand).is_some())
+            })
+        {
+            return None;
+        }
+        self.find("all")
+            .filter(|record| record.value.kind() == crate::DeclarationValueKind::CssWideKeyword)
     }
 
     fn canonical_name<'a>(&self, name: &'a str) -> Option<Cow<'a, str>> {
@@ -1388,7 +1433,10 @@ fn prefers_synthesized_provenance(name: &str) -> bool {
 fn prefers_synthesized_safe_provenance(name: &str) -> bool {
     matches!(
         name,
-        "animation-range"
+        "mask"
+            | "mask-position"
+            | "-webkit-mask-position"
+            | "animation-range"
             | "border"
             | "border-block"
             | "border-block-end"
