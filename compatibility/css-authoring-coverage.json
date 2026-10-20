@@ -1801,7 +1801,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.edd36686fe918476"
+        "webref-profile.9e43582915fc90a0"
       ],
       "probeIds": []
     },
@@ -1915,7 +1915,7 @@
         "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
-        "webref-profile.31f54199e478da90"
+        "webref-profile.b689a3f701aaf853"
       ],
       "probeIds": [
         "baseline-october-19.content.url(\"https://example.com/image.png\")"
@@ -3741,7 +3741,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.d0dbebe824ffbb98"
+        "webref-profile.5642dccf7c458dfa"
       ],
       "probeIds": []
     },
