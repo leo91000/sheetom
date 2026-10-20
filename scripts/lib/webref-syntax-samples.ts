@@ -57,6 +57,11 @@ const recursiveValues = new Map<string, string>([
   ["color", "red"],
 ]);
 
+const typeDefinitionAliases = new Map<string, string>([
+  // CSS Content still references this name, while current Webref indexes it as symbolic-glyph.
+  ["symbolic-counter-style", "symbolic-glyph"],
+]);
+
 function joinCss(parts: readonly string[], separator = " "): string {
   return parts
     .filter(Boolean)
@@ -292,7 +297,10 @@ export function generateWebrefSyntaxSamples({
           issues.push({ kind: "cycle", path, reference: key });
           return [];
         }
-        const definition = definitions.types[node.name] ?? definitions.functions[node.name];
+        const aliasedName = typeDefinitionAliases.get(node.name);
+        const definition = definitions.types[node.name]
+          ?? (aliasedName ? definitions.types[aliasedName] : undefined)
+          ?? definitions.functions[node.name];
         if (!definition?.syntax) {
           issues.push({ kind: "missing-definition", path, reference: key });
           return [];
