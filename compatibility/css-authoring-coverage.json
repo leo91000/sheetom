@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-10-19",
+  "cutoff": "2026-10-27",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
     "families": 333,
     "authoringSurfaces": 598,
-    "authoringKeyRecords": 2761,
+    "authoringKeyRecords": 2772,
     "domOrEvaluationKeyRecords": 1113,
-    "deferredKeyRecords": 476
+    "deferredKeyRecords": 478
   },
   "surfaces": [
     {
@@ -550,7 +550,10 @@
         "baseline-october-12.align-content.unsafe-center",
         "baseline-october-19.align-content.center",
         "baseline-october-19.align-content.space-around",
-        "baseline-october-19.align-content.space-between"
+        "baseline-october-19.align-content.space-between",
+        "baseline-october-27.align-content.flex-start",
+        "baseline-october-27.align-content.flex-end",
+        "baseline-october-27.align-content.center"
       ]
     },
     {
@@ -599,7 +602,9 @@
         "baseline-october-12.align-self.center",
         "baseline-october-19.align-self.center",
         "baseline-october-19.align-self.self-end",
-        "baseline-october-19.align-self.self-start"
+        "baseline-october-19.align-self.self-start",
+        "baseline-october-27.align-self.flex-start",
+        "baseline-october-27.align-self.flex-end"
       ]
     },
     {
@@ -2358,7 +2363,13 @@
         "baseline-october-19.font-variant.proportional-nums",
         "baseline-october-19.font-variant.slashed-zero",
         "baseline-october-19.font-variant.stacked-fractions",
-        "baseline-october-19.font-variant.tabular-nums"
+        "baseline-october-19.font-variant.tabular-nums",
+        "baseline-october-27.font-variant.all-petite-caps",
+        "baseline-october-27.font-variant.all-small-caps",
+        "baseline-october-27.font-variant.petite-caps",
+        "baseline-october-27.font-variant.small-caps",
+        "baseline-october-27.font-variant.titling-caps",
+        "baseline-october-27.font-variant.unicase"
       ]
     },
     {
@@ -2747,32 +2758,48 @@
     {
       "root": "css.properties.justify-content",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.7a501082430a6d12"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.justify-content.start",
+        "baseline-october-27.justify-content.end",
+        "baseline-october-27.justify-content.left",
+        "baseline-october-27.justify-content.right",
+        "baseline-october-27.justify-content.safe-center",
+        "baseline-october-27.justify-content.unsafe-center",
+        "baseline-october-27.justify-content.space-evenly",
+        "baseline-october-27.justify-content.stretch"
+      ]
     },
     {
       "root": "css.properties.justify-items",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.e9496720d108bb60"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.justify-items.center"
+      ]
     },
     {
       "root": "css.properties.justify-self",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.9007d0209e7c8366"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.justify-self.center"
+      ]
     },
     {
       "root": "css.properties.left",
@@ -3603,32 +3630,41 @@
     {
       "root": "css.properties.place-content",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.e10a459abd829120"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.place-content.center-start"
+      ]
     },
     {
       "root": "css.properties.place-items",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.a9265d7dda8404bf"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.place-items.center-start"
+      ]
     },
     {
       "root": "css.properties.place-self",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.7985918b8df82d91"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.place-self.center-start"
+      ]
     },
     {
       "root": "css.properties.pointer-events",
@@ -4508,12 +4544,16 @@
     {
       "root": "css.properties.transform-box",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.062539a95ece7a7a"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.transform-box.content-box",
+        "baseline-october-27.transform-box.stroke-box"
+      ]
     },
     {
       "root": "css.properties.transform-origin",
@@ -4732,12 +4772,15 @@
     {
       "root": "css.properties.writing-mode",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.10867cc904527fde"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-october-27.writing-mode.vertical-rl"
+      ]
     },
     {
       "root": "css.properties.x",
@@ -6381,12 +6424,12 @@
           "surface": "css.properties.align-self"
         },
         {
-          "key": "css.properties.justify-self.position_absolute_context",
+          "key": "css.properties.justify-self.context_position_absolute",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-self"
         },
         {
-          "key": "css.properties.place-self.position_absolute_context",
+          "key": "css.properties.place-self.context_position_absolute",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-self"
         },
@@ -12638,6 +12681,16 @@
           "surface": "css.properties.align-content"
         },
         {
+          "key": "css.properties.align-content.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-content"
+        },
+        {
+          "key": "css.properties.align-content.flex-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-content"
+        },
+        {
           "key": "css.properties.align-content.last_baseline",
           "disposition": "not-baseline"
         },
@@ -12802,6 +12855,16 @@
           "surface": "css.properties.align-self"
         },
         {
+          "key": "css.properties.align-self.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-self"
+        },
+        {
+          "key": "css.properties.align-self.flex-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.align-self"
+        },
+        {
           "key": "css.properties.align-self.last_baseline",
           "disposition": "authoring-surface",
           "surface": "css.properties.align-self"
@@ -12961,32 +13024,12 @@
           "surface": "css.properties.justify-content"
         },
         {
-          "key": "css.properties.justify-content.flex_context",
+          "key": "css.properties.justify-content.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-content"
         },
         {
-          "key": "css.properties.justify-content.flex_context.left_right",
-          "disposition": "authoring-surface",
-          "surface": "css.properties.justify-content"
-        },
-        {
-          "key": "css.properties.justify-content.flex_context.safe_unsafe",
-          "disposition": "authoring-surface",
-          "surface": "css.properties.justify-content"
-        },
-        {
-          "key": "css.properties.justify-content.flex_context.space-evenly",
-          "disposition": "authoring-surface",
-          "surface": "css.properties.justify-content"
-        },
-        {
-          "key": "css.properties.justify-content.flex_context.start_end",
-          "disposition": "authoring-surface",
-          "surface": "css.properties.justify-content"
-        },
-        {
-          "key": "css.properties.justify-content.flex_context.stretch",
+          "key": "css.properties.justify-content.end",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-content"
         },
@@ -13006,6 +13049,31 @@
           "surface": "css.properties.justify-content"
         },
         {
+          "key": "css.properties.justify-content.safe",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.space-evenly",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.stretch",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.unsafe",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
           "key": "css.properties.justify-items",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-items"
@@ -13016,7 +13084,7 @@
           "surface": "css.properties.justify-items"
         },
         {
-          "key": "css.properties.justify-items.flex_context",
+          "key": "css.properties.justify-items.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-items"
         },
@@ -13046,7 +13114,7 @@
           "surface": "css.properties.place-content"
         },
         {
-          "key": "css.properties.place-content.flex_context",
+          "key": "css.properties.place-content.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-content"
         },
@@ -13056,7 +13124,7 @@
           "surface": "css.properties.place-items"
         },
         {
-          "key": "css.properties.place-items.flex_context",
+          "key": "css.properties.place-items.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-items"
         },
@@ -13066,7 +13134,7 @@
           "surface": "css.properties.place-self"
         },
         {
-          "key": "css.properties.place-self.flex_context",
+          "key": "css.properties.place-self.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-self"
         },
@@ -14066,6 +14134,36 @@
           "key": "css.properties.font-variant-caps.unicase",
           "disposition": "authoring-surface",
           "surface": "css.properties.font-variant-caps"
+        },
+        {
+          "key": "css.properties.font-variant.all-petite-caps",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.all-small-caps",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.petite-caps",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.small-caps",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.titling-caps",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
+        },
+        {
+          "key": "css.properties.font-variant.unicase",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.font-variant"
         }
       ]
     },
@@ -15057,12 +15155,12 @@
           "surface": "css.properties.grid-template"
         },
         {
-          "key": "css.properties.justify-content.grid_context",
+          "key": "css.properties.justify-content.context_grid",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-content"
         },
         {
-          "key": "css.properties.justify-items.grid_context",
+          "key": "css.properties.justify-items.context_grid",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-items"
         },
@@ -15077,7 +15175,7 @@
           "surface": "css.properties.justify-self"
         },
         {
-          "key": "css.properties.justify-self.grid_context",
+          "key": "css.properties.justify-self.context_grid",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-self"
         },
@@ -15102,17 +15200,17 @@
           "surface": "css.properties.justify-self"
         },
         {
-          "key": "css.properties.place-content.grid_context",
+          "key": "css.properties.place-content.context_grid",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-content"
         },
         {
-          "key": "css.properties.place-items.grid_context",
+          "key": "css.properties.place-items.context_grid",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-items"
         },
         {
-          "key": "css.properties.place-self.grid_context",
+          "key": "css.properties.place-self.context_grid",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-self"
         },
@@ -24915,6 +25013,10 @@
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
         {
+          "key": "svg.elements.use.omit_external_fragment",
+          "disposition": "not-baseline"
+        },
+        {
           "key": "svg.elements.use.systemLanguage",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
@@ -25141,6 +25243,10 @@
           "key": "svg.global_attributes.transform-origin",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.global_attributes.transform.svg_root",
+          "disposition": "not-baseline"
         },
         {
           "key": "svg.global_attributes.unicode-bidi",
