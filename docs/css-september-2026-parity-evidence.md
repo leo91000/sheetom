@@ -1,6 +1,8 @@
 # September 2026 CSS authoring target
 
-The [19 October refresh](css-baseline-audit-2026-10-19.md) records the current
+The [27 October refresh](css-baseline-audit-2026-10-27.md) records the current
+source, alignment/font-caps inventory and executable property evidence. The
+[19 October refresh](css-baseline-audit-2026-10-19.md) records the current
 source, revert-rule inventory, masking roundtrip and all reset corrections. The
 [12 October refresh](css-baseline-audit-2026-10-12.md) records the current
 source, alignment-key reorganization and executable property evidence. The

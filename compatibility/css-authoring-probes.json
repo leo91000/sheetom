@@ -3133,6 +3133,195 @@
       "kind": "declaration",
       "property": "font-feature-settings",
       "value": "\"liga\" 0"
+    },
+    {
+      "id": "baseline-october-27.align-content.flex-start",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-october-27.align-content.flex-end",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-october-27.align-content.center",
+      "root": "css.properties.align-content",
+      "kind": "declaration",
+      "property": "align-content",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-27.align-self.flex-start",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-october-27.align-self.flex-end",
+      "root": "css.properties.align-self",
+      "kind": "declaration",
+      "property": "align-self",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-october-27.justify-content.start",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "start"
+    },
+    {
+      "id": "baseline-october-27.justify-content.end",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "end"
+    },
+    {
+      "id": "baseline-october-27.justify-content.left",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "left"
+    },
+    {
+      "id": "baseline-october-27.justify-content.right",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "right"
+    },
+    {
+      "id": "baseline-october-27.justify-content.safe-center",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "safe center"
+    },
+    {
+      "id": "baseline-october-27.justify-content.unsafe-center",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "unsafe center"
+    },
+    {
+      "id": "baseline-october-27.justify-content.space-evenly",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "space-evenly"
+    },
+    {
+      "id": "baseline-october-27.justify-content.stretch",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-october-27.justify-items.center",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-27.justify-self.center",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "center"
+    },
+    {
+      "id": "baseline-october-27.place-content.center-start",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "center start"
+    },
+    {
+      "id": "baseline-october-27.place-items.center-start",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "center start"
+    },
+    {
+      "id": "baseline-october-27.place-self.center-start",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "center start"
+    },
+    {
+      "id": "baseline-october-27.font-variant.all-petite-caps",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "all-petite-caps"
+    },
+    {
+      "id": "baseline-october-27.font-variant.all-small-caps",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "all-small-caps"
+    },
+    {
+      "id": "baseline-october-27.font-variant.petite-caps",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "petite-caps"
+    },
+    {
+      "id": "baseline-october-27.font-variant.small-caps",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "small-caps"
+    },
+    {
+      "id": "baseline-october-27.font-variant.titling-caps",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "titling-caps"
+    },
+    {
+      "id": "baseline-october-27.font-variant.unicase",
+      "root": "css.properties.font-variant",
+      "kind": "declaration",
+      "property": "font-variant",
+      "value": "unicase"
+    },
+    {
+      "id": "baseline-october-27.transform-box.content-box",
+      "root": "css.properties.transform-box",
+      "kind": "declaration",
+      "property": "transform-box",
+      "value": "content-box"
+    },
+    {
+      "id": "baseline-october-27.transform-box.stroke-box",
+      "root": "css.properties.transform-box",
+      "kind": "declaration",
+      "property": "transform-box",
+      "value": "stroke-box"
+    },
+    {
+      "id": "baseline-october-27.writing-mode.vertical-rl",
+      "root": "css.properties.writing-mode",
+      "kind": "declaration",
+      "property": "writing-mode",
+      "value": "vertical-rl"
     }
   ]
 }
