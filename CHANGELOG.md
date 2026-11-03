@@ -1,5 +1,14 @@
 # sheetom
 
+## 0.4.2
+
+### Patch Changes
+
+- 39b3d61: Update development dependencies.
+- 427a453: Update development dependencies.
+- 0b82307: Update development dependencies.
+- a8286df: Update development dependencies.
+
 ## 0.4.1
 
 ### Patch Changes
