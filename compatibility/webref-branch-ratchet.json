@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/webref-branch-ratchet.schema.json",
   "schemaVersion": 1,
-  "corpusSha256": "861592a7f0768ac568fffe7a4f5481f09cd73fe4875068ee9ee1f2164e477700",
+  "corpusSha256": "810cc87ba412a5b6e276ba642337394917215931de9680735579e712b5f467fc",
   "mismatchCases": 0,
   "summary": {
     "acceptance": 0,
