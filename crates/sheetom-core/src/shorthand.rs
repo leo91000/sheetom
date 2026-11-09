@@ -3835,22 +3835,13 @@ fn expand_scroll_timeline(value: &str) -> Option<Vec<(&'static str, String)>> {
         if components.is_empty() || components.len() > 2 {
             return None;
         }
-        let mut name = None;
-        let mut axis = None;
-        for component in components {
-            if let Some(value) = typed_longhand_value("scroll-timeline-axis", component) {
-                if axis.replace(value).is_some() {
-                    return None;
-                }
-                continue;
-            }
-            let value = typed_longhand_value("scroll-timeline-name", component)?;
-            if name.replace(value).is_some() {
-                return None;
-            }
-        }
-        names.push(name?);
-        axes.push(axis.unwrap_or_else(|| "block".to_owned()));
+        // Unlike scroll(), the shorthand requires the name before its axis:
+        // [ <'scroll-timeline-name'> <'scroll-timeline-axis'>? ]#.
+        names.push(typed_longhand_value("scroll-timeline-name", components[0])?);
+        axes.push(match components.get(1) {
+            Some(axis) => typed_longhand_value("scroll-timeline-axis", axis)?,
+            None => "block".to_owned(),
+        });
     }
     Some(vec![
         ("scroll-timeline-name", names.join(", ")),

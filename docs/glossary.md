@@ -14,7 +14,7 @@ _Avoid_: Full CSS support, rendering parity
 
 **Dated CSS target**:
 The cumulative set of CSS features that reached Web Platform Baseline Newly
-available on or before the pinned cutoff (currently September 9, 2026), including
+available on or before the [pinned cutoff](../compatibility/css-feature-target.json), including
 individually eligible branches of partially available families and earlier years.
 _Avoid_: Baseline Widely available, June-only features
 

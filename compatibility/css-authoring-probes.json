@@ -3322,6 +3322,1000 @@
       "kind": "declaration",
       "property": "writing-mode",
       "value": "vertical-rl"
+    },
+    {
+      "id": "baseline-november-09.flex.1",
+      "root": "css.properties.flex",
+      "kind": "declaration",
+      "property": "flex",
+      "value": "content"
+    },
+    {
+      "id": "baseline-november-09.justify-content.1",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "center"
+    },
+    {
+      "id": "baseline-november-09.justify-content.2",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-november-09.justify-content.3",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-november-09.justify-content.4",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "space-around"
+    },
+    {
+      "id": "baseline-november-09.justify-content.5",
+      "root": "css.properties.justify-content",
+      "kind": "declaration",
+      "property": "justify-content",
+      "value": "space-between"
+    },
+    {
+      "id": "baseline-november-09.justify-items.1",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-november-09.justify-items.2",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "end"
+    },
+    {
+      "id": "baseline-november-09.justify-items.3",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-november-09.justify-items.4",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-november-09.justify-items.5",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.justify-items.6",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "self-end"
+    },
+    {
+      "id": "baseline-november-09.justify-items.7",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "self-start"
+    },
+    {
+      "id": "baseline-november-09.justify-items.8",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "start"
+    },
+    {
+      "id": "baseline-november-09.justify-items.9",
+      "root": "css.properties.justify-items",
+      "kind": "declaration",
+      "property": "justify-items",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-november-09.place-content.1",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-november-09.place-content.2",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "center"
+    },
+    {
+      "id": "baseline-november-09.place-content.3",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "end"
+    },
+    {
+      "id": "baseline-november-09.place-content.4",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-november-09.place-content.5",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-november-09.place-content.6",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.place-content.7",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "space-around"
+    },
+    {
+      "id": "baseline-november-09.place-content.8",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "space-between"
+    },
+    {
+      "id": "baseline-november-09.place-content.9",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "space-evenly"
+    },
+    {
+      "id": "baseline-november-09.place-content.10",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "start"
+    },
+    {
+      "id": "baseline-november-09.place-content.11",
+      "root": "css.properties.place-content",
+      "kind": "declaration",
+      "property": "place-content",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-november-09.place-items.1",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-november-09.place-items.2",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "center"
+    },
+    {
+      "id": "baseline-november-09.place-items.3",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "end"
+    },
+    {
+      "id": "baseline-november-09.place-items.4",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-november-09.place-items.5",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-november-09.place-items.6",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.place-items.7",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "self-end"
+    },
+    {
+      "id": "baseline-november-09.place-items.8",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "self-start"
+    },
+    {
+      "id": "baseline-november-09.place-items.9",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "start"
+    },
+    {
+      "id": "baseline-november-09.place-items.10",
+      "root": "css.properties.place-items",
+      "kind": "declaration",
+      "property": "place-items",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-november-09.place-self.1",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-november-09.place-self.2",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-november-09.place-self.3",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "center"
+    },
+    {
+      "id": "baseline-november-09.place-self.4",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "end"
+    },
+    {
+      "id": "baseline-november-09.place-self.5",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-november-09.place-self.6",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-november-09.place-self.7",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.place-self.8",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "self-end"
+    },
+    {
+      "id": "baseline-november-09.place-self.9",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "self-start"
+    },
+    {
+      "id": "baseline-november-09.place-self.10",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "start"
+    },
+    {
+      "id": "baseline-november-09.place-self.11",
+      "root": "css.properties.place-self",
+      "kind": "declaration",
+      "property": "place-self",
+      "value": "stretch"
+    },
+    {
+      "id": "baseline-november-09.justify-self.1",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "baseline"
+    },
+    {
+      "id": "baseline-november-09.justify-self.2",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "center"
+    },
+    {
+      "id": "baseline-november-09.justify-self.3",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "end"
+    },
+    {
+      "id": "baseline-november-09.justify-self.4",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "flex-end"
+    },
+    {
+      "id": "baseline-november-09.justify-self.5",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "flex-start"
+    },
+    {
+      "id": "baseline-november-09.justify-self.6",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "self-end"
+    },
+    {
+      "id": "baseline-november-09.justify-self.7",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "self-start"
+    },
+    {
+      "id": "baseline-november-09.justify-self.8",
+      "root": "css.properties.justify-self",
+      "kind": "declaration",
+      "property": "justify-self",
+      "value": "start"
+    },
+    {
+      "id": "baseline-november-09.animation-duration.1",
+      "root": "css.properties.animation-duration",
+      "kind": "declaration",
+      "property": "animation-duration",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-november-09.animation-duration.2",
+      "root": "css.properties.animation-duration",
+      "kind": "declaration",
+      "property": "animation-duration",
+      "value": "auto, 2s"
+    },
+    {
+      "id": "baseline-november-09.animation-duration.3",
+      "root": "css.properties.animation-duration",
+      "kind": "declaration",
+      "property": "animation-duration",
+      "value": "-1s"
+    },
+    {
+      "id": "baseline-november-09.animation-duration.4",
+      "root": "css.properties.animation-duration",
+      "kind": "declaration",
+      "property": "animation-duration",
+      "value": "auto extra"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.1",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.2",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "none"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.3",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "--progress"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.4",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "scroll()"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.5",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "scroll(root inline)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.6",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "scroll(self x)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.7",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "scroll(nearest y)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.8",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "view()"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.9",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "view(inline auto 10%)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.10",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "view(y calc(1px + 5%) auto)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.11",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "scroll(root nearest)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.12",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "scroll(z)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.13",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "view(inline block)"
+    },
+    {
+      "id": "baseline-november-09.animation-timeline.14",
+      "root": "css.properties.animation-timeline",
+      "kind": "declaration",
+      "property": "animation-timeline",
+      "value": "view(1s)"
+    },
+    {
+      "id": "baseline-november-09.animation-range.1",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.animation-range.2",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "entry 10% exit 90%"
+    },
+    {
+      "id": "baseline-november-09.animation-range.3",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "cover"
+    },
+    {
+      "id": "baseline-november-09.animation-range.4",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "contain 10% 90%, normal"
+    },
+    {
+      "id": "baseline-november-09.animation-range.5",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "entry-crossing calc(1px + 5%) exit-crossing 90%"
+    },
+    {
+      "id": "baseline-november-09.animation-range.6",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "normal extra"
+    },
+    {
+      "id": "baseline-november-09.animation-range.7",
+      "root": "css.properties.animation-range",
+      "kind": "declaration",
+      "property": "animation-range",
+      "value": "entry 1s"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.1",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.2",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "entry"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.3",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "entry-crossing 20%"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.4",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "calc(1px + 5%)"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.5",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "cover 10%, contain 20%"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.6",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "normal 10%"
+    },
+    {
+      "id": "baseline-november-09.animation-range-start.7",
+      "root": "css.properties.animation-range-start",
+      "kind": "declaration",
+      "property": "animation-range-start",
+      "value": "entry 1s"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.1",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "normal"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.2",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "exit"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.3",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "exit-crossing 80%"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.4",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "calc(2px + 90%)"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.5",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "cover 90%, contain 80%"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.6",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "normal 90%"
+    },
+    {
+      "id": "baseline-november-09.animation-range-end.7",
+      "root": "css.properties.animation-range-end",
+      "kind": "declaration",
+      "property": "animation-range-end",
+      "value": "exit 1s"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.1",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "--progress"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.2",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "--progress inline, --other x"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.3",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "none"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.4",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "inline --progress"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.5",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "--progress x y"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.6",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "progress"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-name.1",
+      "root": "css.properties.scroll-timeline-name",
+      "kind": "declaration",
+      "property": "scroll-timeline-name",
+      "value": "none"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-name.2",
+      "root": "css.properties.scroll-timeline-name",
+      "kind": "declaration",
+      "property": "scroll-timeline-name",
+      "value": "--progress, --other"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-name.3",
+      "root": "css.properties.scroll-timeline-name",
+      "kind": "declaration",
+      "property": "scroll-timeline-name",
+      "value": "progress"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-name.4",
+      "root": "css.properties.scroll-timeline-name",
+      "kind": "declaration",
+      "property": "scroll-timeline-name",
+      "value": "--progress none"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.1",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "block"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.2",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "inline"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.3",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "x"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.4",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "y"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.5",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "block, inline, x, y"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.6",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "z"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline-axis.7",
+      "root": "css.properties.scroll-timeline-axis",
+      "kind": "declaration",
+      "property": "scroll-timeline-axis",
+      "value": "block inline"
+    },
+    {
+      "id": "baseline-november-09.view-timeline.1",
+      "root": "css.properties.view-timeline",
+      "kind": "declaration",
+      "property": "view-timeline",
+      "value": "--visible"
+    },
+    {
+      "id": "baseline-november-09.view-timeline.2",
+      "root": "css.properties.view-timeline",
+      "kind": "declaration",
+      "property": "view-timeline",
+      "value": "--visible y auto 10%, --other inline 20%"
+    },
+    {
+      "id": "baseline-november-09.view-timeline.3",
+      "root": "css.properties.view-timeline",
+      "kind": "declaration",
+      "property": "view-timeline",
+      "value": "auto --visible inline"
+    },
+    {
+      "id": "baseline-november-09.view-timeline.4",
+      "root": "css.properties.view-timeline",
+      "kind": "declaration",
+      "property": "view-timeline",
+      "value": "--visible x y"
+    },
+    {
+      "id": "baseline-november-09.view-timeline.5",
+      "root": "css.properties.view-timeline",
+      "kind": "declaration",
+      "property": "view-timeline",
+      "value": "visible"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-name.1",
+      "root": "css.properties.view-timeline-name",
+      "kind": "declaration",
+      "property": "view-timeline-name",
+      "value": "none"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-name.2",
+      "root": "css.properties.view-timeline-name",
+      "kind": "declaration",
+      "property": "view-timeline-name",
+      "value": "--visible, --other"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-name.3",
+      "root": "css.properties.view-timeline-name",
+      "kind": "declaration",
+      "property": "view-timeline-name",
+      "value": "visible"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-name.4",
+      "root": "css.properties.view-timeline-name",
+      "kind": "declaration",
+      "property": "view-timeline-name",
+      "value": "--visible none"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.1",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "block"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.2",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "inline"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.3",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "x"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.4",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "y"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.5",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "block, inline, x, y"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.6",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "z"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-axis.7",
+      "root": "css.properties.view-timeline-axis",
+      "kind": "declaration",
+      "property": "view-timeline-axis",
+      "value": "block inline"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-inset.1",
+      "root": "css.properties.view-timeline-inset",
+      "kind": "declaration",
+      "property": "view-timeline-inset",
+      "value": "auto"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-inset.2",
+      "root": "css.properties.view-timeline-inset",
+      "kind": "declaration",
+      "property": "view-timeline-inset",
+      "value": "auto 10%"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-inset.3",
+      "root": "css.properties.view-timeline-inset",
+      "kind": "declaration",
+      "property": "view-timeline-inset",
+      "value": "calc(1px + 5%) auto"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-inset.4",
+      "root": "css.properties.view-timeline-inset",
+      "kind": "declaration",
+      "property": "view-timeline-inset",
+      "value": "10% 20%, auto"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-inset.5",
+      "root": "css.properties.view-timeline-inset",
+      "kind": "declaration",
+      "property": "view-timeline-inset",
+      "value": "1s"
+    },
+    {
+      "id": "baseline-november-09.view-timeline-inset.6",
+      "root": "css.properties.view-timeline-inset",
+      "kind": "declaration",
+      "property": "view-timeline-inset",
+      "value": "auto auto auto"
+    },
+    {
+      "id": "baseline-november-09.timeline-scope.1",
+      "root": "css.properties.timeline-scope",
+      "kind": "declaration",
+      "property": "timeline-scope",
+      "value": "none"
+    },
+    {
+      "id": "baseline-november-09.timeline-scope.2",
+      "root": "css.properties.timeline-scope",
+      "kind": "declaration",
+      "property": "timeline-scope",
+      "value": "--progress"
+    },
+    {
+      "id": "baseline-november-09.timeline-scope.3",
+      "root": "css.properties.timeline-scope",
+      "kind": "declaration",
+      "property": "timeline-scope",
+      "value": "--progress, --other"
+    },
+    {
+      "id": "baseline-november-09.timeline-scope.4",
+      "root": "css.properties.timeline-scope",
+      "kind": "declaration",
+      "property": "timeline-scope",
+      "value": "progress"
+    },
+    {
+      "id": "baseline-november-09.timeline-scope.5",
+      "root": "css.properties.timeline-scope",
+      "kind": "declaration",
+      "property": "timeline-scope",
+      "value": "none --progress"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.7",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "x none"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.8",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "--valid y, inline --progress"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.9",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "none x, --progress y"
+    },
+    {
+      "id": "baseline-november-09.scroll-timeline.10",
+      "root": "css.properties.scroll-timeline",
+      "kind": "declaration",
+      "property": "scroll-timeline",
+      "value": "--progress inline, --other"
     }
   ]
 }
