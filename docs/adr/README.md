@@ -201,3 +201,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0190 | [Target individual September Baseline branches](./0190-target-individual-september-baseline-branches.md) | accepted |
 | 0191 | [Retain relative alpha colors and scheme-dependent images](./0191-retain-relative-alpha-and-scheme-images.md) | accepted |
 | 0192 | [Expose name-only container state](./0192-expose-name-only-container-state.md) | accepted |
+| 0193 | [Validate scroll timeline authoring state](./0193-validate-scroll-timeline-authoring-state.md) | accepted |

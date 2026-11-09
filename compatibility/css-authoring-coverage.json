@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-10-27",
+  "cutoff": "2026-11-09",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
-    "families": 333,
-    "authoringSurfaces": 598,
-    "authoringKeyRecords": 2772,
-    "domOrEvaluationKeyRecords": 1113,
-    "deferredKeyRecords": 478
+    "families": 334,
+    "authoringSurfaces": 610,
+    "authoringKeyRecords": 2854,
+    "domOrEvaluationKeyRecords": 1132,
+    "deferredKeyRecords": 480
   },
   "surfaces": [
     {
@@ -694,12 +694,18 @@
     {
       "root": "css.properties.animation-duration",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.66bc32d4f068cd63"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-09.animation-duration.1",
+        "baseline-november-09.animation-duration.2",
+        "baseline-november-09.animation-duration.3",
+        "baseline-november-09.animation-duration.4"
+      ]
     },
     {
       "root": "css.properties.animation-fill-mode",
@@ -740,6 +746,89 @@
         "webref-profile.e683328e15c3a4ef"
       ],
       "probeIds": []
+    },
+    {
+      "root": "css.properties.animation-range",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.670f63ffa99514df"
+      ],
+      "probeIds": [
+        "baseline-november-09.animation-range.1",
+        "baseline-november-09.animation-range.2",
+        "baseline-november-09.animation-range.3",
+        "baseline-november-09.animation-range.4",
+        "baseline-november-09.animation-range.5",
+        "baseline-november-09.animation-range.6",
+        "baseline-november-09.animation-range.7"
+      ]
+    },
+    {
+      "root": "css.properties.animation-range-end",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.bf902aac84c31fb7"
+      ],
+      "probeIds": [
+        "baseline-november-09.animation-range-end.1",
+        "baseline-november-09.animation-range-end.2",
+        "baseline-november-09.animation-range-end.3",
+        "baseline-november-09.animation-range-end.4",
+        "baseline-november-09.animation-range-end.5",
+        "baseline-november-09.animation-range-end.6",
+        "baseline-november-09.animation-range-end.7"
+      ]
+    },
+    {
+      "root": "css.properties.animation-range-start",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.bf902aac84c31fb7"
+      ],
+      "probeIds": [
+        "baseline-november-09.animation-range-start.1",
+        "baseline-november-09.animation-range-start.2",
+        "baseline-november-09.animation-range-start.3",
+        "baseline-november-09.animation-range-start.4",
+        "baseline-november-09.animation-range-start.5",
+        "baseline-november-09.animation-range-start.6",
+        "baseline-november-09.animation-range-start.7"
+      ]
+    },
+    {
+      "root": "css.properties.animation-timeline",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.74c1cf76afc28f0e"
+      ],
+      "probeIds": [
+        "baseline-november-09.animation-timeline.1",
+        "baseline-november-09.animation-timeline.2",
+        "baseline-november-09.animation-timeline.3",
+        "baseline-november-09.animation-timeline.4",
+        "baseline-november-09.animation-timeline.5",
+        "baseline-november-09.animation-timeline.6",
+        "baseline-november-09.animation-timeline.7",
+        "baseline-november-09.animation-timeline.8",
+        "baseline-november-09.animation-timeline.9",
+        "baseline-november-09.animation-timeline.10",
+        "baseline-november-09.animation-timeline.11",
+        "baseline-november-09.animation-timeline.12",
+        "baseline-november-09.animation-timeline.13",
+        "baseline-november-09.animation-timeline.14"
+      ]
     },
     {
       "root": "css.properties.animation-timing-function",
@@ -2074,12 +2163,15 @@
     {
       "root": "css.properties.flex",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.7e8e5310603c625e"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-09.flex.1"
+      ]
     },
     {
       "root": "css.properties.flex-basis",
@@ -2772,7 +2864,12 @@
         "baseline-october-27.justify-content.safe-center",
         "baseline-october-27.justify-content.unsafe-center",
         "baseline-october-27.justify-content.space-evenly",
-        "baseline-october-27.justify-content.stretch"
+        "baseline-october-27.justify-content.stretch",
+        "baseline-november-09.justify-content.1",
+        "baseline-november-09.justify-content.2",
+        "baseline-november-09.justify-content.3",
+        "baseline-november-09.justify-content.4",
+        "baseline-november-09.justify-content.5"
       ]
     },
     {
@@ -2785,7 +2882,16 @@
         "webref-profile.e9496720d108bb60"
       ],
       "probeIds": [
-        "baseline-october-27.justify-items.center"
+        "baseline-october-27.justify-items.center",
+        "baseline-november-09.justify-items.1",
+        "baseline-november-09.justify-items.2",
+        "baseline-november-09.justify-items.3",
+        "baseline-november-09.justify-items.4",
+        "baseline-november-09.justify-items.5",
+        "baseline-november-09.justify-items.6",
+        "baseline-november-09.justify-items.7",
+        "baseline-november-09.justify-items.8",
+        "baseline-november-09.justify-items.9"
       ]
     },
     {
@@ -2798,7 +2904,15 @@
         "webref-profile.9007d0209e7c8366"
       ],
       "probeIds": [
-        "baseline-october-27.justify-self.center"
+        "baseline-october-27.justify-self.center",
+        "baseline-november-09.justify-self.1",
+        "baseline-november-09.justify-self.2",
+        "baseline-november-09.justify-self.3",
+        "baseline-november-09.justify-self.4",
+        "baseline-november-09.justify-self.5",
+        "baseline-november-09.justify-self.6",
+        "baseline-november-09.justify-self.7",
+        "baseline-november-09.justify-self.8"
       ]
     },
     {
@@ -3637,7 +3751,18 @@
         "webref-profile.e10a459abd829120"
       ],
       "probeIds": [
-        "baseline-october-27.place-content.center-start"
+        "baseline-october-27.place-content.center-start",
+        "baseline-november-09.place-content.1",
+        "baseline-november-09.place-content.2",
+        "baseline-november-09.place-content.3",
+        "baseline-november-09.place-content.4",
+        "baseline-november-09.place-content.5",
+        "baseline-november-09.place-content.6",
+        "baseline-november-09.place-content.7",
+        "baseline-november-09.place-content.8",
+        "baseline-november-09.place-content.9",
+        "baseline-november-09.place-content.10",
+        "baseline-november-09.place-content.11"
       ]
     },
     {
@@ -3650,7 +3775,17 @@
         "webref-profile.a9265d7dda8404bf"
       ],
       "probeIds": [
-        "baseline-october-27.place-items.center-start"
+        "baseline-october-27.place-items.center-start",
+        "baseline-november-09.place-items.1",
+        "baseline-november-09.place-items.2",
+        "baseline-november-09.place-items.3",
+        "baseline-november-09.place-items.4",
+        "baseline-november-09.place-items.5",
+        "baseline-november-09.place-items.6",
+        "baseline-november-09.place-items.7",
+        "baseline-november-09.place-items.8",
+        "baseline-november-09.place-items.9",
+        "baseline-november-09.place-items.10"
       ]
     },
     {
@@ -3663,7 +3798,18 @@
         "webref-profile.7985918b8df82d91"
       ],
       "probeIds": [
-        "baseline-october-27.place-self.center-start"
+        "baseline-october-27.place-self.center-start",
+        "baseline-november-09.place-self.1",
+        "baseline-november-09.place-self.2",
+        "baseline-november-09.place-self.3",
+        "baseline-november-09.place-self.4",
+        "baseline-november-09.place-self.5",
+        "baseline-november-09.place-self.6",
+        "baseline-november-09.place-self.7",
+        "baseline-november-09.place-self.8",
+        "baseline-november-09.place-self.9",
+        "baseline-november-09.place-self.10",
+        "baseline-november-09.place-self.11"
       ]
     },
     {
@@ -4132,6 +4278,63 @@
       "probeIds": []
     },
     {
+      "root": "css.properties.scroll-timeline",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.c726adc6f8a7988e"
+      ],
+      "probeIds": [
+        "baseline-november-09.scroll-timeline.1",
+        "baseline-november-09.scroll-timeline.2",
+        "baseline-november-09.scroll-timeline.3",
+        "baseline-november-09.scroll-timeline.4",
+        "baseline-november-09.scroll-timeline.5",
+        "baseline-november-09.scroll-timeline.6",
+        "baseline-november-09.scroll-timeline.7",
+        "baseline-november-09.scroll-timeline.8",
+        "baseline-november-09.scroll-timeline.9",
+        "baseline-november-09.scroll-timeline.10"
+      ]
+    },
+    {
+      "root": "css.properties.scroll-timeline-axis",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.78a62b101e5973e4"
+      ],
+      "probeIds": [
+        "baseline-november-09.scroll-timeline-axis.1",
+        "baseline-november-09.scroll-timeline-axis.2",
+        "baseline-november-09.scroll-timeline-axis.3",
+        "baseline-november-09.scroll-timeline-axis.4",
+        "baseline-november-09.scroll-timeline-axis.5",
+        "baseline-november-09.scroll-timeline-axis.6",
+        "baseline-november-09.scroll-timeline-axis.7"
+      ]
+    },
+    {
+      "root": "css.properties.scroll-timeline-name",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.303f43c316f2e0d0"
+      ],
+      "probeIds": [
+        "baseline-november-09.scroll-timeline-name.1",
+        "baseline-november-09.scroll-timeline-name.2",
+        "baseline-november-09.scroll-timeline-name.3",
+        "baseline-november-09.scroll-timeline-name.4"
+      ]
+    },
+    {
       "root": "css.properties.scrollbar-color",
       "evidence": [
         "scripts/check-webref-property-branches.ts"
@@ -4512,6 +4715,23 @@
       "probeIds": []
     },
     {
+      "root": "css.properties.timeline-scope",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.eda05cc2a2be8dd9"
+      ],
+      "probeIds": [
+        "baseline-november-09.timeline-scope.1",
+        "baseline-november-09.timeline-scope.2",
+        "baseline-november-09.timeline-scope.3",
+        "baseline-november-09.timeline-scope.4",
+        "baseline-november-09.timeline-scope.5"
+      ]
+    },
+    {
       "root": "css.properties.top",
       "evidence": [
         "scripts/check-webref-property-branches.ts"
@@ -4672,6 +4892,76 @@
         "webref-profile.4e5c0463f1075da1"
       ],
       "probeIds": []
+    },
+    {
+      "root": "css.properties.view-timeline",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.660e14430a163d0a"
+      ],
+      "probeIds": [
+        "baseline-november-09.view-timeline.1",
+        "baseline-november-09.view-timeline.2",
+        "baseline-november-09.view-timeline.3",
+        "baseline-november-09.view-timeline.4",
+        "baseline-november-09.view-timeline.5"
+      ]
+    },
+    {
+      "root": "css.properties.view-timeline-axis",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.78a62b101e5973e4"
+      ],
+      "probeIds": [
+        "baseline-november-09.view-timeline-axis.1",
+        "baseline-november-09.view-timeline-axis.2",
+        "baseline-november-09.view-timeline-axis.3",
+        "baseline-november-09.view-timeline-axis.4",
+        "baseline-november-09.view-timeline-axis.5",
+        "baseline-november-09.view-timeline-axis.6",
+        "baseline-november-09.view-timeline-axis.7"
+      ]
+    },
+    {
+      "root": "css.properties.view-timeline-inset",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.914c48a56a0bdbfa"
+      ],
+      "probeIds": [
+        "baseline-november-09.view-timeline-inset.1",
+        "baseline-november-09.view-timeline-inset.2",
+        "baseline-november-09.view-timeline-inset.3",
+        "baseline-november-09.view-timeline-inset.4",
+        "baseline-november-09.view-timeline-inset.5",
+        "baseline-november-09.view-timeline-inset.6"
+      ]
+    },
+    {
+      "root": "css.properties.view-timeline-name",
+      "evidence": [
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
+      ],
+      "profileIds": [
+        "webref-profile.303f43c316f2e0d0"
+      ],
+      "probeIds": [
+        "baseline-november-09.view-timeline-name.1",
+        "baseline-november-09.view-timeline-name.2",
+        "baseline-november-09.view-timeline-name.3",
+        "baseline-november-09.view-timeline-name.4"
+      ]
     },
     {
       "root": "css.properties.view-transition-class",
@@ -8385,7 +8675,8 @@
         },
         {
           "key": "css.properties.animation-duration.auto",
-          "disposition": "not-baseline"
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-duration"
         },
         {
           "key": "css.properties.animation-fill-mode",
@@ -13014,6 +13305,11 @@
           "surface": "css.properties.flex-wrap"
         },
         {
+          "key": "css.properties.flex.content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex"
+        },
+        {
           "key": "css.properties.flex.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.flex"
@@ -13024,12 +13320,27 @@
           "surface": "css.properties.justify-content"
         },
         {
+          "key": "css.properties.justify-content.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
           "key": "css.properties.justify-content.context_flex",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-content"
         },
         {
           "key": "css.properties.justify-content.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.flex-start",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-content"
         },
@@ -13050,6 +13361,16 @@
         },
         {
           "key": "css.properties.justify-content.safe",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.space-around",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-content"
+        },
+        {
+          "key": "css.properties.justify-content.space-between",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-content"
         },
@@ -13079,12 +13400,32 @@
           "surface": "css.properties.justify-items"
         },
         {
+          "key": "css.properties.justify-items.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
           "key": "css.properties.justify-items.center",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-items"
         },
         {
           "key": "css.properties.justify-items.context_flex",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.flex-start",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-items"
         },
@@ -13099,7 +13440,32 @@
           "surface": "css.properties.justify-items"
         },
         {
+          "key": "css.properties.justify-items.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
           "key": "css.properties.justify-items.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-items"
+        },
+        {
+          "key": "css.properties.justify-items.stretch",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-items"
         },
@@ -13114,7 +13480,62 @@
           "surface": "css.properties.place-content"
         },
         {
+          "key": "css.properties.place-content.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
           "key": "css.properties.place-content.context_flex",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.flex-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.space-around",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.space-between",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.space-evenly",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-content"
+        },
+        {
+          "key": "css.properties.place-content.stretch",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-content"
         },
@@ -13124,7 +13545,57 @@
           "surface": "css.properties.place-items"
         },
         {
+          "key": "css.properties.place-items.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
           "key": "css.properties.place-items.context_flex",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.flex-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-items"
+        },
+        {
+          "key": "css.properties.place-items.stretch",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-items"
         },
@@ -13134,7 +13605,62 @@
           "surface": "css.properties.place-self"
         },
         {
+          "key": "css.properties.place-self.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
           "key": "css.properties.place-self.context_flex",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.flex-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.place-self"
+        },
+        {
+          "key": "css.properties.place-self.stretch",
           "disposition": "authoring-surface",
           "surface": "css.properties.place-self"
         },
@@ -15175,7 +15701,32 @@
           "surface": "css.properties.justify-self"
         },
         {
+          "key": "css.properties.justify-self.baseline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.center",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
           "key": "css.properties.justify-self.context_grid",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.flex-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.flex-start",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-self"
         },
@@ -15191,6 +15742,21 @@
         },
         {
           "key": "css.properties.justify-self.right",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.self-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.self-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.justify-self"
+        },
+        {
+          "key": "css.properties.justify-self.start",
           "disposition": "authoring-surface",
           "surface": "css.properties.justify-self"
         },
@@ -21505,6 +22071,194 @@
       ]
     },
     {
+      "id": "scroll-driven-animations",
+      "branches": [
+        {
+          "key": "api.ScrollTimeline",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ScrollTimeline.ScrollTimeline",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ScrollTimeline.axis",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ScrollTimeline.source",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ViewTimeline",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ViewTimeline.ViewTimeline",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ViewTimeline.endOffset",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ViewTimeline.startOffset",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "api.ViewTimeline.subject",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "css.properties.animation-range",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-range"
+        },
+        {
+          "key": "css.properties.animation-range-end",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-range-end"
+        },
+        {
+          "key": "css.properties.animation-range-end.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-range-end"
+        },
+        {
+          "key": "css.properties.animation-range-start",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-range-start"
+        },
+        {
+          "key": "css.properties.animation-range-start.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-range-start"
+        },
+        {
+          "key": "css.properties.animation-timeline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-timeline"
+        },
+        {
+          "key": "css.properties.animation-timeline.scroll",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-timeline"
+        },
+        {
+          "key": "css.properties.animation-timeline.view",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.animation-timeline"
+        },
+        {
+          "key": "css.properties.animation.animation-timeline_included",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.scroll-timeline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline-axis"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.block",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline-axis"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.inline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline-axis"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.x",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline-axis"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.y",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline-axis"
+        },
+        {
+          "key": "css.properties.scroll-timeline-name",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.scroll-timeline-name"
+        },
+        {
+          "key": "css.properties.timeline-scope",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.timeline-scope"
+        },
+        {
+          "key": "css.properties.timeline-scope.all",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.properties.timeline-scope.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.timeline-scope"
+        },
+        {
+          "key": "css.properties.view-timeline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline"
+        },
+        {
+          "key": "css.properties.view-timeline-axis",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-axis"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.block",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-axis"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.inline",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-axis"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.x",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-axis"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.y",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-axis"
+        },
+        {
+          "key": "css.properties.view-timeline-inset",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-inset"
+        },
+        {
+          "key": "css.properties.view-timeline-inset.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-inset"
+        },
+        {
+          "key": "css.properties.view-timeline-name",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.view-timeline-name"
+        }
+      ]
+    },
+    {
       "id": "scroll-snap",
       "branches": [
         {
@@ -24163,6 +24917,11 @@
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
         {
+          "key": "svg.elements.circle.pathLength",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
           "key": "svg.elements.circle.r",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
@@ -24204,6 +24963,11 @@
         },
         {
           "key": "svg.elements.ellipse.fill",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.ellipse.pathLength",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
@@ -24313,6 +25077,11 @@
         },
         {
           "key": "svg.elements.line",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.line.pathLength",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
@@ -24500,6 +25269,11 @@
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
         {
+          "key": "svg.elements.path.pathLength",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
           "key": "svg.elements.path.systemLanguage",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
@@ -24565,6 +25339,11 @@
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
         {
+          "key": "svg.elements.polygon.pathLength",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
           "key": "svg.elements.polygon.points",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
@@ -24581,6 +25360,11 @@
         },
         {
           "key": "svg.elements.polyline.fill",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.polyline.pathLength",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
@@ -24661,6 +25445,11 @@
         },
         {
           "key": "svg.elements.rect.height",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.rect.pathLength",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },
@@ -25042,6 +25831,25 @@
         },
         {
           "key": "svg.elements.view.preserveAspectRatio",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.view.svgView",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.view.svgView.preserveAspectRatio_parameter",
+          "disposition": "dom-or-evaluation",
+          "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
+        },
+        {
+          "key": "svg.elements.view.svgView.transform_parameter",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "svg.elements.view.svgView.viewBox_parameter",
           "disposition": "dom-or-evaluation",
           "reason": "DOM association, document registry, browser collection, rendering, or animation execution; accompanying CSS syntax is audited separately."
         },

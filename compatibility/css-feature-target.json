@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-10-27",
+  "cutoff": "2026-11-09",
   "source": {
     "package": "web-features",
-    "version": "3.44.0",
-    "revision": "2c24bbfc45cfb8b7fea90bd1618b0ad5027bec5d",
-    "url": "https://registry.npmjs.org/web-features/-/web-features-3.44.0.tgz",
-    "dataSha256": "72577e8df9c8abe8a8af86a03bc161ac06be21488d76857f157c7f83f017f706"
+    "version": "3.45.0",
+    "revision": "45644301624f58b3e13817a2fc9ce067f882dd4a",
+    "url": "https://registry.npmjs.org/web-features/-/web-features-3.45.0.tgz",
+    "dataSha256": "bcda8f1fd702fd2c7cc71779d35430022cf57b56dcd9415f3bb8ee14486eb3b4"
   },
   "experimental": {
     "features": [
@@ -17,10 +17,10 @@
     "mixinDraftSha256": "4967c197dfd1b86cb321b835ebcdb2577974bc80d7097294294cd75a8249a76c"
   },
   "summary": {
-    "featureFamilies": 333,
-    "uniqueCompatibilityKeys": 4363,
-    "eligibleKeyRecords": 3885,
-    "deferredKeyRecords": 478
+    "featureFamilies": 334,
+    "uniqueCompatibilityKeys": 4466,
+    "eligibleKeyRecords": 3986,
+    "deferredKeyRecords": 480
   },
   "features": [
     {
@@ -2842,10 +2842,10 @@
         },
         {
           "key": "css.properties.animation-duration.auto",
-          "baseline": false,
-          "baselineLowDate": null,
-          "eligible": false,
-          "eligibility": "not-baseline"
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
         },
         {
           "key": "css.properties.animation-fill-mode",
@@ -9746,6 +9746,13 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.flex.content",
+          "baseline": "high",
+          "baselineLowDate": "2021-09-24",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.flex.none",
           "baseline": "high",
           "baselineLowDate": "2015-09-30",
@@ -9754,6 +9761,13 @@
         },
         {
           "key": "css.properties.justify-content",
+          "baseline": "high",
+          "baselineLowDate": "2015-09-30",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-content.center",
           "baseline": "high",
           "baselineLowDate": "2015-09-30",
           "eligible": true,
@@ -9770,6 +9784,20 @@
           "key": "css.properties.justify-content.end",
           "baseline": "high",
           "baselineLowDate": "2022-03-14",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-content.flex-end",
+          "baseline": "high",
+          "baselineLowDate": "2015-09-30",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-content.flex-start",
+          "baseline": "high",
+          "baselineLowDate": "2015-09-30",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -9798,6 +9826,20 @@
           "key": "css.properties.justify-content.safe",
           "baseline": "low",
           "baselineLowDate": "2024-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-content.space-around",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-content.space-between",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -9837,6 +9879,13 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.justify-items.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2016-07-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.justify-items.center",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
@@ -9845,6 +9894,27 @@
         },
         {
           "key": "css.properties.justify-items.context_flex",
+          "baseline": "high",
+          "baselineLowDate": "2016-07-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.end",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.flex-end",
+          "baseline": "high",
+          "baselineLowDate": "2016-07-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.flex-start",
           "baseline": "high",
           "baselineLowDate": "2016-07-27",
           "eligible": true,
@@ -9865,7 +9935,42 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.justify-items.normal",
+          "baseline": "high",
+          "baselineLowDate": "2016-07-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.justify-items.right",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.self-end",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.self-start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.start",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-items.stretch",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
@@ -9886,7 +9991,84 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.place-content.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.center",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.place-content.context_flex",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.end",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.flex-end",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.flex-start",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.normal",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.space-around",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.space-between",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.space-evenly",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-content.stretch",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
@@ -9900,7 +10082,77 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.place-items.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.center",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.place-items.context_flex",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.end",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.flex-end",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.flex-start",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.normal",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.self-end",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.self-start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-items.stretch",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
@@ -9914,7 +10166,84 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.place-self.auto",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.center",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.place-self.context_flex",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.end",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.flex-end",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.flex-start",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.normal",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.self-end",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.self-start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.start",
+          "baseline": "high",
+          "baselineLowDate": "2022-07-20",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.place-self.stretch",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
@@ -12957,7 +13286,42 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "css.properties.justify-self.baseline",
+          "baseline": "high",
+          "baselineLowDate": "2017-10-17",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.center",
+          "baseline": "high",
+          "baselineLowDate": "2017-10-17",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "css.properties.justify-self.context_grid",
+          "baseline": "high",
+          "baselineLowDate": "2017-10-17",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.end",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.flex-end",
+          "baseline": "high",
+          "baselineLowDate": "2017-10-17",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.flex-start",
           "baseline": "high",
           "baselineLowDate": "2017-10-17",
           "eligible": true,
@@ -12979,6 +13343,27 @@
         },
         {
           "key": "css.properties.justify-self.right",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.self-end",
+          "baseline": "high",
+          "baselineLowDate": "2017-10-17",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.self-start",
+          "baseline": "high",
+          "baselineLowDate": "2017-10-17",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.justify-self.start",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
@@ -22404,6 +22789,275 @@
       ]
     },
     {
+      "id": "scroll-driven-animations",
+      "name": "Scroll-driven animations",
+      "baselineLowDate": "2026-10-27",
+      "specifications": [
+        "https://drafts.csswg.org/scroll-animations-1/"
+      ],
+      "branches": [
+        {
+          "key": "api.ScrollTimeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ScrollTimeline.ScrollTimeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ScrollTimeline.axis",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ScrollTimeline.source",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ViewTimeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ViewTimeline.ViewTimeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ViewTimeline.endOffset",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ViewTimeline.startOffset",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "api.ViewTimeline.subject",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-range",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-range-end",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-range-end.normal",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-range-start",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-range-start.normal",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-timeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-timeline.scroll",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation-timeline.view",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.animation.animation-timeline_included",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.properties.scroll-timeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.block",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.inline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.x",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.scroll-timeline-axis.y",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.scroll-timeline-name",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.timeline-scope",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.timeline-scope.all",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "css.properties.timeline-scope.none",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-axis",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.block",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.inline",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.x",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-axis.y",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-inset",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-inset.auto",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "css.properties.view-timeline-name",
+          "baseline": "low",
+          "baselineLowDate": "2026-10-27",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        }
+      ]
+    },
+    {
       "id": "scroll-snap",
       "name": "Scroll snap",
       "baselineLowDate": "2020-01-15",
@@ -26273,6 +26927,13 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "svg.elements.circle.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "svg.elements.circle.r",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
@@ -26332,6 +26993,13 @@
           "key": "svg.elements.ellipse.fill",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.ellipse.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -26486,6 +27154,13 @@
           "key": "svg.elements.line",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.line.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -26749,6 +27424,13 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "svg.elements.path.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "svg.elements.path.systemLanguage",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
@@ -26840,6 +27522,13 @@
           "eligibility": "within-cutoff"
         },
         {
+          "key": "svg.elements.polygon.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
           "key": "svg.elements.polygon.points",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
@@ -26864,6 +27553,13 @@
           "key": "svg.elements.polyline.fill",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.polyline.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -26976,6 +27672,13 @@
           "key": "svg.elements.rect.height",
           "baseline": "high",
           "baselineLowDate": "2015-07-29",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.rect.pathLength",
+          "baseline": "high",
+          "baselineLowDate": "2020-09-16",
           "eligible": true,
           "eligibility": "within-cutoff"
         },
@@ -27520,6 +28223,34 @@
         },
         {
           "key": "svg.elements.view.preserveAspectRatio",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.view.svgView",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.view.svgView.preserveAspectRatio_parameter",
+          "baseline": "high",
+          "baselineLowDate": "2020-01-15",
+          "eligible": true,
+          "eligibility": "within-cutoff"
+        },
+        {
+          "key": "svg.elements.view.svgView.transform_parameter",
+          "baseline": false,
+          "baselineLowDate": null,
+          "eligible": false,
+          "eligibility": "not-baseline"
+        },
+        {
+          "key": "svg.elements.view.svgView.viewBox_parameter",
           "baseline": "high",
           "baselineLowDate": "2020-01-15",
           "eligible": true,
