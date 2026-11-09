@@ -1,5 +1,15 @@
 # sheetom
 
+## 0.4.2
+
+### Patch Changes
+
+- 39b3d61: Update development dependencies.
+- 427a453: Update development dependencies.
+- 0b82307: Update development dependencies.
+- a8286df: Update development dependencies.
+- b3c16b2: Reject scroll-timeline shorthand values that place the axis before the timeline name, matching the CSS grammar and browsers. Keep invalid writes atomic across native and WASM backends.
+
 ## 0.4.1
 
 ### Patch Changes
