@@ -29,6 +29,17 @@ test("the generated Changesets release pull request needs no recursive Changeset
   );
 });
 
+test("Changeset classification labels rerun pull request validation", () => {
+  const pullRequestTrigger = workflow
+    .split("\n  pull_request:\n")[1]
+    ?.split("\n  schedule:")[0];
+  assert.ok(pullRequestTrigger, "missing pull_request trigger");
+  assert.match(
+    pullRequestTrigger,
+    /types: \[.*labeled.*unlabeled.*\]/u,
+  );
+});
+
 test("the package artifact no longer reruns the completed stable promotion", () => {
   const artifact = job("package-artifact");
   assert.doesNotMatch(artifact, /verify-stable-promotion/u);
