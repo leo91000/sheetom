@@ -665,7 +665,7 @@ dependencies = [
 
 [[package]]
 name = "sheetom-core"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "cssparser",
  "lightningcss",
@@ -678,7 +678,7 @@ dependencies = [
 
 [[package]]
 name = "sheetom-native"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "napi",
  "napi-build",
@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "sheetom-wasm"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "js-sys",
  "serde_json",
