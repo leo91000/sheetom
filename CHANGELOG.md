@@ -1,5 +1,11 @@
 # sheetom
 
+## 0.4.3
+
+### Patch Changes
+
+- e8a0e13: Match browser CSSOM for authored HSL colors. Require percentages for saturation and lightness in legacy comma syntax, reject legacy `none` alpha, and serialize colors with an alpha spelling that preserves their stored value and matches browser output.
+
 ## 0.4.2
 
 ### Patch Changes
