@@ -125,3 +125,40 @@ test("scroll-timeline requires a name before the optional axis in every list ent
     assertAuthoringRoundTrip(api, sheet, reparsed);
   }
 });
+
+test("HSL aliases preserve legacy grammar and observable alpha across authored CSSOM", () => {
+  for (const [property, value, expected] of [
+    ["color", "hsla(120, 100%, 25%, 50%)", "rgba(0, 128, 0, 0.5)"],
+    ["color", "HS\\4c A(120, 100%, 25%, 0.996)", "rgba(0, 128, 0, 0.996)"],
+    ["background-color", "hsla(120 100 25 / 52.3%)", "rgba(0, 128, 0, 0.52)"],
+    ["border-top-color", "hsl(120, calc(100%), 25%, calc(2 * 60%))", "rgb(0, 128, 0)"],
+  ] as const) {
+    assert.equal(api.CSS.supports(property, value), true, value);
+    const sheet = new api.CSSStyleSheet();
+    sheet.replaceSync(`.sample { outline: auto; ${property}: ${value} !important; }`);
+    const rule = sheet.cssRules[0];
+    assert.ok(rule instanceof api.CSSStyleRule);
+    assert.equal(rule.style.getPropertyValue(property), expected, value);
+    assert.equal(rule.style.getPropertyPriority(property), "important", value);
+    const before = rule.style.cssText;
+    for (const invalid of [
+      "hsla(120, 100, 25%, 0.5)",
+      "hsla(120, 100%, 25, 0.5)",
+      "hsla(120, 100%, 25%, none)",
+      "hsl(120, calc(30 + 70), 25%)",
+    ]) {
+      assert.equal(api.CSS.supports(property, invalid), false, invalid);
+      assert.equal(api.CSS.supports(`(${property}: ${invalid})`), false, invalid);
+      rule.style.setProperty(property, invalid, "important");
+      assert.equal(rule.style.cssText, before, invalid);
+    }
+    const reparsed = new api.CSSStyleSheet();
+    reparsed.replaceSync(sheet.serializeStrict());
+    assertAuthoringRoundTrip(api, sheet, reparsed);
+    assert.equal(reparsed.serializeStrict(), sheet.serializeStrict(), value);
+    assert.equal(rule.style.removeProperty(property), expected, value);
+    assert.equal(rule.style.cssText, "outline: auto;");
+    rule.style.setProperty(property, value);
+    assert.equal(rule.style.getPropertyValue(property), expected, value);
+  }
+});

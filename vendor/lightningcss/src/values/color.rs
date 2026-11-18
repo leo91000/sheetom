@@ -1463,15 +1463,21 @@ pub(crate) fn parse_hsl_hwb_components<'i, 't, T: TryFrom<CssColor> + ColorSpace
   let h = parse_angle_or_number(input, parser)?;
   let is_legacy_syntax =
     allows_legacy && parser.from.is_none() && !h.is_nan() && input.try_parse(|p| p.expect_comma()).is_ok();
-  let a = parse_number_or_percentage(input, parser, 100.0)?.clamp(0.0, 100.0);
-  if is_legacy_syntax {
+  let (a, b) = if is_legacy_syntax {
+    let a = parser.parse_percentage(input)? * 100.0;
     input.expect_comma()?;
-  }
-  let b = parse_number_or_percentage(input, parser, 100.0)?.clamp(0.0, 100.0);
-  if is_legacy_syntax && (a.is_nan() || b.is_nan()) {
-    return Err(input.new_custom_error(ParserError::InvalidValue));
-  }
-  Ok((h, a, b, is_legacy_syntax))
+    let b = parser.parse_percentage(input)? * 100.0;
+    if a.is_nan() || b.is_nan() {
+      return Err(input.new_custom_error(ParserError::InvalidValue));
+    }
+    (a, b)
+  } else {
+    (
+      parse_number_or_percentage(input, parser, 100.0)?,
+      parse_number_or_percentage(input, parser, 100.0)?,
+    )
+  };
+  Ok((h, a.clamp(0.0, 100.0), b.clamp(0.0, 100.0), is_legacy_syntax))
 }
 
 #[inline]
@@ -1597,6 +1603,9 @@ fn parse_legacy_alpha<'i, 't>(
 ) -> Result<f32, ParseError<'i, ParserError<'i>>> {
   Ok(if !input.is_exhausted() {
     input.expect_comma()?;
+    if input.try_parse(|input| input.expect_ident_matching("none")).is_ok() {
+      return Err(input.new_custom_error(ParserError::InvalidValue));
+    }
     parse_number_or_percentage(input, parser, 1.0)?.clamp(0.0, 1.0)
   } else {
     1.0
@@ -4157,6 +4166,26 @@ mod tests {
     let mut input = ParserInput::new(source);
     let mut parser = Parser::new(&mut input);
     parser.parse_entirely(CssColor::parse).map_err(|_| ())
+  }
+
+  #[test]
+  fn legacy_hsl_requires_percentage_channels_and_numeric_alpha() {
+    for source in [
+      "hsla(120, 100%, 25%, 50%)",
+      "hsl(120, calc(100%), 25%)",
+      "hsla(120 100 25 / none)",
+    ] {
+      assert!(parse(source).is_ok(), "{source}");
+    }
+    for source in [
+      "hsla(120, 100, 25%, 0.5)",
+      "hsl(120, 100%, 25)",
+      "hsla(120, calc(30 + 70), 25%, 0.5)",
+      "hsla(120, 100%, 25%, none)",
+      "rgba(1, 2, 3, none)",
+    ] {
+      assert!(parse(source).is_err(), "{source}");
+    }
   }
 
   #[test]

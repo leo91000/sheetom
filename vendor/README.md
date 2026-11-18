@@ -47,3 +47,7 @@ These values serialize without resolving current color or the used color scheme.
 The previous eager-alpha evaluator is removed. The vendor minifier expectations
 now retain alpha expressions, matching the fork's existing relative-color policy;
 public CSSOM canonicalization is checked against the additional pinned browser.
+
+The November 18 update enforces percentage saturation and lightness in legacy
+comma-separated HSL aliases and rejects `none` as a legacy alpha token. The
+module tests preserve modern numeric channels and percentage-valued calculations.

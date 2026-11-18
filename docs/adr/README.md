@@ -202,3 +202,4 @@ accepted. New ADRs should declare `status: accepted` or a supported
 | 0191 | [Retain relative alpha colors and scheme-dependent images](./0191-retain-relative-alpha-and-scheme-images.md) | accepted |
 | 0192 | [Expose name-only container state](./0192-expose-name-only-container-state.md) | accepted |
 | 0193 | [Validate scroll timeline authoring state](./0193-validate-scroll-timeline-authoring-state.md) | accepted |
+| 0194 | [Validate legacy HSL channels and round-trip their alpha](./0194-validate-legacy-hsl-and-alpha.md) | accepted |
