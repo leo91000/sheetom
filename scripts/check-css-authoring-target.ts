@@ -19,6 +19,7 @@ if (requestedBackend !== "native") backends.push(["wasm", await loadValidationBa
 function observe(api, probe) {
   const sheet = new api.CSSStyleSheet();
   const snapshots = [];
+  let declarationContract;
   if (probe.kind === "rule") {
     sheet.replaceSync(probe.value);
     const rule = sheet.cssRules[0];
@@ -34,14 +35,28 @@ function observe(api, probe) {
     }
   }
   else {
-    sheet.replaceSync(".probe { color: blue; }");
+    sheet.replaceSync(probe.invalidValue === undefined ? ".probe { color: blue; }" : ".probe { outline: auto; }");
     const rule = sheet.cssRules[0];
+    const original = rule.style.cssText;
     if (probe.kind === "selector") rule.selectorText = probe.value;
     else rule.style.setProperty(probe.property, probe.value, "important");
     snapshots.push(snapshotRule(rule));
+    const written = rule.style.cssText;
     if (probe.kind === "selector") rule.selectorText = ":not(";
-    else rule.style.setProperty(probe.property, `${probe.value}; color: green`, "important");
+    else rule.style.setProperty(probe.property, probe.invalidValue ?? `${probe.value}; color: green`, "important");
     snapshots.push(snapshotRule(rule));
+    if (probe.invalidValue !== undefined) {
+      const style = rule.style;
+      declarationContract = {
+        accepted: api.CSS.supports(probe.property, probe.value)
+          && written !== original && style.getPropertyPriority(probe.property) === "important",
+        rejected: !api.CSS.supports(probe.property, probe.invalidValue),
+        atomic: style.cssText === written,
+        removed: false,
+      };
+      style.removeProperty(probe.property);
+      declarationContract.removed = style.cssText === original;
+    }
   }
   snapshots.push(Array.from(sheet.cssRules, snapshotRule));
   const list = sheet.cssRules;
@@ -51,7 +66,7 @@ function observe(api, probe) {
     sheet.deleteRule(sheet.cssRules.length - 1);
     snapshots.push({ attached, detached: rule.parentStyleSheet === null, sameList: sheet.cssRules === list });
   }
-  return snapshots;
+  return { snapshots, declarationContract };
 }
 const browser = await chromium.launch();
 const mediaBrowser = await firefox.launch();
@@ -68,6 +83,9 @@ try {
   for (const probe of corpus.probes) {
     const reference = probe.oracle === "baseline-chromium" ? baselinePage : probe.oracle === "firefox" ? mediaPage : page;
     const expected = await reference.evaluate(({ evaluator, probe }) => (0, eval)(`(${evaluator})`)(globalThis, probe), { evaluator, probe });
+    if (expected.declarationContract && Object.values(expected.declarationContract).includes(false)) {
+      mismatches.push({ id: probe.id, oracle: probe.oracle ?? "chromium", declarationContract: expected.declarationContract });
+    }
     for (const [backend, api] of backends) {
       const actual = observe(api, probe);
       try { assert.deepEqual(actual, expected); } catch { mismatches.push({ id: probe.id, backend, actual, expected }); }

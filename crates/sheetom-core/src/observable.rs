@@ -5,7 +5,7 @@ use crate::{
     parse_semantic_property, EngineError, PropertyParseKind, SemanticDeclaration,
     SemanticExtensionValue, SemanticPropertyValue,
 };
-use cssparser::{Parser, ParserInput, Token, TokenizerWithSpans};
+use cssparser::{color::parse_named_color, Parser, ParserInput, Token, TokenizerWithSpans};
 use lightningcss::{
     properties::{Property, PropertyId},
     stylesheet::{ParserOptions, PrinterOptions},
@@ -1083,11 +1083,18 @@ fn serialize_color(value: &str, safe_value: &str) -> String {
     {
         return value.to_ascii_lowercase();
     }
-    if ["hsl(", "hsla(", "hwb("]
-        .iter()
-        .any(|prefix| starts_with_ignore_ascii_case(value, prefix))
-    {
-        return serialize_hex_color(safe_value).unwrap_or_else(|| value.to_owned());
+    if matches!(
+        next_significant_token(&mut TokenizerWithSpans::new(value)),
+        Some(Token::Function(name)) if ["hsl", "hsla", "hwb"]
+            .iter()
+            .any(|function| name.eq_ignore_ascii_case(function))
+    ) {
+        return serialize_hex_color(safe_value)
+            .or_else(|| {
+                let (red, green, blue) = parse_named_color(safe_value).ok()?;
+                Some(serialize_rgba_bytes(red, green, blue, 255))
+            })
+            .unwrap_or_else(|| value.to_owned());
     }
     if ["lab(", "lch(", "oklab(", "oklch(", "color("]
         .iter()
@@ -1396,13 +1403,22 @@ fn serialize_hex_digits(hex: &str) -> Option<String> {
         ),
         _ => return None,
     };
-    let Some(alpha) = alpha else {
-        return Some(format!("rgb({red}, {green}, {blue})"));
+    Some(serialize_rgba_bytes(red, green, blue, alpha.unwrap_or(255)))
+}
+
+fn serialize_rgba_bytes(red: u8, green: u8, blue: u8, alpha: u8) -> String {
+    if alpha == 255 {
+        return format!("rgb({red}, {green}, {blue})");
+    }
+    // Prefer the whole percentage that reparses to the same alpha byte.
+    let byte = u16::from(alpha);
+    let percentage = (byte * 100 + 127) / 255;
+    let alpha = if (percentage * 255 + 50) / 100 == byte {
+        f64::from(percentage) / 100.0
+    } else {
+        f64::from(byte) / 255.0
     };
-    Some(format!(
-        "rgba({red}, {green}, {blue}, {})",
-        format_number(f64::from(alpha) / 255.0)
-    ))
+    format!("rgba({red}, {green}, {blue}, {})", format_number(alpha))
 }
 
 fn parse_hex_byte(high: u8, low: u8) -> Option<u8> {

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-11-09",
+  "cutoff": "2026-11-18",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
     "families": 334,
     "authoringSurfaces": 610,
-    "authoringKeyRecords": 2854,
+    "authoringKeyRecords": 2883,
     "domOrEvaluationKeyRecords": 1132,
-    "deferredKeyRecords": 480
+    "deferredKeyRecords": 479
   },
   "surfaces": [
     {
@@ -2153,12 +2153,15 @@
     {
       "root": "css.properties.filter",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.0e9cfa67a34adee9"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.filter.none"
+      ]
     },
     {
       "root": "css.properties.flex",
@@ -2170,7 +2173,11 @@
         "webref-profile.7e8e5310603c625e"
       ],
       "probeIds": [
-        "baseline-november-09.flex.1"
+        "baseline-november-09.flex.1",
+        "baseline-november-18.flex.auto",
+        "baseline-november-18.flex.fit-content",
+        "baseline-november-18.flex.max-content",
+        "baseline-november-18.flex.min-content"
       ]
     },
     {
@@ -2196,12 +2203,21 @@
     {
       "root": "css.properties.flex-flow",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.a6c62155166470a4"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.flex-flow.column",
+        "baseline-november-18.flex-flow.column-reverse",
+        "baseline-november-18.flex-flow.nowrap",
+        "baseline-november-18.flex-flow.row",
+        "baseline-november-18.flex-flow.row-reverse",
+        "baseline-november-18.flex-flow.wrap",
+        "baseline-november-18.flex-flow.wrap-reverse"
+      ]
     },
     {
       "root": "css.properties.flex-grow",
@@ -2557,32 +2573,43 @@
     {
       "root": "css.properties.grid",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.045da71449f90e19"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid.none"
+      ]
     },
     {
       "root": "css.properties.grid-area",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.b6d909753330bf62"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-area.auto"
+      ]
     },
     {
       "root": "css.properties.grid-auto-columns",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.0cbad425cbe3ae7d"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-auto-columns.auto",
+        "baseline-november-18.grid-auto-columns.max-content",
+        "baseline-november-18.grid-auto-columns.min-content"
+      ]
     },
     {
       "root": "css.properties.grid-auto-flow",
@@ -2597,72 +2624,95 @@
     {
       "root": "css.properties.grid-auto-rows",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.0cbad425cbe3ae7d"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-auto-rows.auto",
+        "baseline-november-18.grid-auto-rows.max-content",
+        "baseline-november-18.grid-auto-rows.min-content"
+      ]
     },
     {
       "root": "css.properties.grid-column",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.bdd0c0b7d929df18"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-column.auto"
+      ]
     },
     {
       "root": "css.properties.grid-column-end",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.fbb56558f38f076b"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-column-end.auto"
+      ]
     },
     {
       "root": "css.properties.grid-column-start",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.fbb56558f38f076b"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-column-start.auto"
+      ]
     },
     {
       "root": "css.properties.grid-row",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.bdd0c0b7d929df18"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-row.auto"
+      ]
     },
     {
       "root": "css.properties.grid-row-end",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.fbb56558f38f076b"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-row-end.auto"
+      ]
     },
     {
       "root": "css.properties.grid-row-start",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.fbb56558f38f076b"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.grid-row-start.auto"
+      ]
     },
     {
       "root": "css.properties.grid-template",
@@ -3141,7 +3191,8 @@
         "baseline-october-19.mask.round",
         "baseline-october-19.mask.space",
         "baseline-october-19.mask.subtract",
-        "baseline-october-19.mask.top"
+        "baseline-october-19.mask.top",
+        "baseline-november-18.mask.none"
       ]
     },
     {
@@ -3167,12 +3218,15 @@
     {
       "root": "css.properties.mask-image",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.7178021b64412017"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-18.mask-image.none"
+      ]
     },
     {
       "root": "css.properties.mask-origin",
@@ -6144,7 +6198,10 @@
         "baseline-september-21.image.list-style",
         "baseline-september-21.image.content",
         "baseline-september-21.image.shape-outside",
-        "baseline-october-19.color.currentcolor"
+        "baseline-october-19.color.currentcolor",
+        "baseline-november-18.color.hsla",
+        "baseline-november-18.color.hsla-modern",
+        "baseline-november-18.color.hsla-opaque"
       ]
     },
     {
@@ -12790,6 +12847,11 @@
           "surface": "css.properties.filter"
         },
         {
+          "key": "css.properties.filter.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.filter"
+        },
+        {
           "key": "css.properties.filter.opacity",
           "disposition": "authoring-surface",
           "surface": "css.properties.filter"
@@ -13241,6 +13303,10 @@
           "surface": "css.properties.flex-basis"
         },
         {
+          "key": "css.properties.flex-basis.stretch",
+          "disposition": "not-baseline"
+        },
+        {
           "key": "css.properties.flex-direction",
           "disposition": "authoring-surface",
           "surface": "css.properties.flex-direction"
@@ -13267,6 +13333,41 @@
         },
         {
           "key": "css.properties.flex-flow",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.column",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.column-reverse",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.nowrap",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.row",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.row-reverse",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.wrap",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex-flow"
+        },
+        {
+          "key": "css.properties.flex-flow.wrap-reverse",
           "disposition": "authoring-surface",
           "surface": "css.properties.flex-flow"
         },
@@ -13305,7 +13406,27 @@
           "surface": "css.properties.flex-wrap"
         },
         {
+          "key": "css.properties.flex.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex"
+        },
+        {
           "key": "css.properties.flex.content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex"
+        },
+        {
+          "key": "css.properties.flex.fit-content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex"
+        },
+        {
+          "key": "css.properties.flex.max-content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.flex"
+        },
+        {
+          "key": "css.properties.flex.min-content",
           "disposition": "authoring-surface",
           "surface": "css.properties.flex"
         },
@@ -15521,7 +15642,27 @@
           "surface": "css.properties.grid-area"
         },
         {
+          "key": "css.properties.grid-area.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-area"
+        },
+        {
           "key": "css.properties.grid-auto-columns",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-auto-columns"
+        },
+        {
+          "key": "css.properties.grid-auto-columns.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-auto-columns"
+        },
+        {
+          "key": "css.properties.grid-auto-columns.max-content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-auto-columns"
+        },
+        {
+          "key": "css.properties.grid-auto-columns.min-content",
           "disposition": "authoring-surface",
           "surface": "css.properties.grid-auto-columns"
         },
@@ -15551,6 +15692,21 @@
           "surface": "css.properties.grid-auto-rows"
         },
         {
+          "key": "css.properties.grid-auto-rows.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-auto-rows"
+        },
+        {
+          "key": "css.properties.grid-auto-rows.max-content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-auto-rows"
+        },
+        {
+          "key": "css.properties.grid-auto-rows.min-content",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-auto-rows"
+        },
+        {
           "key": "css.properties.grid-column",
           "disposition": "authoring-surface",
           "surface": "css.properties.grid-column"
@@ -15561,9 +15717,24 @@
           "surface": "css.properties.grid-column-end"
         },
         {
+          "key": "css.properties.grid-column-end.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-column-end"
+        },
+        {
           "key": "css.properties.grid-column-start",
           "disposition": "authoring-surface",
           "surface": "css.properties.grid-column-start"
+        },
+        {
+          "key": "css.properties.grid-column-start.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-column-start"
+        },
+        {
+          "key": "css.properties.grid-column.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-column"
         },
         {
           "key": "css.properties.grid-row",
@@ -15576,9 +15747,24 @@
           "surface": "css.properties.grid-row-end"
         },
         {
+          "key": "css.properties.grid-row-end.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-row-end"
+        },
+        {
           "key": "css.properties.grid-row-start",
           "disposition": "authoring-surface",
           "surface": "css.properties.grid-row-start"
+        },
+        {
+          "key": "css.properties.grid-row-start.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-row-start"
+        },
+        {
+          "key": "css.properties.grid-row.auto",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid-row"
         },
         {
           "key": "css.properties.grid-template",
@@ -15679,6 +15865,11 @@
           "key": "css.properties.grid-template.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.grid-template"
+        },
+        {
+          "key": "css.properties.grid.none",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.grid"
         },
         {
           "key": "css.properties.justify-content.context_grid",
@@ -16007,6 +16198,11 @@
         },
         {
           "key": "css.types.color.hsl.space_separated_parameters",
+          "disposition": "authoring-surface",
+          "surface": "css.types.color"
+        },
+        {
+          "key": "css.types.color.hsla",
           "disposition": "authoring-surface",
           "surface": "css.types.color"
         }
@@ -18536,17 +18732,9 @@
           "surface": "css.properties.overflow-block"
         },
         {
-          "key": "css.properties.overflow-block.overlay",
-          "disposition": "not-baseline"
-        },
-        {
           "key": "css.properties.overflow-inline",
           "disposition": "authoring-surface",
           "surface": "css.properties.overflow-inline"
-        },
-        {
-          "key": "css.properties.overflow-inline.overlay",
-          "disposition": "not-baseline"
         },
         {
           "key": "css.properties.padding-block",
@@ -18744,6 +18932,11 @@
         },
         {
           "key": "css.properties.mask-image.multiple_mask_images",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask-image"
+        },
+        {
+          "key": "css.properties.mask-image.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.mask-image"
         },
@@ -18955,6 +19148,11 @@
         },
         {
           "key": "css.properties.mask.no-repeat",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.mask"
+        },
+        {
+          "key": "css.properties.mask.none",
           "disposition": "authoring-surface",
           "surface": "css.properties.mask"
         },
