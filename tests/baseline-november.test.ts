@@ -162,3 +162,48 @@ test("HSL aliases preserve legacy grammar and observable alpha across authored C
     assert.equal(rule.style.getPropertyValue(property), expected, value);
   }
 });
+
+test("stepped math keeps compatible percentage arguments and rejects mismatched types", () => {
+  for (const name of ["round", "mod", "rem"]) {
+    const value = `${name}(10%, 3px)`;
+    for (const property of ["width", "line-height"]) {
+      const sheet = new api.CSSStyleSheet();
+      sheet.replaceSync(`.steps { ${property}: ${value} !important; }`);
+      const rule = sheet.cssRules[0];
+      assert.ok(rule instanceof api.CSSStyleRule);
+      assert.equal(rule.style.getPropertyValue(property), value);
+      assert.equal(rule.style.getPropertyPriority(property), "important");
+      for (const invalid of [`${name}(10%, 1s)`, `${name}(25%, .5)`, `${name}(.5, 25%)`]) {
+        assert.equal(api.CSS.supports(property, invalid), false);
+        assert.equal(api.CSS.supports("opacity", invalid), false);
+        assert.equal(api.CSS.supports("zoom", invalid), false);
+        rule.style.setProperty(property, invalid, "important");
+        assert.equal(rule.style.getPropertyValue(property), value);
+      }
+      const reparse = new api.CSSStyleSheet();
+      reparse.replaceSync(sheet.serializeStrict());
+      assertAuthoringRoundTrip(api, sheet, reparse);
+    }
+  }
+});
+
+test("round uses a default step for numbers and rounds negative ties upward", () => {
+  const sheet = new api.CSSStyleSheet();
+  sheet.replaceSync(".steps { line-height: round(up, sign(1em)); }");
+  const rule = sheet.cssRules[0];
+  assert.ok(rule instanceof api.CSSStyleRule);
+  const style = rule.style;
+  assert.equal(style.lineHeight, "round(up, sign(1em))");
+  style.lineHeight = "round(up, sign(1em), 1)";
+  assert.equal(style.lineHeight, "round(up, sign(1em))");
+  style.lineHeight = "round(1em)";
+  assert.equal(style.lineHeight, "round(up, sign(1em))");
+  style.setProperty("order", "round(-1.5)");
+  assert.equal(style.getPropertyValue("order"), "calc(-1)");
+  style.setProperty("order", "round(up, 6, -5)");
+  assert.equal(style.getPropertyValue("order"), "calc(10)");
+  assert.equal(api.CSS.supports("width", "round(2px)"), false);
+  const reparsed = new api.CSSStyleSheet();
+  reparsed.replaceSync(sheet.serializeStrict());
+  assertAuthoringRoundTrip(api, sheet, reparsed);
+});

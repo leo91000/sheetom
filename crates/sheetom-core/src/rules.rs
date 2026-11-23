@@ -11,7 +11,7 @@ use lightningcss::{
         font_palette_values::FontPaletteValuesProperty, view_transition::ViewTransitionProperty,
         CssRule, CssRuleList,
     },
-    stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
+    stylesheet::{ParserFlags, ParserOptions, PrinterOptions, StyleSheet},
     traits::ToCss,
     values::ident::NoneOrCustomIdentList,
 };
@@ -2340,6 +2340,7 @@ fn parse_stylesheet_tree_inner(
         source,
         ParserOptions {
             error_recovery,
+            flags: ParserFlags::MEDIA_GENERAL_ENCLOSED_FUNCTIONS,
             ..ParserOptions::default()
         },
     )
@@ -2456,7 +2457,35 @@ fn convert_rule(rule: &CssRule<'_>, count: &mut usize) -> Result<Option<ParsedRu
             children: convert_rule_list(&rule.rules, count)?,
             css_text,
         },
-        CssRule::Import(_) => leaf("import", &css_text),
+        CssRule::Import(rule) => {
+            let mut parsed = leaf("import", &css_text);
+            parsed.prelude = rule.url.to_string();
+            if !rule.media.media_queries.is_empty() {
+                parsed.declarations = serialize(&rule.media)?;
+            }
+            if let Some(layer) = &rule.layer {
+                let name = layer
+                    .as_ref()
+                    .map(serialize)
+                    .transpose()?
+                    .unwrap_or_default();
+                parsed.children.push(metadata_item("import-layer", &name));
+            }
+            if let Some(condition) = &rule.supports {
+                use lightningcss::rules::supports::SupportsCondition;
+
+                let text = condition
+                    .to_css_string(PrinterOptions::default())
+                    .map_err(|error| EngineError::Serialize(error.to_string()))?;
+                let text = if matches!(condition, SupportsCondition::Declaration { .. }) {
+                    &text[1..text.len() - 1]
+                } else {
+                    &text
+                };
+                parsed.children.push(metadata_item("import-supports", text));
+            }
+            parsed
+        }
         CssRule::Namespace(rule) => {
             let prefix = rule
                 .prefix
@@ -2796,6 +2825,8 @@ fn parsed_rule_counts_as_node(rule: &ParsedRule) -> bool {
             | "property-descriptor"
             | "view-transition-type"
             | "layer-name"
+            | "import-layer"
+            | "import-supports"
     )
 }
 

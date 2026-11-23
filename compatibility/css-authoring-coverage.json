@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "cutoff": "2026-11-18",
+  "cutoff": "2026-11-23",
   "evidenceGranularity": "Authoring surfaces: properties link to executable grammar profiles; selector/type/rule roots link to operation probes; APIs link to operation suites. BCD rendering subkeys do not imply evaluation support or a standalone test per compatibility key.",
   "summary": {
     "families": 334,
     "authoringSurfaces": 610,
-    "authoringKeyRecords": 2883,
-    "domOrEvaluationKeyRecords": 1132,
-    "deferredKeyRecords": 479
+    "authoringKeyRecords": 2898,
+    "domOrEvaluationKeyRecords": 1133,
+    "deferredKeyRecords": 480
   },
   "surfaces": [
     {
@@ -87,8 +87,8 @@
     {
       "root": "api.CSSImportRule",
       "evidence": [
-        "tests/static-rule-interfaces.test.ts",
-        "tests/stylesheet-metadata.test.ts",
+        "tests/parse-style-sheet.test.ts",
+        "scripts/check-css-authoring-target.ts",
         "scripts/test-wasm-backend.ts"
       ],
       "profileIds": [],
@@ -376,7 +376,12 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "rule.import"
+        "rule.import",
+        "baseline-november-23.import.quoted-declaration",
+        "baseline-november-23.import.nested-selector",
+        "baseline-november-23.import.media-function",
+        "baseline-november-23.import.absent",
+        "baseline-november-23.import.plain"
       ]
     },
     {
@@ -907,12 +912,31 @@
     {
       "root": "css.properties.background-blend-mode",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.64e2c59fc96a39ba"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-23.background-blend-mode.color",
+        "baseline-november-23.background-blend-mode.color-burn",
+        "baseline-november-23.background-blend-mode.color-dodge",
+        "baseline-november-23.background-blend-mode.darken",
+        "baseline-november-23.background-blend-mode.difference",
+        "baseline-november-23.background-blend-mode.exclusion",
+        "baseline-november-23.background-blend-mode.hard-light",
+        "baseline-november-23.background-blend-mode.hue",
+        "baseline-november-23.background-blend-mode.lighten",
+        "baseline-november-23.background-blend-mode.luminosity",
+        "baseline-november-23.background-blend-mode.multiply",
+        "baseline-november-23.background-blend-mode.normal",
+        "baseline-november-23.background-blend-mode.overlay",
+        "baseline-november-23.background-blend-mode.saturation",
+        "baseline-november-23.background-blend-mode.screen",
+        "baseline-november-23.background-blend-mode.soft-light",
+        "baseline-november-23.background-blend-mode.list"
+      ]
     },
     {
       "root": "css.properties.background-clip",
@@ -3574,12 +3598,15 @@
     {
       "root": "css.properties.overflow",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.12dab65b454236f0"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-23.overflow.auto"
+      ]
     },
     {
       "root": "css.properties.overflow-anchor",
@@ -4741,12 +4768,16 @@
     {
       "root": "css.properties.text-wrap",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.b8ba2c5ea16ea1e6"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-23.text-wrap.balance",
+        "baseline-november-23.text-wrap.nowrap-balance"
+      ]
     },
     {
       "root": "css.properties.text-wrap-mode",
@@ -4761,12 +4792,15 @@
     {
       "root": "css.properties.text-wrap-style",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.93a588f55f891217"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-23.text-wrap-style.balance"
+      ]
     },
     {
       "root": "css.properties.timeline-scope",
@@ -5159,12 +5193,17 @@
     {
       "root": "css.properties.zoom",
       "evidence": [
-        "scripts/check-webref-property-branches.ts"
+        "scripts/check-webref-property-branches.ts",
+        "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
         "webref-profile.1cc631df38bcea4d"
       ],
-      "probeIds": []
+      "probeIds": [
+        "baseline-november-23.zoom.percentage",
+        "baseline-november-23.zoom.number",
+        "baseline-november-23.zoom.normal"
+      ]
     },
     {
       "root": "css.selectors.active",
@@ -5863,7 +5902,8 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "selector.state"
+        "selector.state",
+        "baseline-november-23.state"
       ]
     },
     {
@@ -6201,7 +6241,9 @@
         "baseline-october-19.color.currentcolor",
         "baseline-november-18.color.hsla",
         "baseline-november-18.color.hsla-modern",
-        "baseline-november-18.color.hsla-opaque"
+        "baseline-november-18.color.hsla-opaque",
+        "baseline-november-23.color.light-dark",
+        "baseline-november-23.background-color.light-dark-nested"
       ]
     },
     {
@@ -6509,7 +6551,11 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "type.mod"
+        "type.mod",
+        "baseline-november-23.width.mod-length-percentage",
+        "baseline-november-23.line-height.mod-length-percentage",
+        "baseline-november-23.zoom.mod-number",
+        "baseline-november-23.opacity.mod-number"
       ]
     },
     {
@@ -6605,7 +6651,11 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "type.rem"
+        "type.rem",
+        "baseline-november-23.width.rem-length-percentage",
+        "baseline-november-23.line-height.rem-length-percentage",
+        "baseline-november-23.zoom.rem-number",
+        "baseline-november-23.opacity.rem-number"
       ]
     },
     {
@@ -6625,7 +6675,16 @@
       ],
       "profileIds": [],
       "probeIds": [
-        "type.round"
+        "type.round",
+        "baseline-november-23.width.round-length-percentage",
+        "baseline-november-23.line-height.round-length-percentage",
+        "baseline-november-23.zoom.round-number",
+        "baseline-november-23.opacity.round-number",
+        "baseline-november-23.opacity.round-default-step",
+        "baseline-november-23.opacity.round-unresolved-step",
+        "baseline-november-23.width.round-explicit-step",
+        "baseline-november-23.order.round-negative-tie",
+        "baseline-november-23.order.round-negative-step"
       ]
     },
     {
@@ -9318,6 +9377,86 @@
           "surface": "css.properties.background-blend-mode"
         },
         {
+          "key": "css.properties.background-blend-mode.color",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.color-burn",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.color-dodge",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.darken",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.difference",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.exclusion",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.hard-light",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.hue",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.lighten",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.luminosity",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.multiply",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.normal",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.overlay",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.saturation",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.screen",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
+          "key": "css.properties.background-blend-mode.soft-light",
+          "disposition": "authoring-surface",
+          "surface": "css.properties.background-blend-mode"
+        },
+        {
           "key": "css.types.blend-mode",
           "disposition": "authoring-surface",
           "surface": "css.types.blend-mode"
@@ -11448,6 +11587,11 @@
           "key": "css.properties.container-type.size",
           "disposition": "authoring-surface",
           "surface": "css.properties.container-type"
+        },
+        {
+          "key": "css.properties.container-type.weak_containment",
+          "disposition": "dom-or-evaluation",
+          "reason": "Whether a query container establishes layout containment is a layout effect of existing container-type values."
         },
         {
           "key": "css.types.length.container_query_length_units",
@@ -14669,8 +14813,7 @@
         },
         {
           "key": "css.at-rules.font-feature-values.historical-forms",
-          "disposition": "authoring-surface",
-          "surface": "css.at-rules.font-feature-values"
+          "disposition": "not-baseline"
         },
         {
           "key": "css.at-rules.font-feature-values.ornaments",
@@ -21258,67 +21401,47 @@
           "surface": "css.at-rules.page"
         },
         {
-          "key": "css.at-rules.page.at_bottom-center",
+          "key": "css.at-rules.page.bottom-center",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_bottom-left",
+          "key": "css.at-rules.page.bottom-left",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_bottom-left-corner",
+          "key": "css.at-rules.page.bottom-left-corner",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_bottom-right",
+          "key": "css.at-rules.page.bottom-right",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_bottom-right-corner",
+          "key": "css.at-rules.page.bottom-right-corner",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_left-bottom",
+          "key": "css.at-rules.page.left-bottom",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_left-middle",
+          "key": "css.at-rules.page.left-middle",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_left-top",
+          "key": "css.at-rules.page.left-top",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_right-bottom",
+          "key": "css.at-rules.page.right-bottom",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_right-middle",
+          "key": "css.at-rules.page.right-middle",
           "disposition": "not-baseline"
         },
         {
-          "key": "css.at-rules.page.at_right-top",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.at_top-center",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.at_top-left",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.at_top-left-corner",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.at_top-right",
-          "disposition": "not-baseline"
-        },
-        {
-          "key": "css.at-rules.page.at_top-right-corner",
+          "key": "css.at-rules.page.right-top",
           "disposition": "not-baseline"
         },
         {
@@ -21335,6 +21458,26 @@
           "key": "css.at-rules.page.size.jis-b5",
           "disposition": "authoring-surface",
           "surface": "css.at-rules.page"
+        },
+        {
+          "key": "css.at-rules.page.top-center",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.top-left",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.top-left-corner",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.top-right",
+          "disposition": "not-baseline"
+        },
+        {
+          "key": "css.at-rules.page.top-right-corner",
+          "disposition": "not-baseline"
         },
         {
           "key": "css.properties.page",

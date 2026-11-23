@@ -57,6 +57,10 @@ export function snapshotAuthoringRule(rule: RuleState): RuleSnapshot {
   const result: RuleSnapshot = { type: rule.constructor.name, children: [] };
   for (const field of ["selectorText", "conditionText", "containerName", "containerQuery", "name", "keyText", "syntax", "inherits", "initialValue", "fontFamily", "basePalette", "overrideColors", "start", "end", "namespaceURI", "prefix", "returnType", "contents"])
     if (field in rule) result[field] = Reflect.get(rule, field);
+  if (rule.constructor.name === "CSSImportRule") {
+    for (const field of ["href", "layerName", "supportsText", "cssText"]) result[field] = Reflect.get(rule, field);
+    result.mediaText = Reflect.get(rule, "media").mediaText;
+  }
   if (rule.style) {
     const style = rule.style;
     result.style = { cssText: style.cssText, items: Array.from({ length: style.length }, (_, index) => {

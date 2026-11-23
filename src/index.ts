@@ -2167,46 +2167,6 @@ function parseScopePrelude(
   return parsed ? [parsed.start, parsed.end] : [null, null];
 }
 
-function parseImportPrelude(
-  prelude: string,
-): { href: string; media: string; layer: string | null; supports: string | null } | null {
-  const hrefMatch = prelude.match(
-    /^(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)|"([^"]*)"|'([^']*)')\s*(.*)$/,
-  );
-  if (!hrefMatch) return null;
-  const href = hrefMatch[1] ?? hrefMatch[2] ?? hrefMatch[3]?.trim() ?? hrefMatch[4] ?? hrefMatch[5];
-  if (href === undefined) return null;
-  let remainder = hrefMatch[6]?.trim() ?? "";
-  let layer: string | null = null;
-  let supports: string | null = null;
-
-  const layerMatch = remainder.match(/^layer(?:\(([^)]*)\))?(?:\s+|$)(.*)$/);
-  if (layerMatch) {
-    layer = layerMatch[1]?.trim() ?? "";
-    remainder = layerMatch[2]?.trim() ?? "";
-  }
-
-  if (remainder.startsWith("supports(")) {
-    let depth = 0;
-    let end = -1;
-    for (let index = "supports".length; index < remainder.length; index += 1) {
-      const character = remainder[index];
-      if (character === "(") depth += 1;
-      if (character !== ")") continue;
-      depth -= 1;
-      if (depth !== 0) continue;
-      end = index;
-      break;
-    }
-    if (end !== -1) {
-      supports = remainder.slice("supports(".length, end).trim();
-      remainder = remainder.slice(end + 1).trim();
-    }
-  }
-
-  return { href, media: remainder, layer, supports };
-}
-
 function createRuleFromNative(
   description: NativeRuleDescription,
   reportDiagnostic: ReportDiagnostic,
@@ -2298,7 +2258,9 @@ function isNativeMetadataRule(description: NativeRuleDescription): boolean {
     || description.kind === "mixin-argument"
     || description.kind === "property-descriptor"
     || description.kind === "view-transition-type"
-    || description.kind === "layer-name";
+    || description.kind === "layer-name"
+    || description.kind === "import-layer"
+    || description.kind === "import-supports";
 }
 
 function createRuleShellFromNative(
@@ -2334,16 +2296,11 @@ function createRuleShellFromNative(
     }
     case "import": {
       if (!preserveImports) return null;
-      const prelude = description.cssText
-        .replace(/^@import\s+/iu, "")
-        .replace(/;\s*$/u, "");
-      const parsed = parseImportPrelude(prelude);
-      if (!parsed) return null;
       rule = constructWebIDL<CSSImportRule>(CSSImportRule, [
-        parsed.href,
-        parsed.media,
-        parsed.layer,
-        parsed.supports,
+        description.prelude,
+        description.declarations,
+        description.children.find(child => child.kind === "import-layer")?.prelude ?? null,
+        description.children.find(child => child.kind === "import-supports")?.prelude ?? null,
       ]);
       break;
     }
