@@ -30,7 +30,7 @@ const apiSuites = {
   CSSFontFaceRule: ["tests/declaration-rules.test.ts"],
   CSSFontFeatureValuesRule: ["tests/descriptor-rules.test.ts"],
   CSSFontPaletteValuesRule: ["tests/static-rule-interfaces.test.ts"],
-  CSSImportRule: ["tests/static-rule-interfaces.test.ts", "tests/stylesheet-metadata.test.ts"],
+  CSSImportRule: ["tests/parse-style-sheet.test.ts", "scripts/check-css-authoring-target.ts"],
   CSSNamespaceRule: ["tests/static-rule-interfaces.test.ts", "tests/selector-text.test.ts"],
   CSSNestedDeclarations: ["tests/grouping-rules.test.ts"],
   CSSPositionTryRule: ["tests/baseline-september.test.ts"],
@@ -43,6 +43,10 @@ for (const feature of target.features) {
   const dispositions = [];
   for (const branch of feature.branches) {
     if (!branch.eligible) { dispositions.push({ key: branch.key, disposition: branch.eligibility }); continue; }
+    if (branch.key === "css.properties.container-type.weak_containment") {
+      dispositions.push({ key: branch.key, disposition: "dom-or-evaluation", reason: "Whether a query container establishes layout containment is a layout effect of existing container-type values." });
+      continue;
+    }
     // Inheritance is evaluation; the accompanying ::backdrop syntax has its own probe.
     if (branch.key === "css.selectors.backdrop.inherit_from_originating_element") {
       dispositions.push({ key: branch.key, disposition: "dom-or-evaluation", reason: "Computed inheritance from the originating element; ::backdrop selector authoring is audited separately." });

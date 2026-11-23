@@ -1,6 +1,6 @@
 # September 2026 CSS authoring target
 
-The [18 November refresh](css-baseline-audit-2026-11-18.md) records the current
+The [23 November refresh](css-baseline-audit-2026-11-23.md) records the current
 source, new compatibility records, and HSL authoring correction. The
 [9 November refresh](css-baseline-audit-2026-11-09.md) records its
 source, scroll-driven animation inventory and executable property evidence. The

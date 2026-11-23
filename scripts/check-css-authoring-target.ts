@@ -16,11 +16,24 @@ if (requestedBackend !== "native") backends.push(["wasm", await loadValidationBa
 // This function is also executed verbatim in Chromium. Snapshots cover authored
 // state, invalid-mutation atomicity, parentage, and live collection identity.
 
-function observe(api, probe) {
-  const sheet = new api.CSSStyleSheet();
+function observe(api, probe, createRegularSheet = api.parseStyleSheet) {
+  const sheet = probe.kind === "import" ? createRegularSheet(probe.value) : new api.CSSStyleSheet();
   const snapshots = [];
   let declarationContract;
-  if (probe.kind === "rule") {
+  if (probe.kind === "import") {
+    const rule = sheet.cssRules[0];
+    if (rule?.constructor.name === "CSSImportRule") {
+      const media = rule.media;
+      snapshots.push(snapshotRule(rule));
+      rule.media.mediaText = "print";
+      const supportsUnchanged = !Reflect.set(rule, "supportsText", "display: invalid");
+      let errorName;
+      try { sheet.insertRule(probe.invalidValue, sheet.cssRules.length); }
+      catch (error) { errorName = error.name; }
+      snapshots.push({ errorName, supportsUnchanged, sameMedia: rule.media === media, state: snapshotRule(rule) });
+    }
+  }
+  else if (probe.kind === "rule") {
     sheet.replaceSync(probe.value);
     const rule = sheet.cssRules[0];
     if (rule?.constructor.name === "CSSContainerRule") {
@@ -42,10 +55,10 @@ function observe(api, probe) {
     else rule.style.setProperty(probe.property, probe.value, "important");
     snapshots.push(snapshotRule(rule));
     const written = rule.style.cssText;
-    if (probe.kind === "selector") rule.selectorText = ":not(";
+    if (probe.kind === "selector") rule.selectorText = probe.invalidValue ?? ":not(";
     else rule.style.setProperty(probe.property, probe.invalidValue ?? `${probe.value}; color: green`, "important");
     snapshots.push(snapshotRule(rule));
-    if (probe.invalidValue !== undefined) {
+    if (probe.kind === "declaration" && probe.invalidValue !== undefined) {
       const style = rule.style;
       declarationContract = {
         accepted: api.CSS.supports(probe.property, probe.value)
@@ -82,17 +95,35 @@ try {
   const evaluator = `(function () { const snapshotRule = ${snapshotRule.toString()}; return ${observe.toString()}; })()`;
   for (const probe of corpus.probes) {
     const reference = probe.oracle === "baseline-chromium" ? baselinePage : probe.oracle === "firefox" ? mediaPage : page;
-    const expected = await reference.evaluate(({ evaluator, probe }) => (0, eval)(`(${evaluator})`)(globalThis, probe), { evaluator, probe });
+    const expected = await reference.evaluate(({ evaluator, probe }) => {
+      if (probe.kind !== "import") return (0, eval)(`(${evaluator})`)(globalThis, probe);
+      const element = document.createElement("style");
+      document.head.append(element);
+      try {
+        return (0, eval)(`(${evaluator})`)(globalThis, probe, source => {
+          element.sheet.insertRule(source, 0);
+          return element.sheet;
+        });
+      } finally {
+        element.remove();
+      }
+    }, { evaluator, probe });
     if (expected.declarationContract && Object.values(expected.declarationContract).includes(false)) {
       mismatches.push({ id: probe.id, oracle: probe.oracle ?? "chromium", declarationContract: expected.declarationContract });
     }
     for (const [backend, api] of backends) {
       const actual = observe(api, probe);
       try { assert.deepEqual(actual, expected); } catch { mismatches.push({ id: probe.id, backend, actual, expected }); }
-      const sheet = new api.CSSStyleSheet();
-      sheet.replaceSync(probe.kind === "rule" ? probe.value : probe.kind === "selector" ? `${probe.value} { color: red; }` : `.probe { ${probe.property}: ${probe.value}; }`);
+      const source = probe.kind === "rule" || probe.kind === "import" ? probe.value
+        : probe.kind === "selector" ? `${probe.value} { color: red; }` : `.probe { ${probe.property}: ${probe.value}; }`;
+      const parse = probe.kind === "import" ? api.parseStyleSheet : css => {
+        const sheet = new api.CSSStyleSheet();
+        sheet.replaceSync(css);
+        return sheet;
+      };
+      const sheet = parse(source);
       const serialized = sheet.serializeStrict();
-      const reparse = new api.CSSStyleSheet(); reparse.replaceSync(serialized);
+      const reparse = parse(serialized);
       try {
         assertAuthoringRoundTrip(api, sheet, reparse, snapshotRule);
       } catch {

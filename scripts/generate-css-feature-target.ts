@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
 const targetUrl = new URL("../compatibility/css-feature-target.json", import.meta.url);
-const cutoff = "2026-11-18";
-const sourceSha256 = "38d73859f967972a3170a774ba5fe2669877ea6b7ffd53a14d7b53daf1366a11";
+const cutoff = "2026-11-23";
+const sourceSha256 = "8ee1119d41ebb7b1cd89cc6cd55fc10ec530c196fcc12c5bcf2049a138a0ed83";
 const beforeCutoff = status => ["low", "high"].includes(status?.baseline)
   && typeof status.baseline_low_date === "string" && status.baseline_low_date <= cutoff;
 
@@ -51,9 +51,9 @@ if (sourcePath) {
     schemaVersion: 1,
     cutoff,
     source: {
-      package: "web-features", version: "3.46.0",
-      revision: "8af8ff8d71f0b81bb8d637060ada22cf3c903112",
-      url: "https://registry.npmjs.org/web-features/-/web-features-3.46.0.tgz",
+      package: "web-features", version: "3.47.0",
+      revision: "a006a32ce337e249433fe5bb04d39c71f4c3fbe5",
+      url: "https://registry.npmjs.org/web-features/-/web-features-3.47.0.tgz",
       dataSha256: sourceSha256,
     },
     experimental: {
@@ -73,7 +73,7 @@ const manifest = JSON.parse(await readFile(targetUrl, "utf8"));
 assert.equal(manifest.schemaVersion, 1);
 assert.equal(manifest.cutoff, cutoff);
 assert.equal(manifest.source.dataSha256, sourceSha256);
-assert.equal(manifest.source.version, "3.46.0");
+assert.equal(manifest.source.version, "3.47.0");
 assert.equal(manifest.features.length, 334);
 assert.equal(new Set(manifest.features.map(feature => feature.id)).size, manifest.features.length);
 for (const feature of manifest.features) {

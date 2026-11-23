@@ -1,7 +1,7 @@
 //! Media queries.
 use crate::error::{ErrorWithLocation, MinifyError, MinifyErrorKind, ParserError, PrinterError};
 use crate::macros::enum_property;
-use crate::parser::starts_with_ignore_ascii_case;
+use crate::parser::{starts_with_ignore_ascii_case, ParserFlags};
 use crate::printer::Printer;
 use crate::properties::custom::{EnvironmentVariable, TokenList};
 #[cfg(feature = "visitor")]
@@ -565,6 +565,15 @@ pub(crate) trait QueryCondition<'i>: Sized {
     Err(input.new_error_for_next_token())
   }
 
+  fn parse_general_enclosed_function<'t>(
+    input: &mut Parser<'i, 't>,
+    start: &ParserState,
+    _options: &ParserOptions<'i>,
+  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.reset(start);
+    Err(input.new_error_for_next_token())
+  }
+
   fn needs_parens(&self, parent_operator: Option<Operator>, targets: &Targets) -> bool;
 }
 
@@ -586,6 +595,17 @@ impl<'i> QueryCondition<'i> for MediaCondition<'i> {
   #[inline]
   fn create_operation(operator: Operator, conditions: Vec<MediaCondition<'i>>) -> Self {
     Self::Operation { operator, conditions }
+  }
+
+  fn parse_general_enclosed_function<'t>(
+    input: &mut Parser<'i, 't>,
+    start: &ParserState,
+    options: &ParserOptions<'i>,
+  ) -> Result<Self, ParseError<'i, ParserError<'i>>> {
+    input.parse_nested_block(|input| input.expect_no_error_token().map_err(Into::into))?;
+    let mut source = ParserInput::new(input.slice_from(start.position()));
+    let mut function = Parser::new(&mut source);
+    Ok(Self::Unknown(TokenList::parse(&mut function, options, 0)?))
   }
 
   fn needs_parens(&self, parent_operator: Option<Operator>, targets: &Targets) -> bool {
@@ -699,45 +719,11 @@ pub(crate) fn parse_query_condition<'t, 'i, P: QueryCondition<'i>>(
   options: &ParserOptions<'i>,
 ) -> Result<P, ParseError<'i, ParserError<'i>>> {
   let location = input.current_source_location();
-  enum QueryFunction {
-    None,
-    Style,
-    ScrollState,
+  if input.try_parse(|input| input.expect_ident_matching("not")).is_ok() {
+    let inner = parse_parens_or_function(input, flags, options)?;
+    return Ok(P::create_negation(Box::new(inner)));
   }
-
-  let (is_negation, function) = match *input.next()? {
-    Token::ParenthesisBlock => (false, QueryFunction::None),
-    Token::Ident(ref ident) if ident.eq_ignore_ascii_case("not") => (true, QueryFunction::None),
-    Token::Function(ref f)
-      if flags.contains(QueryConditionFlags::ALLOW_STYLE) && f.eq_ignore_ascii_case("style") =>
-    {
-      (false, QueryFunction::Style)
-    }
-    Token::Function(ref f)
-      if flags.contains(QueryConditionFlags::ALLOW_SCROLL_STATE) && f.eq_ignore_ascii_case("scroll-state") =>
-    {
-      (false, QueryFunction::ScrollState)
-    }
-    ref t => return Err(location.new_unexpected_token_error(t.clone())),
-  };
-
-  let first_condition = match (is_negation, function) {
-    (true, QueryFunction::None) => {
-      let inner_condition = parse_parens_or_function(input, flags, options)?;
-      return Ok(P::create_negation(Box::new(inner_condition)));
-    }
-    (true, QueryFunction::Style) => {
-      let inner_condition = P::parse_style_query(input, options)?;
-      return Ok(P::create_negation(Box::new(inner_condition)));
-    }
-    (true, QueryFunction::ScrollState) => {
-      let inner_condition = P::parse_scroll_state_query(input, options)?;
-      return Ok(P::create_negation(Box::new(inner_condition)));
-    }
-    (false, QueryFunction::None) => parse_paren_block(input, flags, options)?,
-    (false, QueryFunction::Style) => P::parse_style_query(input, options)?,
-    (false, QueryFunction::ScrollState) => P::parse_scroll_state_query(input, options)?,
-  };
+  let first_condition = parse_parens_or_function(input, flags, options)?;
 
   let operator = match input.try_parse(Operator::parse) {
     Ok(op) => op,
@@ -772,6 +758,7 @@ fn parse_parens_or_function<'t, 'i, P: QueryCondition<'i>>(
   flags: QueryConditionFlags,
   options: &ParserOptions<'i>,
 ) -> Result<P, ParseError<'i, ParserError<'i>>> {
+  let start = input.state();
   let location = input.current_source_location();
   match *input.next()? {
     Token::ParenthesisBlock => parse_paren_block(input, flags, options),
@@ -785,7 +772,10 @@ fn parse_parens_or_function<'t, 'i, P: QueryCondition<'i>>(
     {
       P::parse_scroll_state_query(input, options)
     }
-    ref t => return Err(location.new_unexpected_token_error(t.clone())),
+    Token::Function(_) if options.flags.contains(ParserFlags::MEDIA_GENERAL_ENCLOSED_FUNCTIONS) => {
+      P::parse_general_enclosed_function(input, &start, options)
+    }
+    ref t => Err(location.new_unexpected_token_error(t.clone())),
   }
 }
 

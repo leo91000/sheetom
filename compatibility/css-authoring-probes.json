@@ -916,8 +916,9 @@
     {
       "id": "rule.import",
       "root": "css.at-rules.import",
-      "kind": "rule",
-      "value": "@import url(\"a.css\") layer(base) supports(display: grid) screen;"
+      "kind": "import",
+      "value": "@import url(\"data:text/css,\") layer(base) supports(display: grid) screen;",
+      "invalidValue": "@import url(\"data:text/css,\") supports();"
     },
     {
       "id": "rule.keyframes",
@@ -4564,6 +4565,392 @@
       "property": "border-top-color",
       "value": "hsla(120, calc(100%), 25%, calc(2 * 60%))",
       "invalidValue": "hsla(120, 100%, 25%, none)"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.color",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "color",
+      "invalidValue": "color, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.color-burn",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "color-burn",
+      "invalidValue": "color-burn, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.color-dodge",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "color-dodge",
+      "invalidValue": "color-dodge, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.darken",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "darken",
+      "invalidValue": "darken, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.difference",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "difference",
+      "invalidValue": "difference, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.exclusion",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "exclusion",
+      "invalidValue": "exclusion, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.hard-light",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "hard-light",
+      "invalidValue": "hard-light, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.hue",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "hue",
+      "invalidValue": "hue, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.lighten",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "lighten",
+      "invalidValue": "lighten, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.luminosity",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "luminosity",
+      "invalidValue": "luminosity, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.multiply",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "multiply",
+      "invalidValue": "multiply, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.normal",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "normal",
+      "invalidValue": "normal, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.overlay",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "overlay",
+      "invalidValue": "overlay, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.saturation",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "saturation",
+      "invalidValue": "saturation, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.screen",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "screen",
+      "invalidValue": "screen, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.soft-light",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "soft-light",
+      "invalidValue": "soft-light, invalid"
+    },
+    {
+      "id": "baseline-november-23.background-blend-mode.list",
+      "root": "css.properties.background-blend-mode",
+      "kind": "declaration",
+      "property": "background-blend-mode",
+      "value": "multiply, screen, normal",
+      "invalidValue": "multiply screen"
+    },
+    {
+      "id": "baseline-november-23.color.light-dark",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "color",
+      "value": "light-dark(red, blue)",
+      "invalidValue": "light-dark(red, 1px)"
+    },
+    {
+      "id": "baseline-november-23.background-color.light-dark-nested",
+      "root": "css.types.color",
+      "kind": "declaration",
+      "property": "background-color",
+      "value": "light-dark(currentColor, light-dark(red, blue))",
+      "invalidValue": "light-dark(red, blue, black)"
+    },
+    {
+      "id": "baseline-november-23.width.round-length-percentage",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "width",
+      "value": "round(10%, 3px)",
+      "invalidValue": "round(10%, 1s)"
+    },
+    {
+      "id": "baseline-november-23.line-height.round-length-percentage",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "line-height",
+      "value": "round(10%, 3px)",
+      "invalidValue": "round(0.5, 25%)"
+    },
+    {
+      "id": "baseline-november-23.zoom.round-number",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "zoom",
+      "value": "round(1.25, 0.5)",
+      "invalidValue": "round(25%, 0.5)"
+    },
+    {
+      "id": "baseline-november-23.opacity.round-number",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "round(0.75, 0.5)",
+      "invalidValue": "round(0.5, 25%)"
+    },
+    {
+      "id": "baseline-november-23.width.mod-length-percentage",
+      "root": "css.types.mod",
+      "kind": "declaration",
+      "property": "width",
+      "value": "mod(10%, 3px)",
+      "invalidValue": "mod(10%, 1s)"
+    },
+    {
+      "id": "baseline-november-23.line-height.mod-length-percentage",
+      "root": "css.types.mod",
+      "kind": "declaration",
+      "property": "line-height",
+      "value": "mod(10%, 3px)",
+      "invalidValue": "mod(0.5, 25%)"
+    },
+    {
+      "id": "baseline-november-23.zoom.mod-number",
+      "root": "css.types.mod",
+      "kind": "declaration",
+      "property": "zoom",
+      "value": "mod(1.25, 0.5)",
+      "invalidValue": "mod(25%, 0.5)"
+    },
+    {
+      "id": "baseline-november-23.opacity.mod-number",
+      "root": "css.types.mod",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "mod(0.75, 0.5)",
+      "invalidValue": "mod(0.5, 25%)"
+    },
+    {
+      "id": "baseline-november-23.width.rem-length-percentage",
+      "root": "css.types.rem",
+      "kind": "declaration",
+      "property": "width",
+      "value": "rem(10%, 3px)",
+      "invalidValue": "rem(10%, 1s)"
+    },
+    {
+      "id": "baseline-november-23.line-height.rem-length-percentage",
+      "root": "css.types.rem",
+      "kind": "declaration",
+      "property": "line-height",
+      "value": "rem(10%, 3px)",
+      "invalidValue": "rem(0.5, 25%)"
+    },
+    {
+      "id": "baseline-november-23.zoom.rem-number",
+      "root": "css.types.rem",
+      "kind": "declaration",
+      "property": "zoom",
+      "value": "rem(1.25, 0.5)",
+      "invalidValue": "rem(25%, 0.5)"
+    },
+    {
+      "id": "baseline-november-23.opacity.rem-number",
+      "root": "css.types.rem",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "rem(0.75, 0.5)",
+      "invalidValue": "rem(0.5, 25%)"
+    },
+    {
+      "id": "baseline-november-23.opacity.round-default-step",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "round(0.6)",
+      "invalidValue": "round(0.6,)"
+    },
+    {
+      "id": "baseline-november-23.opacity.round-unresolved-step",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "opacity",
+      "value": "round(up, sign(1em))",
+      "invalidValue": "round(up, 10%)"
+    },
+    {
+      "id": "baseline-november-23.width.round-explicit-step",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "width",
+      "value": "round(up, 10%, 3px)",
+      "invalidValue": "round(up, 3px)"
+    },
+    {
+      "id": "baseline-november-23.text-wrap.balance",
+      "root": "css.properties.text-wrap",
+      "kind": "declaration",
+      "property": "text-wrap",
+      "value": "balance",
+      "invalidValue": "balance auto"
+    },
+    {
+      "id": "baseline-november-23.text-wrap.nowrap-balance",
+      "root": "css.properties.text-wrap",
+      "kind": "declaration",
+      "property": "text-wrap",
+      "value": "nowrap balance",
+      "invalidValue": "nowrap balance pretty"
+    },
+    {
+      "id": "baseline-november-23.text-wrap-style.balance",
+      "root": "css.properties.text-wrap-style",
+      "kind": "declaration",
+      "property": "text-wrap-style",
+      "value": "balance",
+      "invalidValue": "balance pretty"
+    },
+    {
+      "id": "baseline-november-23.zoom.percentage",
+      "root": "css.properties.zoom",
+      "kind": "declaration",
+      "property": "zoom",
+      "value": "125%",
+      "invalidValue": "1px"
+    },
+    {
+      "id": "baseline-november-23.zoom.number",
+      "root": "css.properties.zoom",
+      "kind": "declaration",
+      "property": "zoom",
+      "value": "1.25",
+      "invalidValue": "125% 2"
+    },
+    {
+      "id": "baseline-november-23.zoom.normal",
+      "root": "css.properties.zoom",
+      "kind": "declaration",
+      "property": "zoom",
+      "value": "normal",
+      "invalidValue": "normal 2"
+    },
+    {
+      "id": "baseline-november-23.overflow.auto",
+      "root": "css.properties.overflow",
+      "kind": "declaration",
+      "property": "overflow",
+      "value": "auto",
+      "invalidValue": "auto bad"
+    },
+    {
+      "id": "baseline-november-23.state",
+      "root": "css.selectors.state",
+      "kind": "selector",
+      "value": "x:state(open)",
+      "invalidValue": "x:state(1)"
+    },
+    {
+      "id": "baseline-november-23.import.quoted-declaration",
+      "root": "css.at-rules.import",
+      "kind": "import",
+      "value": "@import url(\"data:text/css,\") supports(content: \")\") print;",
+      "invalidValue": "@import url(\"data:text/css,\") supports();"
+    },
+    {
+      "id": "baseline-november-23.import.nested-selector",
+      "root": "css.at-rules.import",
+      "kind": "import",
+      "value": "@import url(\"data:text/css,\") supports((color: red) and selector([title=\")\"])) print;",
+      "invalidValue": "@import url(\"data:text/css,\") supports();"
+    },
+    {
+      "id": "baseline-november-23.import.media-function",
+      "root": "css.at-rules.import",
+      "kind": "import",
+      "value": "@import url(\"data:text/css,\") supports(display: grid) supports(display: block);",
+      "invalidValue": "@import url(\"data:text/css,\") supports();"
+    },
+    {
+      "id": "baseline-november-23.import.absent",
+      "root": "css.at-rules.import",
+      "kind": "import",
+      "value": "@import url(\"data:text/css,\") screen;",
+      "invalidValue": "@import url(\"data:text/css,\") supports();"
+    },
+    {
+      "id": "baseline-november-23.order.round-negative-tie",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "order",
+      "value": "round(-1.5)",
+      "invalidValue": "round(-1.5,)"
+    },
+    {
+      "id": "baseline-november-23.order.round-negative-step",
+      "root": "css.types.round",
+      "kind": "declaration",
+      "property": "order",
+      "value": "round(up, 6, -5)",
+      "invalidValue": "round(up, 6, -5px)"
+    },
+    {
+      "id": "baseline-november-23.import.plain",
+      "root": "css.at-rules.import",
+      "kind": "import",
+      "value": "@import url(\"data:text/css,\");",
+      "invalidValue": "@import url(\"data:text/css,\") supports();"
     }
   ]
 }

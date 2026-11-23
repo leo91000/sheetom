@@ -51,3 +51,9 @@ public CSSOM canonicalization is checked against the additional pinned browser.
 The November 18 update enforces percentage saturation and lightness in legacy
 comma-separated HSL aliases and rejects `none` as a legacy alpha token. The
 module tests preserve modern numeric channels and percentage-valued calculations.
+
+The November 23 update gives number-valued `round()` an optional unit step and
+requires compatible argument types in stepped math. Authoring CSSOM opts in
+to general-enclosed media functions, including a function following the
+`@import` supports condition. The standalone compiler keeps its strict
+default.

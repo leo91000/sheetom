@@ -245,10 +245,13 @@ impl Default for RoundingStrategy {
 }
 
 fn round(value: f32, to: f32, strategy: RoundingStrategy) -> f32 {
+  let to = to.abs();
   let v = value / to;
   match strategy {
     RoundingStrategy::Down => v.floor() * to,
     RoundingStrategy::Up => v.ceil() * to,
+    // CSS chooses the upper multiple at a tie, including for negative inputs.
+    RoundingStrategy::Nearest if v.fract() == -0.5 => v.ceil() * to,
     RoundingStrategy::Nearest => v.round() * to,
     RoundingStrategy::ToZero => v.trunc() * to,
   }
@@ -312,7 +315,7 @@ enum MathSerializeKind {
   Min(usize),
   Max(usize),
   Clamp,
-  Round(RoundingStrategy),
+  Round(RoundingStrategy, usize),
   Rem,
   Mod,
   Abs,
@@ -342,7 +345,10 @@ where
       MathFunction::Min(values) => MathSerializeKind::Min(values.len()),
       MathFunction::Max(values) => MathSerializeKind::Max(values.len()),
       MathFunction::Clamp(..) => MathSerializeKind::Clamp,
-      MathFunction::Round(strategy, ..) => MathSerializeKind::Round(*strategy),
+      MathFunction::Round(strategy, _, step) => {
+        let explicit_step = !matches!(step, Calc::Number(value) if *value == 1.0);
+        MathSerializeKind::Round(*strategy, 1 + usize::from(explicit_step))
+      }
       MathFunction::Rem(..) => MathSerializeKind::Rem,
       MathFunction::Mod(..) => MathSerializeKind::Mod,
       MathFunction::Abs(_) => MathSerializeKind::Abs,
@@ -432,13 +438,13 @@ fn serialize_math_function<W: std::fmt::Write>(
       serialize_math_arguments(function, 3, dest)?;
       dest.write_char(')')
     }
-    MathSerializeKind::Round(strategy) => {
+    MathSerializeKind::Round(strategy, count) => {
       dest.write_str("round(")?;
       if strategy != RoundingStrategy::default() {
         strategy.to_css(dest)?;
         dest.delim(',', false)?;
       }
-      serialize_math_arguments(function, 2, dest)?;
+      serialize_math_arguments(function, count, dest)?;
       dest.write_char(')')
     }
     MathSerializeKind::Rem => {
@@ -533,6 +539,7 @@ trait CalcParserOps<'i> {
   ) -> Result<CalcParserNode, ParseError<'i, ParserError<'i>>>;
   fn number(&mut self, value: CSSNumber) -> CalcParserNode;
   fn node_kind(&self, node: CalcParserNode) -> CalcParserNodeKind;
+  fn resolved_type(&self, node: CalcParserNode) -> Option<CalcResolvedType>;
   fn function(&mut self, function: CalcParserFunction) -> CalcParserNode;
   fn compare_values(&self, left: CalcParserNode, right: CalcParserNode) -> Option<Ordering>;
   fn apply_binary(
@@ -594,6 +601,7 @@ impl<V> Calc<V> {
     self.resolved_type() == Some(CalcResolvedType::Dimension)
   }
 
+  #[cfg_attr(target_arch = "wasm32", inline(never))]
   fn resolved_type(&self) -> Option<CalcResolvedType> {
     match self {
       Calc::Value(_) => Some(CalcResolvedType::Dimension),
@@ -646,6 +654,7 @@ impl<V> Calc<V> {
 }
 
 impl<V> MathFunction<V> {
+  #[cfg_attr(target_arch = "wasm32", inline(never))]
   fn resolved_type(&self) -> Option<CalcResolvedType> {
     match self {
       MathFunction::Calc(value) | MathFunction::Abs(value) => value.resolved_type(),
@@ -781,6 +790,10 @@ impl<
       Calc::Function(_) => CalcParserNodeKind::Function,
       _ => CalcParserNodeKind::Other,
     }
+  }
+
+  fn resolved_type(&self, node: CalcParserNode) -> Option<CalcResolvedType> {
+    self.get(node).resolved_type()
   }
 
   fn function(&mut self, function: CalcParserFunction) -> CalcParserNode {
@@ -1435,8 +1448,16 @@ fn parse_calc_binary_function<'i, 't>(
   preserve_math_functions: bool,
 ) -> Result<CalcParserNode, ParseError<'i, ParserError<'i>>> {
   let left = ops.parse_sum(input, preserve_math_functions)?;
-  input.expect_comma()?;
-  let right = ops.parse_sum(input, preserve_math_functions)?;
+  let left_type = ops.resolved_type(left);
+  let right = if matches!(operation, CalcParserBinaryOp::Round(_)) && input.is_exhausted() {
+    ops.number(1.0)
+  } else {
+    input.expect_comma()?;
+    ops.parse_sum(input, preserve_math_functions)?
+  };
+  if left_type.is_none() || left_type != ops.resolved_type(right) {
+    return Err(input.new_custom_error(ParserError::InvalidValue));
+  }
 
   let fallback = || match operation {
     CalcParserBinaryOp::Round(strategy) => CalcParserFunction::Round(strategy, left, right),
@@ -1796,6 +1817,19 @@ mod tests {
 
   fn serialize(value: &Calc<Percentage>) -> String {
     value.to_css_string(PrinterOptions::default()).unwrap()
+  }
+
+  #[test]
+  fn validates_stepped_math_arguments_and_defaults_a_numeric_step() {
+    assert_eq!(CSSNumber::parse_string("round(.6)").unwrap(), 1.0);
+    assert_eq!(CSSNumber::parse_string("round(down, .6)").unwrap(), 0.0);
+    assert_eq!(CSSNumber::parse_string("round(-1.5)").unwrap(), -1.0);
+    assert_eq!(CSSNumber::parse_string("round(up, 6, -5)").unwrap(), 10.0);
+    assert!(Length::parse_string("round(2px)").is_err());
+    for function in ["round", "mod", "rem"] {
+      assert!(Calc::<Percentage>::parse_string(&format!("{function}(.5, 25%)")).is_err());
+      assert!(Calc::<Percentage>::parse_string(&format!("{function}(25%, .5)")).is_err());
+    }
   }
 
   #[test]
