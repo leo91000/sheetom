@@ -143,8 +143,16 @@
     {
       "fixtureId": "declarations.pending-substitution-eof-recovery",
       "decision": "chromium-fallback",
-      "rationale": "Chromium 159 retains the unclosed pending-substitution spelling, including trailing comment text, rather than applying lexical EOF recovery within the pending value.",
+      "rationale": "SheetOM follows the pinned Chromium 151 observation; Chromium 159 retains trailing comment text inside an unclosed var() value.",
       "expected": [
+        {},
+        {},
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "calc(var(--x, 1px", "exception": null },
+        { "return": { "$type": "undefined" }, "exception": null },
+        { "return": "var(--x, red", "exception": null }
+      ],
+      "chromiumExpected": [
         {},
         {},
         { "return": { "$type": "undefined" }, "exception": null },
@@ -279,8 +287,50 @@
     {
       "fixtureId": "declarations.shorthand-state-sequences",
       "decision": "chromium-fallback",
-      "rationale": "Engines share expanded longhand ownership and prevent state resurrection, but background record order and omitted-component spelling diverge; Chromium 159 serializes reset background longhands using their concrete defaults.",
+      "rationale": "SheetOM follows the pinned Chromium 151 observation; Chromium 159 serializes reset background longhands using concrete defaults after background-color removal.",
       "expected": [
+        {},
+        {},
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "background: red;",
+          "length": 9,
+          "items": ["background-image", "background-position-x", "background-position-y", "background-size", "background-repeat", "background-attachment", "background-origin", "background-clip", "background-color"]
+        },
+        {},
+        {
+          "return": "blue",
+          "exception": null,
+          "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+          "length": 8,
+          "items": ["background-image", "background-position-x", "background-position-y", "background-size", "background-repeat", "background-attachment", "background-origin", "background-clip"]
+        },
+        { "return": "", "exception": null },
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "overflow: hidden;",
+          "length": 2,
+          "items": ["overflow-x", "overflow-y"]
+        },
+        {
+          "return": { "$type": "undefined" },
+          "exception": null,
+          "cssText": "overflow-x: scroll !important; overflow-y: hidden;",
+          "length": 2,
+          "items": ["overflow-x", "overflow-y"]
+        },
+        { "return": "", "exception": null },
+        {
+          "return": "scroll",
+          "exception": null,
+          "cssText": "overflow-y: hidden;",
+          "length": 1,
+          "items": ["overflow-y"]
+        }
+      ],
+      "chromiumExpected": [
         {},
         {},
         {

@@ -20,7 +20,8 @@
             "enum": ["shared", "specification", "chromium-fallback", "scope-exclusion"]
           },
           "rationale": { "type": "string", "minLength": 1 },
-          "expected": { "type": "array" }
+          "expected": { "type": "array" },
+          "chromiumExpected": { "type": "array" }
         }
       }
     }
