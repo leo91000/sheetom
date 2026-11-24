@@ -1807,7 +1807,7 @@
         "scripts/check-css-authoring-target.ts"
       ],
       "profileIds": [
-        "webref-profile.f0b2d8082d1db3c3"
+        "webref-profile.3eeaeccc1406acbe"
       ],
       "probeIds": [
         "baseline-october-12.color-interpolation.linearRGB"
@@ -3571,7 +3571,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.79eb64c9ed172bdd"
+        "webref-profile.b961f5c16ba4d13a"
       ],
       "probeIds": []
     },
@@ -4004,7 +4004,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.5642dccf7c458dfa"
+        "webref-profile.c3165557055c741b"
       ],
       "probeIds": []
     },
@@ -4014,7 +4014,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.bd92347ed0a71587"
+        "webref-profile.4a18ea7eba0d156c"
       ],
       "probeIds": []
     },
@@ -4074,7 +4074,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.8669c8d8fce2bd0f"
+        "webref-profile.a14e1e262228d752"
       ],
       "probeIds": []
     },
@@ -4084,7 +4084,7 @@
         "scripts/check-webref-property-branches.ts"
       ],
       "profileIds": [
-        "webref-profile.8669c8d8fce2bd0f"
+        "webref-profile.a14e1e262228d752"
       ],
       "probeIds": []
     },

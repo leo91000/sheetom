@@ -21,6 +21,7 @@
     { "type": "image-1D", "coverage": "representative", "evidence": null, "values": ["stripes(red 1fr, blue 1fr)"] },
     { "type": "integer", "coverage": "representative", "evidence": "compatibility/numeric-property-contracts.json", "values": ["1", "0", "-1"] },
     { "type": "length-percentage", "coverage": "representative", "evidence": "compatibility/numeric-property-contracts.json", "values": ["1px", "10%", "calc(1px + 5%)"] },
+    { "type": "marker-ref", "coverage": "representative", "evidence": "https://www.w3.org/TR/SVG2/painting.html#DataTypeMarkerRef", "values": ["url(#sheetom-marker)", "url(\"sheetom.svg#marker\")"] },
     { "type": "number-percentage", "coverage": "representative", "evidence": "compatibility/numeric-property-contracts.json", "values": ["1", "10%"] },
     { "type": "palette-mix()", "coverage": "representative", "evidence": null, "values": ["palette-mix(in lch, normal, normal)"] },
     { "type": "position", "coverage": "representative", "evidence": "compatibility/browser-geometric-contracts.json", "values": ["center", "left top", "left 10px top 20px"] },
