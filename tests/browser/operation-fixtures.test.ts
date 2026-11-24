@@ -36,7 +36,10 @@ for (const fixture of fixtures) {
 
     expect(observations).toHaveLength(fixture.operations.length);
     if (resolution.decision !== "chromium-fallback" || chromium) {
-      expect(observations).toEqual(resolution.expected);
+      const expected = chromium && "chromiumExpected" in resolution
+        ? resolution.chromiumExpected
+        : resolution.expected;
+      expect(observations).toEqual(expected);
     }
   });
 }
