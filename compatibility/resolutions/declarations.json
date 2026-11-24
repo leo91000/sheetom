@@ -143,14 +143,14 @@
     {
       "fixtureId": "declarations.pending-substitution-eof-recovery",
       "decision": "chromium-fallback",
-      "rationale": "Chromium retains the unclosed pending-substitution spelling while applying lexical EOF recovery such as comment removal.",
+      "rationale": "Chromium 159 retains the unclosed pending-substitution spelling, including trailing comment text, rather than applying lexical EOF recovery within the pending value.",
       "expected": [
         {},
         {},
         { "return": { "$type": "undefined" }, "exception": null },
         { "return": "calc(var(--x, 1px", "exception": null },
         { "return": { "$type": "undefined" }, "exception": null },
-        { "return": "var(--x, red", "exception": null }
+        { "return": "var(--x, red/*comment", "exception": null }
       ]
     },
     {
@@ -279,7 +279,7 @@
     {
       "fixtureId": "declarations.shorthand-state-sequences",
       "decision": "chromium-fallback",
-      "rationale": "Engines share expanded longhand ownership and prevent state resurrection, but background record order and omitted-component spelling diverge; SheetOM follows the pinned Chromium observation.",
+      "rationale": "Engines share expanded longhand ownership and prevent state resurrection, but background record order and omitted-component spelling diverge; Chromium 159 serializes reset background longhands using their concrete defaults.",
       "expected": [
         {},
         {},
@@ -294,7 +294,7 @@
         {
           "return": "blue",
           "exception": null,
-          "cssText": "background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;",
+          "cssText": "background-image: none; background-position: 0% 0%; background-size: auto; background-repeat: repeat; background-attachment: scroll; background-origin: padding-box; background-clip: border-box;",
           "length": 8,
           "items": ["background-image", "background-position-x", "background-position-y", "background-size", "background-repeat", "background-attachment", "background-origin", "background-clip"]
         },
